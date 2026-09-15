@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use good_lp::{Expression, ProblemVariables, Solution, SolverModel, microlp, variable};
+use good_lp::{Expression, ProblemVariables, SolverModel, microlp, variable};
 use serde::Serialize;
 
 use crate::recipes::{
@@ -458,20 +458,57 @@ fn solve_recipe_rates(
         }
     }
 
-    let solution = problem.solve().map_err(|error| {
+    // Reuse the same microlp model and variable order. A bounded call resumes
+    // the live simplex state, so checking cancellation never restarts the solve.
+    let control = crate::work_control::current();
+    let interrupted = |message| {
+        ContextualThroughputDiagnostic::error(
+            "contextual-throughput-interrupted",
+            "/edges",
+            None,
+            message,
+        )
+    };
+    let solver_error = |error| {
         ContextualThroughputDiagnostic::error(
             "contextual-throughput-infeasible",
             "/edges",
             None,
             format!("contextual material-flow model failed: {error}"),
         )
-    })?;
+    };
+    if let Some(control) = &control {
+        control.check().map_err(interrupted)?;
+    }
+    let mut options = ::microlp::SolveOptions::default();
+    options.time_limit = control
+        .as_ref()
+        .map(|_| std::time::Duration::from_millis(10));
+    let mut outcome = problem
+        .as_inner()
+        .solve_with(options)
+        .map_err(solver_error)?;
+    while !outcome.is_optimal() {
+        if let Some(control) = &control {
+            control.check().map_err(interrupted)?;
+        }
+        outcome = outcome.resume().map_err(solver_error)?;
+    }
+    if let Some(control) = &control {
+        control.check().map_err(interrupted)?;
+    }
+    let solution = outcome
+        .into_solution()
+        .expect("optimal outcome contains values");
+    let values: Vec<_> = solution.iter().map(|(_, value)| value).collect();
 
     structure
         .recipes
         .iter()
-        .map(|occurrence| {
-            let rate = cyclic::approximate_rate(solution.value(recipe_variables[occurrence.id]))
+        .enumerate()
+        .map(|(index, occurrence)| {
+            // Recipe variables were added first, in this exact structure order.
+            let rate = cyclic::approximate_rate(values[index])
                 .map_err(ContextualThroughputDiagnostic::from_rate_error)?;
             Ok((occurrence.id.to_string(), rate))
         })

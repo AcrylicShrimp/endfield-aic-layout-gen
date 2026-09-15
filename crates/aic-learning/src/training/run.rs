@@ -59,10 +59,8 @@ pub fn run(
         load_catalogs(&config.catalog_root, &config.catalogs).map_err(anyhow::Error::msg)?;
     let source = Source::load(
         &config.catalog_root,
-        config.catalogs.clone(),
         catalogs.clone(),
         config.generation.clone(),
-        std::env::current_exe()?,
         panel.reserved.clone(),
     )
     .map_err(anyhow::Error::msg)?;

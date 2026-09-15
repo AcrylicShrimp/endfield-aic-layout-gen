@@ -17,6 +17,7 @@ cc = "1"
 clap = { version = "4", features = ["derive"] }
 crossbeam-channel = "0.5"
 good_lp = { version = "1", default-features = false, features = ["microlp"] }
+microlp = "0.6"
 indexmap = "2"
 pumpkin-solver = "0.5"
 postcard = { version = "1", default-features = false, features = ["use-std"] }

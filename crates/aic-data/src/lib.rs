@@ -6,3 +6,4 @@ pub mod localization;
 pub mod logistics;
 pub mod recipes;
 pub mod research;
+pub mod work_control;

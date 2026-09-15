@@ -77,7 +77,7 @@ fn cached_actual_slot_checks_source_identity_hash_and_reserved_geometry() {
         &fs::read(root.join("tools/native-training/training.json")).unwrap(),
     )
     .unwrap();
-    let (w, catalogs, paths) = fixture();
+    let (w, catalogs, _) = fixture();
     let input = Generated {
         request: fixture_request(&w),
         original: w,
@@ -87,10 +87,8 @@ fn cached_actual_slot_checks_source_identity_hash_and_reserved_geometry() {
     let make = |reserved| {
         Source::load(
             &root,
-            serde_json::from_value(paths.clone()).unwrap(),
             catalogs.clone(),
             serde_json::from_value(configuration["generation"].clone()).unwrap(),
-            PathBuf::from("must-not-execute"),
             reserved,
         )
         .unwrap()
@@ -127,4 +125,63 @@ fn cached_actual_slot_checks_source_identity_hash_and_reserved_geometry() {
             .contains("slot-binding")
     );
     fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn direct_generation_commits_actual_input_and_guard_failure_never_commits() {
+    use std::{
+        path::PathBuf,
+        sync::atomic::{AtomicUsize, Ordering},
+    };
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let config: Value = crate::input::read(
+        &root,
+        std::path::Path::new("tools/native-training/training.json"),
+    )
+    .unwrap();
+    let paths = serde_json::from_value(config["catalogs"].clone()).unwrap();
+    let catalogs = crate::input::load_catalogs(&root, &paths).unwrap();
+    let make = || {
+        source::Source::load(
+            &root,
+            catalogs.clone(),
+            serde_json::from_value(config["generation"].clone()).unwrap(),
+            Default::default(),
+        )
+        .unwrap()
+    };
+    let directory =
+        std::env::temp_dir().join(format!("aic-direct-generation-test-{}", std::process::id()));
+    std::fs::create_dir(&directory).unwrap();
+    let actual = make().generate(0, &directory.join("success")).unwrap();
+    let cached = make().generate(0, &directory.join("success")).unwrap();
+    assert_eq!(
+        serde_json::to_value(&actual).unwrap(),
+        serde_json::to_value(&cached).unwrap()
+    );
+    let calls = Arc::new(AtomicUsize::new(0));
+    let count = calls.clone();
+    let cancelled = make().with_guard(Arc::new(move || {
+        if count.fetch_add(1, Ordering::Relaxed) >= 4 {
+            Err("test-generation-cancelled".into())
+        } else {
+            Ok(())
+        }
+    }));
+    assert!(
+        cancelled
+            .generate(1, &directory.join("cancelled"))
+            .err()
+            .unwrap()
+            .contains("test-generation-cancelled")
+    );
+    assert!(!directory.join("cancelled/manifest.json").exists());
+    assert!(
+        make()
+            .generate(1, &directory.join("cancelled"))
+            .err()
+            .unwrap()
+            .contains("incomplete")
+    );
+    std::fs::remove_dir_all(directory).unwrap();
 }

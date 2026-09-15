@@ -89,3 +89,7 @@ and verify the complete runtime, not launch another long experiment.
   single-minibatch adapter were deleted. Packed external-tensor validation and
   the retained numerical oracle are test-only. Python implementation files were
   left unchanged.
+
+Fresh generation now calls native constructors directly from its existing worker
+threads. See `2026-09-15-direct-native-generation.md` for catalog reuse and
+cooperative interruption; the former CLI subprocess boundary has been removed.

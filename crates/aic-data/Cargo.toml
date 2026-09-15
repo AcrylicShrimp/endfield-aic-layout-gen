@@ -13,6 +13,7 @@ pumpkin-debug-checks = ["pumpkin-solver/debug-checks"]
 crossbeam-channel.workspace = true
 pumpkin-solver.workspace = true
 good_lp.workspace = true
+microlp.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true

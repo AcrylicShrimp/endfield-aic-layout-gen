@@ -122,6 +122,9 @@ impl Workspace {
         self.queue.push(0);
         let mut head = 0;
         while head < self.queue.len() {
+            if head.is_multiple_of(256) && crate::work_control::stopped() {
+                break;
+            }
             let current = self.queue[head];
             head += 1;
             work.visited += 1;

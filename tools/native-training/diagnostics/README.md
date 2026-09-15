@@ -65,6 +65,11 @@ use the normal phase/prepare-worker timers for that context.
 
 ## Generation phases and process initialization
 
+These reproduction commands target commit `e990b5c`, before direct native
+generation. Run them from that revision. The current generator has no child CLI
+processes and deliberately fails this historical overlay's source-anchor checks.
+See `docs/designs/2026-09-15-direct-native-generation.md` for the cutover.
+
 `generation-overlay.py` copies the Cargo workspace's sources to a new ignored
 directory and inserts phase timers there. It checks unique source anchors before
 writing; it never edits production sources. `child-main-preload.c` records child

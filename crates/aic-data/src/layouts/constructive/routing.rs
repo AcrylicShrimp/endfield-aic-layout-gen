@@ -187,7 +187,12 @@ impl RouteWorkspace {
             state: initial,
         });
 
+        let mut polls = 0usize;
         while let Some(entry) = self.open.pop() {
+            if polls.is_multiple_of(256) && crate::work_control::stopped() {
+                return None;
+            }
+            polls += 1;
             let cost = Cost {
                 steps: entry.steps,
                 turns: entry.turns,

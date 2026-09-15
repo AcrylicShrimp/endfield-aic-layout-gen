@@ -322,6 +322,9 @@ pub fn construct_production(
     let mut has_closed_incumbent = !request.downstream_closed_growth
         || order::unclosed_outputs(&current, &internal).is_empty();
     for index in 0..request.max_steps {
+        if crate::work_control::stopped() {
+            break;
+        }
         let unresolved = internal
             .iter()
             .copied()
@@ -499,6 +502,9 @@ pub fn construct_production(
             )
         });
         for edge in pending {
+            if crate::work_control::stopped() {
+                break;
+            }
             c.statistics = Default::default();
             let step_started = Instant::now();
             if width
@@ -623,7 +629,8 @@ impl Constructor<'_> {
         *self.reasons.entry(reason.into()).or_default() += 1;
     }
     fn exhausted(&self) -> bool {
-        self.attempts >= self.request.max_placement_attempts
+        crate::work_control::stopped()
+            || self.attempts >= self.request.max_placement_attempts
             || self.statistics.astar_searches >= self.request.max_route_searches
     }
 

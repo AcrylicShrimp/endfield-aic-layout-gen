@@ -1,0 +1,356 @@
+{
+  "schema": "aic-direct-native-generation-evidence-v1",
+  "baseline_source_commit": "a86ba69",
+  "parent_commit": "e990b5c8dde6074998075b8fed50988c2948c3de",
+  "remote_root": "/home/ashrimp/Srv/aic-rust-learning-20260915",
+  "scope": "Same 128-stream/16-worker configuration, 4 full fresh updates, 16384 new transitions. No profiler. Evaluation interval 128 was not reached. Before is the retained baseline; one after measurement, not a statistical speedup estimate.",
+  "fresh_before": {
+    "admission_seconds": 15.472130855,
+    "best_evaluation": null,
+    "checkpoint_seconds": 0.111452467,
+    "collection_seconds": 6.1086861589999994,
+    "completed_updates": 4,
+    "evaluation_seconds": 0.0,
+    "latest_checkpoint": "checkpoints/00000004",
+    "new_samples": 16384,
+    "optimization_seconds": 5.1186313850000005,
+    "output_bytes": 29204254,
+    "peak_rss_bytes": 15551860736,
+    "previous_update": 0,
+    "replay": {
+      "active_streams": 0,
+      "admissions": 178,
+      "bytes": 22697784,
+      "duplicates": 0,
+      "evictions": 0,
+      "labels": 694,
+      "positive_improvements": 178,
+      "selected_uses": 640,
+      "sequences": 178
+    },
+    "resumed": false,
+    "samples_per_minute": 33845.806835845215,
+    "schema": "aic-training-report-v1",
+    "status": "completed",
+    "streams": 128,
+    "total_samples": 16384,
+    "total_seconds": 29.044661419,
+    "workers": 16
+  },
+  "fresh_after": {
+    "admission_seconds": 7.8710722330000005,
+    "best_evaluation": null,
+    "checkpoint_seconds": 0.13251250799999997,
+    "collection_seconds": 6.283437829,
+    "completed_updates": 4,
+    "evaluation_seconds": 0.0,
+    "latest_checkpoint": "checkpoints/00000004",
+    "new_samples": 16384,
+    "optimization_seconds": 5.078235644,
+    "output_bytes": 29204951,
+    "peak_rss_bytes": 8359677952,
+    "previous_update": 0,
+    "replay": {
+      "active_streams": 0,
+      "admissions": 178,
+      "bytes": 22697784,
+      "duplicates": 0,
+      "evictions": 0,
+      "labels": 694,
+      "positive_improvements": 178,
+      "selected_uses": 640,
+      "sequences": 178
+    },
+    "resumed": false,
+    "samples_per_minute": 45586.7074615643,
+    "schema": "aic-training-report-v1",
+    "status": "completed",
+    "streams": 128,
+    "total_samples": 16384,
+    "total_seconds": 21.564180761,
+    "workers": 16
+  },
+  "resume_after": {
+    "admission_seconds": 0.298098776,
+    "best_evaluation": null,
+    "checkpoint_seconds": 0.065767383,
+    "collection_seconds": 3.188171873,
+    "completed_updates": 4,
+    "evaluation_seconds": 0.0,
+    "latest_checkpoint": "checkpoints/00000004",
+    "new_samples": 8192,
+    "optimization_seconds": 2.795675029,
+    "output_bytes": 29193175,
+    "peak_rss_bytes": 7328112640,
+    "previous_update": 2,
+    "replay": {
+      "active_streams": 0,
+      "admissions": 178,
+      "bytes": 22697784,
+      "duplicates": 0,
+      "evictions": 0,
+      "labels": 694,
+      "positive_improvements": 178,
+      "selected_uses": 640,
+      "sequences": 178
+    },
+    "resumed": true,
+    "samples_per_minute": 64261.06654035657,
+    "schema": "aic-training-report-v1",
+    "status": "completed",
+    "streams": 128,
+    "total_samples": 16384,
+    "total_seconds": 7.648799288,
+    "workers": 16
+  },
+  "comparisons": {
+    "actual_inputs": {
+      "schema": "aic-direct-generation-input-comparison-v1",
+      "old": "artifacts/rust-masked-reference-opt/fresh-after",
+      "new": "artifacts/native-direct-generation/fresh-after",
+      "count": 116,
+      "errors": [],
+      "compared_fields": [
+        "request",
+        "original",
+        "metadata.slot",
+        "metadata.generation_seed",
+        "metadata.source",
+        "metadata.draw",
+        "metadata.geometry_sha256",
+        "metadata.constructor_geometry_sha256",
+        "metadata.setup excluding acceptance elapsed_ms and validation_ms"
+      ],
+      "excluded_fields": [
+        "metadata.setup_seconds",
+        "metadata.attempts (structured native failures replace child stderr)",
+        "metadata.setup acceptance elapsed_ms and validation_ms"
+      ]
+    },
+    "coverage": {
+      "coverage_and_episode_quality_equal": true,
+      "ppo_float_statistics_bitwise_equal": false,
+      "maximum_absolute_statistic_differences": {
+        "approximate_kl": 6.094693133446884e-05,
+        "value_loss": 1.9441358745098114e-07,
+        "value_mae": 1.12936832010746e-05,
+        "outside_clip_fraction": 0.001708984375
+      },
+      "updates": [
+        {
+          "update": 1,
+          "actor_epochs": 4,
+          "critic_epochs": 4,
+          "minibatches": 64,
+          "admission_seconds": 3.848624066,
+          "ppo_seconds": 1.496979887
+        },
+        {
+          "update": 2,
+          "actor_epochs": 4,
+          "critic_epochs": 4,
+          "minibatches": 64,
+          "admission_seconds": 1.35e-07,
+          "ppo_seconds": 1.139417259
+        },
+        {
+          "update": 3,
+          "actor_epochs": 1,
+          "critic_epochs": 4,
+          "minibatches": 64,
+          "admission_seconds": 4.022447811,
+          "ppo_seconds": 1.093458789
+        },
+        {
+          "update": 4,
+          "actor_epochs": 4,
+          "critic_epochs": 4,
+          "minibatches": 64,
+          "admission_seconds": 2.21e-07,
+          "ppo_seconds": 1.348379709
+        }
+      ]
+    }
+  },
+  "validation": {
+    "default_workspace": {
+      "passed": 558,
+      "failed": 0,
+      "ignored": 3
+    },
+    "learning_feature_workspace": {
+      "passed": 575,
+      "failed": 0,
+      "ignored": 5,
+      "test_worker_stack_bytes": 16777216
+    },
+    "final_source_generation_test": {
+      "passed": 1
+    },
+    "cargo_check_workspace": "passed",
+    "cargo_check_learning_feature": "passed"
+  },
+  "production_source_files": [
+    {
+      "path": "Cargo.lock",
+      "sha256": "1f149bc12c0c8eb3f96f09cf078a2003d09db1566292c184bb9dfad71754b665"
+    },
+    {
+      "path": "Cargo.toml",
+      "sha256": "8655dd1fe745b5ee81dc48ce2ee347f87bc5410bd7edf4d68b5d1f2034b0642e"
+    },
+    {
+      "path": "crates/aic-data/Cargo.toml",
+      "sha256": "0cfdf78882f6fcc341722b84e82a4de8c60e0786db03a95502b4b608998149d7"
+    },
+    {
+      "path": "crates/aic-data/src/layouts/constructive/network/external.rs",
+      "sha256": "878674d64e08ea2f7a6ba3243100bc899b682549c69d32e289753fce6419dad4"
+    },
+    {
+      "path": "crates/aic-data/src/layouts/constructive/production.rs",
+      "sha256": "fc9a86af13e05d2119d41b6e12271facfbf6653aff6170b747c0ee46eb4dbfa4"
+    },
+    {
+      "path": "crates/aic-data/src/layouts/constructive/production/boundary.rs",
+      "sha256": "107b306051f49d6f23d0ca8b055a0c36e6b753f1b08d52c93ca56f13f0d3af66"
+    },
+    {
+      "path": "crates/aic-data/src/layouts/constructive/production/boundary/parallel.rs",
+      "sha256": "0b84a6391c2eece093d27330183021100605e4b1af7a2cfcc1b74ff3f24afcc6"
+    },
+    {
+      "path": "crates/aic-data/src/layouts/constructive/production/tests.rs",
+      "sha256": "7e6f338722695ba5284b2ca0eb706c333c1bc644a2f63ea5143bb9ba697c90fe"
+    },
+    {
+      "path": "crates/aic-data/src/layouts/constructive/routing.rs",
+      "sha256": "6d1bb40244780ac3970b104737bd21cfb83236ad0bb4a99a414174d33ac42772"
+    },
+    {
+      "path": "crates/aic-data/src/lib.rs",
+      "sha256": "a879631653754d3baa4874aee87e51f0caf49c7040786e63a64764415ad9efc6"
+    },
+    {
+      "path": "crates/aic-data/src/recipes/throughput/contextual.rs",
+      "sha256": "c3a5acf24bb0ee43181b2248f89c58ecff7723bdedd12357fafb28ffe682beb4"
+    },
+    {
+      "path": "crates/aic-learning/src/training/evaluation.rs",
+      "sha256": "85e309bc32649d44f000e5cdd3f181351f2de86845f866b53bc18e9876333feb"
+    },
+    {
+      "path": "crates/aic-learning/src/training/run.rs",
+      "sha256": "015c955b110714b4f761d5dfb7e6e7186fc0f8393c76d483ef9f7974ed6bcfe3"
+    },
+    {
+      "path": "crates/aic-pilot-native/src/full_factory/generation/source.rs",
+      "sha256": "06d915b41cb339f6bc21130786000dca06c7fc1bf4a946c6af938a713780e84f"
+    },
+    {
+      "path": "crates/aic-pilot-native/src/full_factory/generation/tests.rs",
+      "sha256": "1a77498cbe3ea6f8c8d24fb1da28e00fd4f8918bdb7f504a82acce0bd0300c07"
+    },
+    {
+      "path": "crates/aic-data/src/work_control.rs",
+      "sha256": "bb4c338e7db0d96acad6d4b6f6dbc0e7d71bd3a4295472c310adedebb549e012"
+    }
+  ],
+  "retained_files": [
+    {
+      "path": "target/release/aic-cli",
+      "bytes": 19347960,
+      "sha256": "26037587c62ceccf556eac3b4b1bd9518782f9332d78c074ff49b668b778f016"
+    },
+    {
+      "path": "tools/native-training/training.json",
+      "bytes": 4037,
+      "sha256": "f2906909ed48f435dfcb5b97e18b6b9ad866bfbbf6cc0d7ee2f866ed6a6d174f"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/fresh-after/report.json",
+      "bytes": 715,
+      "sha256": "88047aa88320bd443ea1e26617f954a1a9cbca4d242cb03439e8fd701e02a34b"
+    },
+    {
+      "path": "artifacts/generation-profile/aic-cli-normal",
+      "bytes": 19355704,
+      "sha256": "0349464b925afe60b24e75e66257b71bb4dcee583a30a8978f02ee60f89f744c"
+    },
+    {
+      "path": "artifacts/native-direct-generation/fresh-after/report.json",
+      "bytes": 712,
+      "sha256": "b36803ae82cbc27ccd7525c1632642b8eaaff6d5396f474edb91e58889084ed8"
+    },
+    {
+      "path": "artifacts/native-direct-generation/resume-after/report.json",
+      "bytes": 695,
+      "sha256": "0726fb14f4387b0e8727efa34d82324a308385798697979dfacf9dee65d2ceeb"
+    },
+    {
+      "path": "artifacts/native-direct-generation/input-comparison.json",
+      "bytes": 28217,
+      "sha256": "d898222ea52ec732507f7e4669cd27c1d4aa0a5424fc4835c2ad665d7f7fed9c"
+    },
+    {
+      "path": "artifacts/native-direct-generation/coverage-comparison.json",
+      "bytes": 1054,
+      "sha256": "52a5e5407a4a42af5bfbd0667c2e5a2a11ab912dd3d2423faf35ee2d29a48213"
+    },
+    {
+      "path": "artifacts/native-direct-generation/build.log",
+      "bytes": 814,
+      "sha256": "fa8efba037e0adf41bd1a73d58d096a344b84991530c36319ca7f58063b1571c"
+    },
+    {
+      "path": "artifacts/native-direct-generation/feature-check.log",
+      "bytes": 462,
+      "sha256": "d2622db14f0eeef996b73d0e587da0731665bd10fd96ed47f70f81c0c07d4754"
+    },
+    {
+      "path": "artifacts/native-direct-generation/feature-test.log",
+      "bytes": 72006,
+      "sha256": "f15ad50ad2a940b4936aecf656e565434115615e0fc4a15420975e25980c5668"
+    },
+    {
+      "path": "artifacts/native-direct-generation/fresh-after.stdout",
+      "bytes": 854,
+      "sha256": "5eff91c7e1144a08b7e5b403af78b89dcc3d83a6d1fe78c7a4a570c09725259e"
+    },
+    {
+      "path": "artifacts/native-direct-generation/fresh-after.stderr",
+      "bytes": 704,
+      "sha256": "aeb7ec7906538c493b532e5ba8d49f758c3f78003fd4fe56d6d90c6402d9885f"
+    },
+    {
+      "path": "artifacts/native-direct-generation/resume-after.stdout",
+      "bytes": 837,
+      "sha256": "5c75bc5e226c9b51f164aa222f439e560b18a7588333951afd6b95aa231ae358"
+    },
+    {
+      "path": "artifacts/native-direct-generation/resume-after.stderr",
+      "bytes": 353,
+      "sha256": "9f84e21690a3c25358032b96bbd25ef188fe5dad2cc7f82d4985462484a1cfaa"
+    },
+    {
+      "path": "artifacts/native-direct-generation/fresh-after/updates/00000001.json",
+      "bytes": 1505,
+      "sha256": "078ae5ee17373f9a3ad2821afce1a63a319dffa16d6149ef1f6ea9fd71ff7637"
+    },
+    {
+      "path": "artifacts/native-direct-generation/fresh-after/updates/00000002.json",
+      "bytes": 10272,
+      "sha256": "be1220fc4b80285142398808928f9b5b9d21b3bb6bf652db43fbe5448b4083dd"
+    },
+    {
+      "path": "artifacts/native-direct-generation/fresh-after/updates/00000003.json",
+      "bytes": 1543,
+      "sha256": "f68a4735e425ff4e9aa2f5c2cc7bb88542334d8aec49ae1a1a40849941c604bd"
+    },
+    {
+      "path": "artifacts/native-direct-generation/fresh-after/updates/00000004.json",
+      "bytes": 11321,
+      "sha256": "3b2d686d5cc44306f2132ae10a7255d144604c35b399c5a5a0c0750adeeeb026"
+    }
+  ]
+}

@@ -1106,3 +1106,33 @@ fn external_lane_budget_is_atomic_and_does_not_claim_success() {
         "invalid-input"
     );
 }
+
+#[test]
+fn native_construction_interrupts_inside_search_and_leaves_worker_reusable() {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+    let (f, i, t, c) = catalogs();
+    let w = wiring(&[("a", "b"), ("b", "c")]);
+    let r = request("c");
+    let calls = Arc::new(AtomicUsize::new(0));
+    let count = calls.clone();
+    let control = crate::work_control::WorkControl::new(
+        std::time::Duration::from_secs(10),
+        Arc::new(move || {
+            if count.fetch_add(1, Ordering::Relaxed) >= 4 {
+                Err("test-generation-cancelled".into())
+            } else {
+                Ok(())
+            }
+        }),
+    )
+    .unwrap();
+    let result = control.run(|| construct_production(&w, &f, &i, &t, &c, &r));
+    assert_eq!(result.unwrap_err(), "test-generation-cancelled");
+    assert!(calls.load(Ordering::Relaxed) >= 5);
+    assert!(crate::work_control::current().is_none());
+    let next = construct_production(&w, &f, &i, &t, &c, &r);
+    assert!(next.internal_complete, "{:?}", next.diagnostics);
+}

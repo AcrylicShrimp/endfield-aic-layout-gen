@@ -308,10 +308,8 @@ pub fn prepare(config_path: &Path, output: &Path, cases: usize, seed: u64) -> Re
             Ok(Arc::new(
                 Source::load(
                     &config.catalog_root,
-                    config.catalogs.clone(),
                     catalogs.clone(),
                     generation,
-                    std::env::current_exe()?,
                     BTreeSet::new(),
                 )
                 .map_err(anyhow::Error::msg)?

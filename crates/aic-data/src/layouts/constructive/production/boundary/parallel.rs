@@ -63,13 +63,14 @@ pub(super) fn screen(
             let cancelled = &cancelled;
             let active = &active;
             let peak = &peak;
+            let control = crate::work_control::current();
             let worker = move || {
                 let count = active.fetch_add(1, Ordering::Relaxed) + 1;
                 peak.fetch_max(count, Ordering::Relaxed);
                 let _active = Active(active);
-                let action = || {
+                let mut jobs = || {
                     let mut results = Vec::new();
-                    while !cancelled.load(Ordering::Relaxed) {
+                    while !cancelled.load(Ordering::Relaxed) && !crate::work_control::stopped() {
                         let index = next.fetch_add(1, Ordering::Relaxed);
                         let Some((transport, item)) = jobs.get(index) else {
                             break;
@@ -86,12 +87,15 @@ pub(super) fn screen(
                     }
                     results
                 };
+                let action = || match &control {
+                    Some(control) => control.run(jobs).unwrap_or_default(),
+                    None => jobs(),
+                };
                 if capture {
                     let (results, profile) = collect_constructive_profile(action)
                         .expect("fresh worker has no nested profile capture");
                     (results, Some(profile))
                 } else {
-                    let mut action = action;
                     (action(), None)
                 }
             };

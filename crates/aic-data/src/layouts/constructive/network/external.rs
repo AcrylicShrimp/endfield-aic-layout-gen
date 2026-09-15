@@ -44,6 +44,9 @@ fn search(
     limit: u64,
     accept: &mut impl FnMut(&ConstructiveNode) -> bool,
 ) -> Option<ConstructiveNode> {
+    if crate::work_control::stopped() {
+        return None;
+    }
     if remaining.is_zero() {
         let mut n = node.clone();
         n.external_requirements.push(edge.id.clone());

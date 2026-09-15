@@ -1,16 +1,21 @@
 //! Fresh complete factory construction and durable canonical input slots.
 use super::{Setup, geometry_identity, randomize, rng::Rng};
-use crate::input::{CatalogPaths, Catalogs, hash, read};
-use aic_data::layouts::{FactoryEditRequest, WitnessProbeInput};
-use aic_data::recipes::Rate;
+use crate::input::{Catalogs, hash, read};
+use aic_data::layouts::{
+    ConstructiveProductionRequest, FactoryEditRequest, WitnessProbeInput, construct_production,
+};
+use aic_data::recipes::{
+    Rate, RecipeSourcePlanRequest, build_contextual_facility_instance_wiring,
+    calculate_contextual_facility_requirements,
+};
+use aic_data::work_control::WorkControl;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
-    io::{Read, Write},
+    io::Write,
     path::{Path, PathBuf},
-    process::{Command, Stdio},
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -53,10 +58,7 @@ pub struct Source {
     pub config: Config,
     pub identity: String,
     catalogs: Arc<Catalogs>,
-    root: PathBuf,
-    paths: CatalogPaths,
     plans: Vec<Value>,
-    executable: PathBuf,
     reserved: BTreeSet<String>,
     guard: Arc<dyn Fn() -> Result<()> + Send + Sync>,
 }
@@ -79,16 +81,19 @@ fn write(path: &Path, value: &impl Serialize) -> Result<()> {
     file.flush().map_err(|e| error("write", path.display(), e))
 }
 impl Source {
+    fn compute<T>(&self, milliseconds: u64, action: impl FnOnce() -> T) -> Result<T> {
+        WorkControl::new(Duration::from_millis(milliseconds), self.guard.clone())?
+            .run(action)
+            .map_err(|e| error("interrupted", "native-computation", e))
+    }
     pub fn with_guard(mut self, guard: Arc<dyn Fn() -> Result<()> + Send + Sync>) -> Self {
         self.guard = guard;
         self
     }
     pub fn load(
         root: &Path,
-        paths: CatalogPaths,
         catalogs: Arc<Catalogs>,
         config: Config,
-        executable: PathBuf,
         reserved: BTreeSet<String>,
     ) -> Result<Self> {
         let c = &config;
@@ -172,10 +177,7 @@ impl Source {
             config,
             identity,
             catalogs,
-            root: root.to_path_buf(),
-            paths,
             plans,
-            executable,
             reserved,
             guard: Arc::new(|| Ok(())),
         })
@@ -265,94 +267,86 @@ impl Source {
                     .episode_setup_ms
                     .saturating_sub(started.elapsed().as_millis() as u64)
             };
-            let flow_args = vec![
-                "recipes".into(),
-                "contextual-instance-wiring".into(),
-                "--file".into(),
-                self.root.join(&self.paths.recipes).display().to_string(),
-                "--request".into(),
-                source_path.display().to_string(),
-            ];
-            let wiring = match process(
-                &self.executable,
-                &flow_args,
+            let typed_plan: RecipeSourcePlanRequest =
+                serde_json::from_value(plan.clone()).map_err(|e| error("source-plan", slot, e))?;
+            let wiring = match self.compute(
                 self.config.construction.flow_elapsed_ms.min(remaining()),
-                &*self.guard,
+                || {
+                    let throughput = self
+                        .catalogs
+                        .data
+                        .recipes
+                        .calculate_contextual_throughput(&typed_plan);
+                    let facilities = calculate_contextual_facility_requirements(&throughput);
+                    build_contextual_facility_instance_wiring(&throughput, &facilities)
+                },
             ) {
-                Ok(value) if value["success"] == true => value,
+                Ok(value) if value.success => value,
                 result => {
-                    attempts.push(json!({"seed":seed,"stage":"wiring","outcome":result.map_err(|e| e.to_string())}));
+                    (self.guard)()?;
+                    attempts.push(json!({"seed":seed,"stage":"wiring","outcome":result}));
                     continue;
                 }
             };
-            let (request, target, utilizations) = request_from_wiring(&wiring)?;
+            let (request, target, utilizations) = request_from_wiring(
+                &serde_json::to_value(&wiring).map_err(|e| error("wiring", slot, e))?,
+            )?;
             if request.instances.len() > self.config.max_facilities {
                 attempts.push(json!({"seed":seed,"stage":"instance-bound"}));
                 continue;
             }
-            let mut args = vec![
-                "layouts".into(),
-                "construct-production".into(),
-                "--recipes".into(),
-                self.root.join(&self.paths.recipes).display().to_string(),
-                "--source-plan".into(),
-                source_path.display().to_string(),
-                "--target-instance".into(),
-                target,
-                "--downstream-closed-growth".into(),
-                "--final-json".into(),
-            ];
-            for (flag, path) in [
-                ("facility-catalog", &self.paths.facilities),
-                ("item-catalog", &self.paths.items),
-                ("transport-catalog", &self.paths.transports),
-                ("logistics-component-catalog", &self.paths.components),
-            ] {
-                args.extend([
-                    format!("--{flag}"),
-                    self.root.join(path).display().to_string(),
-                ]);
-            }
-            for (flag, n) in [
-                ("max-steps", self.config.construction.max_steps as u64),
-                (
-                    "max-placement-attempts",
-                    self.config.construction.max_placement_attempts as u64,
-                ),
-                (
-                    "max-route-searches",
-                    self.config.construction.max_route_searches,
-                ),
-                (
-                    "analysis-workers",
-                    self.config.construction.analysis_workers as u64,
-                ),
-            ] {
-                args.extend([format!("--{flag}"), n.to_string()]);
-            }
-            let report = match process(
-                &self.executable,
-                &args,
+            let construction = ConstructiveProductionRequest {
+                schema_version: aic_data::layouts::CONSTRUCTIVE_PRODUCTION_SCHEMA_VERSION,
+                target_instance: target,
+                max_steps: self.config.construction.max_steps,
+                max_placement_attempts: self.config.construction.max_placement_attempts,
+                max_route_searches: self.config.construction.max_route_searches,
+                analysis_workers: self.config.construction.analysis_workers,
+                nearby_candidates: 0,
+                downstream_closed_growth: true,
+                flow_direction: None,
+                connection_first_placement: false,
+            };
+            let data = &self.catalogs.data;
+            let mut report = match self.compute(
                 self.config.construction.elapsed_ms.min(remaining()),
-                &*self.guard,
+                || {
+                    construct_production(
+                        &wiring,
+                        &data.facilities,
+                        &data.items,
+                        &data.transports,
+                        &data.components,
+                        &construction,
+                    )
+                },
             ) {
-                Ok(value)
-                    if value["schema_version"] == 1
-                        && value["kind"] == "constructive-production-final"
-                        && value["success"] == true
-                        && value["complete"] == true =>
-                {
-                    value
-                }
+                Ok(value) if value.success && value.complete => value,
                 result => {
-                    attempts.push(json!({"seed":seed,"stage":"construction","outcome":result.map_err(|e| e.to_string())}));
+                    (self.guard)()?;
+                    // Keep concise failure evidence, not all speculative layout snapshots.
+                    let outcome = result.map(|value| json!({"status":value.status,
+                        "success":value.success,"complete":value.complete,"diagnostics":value.diagnostics}));
+                    attempts.push(json!({"seed":seed,"stage":"construction","outcome":outcome}));
                     continue;
                 }
             };
-            let node = &report["final_node"];
-            let original: WitnessProbeInput = serde_json::from_value(json!({"schema_version":1,"placements":node["placements"],
-                "transport_networks":node["transport_networks"],"logistics_components":node["logistics_components"],"utilizations":utilizations}))
-                .map_err(|e| error("constructor-witness", slot, e))?;
+            let node = report.final_node.take().ok_or_else(|| {
+                error(
+                    "constructor-witness",
+                    slot,
+                    "complete constructor omitted its final node",
+                )
+            })?;
+            drop(report); // Release construction history before randomized setup.
+            let original = WitnessProbeInput {
+                schema_version: 1,
+                placements: node.placements,
+                transport_networks: node.transport_networks,
+                logistics_components: node.logistics_components,
+                utilizations: serde_json::from_value(utilizations)
+                    .map_err(|e| error("constructor-witness", slot, e))?,
+            };
             let setup = Setup {
                 steps,
                 elapsed_ms: self.config.setup_elapsed_ms.min(remaining()),
@@ -391,6 +385,17 @@ impl Source {
             };
             let input = directory.join("input.json");
             write(&input, &value)?;
+            if fs::metadata(&input)
+                .map_err(|e| error("read", input.display(), e))?
+                .len()
+                > 16 * 1024 * 1024
+            {
+                return Err(error(
+                    "input-size",
+                    input.display(),
+                    "generated input exceeds 16 MiB",
+                ));
+            }
             let bytes = fs::read(&input).map_err(|e| error("read", input.display(), e))?;
             let pending = directory.join("manifest.pending");
             write(
@@ -490,94 +495,4 @@ fn request_from_wiring(wiring: &Value) -> Result<(FactoryEditRequest, String, Va
         })
         .collect();
     Ok((request, target, Value::Object(utilizations)))
-}
-
-fn process(
-    binary: &Path,
-    args: &[String],
-    milliseconds: u64,
-    guard: &dyn Fn() -> Result<()>,
-) -> Result<Value> {
-    if milliseconds == 0 {
-        return Err(error(
-            "process-budget",
-            binary.display(),
-            "no remaining setup time",
-        ));
-    }
-    let start = Instant::now();
-    let mut child = Command::new(binary)
-        .args(args)
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|e| error("process-spawn", binary.display(), e))?;
-    let stdout = child.stdout.take().unwrap();
-    let stderr = child.stderr.take().unwrap();
-    let out = std::thread::spawn(move || {
-        let mut bytes = vec![];
-        stdout
-            .take(16 * 1024 * 1024 + 1)
-            .read_to_end(&mut bytes)
-            .map(|_| bytes)
-    });
-    let err = std::thread::spawn(move || {
-        let mut bytes = vec![];
-        stderr
-            .take(1024 * 1024 + 1)
-            .read_to_end(&mut bytes)
-            .map(|_| bytes)
-    });
-    let status = loop {
-        if let Err(error) = guard() {
-            let _ = child.kill();
-            let _ = child.wait();
-            break Err(error);
-        }
-        match child.try_wait() {
-            Ok(Some(status)) => break Ok(status),
-            Ok(None) if start.elapsed() < Duration::from_millis(milliseconds) => {
-                std::thread::sleep(Duration::from_millis(5))
-            }
-            Ok(None) => {
-                let _ = child.kill();
-                let _ = child.wait();
-                break Err(error(
-                    "process-timeout",
-                    binary.display(),
-                    "native constructor exceeded its elapsed budget",
-                ));
-            }
-            Err(e) => {
-                let _ = child.kill();
-                let _ = child.wait();
-                break Err(error("process-wait", binary.display(), e));
-            }
-        }
-    };
-    let bytes = out
-        .join()
-        .map_err(|_| error("process-output", binary.display(), "stdout reader panicked"))?
-        .map_err(|e| error("process-output", binary.display(), e))?;
-    let errors = err
-        .join()
-        .map_err(|_| error("process-output", binary.display(), "stderr reader panicked"))?
-        .map_err(|e| error("process-output", binary.display(), e))?;
-    let status = status?;
-    if bytes.len() > 16 * 1024 * 1024 || errors.len() > 1024 * 1024 {
-        return Err(error(
-            "process-output",
-            binary.display(),
-            "bounded output exceeded",
-        ));
-    }
-    if !status.success() {
-        return Err(error(
-            "process-failed",
-            binary.display(),
-            String::from_utf8_lossy(&errors),
-        ));
-    }
-    serde_json::from_slice(&bytes).map_err(|e| error("process-json", binary.display(), e))
 }
