@@ -1,0 +1,209 @@
+{
+  "schema": "aic-generation-process-profile-evidence-v1",
+  "production_source_commit": "38e2f71f6917df1445ff6ad46d57dda270d4ff88",
+  "remote_root": "/home/ashrimp/Srv/aic-rust-learning-20260915/artifacts/generation-profile",
+  "scope": "One instrumented fresh wave and a separate same-input wiring invocation comparison. Production source is unchanged. Overlapping worker/CPU sums are not elapsed training time.",
+  "report": {
+    "admission_seconds": 7.312958188,
+    "best_evaluation": null,
+    "checkpoint_seconds": 0.072598209,
+    "collection_seconds": 3.278698619,
+    "completed_updates": 2,
+    "evaluation_seconds": 0.0,
+    "latest_checkpoint": "checkpoints/00000002",
+    "new_samples": 8192,
+    "optimization_seconds": 2.624898532,
+    "output_bytes": 19583061,
+    "peak_rss_bytes": 8291577856,
+    "previous_update": 0,
+    "replay": {
+      "active_streams": 0,
+      "admissions": 84,
+      "bytes": 11437840,
+      "duplicates": 0,
+      "evictions": 0,
+      "labels": 360,
+      "positive_improvements": 84,
+      "selected_uses": 0,
+      "sequences": 84
+    },
+    "resumed": false,
+    "samples_per_minute": 33915.687335295734,
+    "schema": "aic-training-report-v1",
+    "status": "completed",
+    "streams": 128,
+    "total_samples": 8192,
+    "total_seconds": 14.492408635,
+    "workers": 16
+  },
+  "generation": {
+    "schema": "aic-generation-profile-summary-v1",
+    "notes": [
+      "Phase/command sums are overlapping worker-seconds, not elapsed training time.",
+      "Outside child main includes startup, shutdown, parent polling and output handling.",
+      "Child before-main CPU measures dynamic initialization, not parent waiting.",
+      "Worker finish spans include gaps between Source::generate calls."
+    ],
+    "slots": 128,
+    "workers": 16,
+    "processes": 264,
+    "generation_worker_seconds": 75.143316643,
+    "slot_median_seconds": 0.4913910885,
+    "slot_max_seconds": 3.81410594,
+    "generation_span_seconds": 7.07097675,
+    "phases_worker_seconds": {
+      "construction_process": 41.368038043,
+      "draw": 0.03820515700000003,
+      "flow_process": 29.402740594000008,
+      "metadata": 0.0029041950000000005,
+      "publication": 1.580477101,
+      "randomization": 2.638609195,
+      "reservation": 0.00047371899999999994,
+      "wiring_conversion": 0.016684073000000004,
+      "witness_conversion": 0.09428862199999999
+    },
+    "commands": [
+      {
+        "command": "contextual-instance-wiring",
+        "count": 132,
+        "failed_processes": 0,
+        "failed_process_wall_seconds": 0,
+        "process_wall_seconds": 29.388501903,
+        "spawn_seconds": 0.059446101,
+        "child_main_wall_seconds": 0.243726525,
+        "outside_child_main_wall_seconds": 29.144775378000002,
+        "child_main_cpu_seconds": 0.243157,
+        "child_before_main_cpu_seconds": 20.010942
+      },
+      {
+        "command": "construct-production",
+        "count": 132,
+        "failed_processes": 2,
+        "failed_process_wall_seconds": 6.327952955000001,
+        "process_wall_seconds": 41.311631252,
+        "spawn_seconds": 0.031174452,
+        "child_main_wall_seconds": 12.882643915,
+        "outside_child_main_wall_seconds": 28.428987337,
+        "child_main_cpu_seconds": 12.854535,
+        "child_before_main_cpu_seconds": 19.808828
+      }
+    ]
+  },
+  "last_worker": {
+    "thread": "ThreadId(6)",
+    "slots": [
+      3,
+      19,
+      35,
+      51,
+      67,
+      83,
+      99,
+      115
+    ],
+    "generation_seconds": 7.040209918,
+    "finish_after_first_start_seconds": 7.07097675,
+    "phases": {
+      "construction_process": 4.917146756,
+      "draw": 0.000349674,
+      "flow_process": 1.8136985210000003,
+      "metadata": 0.000191347,
+      "publication": 0.09271712100000001,
+      "randomization": 0.20569642999999999,
+      "reservation": 5.108e-06,
+      "wiring_conversion": 0.001706719,
+      "witness_conversion": 0.008634679999999999
+    }
+  },
+  "child_comparison": {
+    "schema": "aic-generation-child-comparison-v1",
+    "input": {
+      "path": "artifacts/generation-profile/fresh/inputs/00000000/0000/input.json",
+      "sha256": "51794c501c90cff80798860db2640669967f8e7c296f3ab77089f5363600920e"
+    },
+    "source": {
+      "path": "docs/benchmarks/constructive-recipe-breadth/requests/medical-3.json",
+      "sha256": "cbff3a5f40a70ab57e8fccf16ab305fa77a1868fb8f072c1d61effa5c4811fca"
+    },
+    "command": [
+      "recipes",
+      "contextual-instance-wiring",
+      "--file",
+      "data/game/normalized/recipes.json",
+      "--request",
+      "/home/ashrimp/Srv/aic-rust-learning-20260915/artifacts/generation-profile/child-comparison/source-plan.json"
+    ],
+    "outputs_equal": true,
+    "binaries": {
+      "normal": {
+        "path": "artifacts/generation-profile/aic-cli-normal",
+        "sha256": "0349464b925afe60b24e75e66257b71bb4dcee583a30a8978f02ee60f89f744c",
+        "seconds": [
+          0.15613486198708415,
+          0.1506990529887844,
+          0.1546887590084225,
+          0.1529637810017448,
+          0.1546989410126116,
+          0.1468093549774494
+        ],
+        "median_seconds": 0.15382627000508364
+      },
+      "without_learning": {
+        "path": "artifacts/generation-profile/aic-cli-without-learning",
+        "sha256": "ddf683a901658b97897900709d883192482ac6758599dac1cb12b46ca31bf8a8",
+        "seconds": [
+          0.007643186021596193,
+          0.0024731810262892395,
+          0.007510332012316212,
+          0.0028321650170255452,
+          0.007424520008498803,
+          0.002692326990654692
+        ],
+        "median_seconds": 0.005128342512762174
+      }
+    },
+    "scope": "Isolated process launch plus real wiring command; no training or claimed whole-run speedup."
+  },
+  "local_retained_files": [
+    {
+      "path": "artifacts/generation-profile-20260915/report.json",
+      "bytes": 692,
+      "sha256": "5f083b923785a6b75a4caa8f4e99a66e30688dc29ecdbece777226c62eec92fc"
+    },
+    {
+      "path": "artifacts/generation-profile-20260915/summary.json",
+      "bytes": 17052,
+      "sha256": "bbc1bf39c7a4d433239bbeff94bac83fed0bc06dbbb09b0679d72a0a49cc35ea"
+    },
+    {
+      "path": "artifacts/generation-profile-20260915/child-comparison.json",
+      "bytes": 1673,
+      "sha256": "461b80ac7574d15d3c1a598f1674346ce33a826fe9096028f1df42f6b25f157b"
+    },
+    {
+      "path": "artifacts/generation-profile-20260915/run.stderr",
+      "bytes": 150146,
+      "sha256": "b7c7627bdb10da1064a5e7dc54308d777b08129247e5daccbf8e8d4983834a0d"
+    },
+    {
+      "path": "artifacts/generation-profile-20260915/normal-ldd.txt",
+      "bytes": 3855,
+      "sha256": "58b06ed9cb9aa3d4d8124f88aaf574a2b4e1d07857eba3baa7edf853c644da14"
+    },
+    {
+      "path": "artifacts/generation-profile-20260915/lean-ldd.txt",
+      "bytes": 293,
+      "sha256": "5efa81050316ee49f3019cb065f48b0ec2272d5fdb39942672a3fe886e548a9f"
+    },
+    {
+      "path": "artifacts/generation-profile-20260915/build.log",
+      "bytes": 469,
+      "sha256": "2485ff09225c3d54cf9225fdf80eec11d64d28ed6054dcb55026cd8a6c63a16f"
+    },
+    {
+      "path": "artifacts/generation-profile-20260915/lean-build.log",
+      "bytes": 339,
+      "sha256": "5f21a5fc8fb6e12cedc6863cd876197618f200ade0b32917e52d1cdf47d0679f"
+    }
+  ]
+}
