@@ -162,7 +162,6 @@ pub(super) fn packed(
     let candidates = features.size()[0];
     for (n, width) in [
         ("features", c.port_features),
-        ("history", c.port_features),
         ("root_features", c.action_features),
     ] {
         field(v, &q(n), Kind::Float, &[candidates, width])?;
@@ -189,6 +188,56 @@ pub(super) fn packed(
         )?,
         "aic-learning.input-owner: ports in {prefix}"
     );
+    let assignment_ports = field(
+        v,
+        &q("assignment_ports"),
+        Kind::Float,
+        &[factors, c.port_features],
+    )?;
+    let _ = assignment_ports;
+    let terminals = field(v, &q("assignment_terminals"), Kind::Int64, &[factors])?;
+    indices(terminals, 0, nodes, &q("assignment_terminals"))?;
+    let assignment_owners = field(v, &q("assignment_owners"), Kind::Int64, &[factors])?;
+    indices(assignment_owners, 0, graphs, &q("assignment_owners"))?;
+    ensure!(
+        ng.index_select(0, terminals).equal(assignment_owners),
+        "aic-learning.input-owner: assignments in {prefix}"
+    );
+    let start = field(v, &q("prefix_start"), Kind::Int64, &[factors])?;
+    let end = field(v, &q("prefix_end"), Kind::Int64, &[factors])?;
+    indices(start, 0, factors + 1, &q("prefix_start"))?;
+    indices(end, 0, factors + 1, &q("prefix_end"))?;
+    let assignments = Vec::<i64>::try_from(assignment_owners)?;
+    let starts = Vec::<i64>::try_from(start)?;
+    let ends = Vec::<i64>::try_from(end)?;
+    let factor_owners = Vec::<i64>::try_from(fo)?;
+    let mut offset = 0;
+    for owner in 0..graphs {
+        let count = assignments.iter().filter(|&&id| id == owner).count();
+        ensure!(
+            assignments[offset..offset + count]
+                .iter()
+                .all(|&id| id == owner),
+            "aic-learning.input-owner: unordered assignment bank in {prefix}"
+        );
+        let factors: Vec<_> = factor_owners
+            .iter()
+            .enumerate()
+            .filter(|(_, id)| **id == owner)
+            .map(|(i, _)| i)
+            .collect();
+        ensure!(
+            count == factors.len(),
+            "aic-learning.input-counts: assignment bank in {prefix}"
+        );
+        for (depth, factor) in factors.into_iter().enumerate() {
+            ensure!(
+                starts[factor] == offset as i64 && ends[factor] == (offset + depth) as i64,
+                "aic-learning.input-index: prefix range in {prefix}"
+            );
+        }
+        offset += count;
+    }
     indices(selected, 0, candidates, &format!("{prefix}.selected"))?;
     ensure!(
         bg.index_select(0, selected)

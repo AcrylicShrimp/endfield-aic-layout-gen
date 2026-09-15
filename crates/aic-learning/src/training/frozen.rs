@@ -15,16 +15,37 @@ pub struct Frozen {
     pub root: usize,
     pub branches: Vec<batch::Branch>,
     pub selected: Vec<usize>,
+    pub assignments: Vec<batch::Assignment>,
 }
 impl Frozen {
     pub fn record(o: &Observation, choice: &Choice) -> Result<Self> {
         let mut branches = Vec::with_capacity(choice.ports.len());
         let mut selected = Vec::with_capacity(choice.ports.len());
-        for (depth, port) in choice.ports.iter().enumerate() {
-            let branch = batch::branch(o, 0, choice.root, &choice.ports, depth)?;
+        let meta = o
+            .input
+            .root_meta
+            .get(choice.root)
+            .ok_or_else(|| anyhow::anyhow!("aic-learning.frozen-root: invalid root"))?;
+        ensure!(
+            !o.input.root_invalid[choice.root],
+            "aic-learning.frozen-root: masked root"
+        );
+        let count = if meta[0] == 0 {
+            o.domain.groups[meta[1] as usize].len()
+        } else {
+            0
+        };
+        ensure!(
+            choice.ports.len() == count,
+            "aic-learning.frozen-port: incomplete assignment"
+        );
+        let mut prefix = batch::Prefix::default();
+        for port in &choice.ports {
+            let branch = batch::branch(o, 0, choice.root, &prefix)?;
             selected.push(branch.keep.iter().position(|p| p == port).ok_or_else(|| {
                 anyhow::anyhow!("aic-learning.frozen-port: excluded recorded selection")
             })?);
+            prefix.append(o, choice.root, &branch, *selected.last().unwrap())?;
             branches.push(branch);
         }
         Ok(Self {
@@ -32,6 +53,7 @@ impl Frozen {
             root: choice.root,
             branches,
             selected,
+            assignments: prefix.assignments,
         })
     }
     /// Only admitted/active replay needs an independent compact numerical bank.
@@ -58,6 +80,7 @@ impl Frozen {
             root: self.root,
             branches: self.branches.clone(),
             selected: self.selected.clone(),
+            assignments: self.assignments.clone(),
         }
     }
     pub fn bytes(&self) -> u64 {
@@ -66,6 +89,7 @@ impl Frozen {
             + std::mem::size_of::<Self>() as u64
             + (row_bytes(&self.branches, false)
                 + row_bytes(&self.selected, false)
+                + row_bytes(&self.assignments, false)
                 + self
                     .branches
                     .iter()
@@ -85,16 +109,26 @@ pub fn pack(rows: &[&Frozen]) -> Result<Packed> {
         (vec![], vec![], vec![], vec![]);
     for (owner, row) in rows.iter().enumerate() {
         ensure!(
-            row.root < row.input.action_features.len() && row.selected.len() == row.branches.len(),
+            row.root < row.input.action_features.len()
+                && row.selected.len() == row.branches.len()
+                && row.assignments.len() == row.branches.len(),
             "aic-learning.frozen-index: invalid root or branch coverage"
         );
         offsets.push(nodes);
         nodes += row.input.node_static.len() as i64;
         selected_roots.push(roots + row.root as i64);
         roots += row.input.action_features.len() as i64;
-        for (branch, &selected) in row.branches.iter().zip(&row.selected) {
+        for (depth, (branch, &selected)) in row.branches.iter().zip(&row.selected).enumerate() {
             ensure!(
-                selected < branch.features.len(),
+                selected < branch.features.len()
+                    && branch.keep.len() == branch.features.len()
+                    && branch
+                        .references
+                        .iter()
+                        .all(|&n| n >= 0 && n < row.input.node_static.len() as i64)
+                    && branch.depth == depth
+                    && row.assignments[depth].terminal == branch.references[1]
+                    && row.assignments[depth].port == branch.features[selected],
                 "aic-learning.frozen-index: invalid port"
             );
             selected_ports.push(alternatives + selected as i64);
@@ -108,7 +142,18 @@ pub fn pack(rows: &[&Frozen]) -> Result<Packed> {
     packed.selected = Tensor::from_slice(&selected_ports);
     packed.factors = branches.len() as i64;
     if !branches.is_empty() {
-        packed.branches = Some(batch::branches(&branches, &offsets, Device::Cpu));
+        let mut tensors = batch::branches(&branches, &offsets, Device::Cpu);
+        batch::assignments(
+            &mut tensors,
+            &branches,
+            &rows
+                .iter()
+                .map(|r| r.assignments.as_slice())
+                .collect::<Vec<_>>(),
+            &offsets,
+            Device::Cpu,
+        );
+        packed.branches = Some(tensors);
     }
     Ok(packed)
 }

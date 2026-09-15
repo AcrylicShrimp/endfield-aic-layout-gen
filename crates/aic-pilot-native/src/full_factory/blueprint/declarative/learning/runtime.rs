@@ -4,6 +4,9 @@ use super::*;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PortGroup {
     pub graph_node: usize,
+    /// Admission equivalence classes; refinements by current features still apply.
+    pub equivalence: usize,
+    pub port_equivalences: Vec<usize>,
     pub ports: Vec<String>,
     pub features: BTreeMap<i64, (usize, usize)>,
 }
@@ -45,6 +48,8 @@ impl Runtime {
                         .iter()
                         .map(|g| PortGroup {
                             graph_node: learning.tables.nodes[g.node],
+                            equivalence: g.equivalence,
+                            port_equivalences: g.port_equivalences.clone(),
                             ports: g.ports.clone(),
                             features: g.features.clone(),
                         })

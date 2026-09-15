@@ -12,6 +12,13 @@ use std::collections::BTreeSet;
 #[cfg(test)]
 mod tests;
 
+#[cfg(test)]
+thread_local! { static PAIR_ROWS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) }; }
+#[cfg(test)]
+pub(crate) fn take_pair_rows() -> usize {
+    PAIR_ROWS.with(|n| n.replace(0))
+}
+
 pub struct Model {
     pub config: ModelConfig,
     pub parameters: Vec<(String, Tensor)>,
@@ -49,10 +56,12 @@ impl Model {
             ("critic.2".into(), w, 1),
             (
                 "port_actor.0".into(),
-                w * 3 + config.action_features + config.port_features * 2,
+                w * 4 + config.action_features + config.port_features + 1,
                 w,
             ),
             ("port_actor.2".into(), w, 1),
+            ("port_pair.0".into(), w + config.port_features, w),
+            ("port_pair.2".into(), w, w),
         ]);
         let mut order = vec![];
         let mut tensors = Tensors::new();
@@ -117,10 +126,12 @@ impl Model {
             ("critic.2".to_owned(), w, 1),
             (
                 "port_actor.0".to_owned(),
-                w * 3 + config.action_features + config.port_features * 2,
+                w * 4 + config.action_features + config.port_features + 1,
                 w,
             ),
             ("port_actor.2".to_owned(), w, 1),
+            ("port_pair.0".to_owned(), w + config.port_features, w),
+            ("port_pair.2".to_owned(), w, w),
         ];
         for i in 0..config.message_rounds {
             layers.push((format!("messages.{i}"), w * 3, w));
@@ -276,18 +287,56 @@ impl Model {
             values,
         }
     }
+    pub fn pairs(&self, nodes: &Tensor, terminals: &Tensor, ports: &Tensor) -> Tensor {
+        #[cfg(test)]
+        PAIR_ROWS.with(|n| n.set(n.get() + terminals.size()[0] as usize));
+        self.linear(
+            "port_pair.2",
+            &self
+                .linear(
+                    "port_pair.0",
+                    &Tensor::cat(
+                        &[nodes.index_select(0, terminals), ports.shallow_clone()],
+                        -1,
+                    ),
+                )
+                .tanh(),
+        )
+    }
+    fn prefix_summary(&self, nodes: &Tensor, b: &Tensors) -> Tensor {
+        let pairs = self.pairs(nodes, &b["assignment_terminals"], &b["assignment_ports"]);
+        // Double accumulation prevents cancellation between packed banks without
+        // padding or repeated pair encoding. Gradients still reach float parameters.
+        let cumulative = Tensor::cat(
+            &[
+                Tensor::zeros([1, self.config.width], (Kind::Double, nodes.device())),
+                pairs.to_kind(Kind::Double).cumsum(0, Kind::Double),
+            ],
+            0,
+        );
+        let depth = (&b["prefix_end"] - &b["prefix_start"])
+            .to_kind(Kind::Double)
+            .unsqueeze(-1);
+        let sum = cumulative.index_select(0, &b["prefix_end"])
+            - cumulative.index_select(0, &b["prefix_start"]);
+        Tensor::cat(&[sum / depth.clamp_min(1), depth.log1p()], -1).to_kind(Kind::Float)
+    }
     pub fn ports(&self, nodes: &Tensor, pooled: &Tensor, branches: &Tensors) -> Tensor {
         let count = branches["features"].size()[0];
         let refs = nodes
             .index(&[Some(&branches["references"])])
             .view([count, -1]);
+        let summary = branches
+            .get("prefix_summary")
+            .map(Tensor::shallow_clone)
+            .unwrap_or_else(|| self.prefix_summary(nodes, branches));
         let port_features = Tensor::cat(
             &[
                 refs,
                 pooled.index(&[Some(&branches["owner"])]),
                 branches["root_features"].shallow_clone(),
                 branches["features"].shallow_clone(),
-                branches["history"].shallow_clone(),
+                summary.index_select(0, &branches["action_graph"]),
             ],
             -1,
         );

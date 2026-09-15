@@ -196,7 +196,7 @@ this document. The pending extraction measurement remains separate paused work.
 - Plan 01 implements the full translation correction: canonical native working
   geometry, signed proposals/padding, checked span arithmetic, actual physical
   snapshot conversion and translation-equivalence tests. Its execution record
-  owns measured evidence. The remaining prefix, prior and evaluation
+  owns measured evidence. The remaining prior and evaluation
   findings above are still pending their corresponding plans; this historical
   audit is not a claim that all corrections have been implemented.
 
@@ -206,3 +206,11 @@ this document. The pending extraction measurement remains separate paused work.
   native invariance tests, CPU/CUDA packing/gradient checks, actual replay restore,
   small/large byte measurements and bounded CLI evidence. Learning-quality effects
   remain unmeasured until the integrated readiness comparison.
+
+- Plan 03 replaces the unassociated prefix mean with a terminal-bound nonlinear
+  pair encoder, one owned assignment bank and incremental used-port membership.
+  Physical admission order removes opaque-label ordering. Its execution record
+  covers complete action distributions with equivalent labels, online/frozen
+  CPU/CUDA likelihoods and gradients, actual sparse publication/restore and the
+  next optimizer update. Plans 04–06 still own prior correction, evaluation
+  reservations and measured learning readiness.

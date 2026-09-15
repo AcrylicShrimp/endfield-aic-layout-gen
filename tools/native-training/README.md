@@ -88,8 +88,29 @@ work budgets still refresh, and previously collected rows remain immutable.
 
 Observation limits count actual vector capacities across live/retained inputs,
 once per shared input owner, before collecting another row. Compact replay
-counts retained numerical lengths and branch/reference storage. Neither estimate
+counts retained numerical lengths, branch/reference storage and the selected
+assignment bank. Neither estimate
 replaces the existing process RSS guard.
+
+## Conditional port choices
+
+Terminal factors follow their original physical facility-local port geometry,
+role, transport, exact rate and immutable endpoint incidence. Port alternatives
+follow base catalog geometry and original-terminal membership. IDs remain lookup
+keys. Admission records explicit equivalence classes; current selection features
+refine these when comparing interchangeable labels. Native execution still
+receives every exact terminal-to-port assignment.
+
+Each selected action retains one bank of `(terminal graph node, 11 port features)`
+records. A factor at depth `d` uses records `[0,d)`. A nonlinear width-40 pair
+encoder combines each terminal embedding with its selected port before taking a
+prefix mean and appending `ln(1+d)`. Empty prefixes are zero. Collection encodes
+each new pair once; PPO and sparse replay recompute every pair with gradients
+once, then use prefix sums and gather one summary per factor for its alternatives.
+The cumulative sum uses double precision to avoid cancellation between packed
+banks; model features and parameters remain float. No train-time embeddings or
+repeated copies of growing histories are saved. See [plan 03](../../docs/plans/2026-09-15.03-terminal-bound-port-prefix.md)
+for the binding, ownership and restore checks.
 
 ## Outputs and recovery
 
@@ -128,7 +149,7 @@ replay, optimizer or curriculum. Incomplete evaluation cannot replace the best.
 ## Migration and bounded comparison
 
 Training configurations use `aic-training-v1`. Checkpoint manifests use
-`aic-training-checkpoint-v5`; this is the single learned-state format version.
+`aic-training-checkpoint-v6`; this is the single learned-state format version.
 When model input, action or replay meaning changes, increment that version even
 if tensor shapes stay the same. Existing config binding covers runtime settings.
 Restore checks the manifest version before loading learner, Adam, RNG, best-model

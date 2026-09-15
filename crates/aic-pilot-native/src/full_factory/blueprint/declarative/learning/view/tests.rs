@@ -180,7 +180,7 @@ fn wall_schedule_does_not_change_inputs_and_unchanged_actions_refresh_budgets() 
         "declarative.learning-port"
     );
 }
-fn zero_length_session() -> Session {
+pub(super) fn zero_length_session() -> Session {
     use aic_data::layouts::{TransportNetworkSegment, TransportNetworkTerminal};
     let base = session();
     let mut w = base.original.clone();
@@ -614,6 +614,8 @@ fn export_physical_size_cases() {
                         .iter()
                         .map(|g| runtime::PortGroup {
                             graph_node: l.tables.nodes[g.node],
+                            equivalence: g.equivalence,
+                            port_equivalences: g.port_equivalences.clone(),
                             ports: g.ports.clone(),
                             features: g.features.clone(),
                         })

@@ -1,3 +1,4 @@
+mod prefix;
 use super::{curriculum, frozen::Frozen, replay, schedule};
 use crate::TORCH_TEST as TORCH;
 use crate::{

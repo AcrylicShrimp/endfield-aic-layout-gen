@@ -137,9 +137,7 @@ fn canonical(
     );
     json!({"nodes":nodes,"edges":edges,"actions":actions,"ports":sorted(input.port_features.iter().map(|p|json!(p)).collect()),"globals":input.global_features})
 }
-#[test]
-fn opaque_renaming_and_input_permutations_preserve_physical_arrays() {
-    let original = session();
+fn renamed(original: &Session) -> (Session, BTreeMap<String, String>) {
     let c = &original.catalogs.data;
     let raw = json!({"witness":original.original,"facilities":c.facilities.catalog(),"recipes":{"schema_version":c.recipes.recipe_book().schema_version,"external_items":c.recipes.recipe_book().external_items,"recipes":c.recipes.recipe_book().recipes},
         "items":c.items.catalog(),"transports":c.transports.catalog(),"components":c.components.catalog()});
@@ -225,6 +223,12 @@ fn opaque_renaming_and_input_permutations_preserve_physical_arrays() {
         original.config.clone(),
     )
     .unwrap();
+    (changed, inverse)
+}
+#[test]
+fn opaque_renaming_and_input_permutations_preserve_physical_arrays() {
+    let original = session();
+    let (changed, inverse) = renamed(&original);
     let mut a = Learning::new(&original, options()).unwrap();
     let mut b = Learning::new(&changed, options()).unwrap();
     let x = a.observe(&original).unwrap();
@@ -233,4 +237,198 @@ fn opaque_renaming_and_input_permutations_preserve_physical_arrays() {
         canonical(&original, &a, &x, &BTreeMap::new()),
         canonical(&changed, &b, &y, &inverse)
     );
+}
+
+fn interchangeable_unused_ports() -> Session {
+    let s = super::tests::zero_length_session();
+    let mut raw = s.catalogs.data.facilities.catalog().clone();
+    let owner = &s.blueprint.facilities[0];
+    let definition = raw
+        .facilities
+        .iter_mut()
+        .find(|f| f.id == owner.facility)
+        .unwrap();
+    let used: BTreeSet<_> = s
+        .blueprint
+        .nodes
+        .iter()
+        .filter_map(|n| n.terminal.as_ref())
+        .filter_map(|t| match &t.endpoint {
+            TransportNetworkEndpoint::Facility { instance, port }
+                if instance == &owner.instance =>
+            {
+                Some(port.as_str())
+            }
+            _ => None,
+        })
+        .collect();
+    let mut duplicate = definition
+        .ports
+        .iter()
+        .find(|p| !used.contains(p.id.as_str()))
+        .unwrap()
+        .clone();
+    duplicate.id = "physically-identical-unused".into();
+    definition.ports.push(duplicate);
+    let d = &s.catalogs.data;
+    let catalogs = FactoryEditCatalogs {
+        facilities: ValidatedFacilityCatalog::try_from_catalog(raw).unwrap(),
+        recipes: d.recipes.clone(),
+        items: d.items.clone(),
+        transports: d.transports.clone(),
+        components: d.components.clone(),
+    };
+    Session::new(
+        s.request,
+        s.original,
+        Arc::new(crate::input::Catalogs::new(catalogs)),
+        s.config,
+    )
+    .unwrap()
+}
+fn enumerable(s: &Session, inverse: &BTreeMap<String, String>) -> Value {
+    let mut l = Learning::new(
+        s,
+        Options {
+            translation_steps: vec![],
+            band_counts: vec![],
+            masking: None,
+        },
+    )
+    .unwrap();
+    let input = l.observe(s).unwrap();
+    let name = |s: &str| inverse.get(s).cloned().unwrap_or_else(|| s.to_owned());
+    let domain = runtime::Domain {
+        groups: l
+            .facilities
+            .iter()
+            .map(|f| {
+                f.groups
+                    .iter()
+                    .map(|g| runtime::PortGroup {
+                        graph_node: l.tables.nodes[g.node],
+                        equivalence: g.equivalence,
+                        port_equivalences: g.port_equivalences.clone(),
+                        ports: g.ports.clone(),
+                        features: g.features.clone(),
+                    })
+                    .collect()
+            })
+            .collect(),
+    };
+    let mut selections = vec![];
+    for (root, r) in l.roots.iter().enumerate() {
+        let groups = &l.facilities[r.owner].groups;
+        let mut prefixes = vec![vec![]];
+        for (depth, g) in groups.iter().enumerate() {
+            prefixes = prefixes
+                .into_iter()
+                .flat_map(|prefix| {
+                    g.ports.iter().enumerate().filter_map(move |(p, name)| {
+                        if prefix
+                            .iter()
+                            .enumerate()
+                            .any(|(i, &index)| &groups[i].ports[index] == name)
+                        {
+                            return None;
+                        }
+                        let mut next = prefix.clone();
+                        next.push(p);
+                        Some(next)
+                    })
+                })
+                .collect();
+            assert!(
+                depth < 4 && prefixes.len() < 1000,
+                "explicit tiny enumeration only"
+            );
+        }
+        for choices in prefixes {
+            let decision = l.selected(s, l.handle, root, &choices).unwrap();
+            let Edit::Place {
+                instance,
+                x,
+                y,
+                rotation,
+                ports,
+            } = decision.action
+            else {
+                panic!("expected placement")
+            };
+            let mut mapping = vec![];
+            for (g, (&choice, selected)) in groups.iter().zip(choices.iter().zip(ports)) {
+                assert_eq!(selected.node, g.node);
+                assert_eq!(selected.port, g.ports[choice]);
+                let features = input.port_features[g.features[&rotation].0 + choice];
+                mapping.push(json!([
+                    g.equivalence,
+                    g.port_equivalences[choice],
+                    features
+                ]));
+            }
+            mapping.sort_by_key(Value::to_string);
+            selections.push(json!({"root":root,"ports":choices,"physical":json!([name(&instance),x,y,rotation,mapping]).to_string()}));
+        }
+    }
+    json!({"input":input,"domain":domain,"selections":selections})
+}
+#[test]
+fn canonical_order_resolves_exact_native_slots_and_explicit_equivalence() {
+    let original = interchangeable_unused_ports();
+    let (changed, inverse) = renamed(&original);
+    let a = enumerable(&original, &BTreeMap::new());
+    let b = enumerable(&changed, &inverse);
+    let physical = |v: &Value| {
+        let mut keys = v["selections"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|s| s["physical"].as_str().unwrap().to_owned())
+            .collect::<Vec<_>>();
+        keys.sort();
+        keys
+    };
+    let keys = physical(&a);
+    assert_eq!(keys, physical(&b));
+    assert!(
+        keys.windows(2).any(|w| w[0] == w[1]),
+        "must contain interchangeable labels"
+    );
+    let mut l = Learning::new(&original, options()).unwrap();
+    l.observe(&original).unwrap();
+    let mut restored = Session::from_checkpoint(
+        &original.checkpoint().to_string(),
+        original.catalogs.clone(),
+    )
+    .unwrap();
+    // Admission order depends on original physical data, not the restored revision.
+    restored.attempts += 1;
+    let r = Learning::new(&restored, options()).unwrap();
+    for (a, b) in l.facilities.iter().zip(&r.facilities) {
+        assert_eq!(
+            a.groups
+                .iter()
+                .map(|g| (&g.ports, g.node, &g.features))
+                .collect::<Vec<_>>(),
+            b.groups
+                .iter()
+                .map(|g| (&g.ports, g.node, &g.features))
+                .collect::<Vec<_>>()
+        );
+    }
+}
+#[test]
+#[ignore = "requires AIC_ORDER_CASES path for explicit model distribution verification"]
+fn export_enumerable_physical_action_domains() {
+    let original = interchangeable_unused_ports();
+    let (changed, inverse) = renamed(&original);
+    let cases = [
+        enumerable(&original, &BTreeMap::new()),
+        enumerable(&changed, &inverse),
+    ];
+    std::fs::write(
+        std::env::var("AIC_ORDER_CASES").unwrap(),
+        serde_json::to_vec(&cases).unwrap(),
+    )
+    .unwrap();
 }

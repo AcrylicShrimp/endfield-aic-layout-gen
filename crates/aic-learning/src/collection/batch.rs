@@ -113,56 +113,87 @@ pub fn graph_inputs(rows: &[&aic_pilot_native::learning::Input], device: Device)
     })
 }
 
-/// A selected prefix's compatible alternatives, in original port order.
+#[cfg(test)]
+thread_local! { static INSERTIONS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) }; }
+#[cfg(test)]
+pub(crate) fn take_insertions() -> usize {
+    INSERTIONS.with(|n| n.replace(0))
+}
+
+/// Owned physical binding. Embeddings are recomputed with current parameters.
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct Assignment {
+    pub terminal: i64,
+    pub port: [f32; PORT_FEATURES],
+}
+
+#[derive(Default)]
+pub struct Prefix<'a> {
+    pub assignments: Vec<Assignment>,
+    used: std::collections::HashSet<&'a str>,
+}
+impl<'a> Prefix<'a> {
+    pub fn append(
+        &mut self,
+        row: &'a Observation,
+        root: usize,
+        branch: &Branch,
+        selected: usize,
+    ) -> Result<()> {
+        let meta = row.input.root_meta[root];
+        let depth = self.assignments.len();
+        ensure!(
+            branch.depth == depth,
+            "aic-learning.port-prefix: stale depth"
+        );
+        let group = &row.domain.groups[meta[1] as usize][depth];
+        let choice = *branch
+            .keep
+            .get(selected)
+            .ok_or_else(|| anyhow::anyhow!("aic-learning.port-prefix: invalid selection"))?;
+        #[cfg(test)]
+        INSERTIONS.with(|n| n.set(n.get() + 1));
+        ensure!(
+            self.used.insert(group.ports[choice].as_str()),
+            "aic-learning.port-prefix: duplicate port"
+        );
+        self.assignments.push(Assignment {
+            terminal: group.graph_node as i64,
+            port: branch.features[selected],
+        });
+        Ok(())
+    }
+}
+
+/// A factor's compatible alternatives and range [0, depth) in its owner's bank.
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct Branch {
     pub features: Vec<[f32; PORT_FEATURES]>,
-    pub history: [f32; PORT_FEATURES],
+    pub depth: usize,
     pub root_features: [f32; ACTION_FEATURES],
     pub references: [i64; 2],
     pub owner: usize,
     pub keep: Vec<usize>,
 }
-pub fn branch(
-    row: &Observation,
-    owner: usize,
-    root: usize,
-    choices: &[usize],
-    depth: usize,
-) -> Result<Branch> {
-    let meta = row.input.root_meta[root];
+pub fn branch(row: &Observation, owner: usize, root: usize, prefix: &Prefix<'_>) -> Result<Branch> {
+    let meta = *row
+        .input
+        .root_meta
+        .get(root)
+        .ok_or_else(|| anyhow::anyhow!("aic-learning.port-root: invalid root"))?;
     ensure!(meta[0] == 0, "aic-learning.port-root: expected placement");
-    let facility = meta[1] as usize;
-    let groups = &row.domain.groups[facility];
+    let depth = prefix.assignments.len();
+    let groups = &row.domain.groups[meta[1] as usize];
     ensure!(
-        depth < groups.len() && choices.len() >= depth,
+        depth < groups.len(),
         "aic-learning.port-prefix: invalid depth"
     );
-    let mut used = std::collections::BTreeSet::new();
-    let mut history = [0f32; PORT_FEATURES];
-    for (group, &choice) in groups[..depth].iter().zip(choices) {
-        ensure!(
-            choice < group.ports.len() && used.insert(group.ports[choice].as_str()),
-            "aic-learning.port-prefix: duplicate or invalid port"
-        );
-        let start = group.features[&meta[2]].0;
-        for (h, f) in history
-            .iter_mut()
-            .zip(row.input.port_features[start + choice])
-        {
-            *h += f;
-        }
-    }
-    // The established head receives the mean previous-port feature, not its sum.
-    for value in &mut history {
-        *value /= depth.max(1) as f32;
-    }
     let group = &groups[depth];
     let keep: Vec<_> = group
         .ports
         .iter()
         .enumerate()
-        .filter(|(_, p)| !used.contains(p.as_str()))
+        .filter(|(_, p)| !prefix.used.contains(p.as_str()))
         .map(|(i, _)| i)
         .collect();
     ensure!(
@@ -175,7 +206,7 @@ pub fn branch(
             .iter()
             .map(|i| row.input.port_features[start + i])
             .collect(),
-        history,
+        depth,
         root_features: row.input.action_features[root],
         references: [
             row.input.action_references[root][0],
@@ -187,12 +218,11 @@ pub fn branch(
 }
 pub fn branches(rows: &[Branch], offsets: &[i64], device: Device) -> Tensors {
     let mut g = Tensors::new();
-    let (mut features, mut history, mut roots, mut references, mut owners, mut groups) =
-        (vec![], vec![], vec![], vec![], vec![], vec![]);
+    let (mut features, mut roots, mut references, mut owners, mut groups) =
+        (vec![], vec![], vec![], vec![], vec![]);
     for (i, row) in rows.iter().enumerate() {
         for f in &row.features {
             features.extend_from_slice(f);
-            history.extend_from_slice(&row.history);
             roots.extend_from_slice(&row.root_features);
             references.extend(row.references.map(|n| n + offsets[row.owner]));
             owners.push(row.owner as i64);
@@ -202,7 +232,6 @@ pub fn branches(rows: &[Branch], offsets: &[i64], device: Device) -> Tensors {
     let n = owners.len() as i64;
     for (name, data, width) in [
         ("features", features, PORT_FEATURES as i64),
-        ("history", history, PORT_FEATURES as i64),
         ("root_features", roots, ACTION_FEATURES as i64),
     ] {
         g.insert(
@@ -235,6 +264,47 @@ pub fn branches(rows: &[Branch], offsets: &[i64], device: Device) -> Tensors {
     );
     g
 }
+/// Pack each assignment once, with factor prefix bounds independent of alternatives.
+pub fn assignments(
+    g: &mut Tensors,
+    rows: &[Branch],
+    banks: &[&[Assignment]],
+    offsets: &[i64],
+    device: Device,
+) {
+    let (mut terminals, mut ports, mut owners, mut starts) = (vec![], vec![], vec![], vec![]);
+    for (owner, bank) in banks.iter().enumerate() {
+        starts.push(terminals.len() as i64);
+        for pair in *bank {
+            terminals.push(pair.terminal + offsets[owner]);
+            ports.extend_from_slice(&pair.port);
+            owners.push(owner as i64);
+        }
+    }
+    let n = terminals.len() as i64;
+    g.insert(
+        "assignment_ports".into(),
+        Tensor::from_slice(&ports)
+            .view([n, PORT_FEATURES as i64])
+            .to_device(device),
+    );
+    for (name, data) in [
+        ("assignment_terminals", terminals),
+        ("assignment_owners", owners),
+        (
+            "prefix_start",
+            rows.iter().map(|r| starts[r.owner]).collect(),
+        ),
+        (
+            "prefix_end",
+            rows.iter()
+                .map(|r| starts[r.owner] + r.depth as i64)
+                .collect(),
+        ),
+    ] {
+        g.insert(name.into(), Tensor::from_slice(&data).to_device(device));
+    }
+}
 pub fn offsets(rows: &[&Observation]) -> Vec<i64> {
     let mut n = 0;
     rows.iter()
@@ -253,7 +323,7 @@ mod tests {
     use std::sync::Arc;
 
     #[test]
-    fn multiport_prefix_uses_mean_and_excludes_used_names() {
+    fn multiport_prefix_retains_bindings_and_excludes_used_names() {
         let input = Input {
             pending: 0,
             conflicts: 0,
@@ -283,6 +353,8 @@ mod tests {
                     (0..3)
                         .map(|i| PortGroup {
                             graph_node: i + 1,
+                            equivalence: i,
+                            port_equivalences: vec![0, 1, 2],
                             ports: vec!["a".into(), "b".into(), "c".into()],
                             features: [(90, (0, 3))].into_iter().collect(),
                         })
@@ -295,14 +367,34 @@ mod tests {
             attempts: 0,
             done: false,
         };
-        let prefix = branch(&row, 0, 0, &[0, 1], 2).unwrap();
-        assert_eq!(prefix.history, [3.; PORT_FEATURES]);
-        assert_eq!(prefix.keep, vec![2]);
-        assert_eq!(prefix.features, vec![[8.; PORT_FEATURES]]);
-        assert!(branch(&row, 0, 0, &[0, 0], 2).is_err());
+        let mut prefix = Prefix::default();
+        let first = branch(&row, 0, 0, &prefix).unwrap();
+        assert_eq!(first.depth, 0);
+        assert!(prefix.append(&row, 0, &first, 3).is_err());
+        prefix.append(&row, 0, &first, 1).unwrap();
+        assert!(prefix.append(&row, 0, &first, 0).is_err());
+        let second = branch(&row, 0, 0, &prefix).unwrap();
+        assert_eq!(second.keep, vec![0, 2]);
+        prefix.append(&row, 0, &second, 0).unwrap();
+        let third = branch(&row, 0, 0, &prefix).unwrap();
+        assert_eq!(third.depth, 2);
+        assert_eq!(third.keep, vec![2]);
         assert_eq!(
-            branch(&row, 0, 0, &[], 0).unwrap().history,
-            [0.; PORT_FEATURES]
+            prefix.assignments,
+            vec![
+                Assignment {
+                    terminal: 1,
+                    port: [4.; PORT_FEATURES]
+                },
+                Assignment {
+                    terminal: 2,
+                    port: [2.; PORT_FEATURES]
+                }
+            ]
         );
+        assert_eq!(prefix.used.len(), 2);
+        prefix.append(&row, 0, &third, 0).unwrap();
+        assert_eq!(prefix.assignments.len(), 3);
+        assert!(branch(&row, 0, 0, &prefix).is_err());
     }
 }

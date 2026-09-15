@@ -4,7 +4,7 @@ use crate::model::{Model, distribution};
 use aic_pilot_native::learning::Observation;
 use aic_torch::{
     Generator,
-    tch::{Device, Tensor, no_grad},
+    tch::{Device, Kind, Tensor, no_grad},
 };
 use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
@@ -61,6 +61,11 @@ pub fn sample_with(
             offset += count;
         }
         let offsets = batch::offsets(rows);
+        let mut prefixes: Vec<_> = rows.iter().map(|_| batch::Prefix::default()).collect();
+        let mut sums = Tensor::zeros(
+            [rows.len() as i64, model.config.width],
+            (Kind::Double, device),
+        );
         let mut depth = 0;
         loop {
             let mut branches = Vec::new();
@@ -68,19 +73,29 @@ pub fn sample_with(
                 let choice = &choices[owner];
                 let meta = row.input.root_meta[choice.root];
                 if meta[0] == 0 && depth < row.domain.groups[meta[1] as usize].len() {
-                    branches.push(batch::branch(
-                        row,
-                        owner,
-                        choice.root,
-                        &choice.ports,
-                        depth,
-                    )?);
+                    branches.push(batch::branch(row, owner, choice.root, &prefixes[owner])?);
                 }
             }
             if branches.is_empty() {
                 break;
             }
-            let packed = batch::branches(&branches, &offsets, device);
+            let mut packed = batch::branches(&branches, &offsets, device);
+            let owners =
+                Tensor::from_slice(&branches.iter().map(|b| b.owner as i64).collect::<Vec<_>>())
+                    .to_device(device);
+            let summary = Tensor::cat(
+                &[
+                    sums.index_select(0, &owners) / depth.max(1) as f64,
+                    Tensor::full(
+                        [branches.len() as i64, 1],
+                        (depth as f64).ln_1p(),
+                        (Kind::Double, device),
+                    ),
+                ],
+                -1,
+            )
+            .to_kind(Kind::Float);
+            packed.insert("prefix_summary".into(), summary);
             let logits = model.ports(&prediction.nodes, &prediction.pooled, &packed);
             let (logp, entropy) = distribution(&logits, &packed, branches.len() as i64);
             let logp = logp.to_device(Device::Cpu);
@@ -91,11 +106,34 @@ pub fn sample_with(
                 let selected =
                     i64::try_from(categorical(branch.owner, &logp.narrow(0, offset, n).exp())?)?;
                 let choice = &mut choices[branch.owner];
+                prefixes[branch.owner].append(
+                    rows[branch.owner],
+                    choice.root,
+                    branch,
+                    selected as usize,
+                )?;
                 choice.ports.push(branch.keep[selected as usize]);
                 choice.old_logp += logp.double_value(&[offset + selected]);
                 choice.entropy += entropy[i] as f64;
                 offset += n;
             }
+            let mut terminals = Vec::with_capacity(branches.len());
+            let mut ports = Vec::with_capacity(
+                branches.len() * aic_pilot_native::learning::schema::PORT_FEATURES,
+            );
+            for branch in &branches {
+                let pair = prefixes[branch.owner].assignments.last().unwrap();
+                terminals.push(pair.terminal + offsets[branch.owner]);
+                ports.extend_from_slice(&pair.port);
+            }
+            let encoded = model.pairs(
+                &prediction.nodes,
+                &Tensor::from_slice(&terminals).to_device(device),
+                &Tensor::from_slice(&ports)
+                    .view([branches.len() as i64, model.config.port_features])
+                    .to_device(device),
+            );
+            sums = sums.index_add(0, &owners, &encoded.to_kind(Kind::Double));
             depth += 1;
         }
         ensure!(

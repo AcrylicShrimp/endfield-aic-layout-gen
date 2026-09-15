@@ -1,6 +1,7 @@
 //! Retained declarative candidates and typed numerical learning inputs.
 
 mod input;
+mod order;
 pub mod schema;
 mod view;
 use schema::*;
@@ -41,6 +42,8 @@ struct Root {
 
 struct Group {
     node: usize,
+    equivalence: usize,
+    port_equivalences: Vec<usize>,
     ports: Vec<String>,
     features: BTreeMap<i64, (usize, usize)>,
 }
@@ -113,7 +116,6 @@ impl Learning {
         }
         let mut facilities = vec![];
         let mut owners = BTreeMap::new();
-        let mut offset = 0;
         for (owner, placement) in session.blueprint.facilities.iter().enumerate() {
             owners.insert(placement.instance.clone(), owner);
             let definition = session
@@ -122,7 +124,8 @@ impl Learning {
                 .facilities
                 .facility(&placement.facility)
                 .unwrap();
-            let rotations = definition.allowed_rotations.clone();
+            let mut rotations = definition.allowed_rotations.clone();
+            rotations.sort_unstable();
             let ports = rotations
                 .iter()
                 .map(|&rotation| {
@@ -152,15 +155,12 @@ impl Learning {
                     })
                     .map(|port| port.id.clone())
                     .collect();
-                let mut features = BTreeMap::new();
-                for &rotation in &rotations {
-                    features.insert(rotation, (offset, offset + choices.len()));
-                    offset += choices.len();
-                }
                 groups.push(Group {
                     node: node.id,
+                    equivalence: 0,
+                    port_equivalences: vec![],
                     ports: choices,
-                    features,
+                    features: BTreeMap::new(),
                 });
             }
             facilities.push(Facility {
@@ -169,6 +169,7 @@ impl Learning {
                 groups,
             });
         }
+        order::configure(session, &mut facilities);
         let tables = view::Tables::new(session, &facilities)?;
         Ok(Self {
             options,

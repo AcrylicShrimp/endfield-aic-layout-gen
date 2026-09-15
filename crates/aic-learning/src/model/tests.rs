@@ -125,6 +125,8 @@ fn physical_rows() -> Vec<crate::training::frozen::Frozen> {
                         (0..2)
                             .map(|i| PortGroup {
                                 graph_node: i + 1,
+                                equivalence: i,
+                                port_equivalences: vec![0, 1, 2],
                                 ports: vec!["a".into(), "b".into(), "c".into()],
                                 features: [(0, (0, 3))].into_iter().collect(),
                             })
