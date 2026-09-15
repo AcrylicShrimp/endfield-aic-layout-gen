@@ -98,7 +98,7 @@ pub(super) fn configure(session: &Session, facilities: &mut [Facility]) {
             for (j, endpoint) in [edge.source, edge.target].into_iter().enumerate() {
                 let node = &bp.nodes[endpoint];
                 let facility = terminal_owner[endpoint].map(|i| &bp.facilities[i]);
-                let baseline = topology::endpoint_rule(
+                let baseline = crate::physical_editor::endpoint_rule(
                     headings[j],
                     facility.map(|p| (p.rotation, p.rotation, 0)),
                     j,
@@ -129,7 +129,11 @@ pub(super) fn configure(session: &Session, facilities: &mut [Facility]) {
                 ),
             );
         }
-        groups.sort_by(|a, b| terminal_keys[&a.node].cmp(&terminal_keys[&b.node]));
+        debug_assert!(
+            groups
+                .windows(2)
+                .all(|pair| terminal_keys[&pair[0].node] <= terminal_keys[&pair[1].node])
+        );
         let classes = equivalences(
             &groups
                 .iter()
@@ -153,8 +157,11 @@ pub(super) fn configure(session: &Session, facilities: &mut [Facility]) {
             .collect();
         for (g, class) in groups.iter_mut().zip(classes) {
             g.equivalence = class;
-            g.ports
-                .sort_by(|a, b| keys[a.as_str()].cmp(&keys[b.as_str()]));
+            debug_assert!(
+                g.ports
+                    .windows(2)
+                    .all(|pair| keys[pair[0].as_str()] <= keys[pair[1].as_str()])
+            );
             g.port_equivalences = equivalences(
                 &g.ports
                     .iter()
@@ -201,7 +208,7 @@ mod tests {
         let port = &catalog::rotate(definition, 0, Point::default()).2[0];
         let rate = session.blueprint.edges[0].rate;
         let baseline = |heading| {
-            topology::endpoint_rule(Some(heading), Some((90, 0, 0)), 0, false)
+            crate::physical_editor::endpoint_rule(Some(heading), Some((90, 0, 0)), 0, false)
                 .1
                 .unwrap() as i64
         };

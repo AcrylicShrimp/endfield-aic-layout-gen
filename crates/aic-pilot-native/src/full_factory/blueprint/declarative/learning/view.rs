@@ -63,9 +63,8 @@ fn rotations(row: &mut [f32; NODE_STATIC], values: &[i64]) {
 impl Tables {
     pub fn new(session: &Session, facilities: &[Facility]) -> Result<Self> {
         let bp = &session.blueprint;
-        let catalogs = &session.catalogs.data;
         let exact_capacities = [TransportKind::Belt, TransportKind::Pipe]
-            .map(|t| capacity(catalogs.transports.capacity(t)))
+            .map(|kind| capacity(&session.common_transport(kind).capacity))
             .into_iter()
             .collect::<Result<Vec<_>>>()?;
         let capacities = [rate(exact_capacities[0]), rate(exact_capacities[1])];
@@ -74,10 +73,7 @@ impl Tables {
         for f in &bp.facilities {
             let id = node(&mut fixed, n::FACILITY);
             facility_map.push(id);
-            let d = catalogs
-                .facilities
-                .facility(&f.facility)
-                .ok_or_else(|| error("learning-catalog", "Missing facility", f.facility.clone()))?;
+            let d = session.common_facility(&f.facility);
             let row = &mut fixed.node_static[id];
             row[n::WIDTH] = d.footprint.width as f32;
             row[n::HEIGHT] = d.footprint.height as f32;
@@ -85,19 +81,8 @@ impl Tables {
         }
         let mut nodes = vec![];
         let mut network_transport = vec![];
-        for network in &bp.networks {
-            let kind = match network["transport"].as_str() {
-                Some("belt") => 0,
-                Some("pipe") => 1,
-                _ => {
-                    return Err(error(
-                        "learning-transport",
-                        "Missing transport",
-                        network["id"].clone(),
-                    ));
-                }
-            };
-            network_transport.push(kind);
+        for network in &session.common_problem.networks {
+            network_transport.push(transport(network.transport));
         }
         for original in &bp.nodes {
             let kind = match original.terminal.as_ref().map(|t| &t.endpoint) {
@@ -119,9 +104,7 @@ impl Tables {
         for c in &bp.components {
             let id = node(&mut fixed, n::COMPONENT);
             components.insert(c.id.clone(), id);
-            let d = catalogs.components.component(&c.component).ok_or_else(|| {
-                error("learning-catalog", "Missing component", c.component.clone())
-            })?;
+            let d = session.common_component(&c.component);
             let exact = capacity(&d.capacity)?;
             component_capacities.insert(c.id.clone(), exact);
             let row = &mut fixed.node_static[id];
@@ -182,16 +165,9 @@ impl Tables {
             networks.push(node(&mut fixed, n::NETWORK));
         }
         let mut commodities = BTreeMap::<String, usize>::new();
-        for network in &bp.networks {
-            let item = network["item"].as_str().ok_or_else(|| {
-                error(
-                    "learning-commodity",
-                    "Missing commodity",
-                    network["id"].clone(),
-                )
-            })?;
-            if !commodities.contains_key(item) {
-                commodities.insert(item.to_owned(), node(&mut fixed, n::COMMODITY));
+        for network in &session.common_problem.networks {
+            if !commodities.contains_key(&network.commodity) {
+                commodities.insert(network.commodity.clone(), node(&mut fixed, n::COMMODITY));
             }
         }
         // Transport edges retain native edge indices for path ownership.
@@ -341,14 +317,7 @@ impl Learning {
         }
         for (c, p) in bp.components.iter().zip(&session.state.components) {
             let id = self.tables.components[&c.id];
-            let d = session
-                .catalogs
-                .data
-                .components
-                .component(&c.component)
-                .ok_or_else(|| {
-                    error("learning-catalog", "Missing component", c.component.clone())
-                })?;
+            let d = session.common_component(&c.component);
             let (w, h) = if c.rotation % 180 == 0 {
                 (d.footprint.width, d.footprint.height)
             } else {
@@ -398,7 +367,7 @@ impl Learning {
         }
         for edge in &bp.edges {
             let (current, baseline) = self.endpoint_rules(session, edge)?;
-            let (first, last) = topology::query_directions(
+            let (first, last) = crate::physical_editor::query_directions(
                 edge.zero_length,
                 positions[edge.source],
                 positions[edge.target],
@@ -470,7 +439,7 @@ impl Learning {
                 reassigned = selected != port;
             }
             (current[side], baseline[side]) =
-                topology::endpoint_rule(recorded, facility, side, reassigned);
+                crate::physical_editor::endpoint_rule(recorded, facility, side, reassigned);
         }
         Ok((current, baseline))
     }

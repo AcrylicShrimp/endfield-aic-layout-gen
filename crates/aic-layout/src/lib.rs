@@ -1,5 +1,6 @@
 //! Shared physical catalogs, geometry, routed layouts and boundary validation.
 //! No solver, learner, game constants or runtime catalog I/O in hot operations.
+pub mod editor;
 pub mod facilities;
 pub mod geometry;
 pub mod logistics;

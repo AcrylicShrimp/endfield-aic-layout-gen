@@ -4,21 +4,6 @@ use indexmap::IndexSet;
 
 use super::*;
 
-impl Axis {
-    fn get(self, p: Point) -> i64 {
-        match self {
-            Self::X => p.x,
-            Self::Y => p.y,
-        }
-    }
-    fn set(self, p: &mut Point, value: i64) {
-        match self {
-            Self::X => p.x = value,
-            Self::Y => p.y = value,
-        }
-    }
-}
-
 impl Session {
     fn facility_nodes(&self, instance: &str) -> Vec<usize> {
         self.blueprint
@@ -150,206 +135,64 @@ impl Session {
 
     pub(super) fn check_state(&self, state: &State) -> Result<()> {
         self.check_entities(state)?;
-        let bp = self.routing_blueprint(state)?;
-        for edge in &bp.edges {
-            if let Some(cells) = &state.geometry.paths[edge.id] {
-                geometry::check_path(&bp, &state.geometry, &self.catalogs.data, edge, cells)?;
-            }
-        }
-        Ok(())
+        crate::physical_editor::validate_draft(&self.common_problem, &common::draft(state))
+            .map_err(|failure| error("common-state", failure.message, failure.entity))
     }
 
-    pub(super) fn detach(&self, state: &mut State) -> Result<()> {
-        let bp = self.routing_blueprint(state)?;
-        let detached: Vec<_> = bp
-            .edges
-            .iter()
-            .filter(|e| {
-                state.geometry.paths[e.id].as_ref().is_some_and(|cells| {
-                    geometry::check_path(&bp, &state.geometry, &self.catalogs.data, e, cells)
-                        .is_err()
-                })
-            })
-            .map(|e| e.id)
-            .collect();
-        for id in detached {
-            state.geometry.paths[id] = None;
-        }
-        Ok(())
-    }
-
-    pub(super) fn edit(&self, state: &mut State, action: Edit) -> Result<()> {
-        match action {
+    pub(super) fn edit(
+        &self,
+        draft: &mut aic_layout::editor::PhysicalDraftV1,
+        action: Edit,
+    ) -> Result<()> {
+        let action = match action {
             Edit::Place {
                 instance,
                 x,
                 y,
                 rotation,
                 ports,
-            } => {
-                let ids = self.facility_nodes(&instance);
-                if ids.iter().copied().collect::<IndexSet<_>>()
-                    != ports.iter().map(|p| p.node).collect::<IndexSet<_>>()
-                    || ports.len() != ids.len()
-                {
-                    return Err(error(
-                        "port-assignment",
-                        "Place requires exactly this facility's complete original terminal-to-port mapping",
-                        instance,
-                    ));
-                }
-                let p = state
-                    .geometry
-                    .placements
-                    .iter_mut()
-                    .find(|p| p.instance == instance)
-                    .ok_or_else(|| {
-                        error("facility", "Unknown original facility ID", instance.clone())
-                    })?;
-                let definition = self.catalogs.data.facilities.facility(&p.facility).unwrap();
-                // Reject before rotation arithmetic; arbitrary integers are not catalog data.
-                if !definition.allowed_rotations.contains(&rotation) {
-                    return Err(error(
-                        "pose",
-                        "Position or rotation exceeds the catalog/coordinate domain",
-                        instance,
-                    ));
-                }
-                let (w, h, _) = catalog::rotate(definition, rotation, Point::default());
-                p.x = x;
-                p.y = y;
-                p.width = w;
-                p.height = h;
-                p.rotation = rotation;
-                for choice in ports {
-                    state.ports[choice.node] = Some(choice.port);
+            } => crate::physical_editor::PhysicalEdit::Place {
+                block: instance,
+                position: Point { x, y },
+                rotation,
+                ports: ports
+                    .into_iter()
+                    .map(|choice| crate::physical_editor::PortSelection {
+                        node: choice.node,
+                        port: choice.port,
+                    })
+                    .collect(),
+            },
+            Edit::InsertBand { axis, at, count } => {
+                crate::physical_editor::PhysicalEdit::InsertBand {
+                    axis: match axis {
+                        Axis::X => crate::physical_editor::Axis::X,
+                        Axis::Y => crate::physical_editor::Axis::Y,
+                    },
+                    at,
+                    count,
                 }
             }
-            Edit::InsertBand { axis, at, count } => self.band(state, axis, at, count, false)?,
-            Edit::DeleteBand { axis, at, count } => self.band(state, axis, at, count, true)?,
-        }
-        frame::canonicalize(&self.blueprint, state, &self.catalogs.data)?;
-        self.check_entities(state)
-    }
-
-    fn band(&self, state: &mut State, axis: Axis, at: i64, count: i64, delete: bool) -> Result<()> {
-        if !(1..=GUARD).contains(&count) || at.checked_add(count).is_none() {
-            return Err(error(
-                "band",
-                "Band coordinate/count exceeds the coordinate work guard",
-                json!({"at":at,"count":count}),
-            ));
-        }
-        let cuts = |origin: i64, size: i64| {
-            if delete {
-                origin < at + count && origin + size > at
-            } else {
-                origin < at && origin + size > at
+            Edit::DeleteBand { axis, at, count } => {
+                crate::physical_editor::PhysicalEdit::DeleteBand {
+                    axis: match axis {
+                        Axis::X => crate::physical_editor::Axis::X,
+                        Axis::Y => crate::physical_editor::Axis::Y,
+                    },
+                    at,
+                    count,
+                }
             }
         };
-        for p in &state.geometry.placements {
-            let (origin, size) = match axis {
-                Axis::X => (p.x, p.width),
-                Axis::Y => (p.y, p.height),
-            };
-            if cuts(origin, size) {
-                return Err(error(
-                    "band-cuts-body",
-                    "Band would remove or split a rigid facility body",
-                    p.instance.clone(),
-                ));
-            }
-        }
-        for (c, position) in self.blueprint.components.iter().zip(&state.components) {
-            let definition = self
-                .catalogs
-                .data
-                .components
-                .component(&c.component)
-                .unwrap();
-            let (w, h) = if c.rotation % 180 == 0 {
-                (definition.footprint.width, definition.footprint.height)
-            } else {
-                (definition.footprint.height, definition.footprint.width)
-            };
-            let size = match axis {
-                Axis::X => w,
-                Axis::Y => h,
-            };
-            if cuts(axis.get(Point::from(position)), size) {
-                return Err(error(
-                    "band-cuts-component",
-                    "Band would remove or split an original logistics component",
-                    c.id.clone(),
-                ));
-            }
-        }
-        if delete {
-            for node in &self.blueprint.nodes {
-                if !matches!(
-                    node.terminal.as_ref().map(|t| &t.endpoint),
-                    Some(TransportNetworkEndpoint::Facility { .. })
-                ) && (at..at + count).contains(&axis.get(state.anchors[node.id]))
-                {
-                    return Err(error(
-                        "band-removes-anchor",
-                        "Band would remove an original external or component anchor",
-                        node.id,
-                    ));
-                }
-            }
-        }
-        let transform = |mut p: Point| -> Result<Option<Point>> {
-            let v = axis.get(p);
-            if delete && (at..at + count).contains(&v) {
-                return Ok(None);
-            }
-            if v >= at {
-                let value = v
-                    .checked_add(if delete { -count } else { count })
-                    .ok_or_else(|| {
-                        error(
-                            "coordinate-overflow",
-                            "Band translation exceeds integer representation",
-                            "band",
-                        )
-                    })?;
-                axis.set(&mut p, value);
-            }
-            Ok(Some(p))
-        };
-        for p in &mut state.geometry.placements {
-            let point = transform(Point { x: p.x, y: p.y })?.unwrap();
-            p.x = point.x;
-            p.y = point.y;
-        }
-        for point in &mut state.anchors {
-            // Facility reference anchors are not physical obligations; their current
-            // connection positions are derived from the selected catalog port.
-            *point = transform(*point)?.unwrap_or_else(|| {
-                let mut p = *point;
-                axis.set(&mut p, at);
-                p
-            });
-        }
-        for p in &mut state.components {
-            *p = transform(Point::from(&*p))?.unwrap().into();
-        }
-        for path in &mut state.geometry.paths {
-            if let Some(cells) = path {
-                let mut write = 0;
-                for read in 0..cells.len() {
-                    if let Some(point) = transform(cells[read])? {
-                        cells[write] = point;
-                        write += 1;
-                    }
-                }
-                cells.truncate(write);
-                if cells.is_empty() {
-                    *path = None;
-                }
-            }
-        }
+        crate::physical_editor::apply_edit_in_place(&self.common_problem, draft, action).map_err(
+            |failure| {
+                let code = failure
+                    .code
+                    .strip_prefix("physical-editor.")
+                    .unwrap_or("common-edit");
+                error(code, failure.message, failure.entity)
+            },
+        )?;
         Ok(())
     }
 }

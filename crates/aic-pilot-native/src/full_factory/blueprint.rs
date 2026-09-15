@@ -1,7 +1,7 @@
 //! Experimental private drafts with immutable original chain incidence.
 
+mod common;
 pub(crate) mod declarative;
-mod geometry;
 mod topology;
 
 use aic_data::layouts::{FacilityPlacement, TransportNetworkTerminal};

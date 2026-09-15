@@ -262,6 +262,14 @@ fn physical_v2_pending_snapshot_converts_without_regenerating_saved_state() {
         ..pending.clone()
     };
     let mut saved = s.checkpoint();
+    saved.as_object_mut().unwrap().remove("common_problem");
+    saved
+        .as_object_mut()
+        .unwrap()
+        .remove("common_problem_sha256");
+    saved.as_object_mut().unwrap().remove("common_draft");
+    saved.as_object_mut().unwrap().remove("common_best_draft");
+    saved.as_object_mut().unwrap().remove("source");
     saved["schema"] = json!("declarative-edit-checkpoint-v2");
     saved["config"]["schema"] = json!("declarative-edit-v1");
     saved["original"] = json!(&raw);
@@ -288,7 +296,7 @@ fn physical_v2_pending_snapshot_converts_without_regenerating_saved_state() {
     }
     assert_eq!(
         restored.checkpoint()["schema"],
-        "declarative-edit-checkpoint-v3"
+        "declarative-edit-checkpoint-v4"
     );
     let again =
         Session::from_checkpoint(&restored.checkpoint().to_string(), s.catalogs.clone()).unwrap();
@@ -296,66 +304,6 @@ fn physical_v2_pending_snapshot_converts_without_regenerating_saved_state() {
     assert_eq!(again.best_state, restored.best_state);
     saved["blueprint_sha256"] = json!("changed");
     assert!(Session::from_checkpoint(&saved.to_string(), s.catalogs.clone()).is_err());
-}
-
-#[test]
-fn routing_can_detour_above_the_local_origin_and_keep_zero_length_edges() {
-    let s = session();
-    let mut bp = s.blueprint.clone();
-    bp.nodes = [Point { x: 0, y: 0 }, Point { x: 2, y: 0 }]
-        .into_iter()
-        .enumerate()
-        .map(|(id, position)| Node {
-            id,
-            network: 0,
-            initial_position: position,
-            terminal: None,
-            components: vec![],
-        })
-        .collect();
-    let mut edge = bp.edges[0].clone();
-    edge.id = 0;
-    edge.network = 0;
-    edge.source = 0;
-    edge.target = 1;
-    edge.first = None;
-    edge.last = None;
-    edge.zero_length = false;
-    bp.edges = vec![edge.clone()];
-    let mut obstacle = bp.components[0].clone();
-    obstacle.position = WorldGridPosition { x: 1, y: 0 };
-    bp.networks[0]["transport"] = json!(obstacle.transport);
-    bp.components = vec![obstacle];
-    let mut body = s.state.geometry.placements[0].clone();
-    body.x = -1;
-    body.y = 1;
-    let mut draft = Draft {
-        placements: vec![body],
-        paths: vec![None],
-    };
-    let route = geometry::repair(&bp, &draft, &s.catalogs.data, &edge, 10_000, 1).unwrap();
-    let cells = route.cells.unwrap();
-    assert!(cells.iter().any(|p| p.y < 0), "{cells:?}");
-    geometry::check_path(&bp, &draft, &s.catalogs.data, &edge, &cells).unwrap();
-    // The same guard permits a single-cell edge between compatible anchors.
-    bp.nodes[1].initial_position = bp.nodes[0].initial_position;
-    for node in &mut bp.nodes {
-        node.components = vec!["shared".into()];
-    }
-    bp.components.clear();
-    draft.placements.clear();
-    edge.zero_length = true;
-    bp.edges[0] = edge.clone();
-    let route = geometry::repair(&bp, &draft, &s.catalogs.data, &edge, 10_000, 1).unwrap();
-    assert_eq!(route.cells.as_ref().unwrap(), &[Point { x: 0, y: 0 }]);
-    geometry::check_path(
-        &bp,
-        &draft,
-        &s.catalogs.data,
-        &edge,
-        route.cells.as_ref().unwrap(),
-    )
-    .unwrap();
 }
 
 #[test]

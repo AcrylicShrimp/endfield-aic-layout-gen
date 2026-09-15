@@ -74,8 +74,19 @@ fn physical(
     best: &FactoryLayoutMetrics,
 ) -> Result<Value> {
     let bp = session.blueprint_at(state);
-    let nodes = bp.nodes.iter().map(|node| Ok(json!({"id":node.id,
-        "position":topology::position(node,&state.geometry,&session.catalogs.data)?,"components":node.components})))
+    let draft = common::draft(state);
+    let nodes = bp
+        .nodes
+        .iter()
+        .map(|node| {
+            let position = crate::physical_editor::node_position(
+                &session.common_problem,
+                &draft,
+                &session.common_problem.nodes[node.id],
+            )
+            .map_err(|failure| error("common-position", failure.message, failure.entity))?;
+            Ok(json!({"id":node.id, "position":position, "components":node.components}))
+        })
         .collect::<Result<Vec<_>>>()?;
     Ok(
         json!({"blueprint_sha256":session.blueprint_sha256,"revision":revision,

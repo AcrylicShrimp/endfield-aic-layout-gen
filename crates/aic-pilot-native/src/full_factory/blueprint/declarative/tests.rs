@@ -79,6 +79,31 @@ fn incomplete_draft_survives_restore_and_later_clearance_without_commit() {
 }
 
 #[test]
+fn v4_snapshot_binds_common_problem_and_draft_before_restore() {
+    let s = session();
+    let saved = s.checkpoint();
+    assert_eq!(saved["schema"], "declarative-edit-checkpoint-v4");
+    assert!(saved["common_problem"].is_object());
+    assert!(saved["common_draft"].is_object());
+    assert!(saved["common_best_draft"].is_object());
+    Session::from_checkpoint(&saved.to_string(), s.catalogs.clone()).unwrap();
+
+    let mut changed = saved.clone();
+    changed["common_problem"]["catalog_sha256"] = json!("0".repeat(64));
+    let failure = Session::from_checkpoint(&changed.to_string(), s.catalogs.clone())
+        .err()
+        .unwrap();
+    assert_eq!(failure.code, "declarative.checkpoint-common-problem");
+
+    let mut changed = saved;
+    changed["common_draft"]["anchors"][0]["x"] = json!(999);
+    let failure = Session::from_checkpoint(&changed.to_string(), s.catalogs.clone())
+        .err()
+        .unwrap();
+    assert_eq!(failure.code, "declarative.checkpoint-common-draft");
+}
+
+#[test]
 fn global_translation_is_unchanged_and_preserves_branches_bridge_and_ports() {
     let mut s = session();
     let original = s.state.clone();

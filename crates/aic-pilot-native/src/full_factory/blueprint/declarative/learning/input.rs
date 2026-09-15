@@ -72,36 +72,57 @@ impl Learning {
         }
         let mut value = self.physical(session, &positions, frame, &collision_counts, conflicts)?;
 
+        let port_groups = self
+            .facilities
+            .iter()
+            .map(|facility| {
+                facility
+                    .groups
+                    .iter()
+                    .map(|group| crate::physical_editor::PortDomain {
+                        node: group.node,
+                        ports: group.ports.clone(),
+                    })
+                    .collect()
+            })
+            .collect();
+        self.handle = self
+            .candidates
+            .enumerate_with_port_groups(
+                &session.common_problem,
+                &session.common_state,
+                &crate::physical_editor::PhysicalCandidateOptions {
+                    translation_steps: self.options.translation_steps.clone(),
+                    band_counts: self.options.band_counts.clone(),
+                    structural_band_mask: self.options.masking.is_some(),
+                },
+                session.revision,
+                session.attempts,
+                port_groups,
+            )
+            .map_err(|failure| error("learning-domain", failure.message, failure.entity))?;
+        let common_roots = self.candidates.roots().to_vec();
         self.roots.clear();
         let mut counts = [0usize; 3];
-        for (owner, f) in placements.iter().enumerate() {
-            let mut destinations = BTreeSet::from([(f.x, f.y)]);
-            for &step in &self.options.translation_steps {
-                if let Some(x) = f.x.checked_add(step) {
-                    destinations.insert((x, f.y));
-                }
-                if let Some(y) = f.y.checked_add(step) {
-                    destinations.insert((f.x, y));
-                }
-            }
-            destinations.extend(placements.iter().map(|other| (other.x, other.y)));
-            let definition = session
-                .catalogs
-                .data
-                .facilities
-                .facility(&f.facility)
-                .unwrap();
-            for (x, y) in destinations {
-                for &rotation in &self.facilities[owner].rotations {
+        for root in common_roots {
+            match root.action {
+                crate::physical_editor::PhysicalRootAction::Place {
+                    block: owner,
+                    position: Point { x, y },
+                    rotation,
+                    ..
+                } => {
+                    let f = &placements[owner];
+                    let definition = session.common_facility(&f.facility);
                     let (mut w, mut h) = (definition.footprint.width, definition.footprint.height);
                     if rotation % 180 != 0 {
                         std::mem::swap(&mut w, &mut h)
                     }
                     let (sin, cos) = angle(rotation);
-                    counts[0] += 1;
+                    counts[0] += usize::from(!root.invalid);
                     self.roots.push(Root {
                         kind: 0,
-                        invalid: false,
+                        invalid: root.invalid,
                         owner,
                         x,
                         y,
@@ -128,90 +149,60 @@ impl Learning {
                         .action_references
                         .push([self.tables.facilities[owner] as i64; 2]);
                     value.root_meta.push([0, owner as i64, rotation]);
-                    value.root_invalid.push(false);
+                    value.root_invalid.push(root.invalid);
                 }
-            }
-        }
-        let mut bodies: Vec<_> = placements
-            .iter()
-            .map(|f| [f.x, f.y, f.width, f.height])
-            .collect();
-        for (definition, position) in bp.components.iter().zip(&session.state.components) {
-            let component = session
-                .catalogs
-                .data
-                .components
-                .component(&definition.component)
-                .unwrap();
-            let (mut w, mut h) = (component.footprint.width, component.footprint.height);
-            if definition.rotation % 180 != 0 {
-                std::mem::swap(&mut w, &mut h)
-            }
-            bodies.push([position.x, position.y, w, h]);
-        }
-        let anchors: Vec<_> = bp
-            .nodes
-            .iter()
-            .filter(|n| {
-                !matches!(
-                    n.terminal.as_ref().map(|t| &t.endpoint),
-                    Some(TransportNetworkEndpoint::Facility { .. })
-                )
-            })
-            .map(|n| positions[n.id])
-            .collect();
-        for kind in 1..=2 {
-            for (axis, points) in [(Axis::X, &xs), (Axis::Y, &ys)] {
-                for at in *points.iter().min().unwrap()..=*points.iter().max().unwrap() {
-                    for &count in &self.options.band_counts {
-                        let coordinate = usize::from(matches!(axis, Axis::Y));
-                        let invalid = self.options.masking.is_some()
-                            && (bodies.iter().any(|body| {
-                                let (origin, size) = (body[coordinate], body[coordinate + 2]);
-                                if kind == 1 {
-                                    origin < at && at < origin + size
-                                } else {
-                                    at < origin + size && at + count > origin
-                                }
-                            }) || kind == 2
-                                && anchors.iter().any(|p| {
-                                    let n = if coordinate == 0 { p.x } else { p.y };
-                                    at <= n && n < at + count
-                                }));
-                        counts[kind] += usize::from(!invalid);
-                        self.roots.push(Root {
-                            kind,
-                            invalid,
-                            owner: 0,
-                            x: 0,
-                            y: 0,
-                            rotation: 0,
+                action => {
+                    let (kind, axis, at, count) = match action {
+                        crate::physical_editor::PhysicalRootAction::InsertBand {
                             axis,
                             at,
                             count,
-                        });
-                        value.action_features.push(floats([
-                            0.,
-                            f64::from(kind == 1),
-                            f64::from(kind == 2),
-                            0.,
-                            0.,
-                            0.,
-                            1.,
-                            0.,
-                            0.,
-                            coordinate as f64,
-                            if coordinate == 0 {
-                                local_x(at)
-                            } else {
-                                local_y(at)
-                            },
-                            count as f64 / scale,
-                        ]));
-                        value.action_references.push([-1; 2]);
-                        value.root_meta.push([kind as i64, -1, 0]);
-                        value.root_invalid.push(invalid);
-                    }
+                        } => (1, axis, at, count),
+                        crate::physical_editor::PhysicalRootAction::DeleteBand {
+                            axis,
+                            at,
+                            count,
+                        } => (2, axis, at, count),
+                        crate::physical_editor::PhysicalRootAction::Place { .. } => unreachable!(),
+                    };
+                    let axis = match axis {
+                        crate::physical_editor::Axis::X => Axis::X,
+                        crate::physical_editor::Axis::Y => Axis::Y,
+                    };
+                    let coordinate = usize::from(matches!(axis, Axis::Y));
+                    counts[kind] += usize::from(!root.invalid);
+                    self.roots.push(Root {
+                        kind,
+                        invalid: root.invalid,
+                        owner: 0,
+                        x: 0,
+                        y: 0,
+                        rotation: 0,
+                        axis,
+                        at,
+                        count,
+                    });
+                    value.action_features.push(floats([
+                        0.,
+                        f64::from(kind == 1),
+                        f64::from(kind == 2),
+                        0.,
+                        0.,
+                        0.,
+                        1.,
+                        0.,
+                        0.,
+                        coordinate as f64,
+                        if coordinate == 0 {
+                            local_x(at)
+                        } else {
+                            local_y(at)
+                        },
+                        count as f64 / scale,
+                    ]));
+                    value.action_references.push([-1; 2]);
+                    value.root_meta.push([kind as i64, -1, 0]);
+                    value.root_invalid.push(root.invalid);
                 }
             }
         }
@@ -318,6 +309,139 @@ fn refresh_globals(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn factory_and_procedural_paths_share_candidate_roots_and_band_edits() {
+        let session = super::super::super::tests::session();
+        let options = Options {
+            translation_steps: vec![-1, 1],
+            band_counts: vec![1],
+            masking: Some("structural-bands-v1".into()),
+        };
+        let mut factory = Learning::new(&session, options).unwrap();
+        factory.observe(&session).unwrap();
+
+        let procedural_options = crate::physical_editor::PhysicalCandidateOptions {
+            translation_steps: vec![-1, 1],
+            band_counts: vec![1],
+            structural_band_mask: true,
+        };
+        let mut procedural = crate::physical_editor::PhysicalCandidateAuthority::default();
+        let domain = procedural
+            .enumerate(
+                &session.common_problem,
+                &session.common_state,
+                &procedural_options,
+                session.revision,
+                session.attempts,
+            )
+            .unwrap();
+        assert_eq!(factory.candidates.roots(), domain.roots);
+        assert_eq!(factory.candidates.port_groups(), domain.port_groups);
+
+        let place_root = domain
+            .roots
+            .iter()
+            .position(|root| {
+                matches!(
+                    root.action,
+                    crate::physical_editor::PhysicalRootAction::Place { block: 0, .. }
+                )
+            })
+            .unwrap();
+        let selected_ports = domain.port_groups[0]
+            .iter()
+            .map(|port_domain| {
+                let selected = session.common_state.selected_ports[port_domain.node]
+                    .as_ref()
+                    .unwrap();
+                port_domain
+                    .ports
+                    .iter()
+                    .position(|port| port == selected)
+                    .unwrap()
+            })
+            .collect::<Vec<_>>();
+        let factory_place = factory
+            .candidates
+            .select(
+                factory.handle,
+                session.revision,
+                session.attempts,
+                place_root,
+                &selected_ports,
+            )
+            .unwrap();
+        let procedural_place = procedural
+            .select(
+                domain.handle,
+                session.revision,
+                session.attempts,
+                place_root,
+                &selected_ports,
+            )
+            .unwrap();
+        assert_eq!(factory_place, procedural_place);
+
+        let root = domain
+            .roots
+            .iter()
+            .position(|root| {
+                !root.invalid
+                    && matches!(
+                        root.action,
+                        crate::physical_editor::PhysicalRootAction::InsertBand { .. }
+                            | crate::physical_editor::PhysicalRootAction::DeleteBand { .. }
+                    )
+            })
+            .unwrap();
+        let factory_edit = factory
+            .candidates
+            .select(
+                factory.handle,
+                session.revision,
+                session.attempts,
+                root,
+                &[],
+            )
+            .unwrap();
+        let procedural_edit = procedural
+            .select(domain.handle, session.revision, session.attempts, root, &[])
+            .unwrap();
+        assert_eq!(factory_edit, procedural_edit);
+        let mut factory_draft = session.common_state.clone();
+        let mut procedural_draft = session.common_state.clone();
+        crate::physical_editor::apply_edit(
+            &session.common_problem,
+            &mut factory_draft,
+            factory_edit,
+        )
+        .unwrap();
+        crate::physical_editor::apply_edit(
+            &session.common_problem,
+            &mut procedural_draft,
+            procedural_edit,
+        )
+        .unwrap();
+        let limits = crate::physical_editor::PhysicalEditLimits {
+            route_expansions: 100_000,
+            search_padding: 5,
+        };
+        let factory_work = crate::physical_editor::repair_pending(
+            &session.common_problem,
+            &mut factory_draft,
+            limits,
+        )
+        .unwrap();
+        let procedural_work = crate::physical_editor::repair_pending(
+            &session.common_problem,
+            &mut procedural_draft,
+            limits,
+        )
+        .unwrap();
+        assert_eq!(factory_work, procedural_work);
+        assert_eq!(factory_draft, procedural_draft);
+    }
+
     #[test]
     fn available_family_counts_preserve_indices_and_neutralize_masked_roots() {
         let session = super::super::super::tests::session();

@@ -81,31 +81,6 @@ impl PhysicalFrame {
     pub fn scale(self) -> f64 {
         self.width.max(self.height).max(1) as f64
     }
-
-    pub fn padded(self, padding: i64) -> Result<Bounds> {
-        if !(0..=1000).contains(&padding) {
-            return Err(error(
-                "coordinate-guard",
-                "Invalid routing padding",
-                "frame",
-            ));
-        }
-        let bound = |value| {
-            i64::try_from(value).map_err(|_| {
-                error(
-                    "coordinate-overflow",
-                    "Routing bound exceeds integer representation",
-                    "frame",
-                )
-            })
-        };
-        Ok(Bounds {
-            min_x: bound(self.origin[0] - i128::from(padding))?,
-            min_y: bound(self.origin[1] - i128::from(padding))?,
-            max_x: bound(self.origin[0] + i128::from(self.width) - 1 + i128::from(padding))?,
-            max_y: bound(self.origin[1] + i128::from(self.height) - 1 + i128::from(padding))?,
-        })
-    }
 }
 
 /// Admission uses i128 before chain extraction or world-space port arithmetic.
@@ -301,7 +276,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn full_rectangle_extents_and_signed_padding_are_checked_before_narrowing() {
+    fn full_rectangle_extents_are_checked_before_narrowing() {
         let mut extent = Extent::default();
         extent.body(i64::MAX - 3, i64::MIN + 2, 4, 7).unwrap();
         let frame = extent.finish().unwrap();
@@ -310,20 +285,9 @@ mod tests {
             frame.point(i64::MAX - 3, i64::MIN + 2).unwrap(),
             Point::default()
         );
-        assert!(frame.padded(1).is_err()); // The raw padding itself would overflow.
         let mut too_wide = Extent::default();
         too_wide.point(i64::MIN.into(), 0);
         too_wide.point(i64::MAX.into(), 0);
         assert!(too_wide.finish().is_err());
-        let canonical = PhysicalFrame {
-            origin: [0, 0],
-            width: 4,
-            height: 7,
-        };
-        let bounds = canonical.padded(2).unwrap();
-        assert_eq!(
-            (bounds.min_x, bounds.min_y, bounds.max_x, bounds.max_y),
-            (-2, -2, 5, 8)
-        );
     }
 }

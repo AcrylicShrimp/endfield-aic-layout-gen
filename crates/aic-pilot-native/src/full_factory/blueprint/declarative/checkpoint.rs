@@ -6,7 +6,17 @@ use super::*;
 #[serde(deny_unknown_fields)]
 struct Checkpoint {
     schema: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    source: Option<CheckpointSource>,
     blueprint_sha256: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    common_problem_sha256: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    common_problem: Option<aic_layout::editor::CompiledProblemV1>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    common_draft: Option<aic_layout::editor::PhysicalDraftV1>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    common_best_draft: Option<aic_layout::editor::PhysicalDraftV1>,
     catalog_sha256: String,
     input_sha256: String,
     request: FactoryEditRequest,
@@ -21,15 +31,28 @@ struct Checkpoint {
     elapsed_ns: u64,
 }
 
+#[derive(Deserialize, Serialize)]
+#[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
+enum CheckpointSource {
+    Factory { input_sha256: String },
+}
+
 impl Session {
     pub fn checkpoint(&self) -> Value {
+        let input_sha256 =
+            identity::digest(&json!({"request":self.request,"original":self.original}));
         json!(Checkpoint {
-            schema: "declarative-edit-checkpoint-v3".into(),
+            schema: "declarative-edit-checkpoint-v4".into(),
+            source: Some(CheckpointSource::Factory {
+                input_sha256: input_sha256.clone()
+            }),
             blueprint_sha256: self.blueprint_sha256.clone(),
+            common_problem_sha256: Some(self.common_problem_sha256.clone()),
+            common_problem: Some(self.common_problem.as_ref().clone()),
+            common_draft: Some(self.common_state.clone()),
+            common_best_draft: Some(self.common_best_state.clone()),
             catalog_sha256: self.catalog_sha256.clone(),
-            input_sha256: identity::digest(
-                &json!({"request":self.request,"original":self.original})
-            ),
+            input_sha256,
             request: self.request.clone(),
             original: self.original.clone(),
             config: self.config.clone(),
@@ -45,7 +68,10 @@ impl Session {
 
     fn validate_state(&self, state: &State) -> Result<(Witness, FactoryLayoutMetrics)> {
         self.check_state(state)?;
-        if !geometry::conflicts(&self.blueprint_at(state), &state.geometry).is_empty() {
+        if crate::physical_editor::conflicts(&self.common_problem, &common::draft(state))
+            .map_err(|failure| error("common-state", failure.message, failure.entity))?
+            != 0
+        {
             return Err(error(
                 "checkpoint-invalid-witness",
                 "Validated state contains overlapping bodies",
@@ -68,10 +94,11 @@ impl Session {
         let mut saved: Checkpoint =
             crate::input::decode(input).map_err(|e| error("checkpoint-schema", e, "checkpoint"))?;
         let legacy = saved.schema == "declarative-edit-checkpoint-v2";
-        if !legacy && saved.schema != "declarative-edit-checkpoint-v3" {
+        let current = saved.schema == "declarative-edit-checkpoint-v4";
+        if !legacy && !current && saved.schema != "declarative-edit-checkpoint-v3" {
             return Err(error(
                 "checkpoint-schema",
-                "Expected physical checkpoint v2 or v3",
+                "Expected physical checkpoint v2, v3 or v4",
                 saved.schema,
             ));
         }
@@ -92,6 +119,25 @@ impl Session {
             return Err(error(
                 "checkpoint-input",
                 "Checkpoint no longer matches its actual request and initial layout",
+                "checkpoint",
+            ));
+        }
+        if current {
+            match &saved.source {
+                Some(CheckpointSource::Factory { input_sha256 })
+                    if input_sha256 == &saved.input_sha256 => {}
+                _ => {
+                    return Err(error(
+                        "checkpoint-source",
+                        "Physical v4 checkpoint requires its bound factory source owner",
+                        "checkpoint",
+                    ));
+                }
+            }
+        } else if saved.source.is_some() {
+            return Err(error(
+                "checkpoint-schema",
+                "Physical v2/v3 checkpoint cannot contain a v4 source owner",
                 "checkpoint",
             ));
         }
@@ -144,6 +190,88 @@ impl Session {
             return Err(error(
                 "checkpoint-identity",
                 "Original blueprint or runtime catalogs differ from checkpoint",
+                "checkpoint",
+            ));
+        }
+        if current {
+            let saved_problem = saved.common_problem.as_ref().ok_or_else(|| {
+                error(
+                    "checkpoint-common-problem",
+                    "Physical v4 checkpoint is missing its common problem",
+                    "checkpoint",
+                )
+            })?;
+            let saved_problem_sha256 = saved.common_problem_sha256.as_deref().ok_or_else(|| {
+                error(
+                    "checkpoint-common-problem",
+                    "Physical v4 checkpoint is missing its common problem identity",
+                    "checkpoint",
+                )
+            })?;
+            if saved_problem != session.common_problem.as_ref()
+                || saved_problem_sha256 != session.common_problem_sha256
+                || identity::digest(saved_problem) != saved_problem_sha256
+            {
+                return Err(error(
+                    "checkpoint-common-problem",
+                    "Common problem differs from the bound source or its recorded identity",
+                    "checkpoint",
+                ));
+            }
+            let saved_draft = saved.common_draft.as_ref().ok_or_else(|| {
+                error(
+                    "checkpoint-common-draft",
+                    "Physical v4 checkpoint is missing its common draft",
+                    "checkpoint",
+                )
+            })?;
+            if saved_draft != &common::draft(&saved.state) {
+                return Err(error(
+                    "checkpoint-common-draft",
+                    "Common draft differs from the checkpoint editor state",
+                    "checkpoint",
+                ));
+            }
+            let saved_best_draft = saved.common_best_draft.as_ref().ok_or_else(|| {
+                error(
+                    "checkpoint-common-draft",
+                    "Physical v4 checkpoint is missing its common best draft",
+                    "checkpoint",
+                )
+            })?;
+            if saved_best_draft != &common::draft(&saved.best_state) {
+                return Err(error(
+                    "checkpoint-common-draft",
+                    "Common best draft differs from the checkpoint best editor state",
+                    "checkpoint",
+                ));
+            }
+            aic_layout::editor::validate_compiled(saved_problem, saved_draft).map_err(
+                |failure| {
+                    error(
+                        "checkpoint-common-draft",
+                        "Common checkpoint state failed validation",
+                        failure.to_string(),
+                    )
+                },
+            )?;
+            aic_layout::editor::validate_compiled(saved_problem, saved_best_draft).map_err(
+                |failure| {
+                    error(
+                        "checkpoint-common-draft",
+                        "Common checkpoint best state failed validation",
+                        failure.to_string(),
+                    )
+                },
+            )?;
+        } else if saved.common_problem.is_some()
+            || saved.common_problem_sha256.is_some()
+            || saved.common_draft.is_some()
+            || saved.common_best_draft.is_some()
+        {
+            return Err(error(
+                "checkpoint-schema",
+                "Physical v2/v3 checkpoint cannot contain v4 common state",
                 "checkpoint",
             ));
         }
@@ -214,6 +342,8 @@ impl Session {
         }
         session.state = saved.state;
         session.best_state = saved.best_state;
+        session.common_state = common::draft(&session.state);
+        session.common_best_state = common::draft(&session.best_state);
         session.best = best;
         session.best_metrics = metrics;
         session.attempts = saved.attempts;

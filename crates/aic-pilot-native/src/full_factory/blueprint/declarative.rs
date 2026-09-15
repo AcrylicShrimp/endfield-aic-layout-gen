@@ -44,11 +44,11 @@ pub struct Limits {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
-struct State {
-    geometry: Draft,
-    ports: Vec<Option<String>>,
-    anchors: Vec<Point>,
-    components: Vec<WorldGridPosition>,
+pub(super) struct State {
+    pub(super) geometry: Draft,
+    pub(super) ports: Vec<Option<String>>,
+    pub(super) anchors: Vec<Point>,
+    pub(super) components: Vec<WorldGridPosition>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
@@ -116,6 +116,11 @@ pub struct Session {
     request: FactoryEditRequest,
     original: Witness,
     blueprint: Blueprint,
+    common_problem: Arc<aic_layout::editor::CompiledProblemV1>,
+    common_problem_sha256: String,
+    /// Authoritative editor state; `state` is its cached factory export projection.
+    common_state: aic_layout::editor::PhysicalDraftV1,
+    common_best_state: aic_layout::editor::PhysicalDraftV1,
     blueprint_sha256: String,
     catalog_sha256: String,
     state: State,
@@ -133,6 +138,36 @@ pub struct Session {
 }
 
 impl Session {
+    fn common_facility(&self, id: &str) -> &aic_layout::facilities::FacilityDefinition {
+        self.common_problem
+            .used_catalog
+            .facilities
+            .iter()
+            .find(|definition| definition.id == id)
+            .expect("validated common facility")
+    }
+
+    fn common_component(&self, id: &str) -> &aic_layout::logistics::LogisticsComponentDefinition {
+        self.common_problem
+            .used_catalog
+            .components
+            .iter()
+            .find(|definition| definition.id == id)
+            .expect("validated common component")
+    }
+
+    fn common_transport(
+        &self,
+        kind: aic_layout::logistics::TransportKind,
+    ) -> &aic_layout::logistics::TransportDefinition {
+        self.common_problem
+            .used_catalog
+            .transports
+            .iter()
+            .find(|definition| definition.kind == kind)
+            .expect("validated common transport")
+    }
+
     pub fn new(
         request: FactoryEditRequest,
         original: Witness,
@@ -182,11 +217,31 @@ impl Session {
         };
         let blueprint_sha256 = identity::digest(&blueprint);
         let catalog_sha256 = catalogs.identity.clone();
+        let common_problem = Arc::new(common::problem(
+            &blueprint,
+            &catalogs.data,
+            &catalog_sha256,
+        )?);
+        let common_state = common::draft(&state);
+        aic_layout::editor::validate_compiled(&common_problem, &common_state).map_err(
+            |failure| {
+                error(
+                    "common-state",
+                    "Factory admission failed the common physical boundary",
+                    failure.to_string(),
+                )
+            },
+        )?;
+        let common_problem_sha256 = identity::digest(common_problem.as_ref());
         let session = Self {
             catalogs,
             request,
             original: original.clone(),
             blueprint,
+            common_problem,
+            common_problem_sha256,
+            common_best_state: common_state.clone(),
+            common_state,
             blueprint_sha256,
             catalog_sha256,
             best_state: state.clone(),
@@ -235,36 +290,6 @@ impl Session {
         bp
     }
 
-    fn routing_blueprint(&self, state: &State) -> Result<Blueprint> {
-        let mut bp = self.blueprint_at(state);
-        // Unchanged ports preserve all established original port-adjacent turns.
-        // A reassigned port does not inherit a different port's exit heading:
-        // allow the router to choose a legal turn outside its new connection cell.
-        for node in &mut bp.nodes {
-            let original_port = self.blueprint.nodes[node.id]
-                .terminal
-                .as_ref()
-                .and_then(|t| match &t.endpoint {
-                    TransportNetworkEndpoint::Facility { port, .. } => Some(port),
-                    _ => None,
-                });
-            if original_port != state.ports[node.id].as_ref() {
-                node.initial_position =
-                    topology::position(node, &state.geometry, &self.catalogs.data)?;
-                node.terminal = None;
-                for edge in &mut bp.edges {
-                    if edge.source == node.id {
-                        edge.first = None;
-                    }
-                    if edge.target == node.id {
-                        edge.last = None;
-                    }
-                }
-            }
-        }
-        Ok(bp)
-    }
-
     fn witness(&self, state: &State) -> Result<Witness> {
         let bp = self.blueprint_at(state);
         let mut witness = topology::rebuild(
@@ -289,86 +314,71 @@ impl Session {
 
     fn automatic(
         &mut self,
-        state: &mut State,
+        draft: &mut aic_layout::editor::PhysicalDraftV1,
         details: &mut Value,
         diagnostics: &mut Vec<Diagnostic>,
-    ) -> Result<Option<(Witness, FactoryLayoutMetrics)>> {
-        let bp = self.routing_blueprint(state)?;
-        let mut candidate = state.geometry.clone();
-        let mut pending: Vec<_> = bp
-            .edges
-            .iter()
-            .filter(|e| candidate.paths[e.id].is_none())
-            .collect();
-        pending.sort_by_key(|e| (bp.networks[e.network]["transport"] != "pipe", e.id));
-        let mut remaining = self.config.route_expansions.min(
+    ) -> Result<(State, Option<(Witness, FactoryLayoutMetrics)>)> {
+        let available = self.config.route_expansions.min(
             self.config
                 .max_total_route_expansions
                 .saturating_sub(self.work.route_expansions),
         );
-        let mut repaired = true;
-        for edge in pending {
-            if self.expired() {
-                return Err(error(
-                    "elapsed",
-                    "Deadline reached during automatic routing",
-                    edge.id,
+        let remaining_elapsed =
+            Duration::from_millis(self.config.elapsed_ms).saturating_sub(self.elapsed());
+        let deadline = Instant::now()
+            .checked_add(remaining_elapsed)
+            .unwrap_or_else(Instant::now);
+        let routed = crate::physical_editor::repair_pending_validated_until(
+            &self.common_problem,
+            draft,
+            crate::physical_editor::PhysicalEditLimits {
+                route_expansions: available,
+                search_padding: self.config.search_padding,
+            },
+            || Instant::now() >= deadline,
+        );
+        let routed = match routed {
+            Ok(routed) => routed,
+            Err(failure) => {
+                diagnostics.push(error("common-routing", failure.message, failure.entity));
+                details["repair_batch_applied"] = json!(false);
+                return Ok((
+                    common::project(&self.common_problem, draft, &self.blueprint),
+                    None,
                 ));
             }
-            let result = geometry::repair(
-                &bp,
-                &candidate,
-                &self.catalogs.data,
-                edge,
-                remaining,
-                self.config.search_padding,
-            );
-            let result = match result {
-                Ok(result) => result,
-                Err(d) => {
-                    diagnostics.push(d);
-                    repaired = false;
-                    break;
-                }
-            };
-            self.work.route_calls += 1;
-            self.work.route_expansions += result.expanded;
-            self.work.preflight_expansions += result.preflight_expanded;
-            remaining = remaining.saturating_sub(result.expanded);
-            details["routes"].as_array_mut().unwrap().push(
-                json!({"edge": edge.id, "status": result.status,
-                "expanded": result.expanded, "preflight_expanded": result.preflight_expanded,
-                "preflight_status": result.preflight_status}),
-            );
-            let Some(cells) = result.cells else {
+        };
+        self.work.route_calls += routed.route_calls;
+        self.work.route_expansions += routed.expanded;
+        self.work.preflight_expansions += routed.preflight_expanded;
+        for route in &routed.routes {
+            details["routes"].as_array_mut().unwrap().push(json!({
+                "edge": route.edge,
+                "status": route.status,
+                "expanded": route.expanded,
+                "preflight_expanded": route.preflight_expanded,
+                "preflight_status": route.preflight_status,
+            }));
+        }
+        details["repair_batch_applied"] = json!(routed.committed);
+        if !routed.committed {
+            if let Some(route) = routed.routes.last() {
                 diagnostics.push(error(
                     "routing-pending",
-                    format!("Automatic routing stopped: {}", result.status),
-                    edge.id,
+                    format!("Automatic routing stopped: {}", route.status),
+                    route.edge,
                 ));
-                repaired = false;
-                break;
-            };
-            if let Err(d) = geometry::check_path(&bp, &candidate, &self.catalogs.data, edge, &cells)
-            {
-                diagnostics.push(d);
-                repaired = false;
-                break;
             }
-            candidate.paths[edge.id] = Some(cells);
+            return Ok((
+                common::project(&self.common_problem, draft, &self.blueprint),
+                None,
+            ));
         }
-        if repaired {
-            state.geometry = candidate;
+        let state = common::project(&self.common_problem, draft, &self.blueprint);
+        if crate::physical_editor::conflicts_validated(&self.common_problem, draft) != 0 {
+            return Ok((state, None));
         }
-        frame::canonicalize(&self.blueprint, state, &self.catalogs.data)?;
-        let bp = self.blueprint_at(state);
-        details["repair_batch_applied"] = json!(repaired);
-        if !geometry::conflicts(&bp, &state.geometry).is_empty()
-            || state.geometry.paths.iter().any(Option::is_none)
-        {
-            return Ok(None);
-        }
-        let witness = self.witness(state)?;
+        let witness = self.witness(&state)?;
         self.work.validations += 1;
         let accepted = validate_factory_layout(&self.request, &witness, &self.catalogs.data);
         if !accepted.factory_validated {
@@ -377,11 +387,11 @@ impl Session {
                 "Complete draft failed full physical validation",
                 json!(accepted.diagnostics),
             ));
-            return Ok(None);
+            return Ok((state, None));
         }
         let metrics = accepted.metrics.unwrap();
         details["native_acceptance"] = json!({"factory_validated": true, "metrics": metrics});
-        Ok(Some((witness, metrics)))
+        Ok((state, Some((witness, metrics))))
     }
 
     fn step(
@@ -414,23 +424,14 @@ impl Session {
                         "action",
                     ));
                 }
-                let mut next = self.state.clone();
-                self.edit(&mut next, decision.action)?;
-                if next.geometry == self.state.geometry
-                    && next.ports == self.state.ports
-                    && next.components == self.state.components
-                    && self.blueprint.nodes.iter().all(|n| {
-                        matches!(
-                            n.terminal.as_ref().map(|t| &t.endpoint),
-                            Some(TransportNetworkEndpoint::Facility { .. })
-                        ) || next.anchors[n.id] == self.state.anchors[n.id]
-                    })
-                {
+                let mut common_next = self.common_state.clone();
+                self.edit(&mut common_next, decision.action)?;
+                if common_next == self.common_state {
                     status = "unchanged";
                     return Ok(());
                 }
-                self.detach(&mut next)?;
-                let accepted = self.automatic(&mut next, &mut details, &mut diagnostics)?;
+                let (next, accepted) =
+                    self.automatic(&mut common_next, &mut details, &mut diagnostics)?;
                 if self.expired() {
                     return Err(error(
                         "elapsed",
@@ -448,6 +449,7 @@ impl Session {
                         self.best = witness;
                         self.best_metrics = metrics;
                         self.best_state = next.clone();
+                        self.common_best_state = common_next.clone();
                         status = "improved";
                     }
                 }
@@ -456,6 +458,7 @@ impl Session {
                 } else {
                     self.state = next;
                 }
+                self.common_state = common_next;
                 self.revision += 1;
                 Ok(())
             })

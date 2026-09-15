@@ -9,18 +9,10 @@ pub(super) fn options() -> Options {
     }
 }
 fn assert_rules(s: &Session, input: &Input) {
-    let bp = s.routing_blueprint(&s.state).unwrap();
-    for edge in &bp.edges {
-        let a = topology::position(&bp.nodes[edge.source], &s.state.geometry, &s.catalogs.data)
-            .unwrap();
-        let b = topology::position(&bp.nodes[edge.target], &s.state.geometry, &s.catalogs.data)
-            .unwrap();
-        let expected = topology::query_directions(
-            edge.zero_length,
-            a,
-            b,
-            topology::directions(edge, &bp, &s.state.geometry, &s.catalogs.data).unwrap(),
-        );
+    let draft = common::draft(&s.state);
+    for edge in &s.common_problem.edges {
+        let expected =
+            crate::physical_editor::edge_headings(&s.common_problem, &draft, edge).unwrap();
         for (offset, direction) in [
             (e::CURRENT_FIRST, expected.0),
             (e::CURRENT_LAST, expected.1),
@@ -115,6 +107,12 @@ fn original_headings_remain_distinguishable_while_current_ports_match() {
         &mut b.blueprint.edges[edge_id].last
     };
     *record = Some((record.unwrap() + 1) % 4);
+    let common_record = if side == 0 {
+        &mut Arc::make_mut(&mut b.common_problem).edges[edge_id].first
+    } else {
+        &mut Arc::make_mut(&mut b.common_problem).edges[edge_id].last
+    };
+    *common_record = *record;
     let mut lb = Learning::new(&b, options()).unwrap();
     let x = la.observe(&a).unwrap();
     let y = lb.observe(&b).unwrap();
@@ -140,11 +138,11 @@ fn original_headings_remain_distinguishable_while_current_ports_match() {
     );
     // A recorded heading rotates in the original facility frame; None stays explicit.
     assert_eq!(
-        topology::endpoint_rule(Some(1), Some((90, 180, 0)), 0, false),
+        crate::physical_editor::endpoint_rule(Some(1), Some((90, 180, 0)), 0, false),
         (Some(2), Some(0))
     );
     assert_eq!(
-        topology::endpoint_rule(None, Some((90, 180, 2)), 0, false),
+        crate::physical_editor::endpoint_rule(None, Some((90, 180, 2)), 0, false),
         (Some(2), None)
     );
 }
@@ -412,6 +410,8 @@ fn components_ports_network_membership_and_exact_capacity_remain_physical() {
     // Equality is represented by network -> commodity links, not commodity spelling.
     let mut same = session();
     same.blueprint.networks[1]["item"] = same.blueprint.networks[0]["item"].clone();
+    let commodity = same.common_problem.networks[0].commodity.clone();
+    Arc::make_mut(&mut same.common_problem).networks[1].commodity = commodity;
     let mut equal = Learning::new(&same, options()).unwrap();
     let same_input = equal.observe(&same).unwrap();
     assert_eq!(
