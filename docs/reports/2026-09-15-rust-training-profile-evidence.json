@@ -1,0 +1,307 @@
+{
+  "schema": "aic-training-profile-evidence-v1",
+  "source_commit": "625f3e289b8a6807cf915653ede6fef9fe083458",
+  "host": "ashrimp-arch",
+  "remote_root": "/home/ashrimp/Srv/aic-rust-learning-20260915",
+  "torch": "2.13.0+cu130",
+  "torch_source": "cf30153c4c131c8164ee7798e5022d810682e2cb",
+  "gpu": "NVIDIA GeForce RTX 5090",
+  "files": [
+    {
+      "path": "target/release/aic-cli",
+      "bytes": 19353552,
+      "sha256": "320243a4125c2e492175e69262203b60fea8d54f6043bff359013cb0ca4071fb"
+    },
+    {
+      "path": "tools/native-training/training.json",
+      "bytes": 4037,
+      "sha256": "f2906909ed48f435dfcb5b97e18b6b9ad866bfbbf6cc0d7ee2f866ed6a6d174f"
+    },
+    {
+      "path": "artifacts/native-training-fresh-final/checkpoints/00000002/manifest.json",
+      "bytes": 1166,
+      "sha256": "414d06c8f7b9fa547b5bf75c1f7303a9e6f0c76b93fcb3632902696a7d0ffcac"
+    },
+    {
+      "path": "artifacts/kineto-preload.cpp",
+      "bytes": 2062,
+      "sha256": "2c5116f79920f167291b26de6bc80ec1e6badc75ffe2cc29623d48f7b75749e7"
+    },
+    {
+      "path": "artifacts/rust-training-profile/kineto-preload.so",
+      "bytes": 28368,
+      "sha256": "23ae43aead0516a6e44aad783aef046065fbeebfc3407decbf36840a4120480b"
+    },
+    {
+      "path": "artifacts/rust-training-profile/summarize-kineto.py",
+      "bytes": 5304,
+      "sha256": "2e1e213611e44a13012c64ab8fa1297492c2e5e5f17a057817d4143a5e865f12"
+    },
+    {
+      "path": "artifacts/rust-training-profile/cached-trace.json",
+      "bytes": 1026552739,
+      "sha256": "ed8d37cdd786027f93670963c38f98e7ee0525f7a14feb26b3a329549fbd8961"
+    },
+    {
+      "path": "artifacts/rust-training-profile/shapes-trace.json",
+      "bytes": 763198214,
+      "sha256": "427a24db5eec8bcc35a86ca19628fcf2a0ae5d7b169c4a2e9fe6581654ebd19b"
+    },
+    {
+      "path": "artifacts/rust-training-profile/kineto-summary.json",
+      "bytes": 28255,
+      "sha256": "24affd504d882e37a8f54aa7bd2c6db786eb491584d8f85225da4e669fb29e1f"
+    },
+    {
+      "path": "artifacts/rust-training-profile/shapes-summary.json",
+      "bytes": 35362,
+      "sha256": "89001282f1c3b82b6ff730728dea50fdb2b737f89b8348ae66be696cd5df4ee4"
+    },
+    {
+      "path": "artifacts/rust-training-profile/kineto.stdout",
+      "bytes": 848,
+      "sha256": "74ba3816c609339020bc3122c1bb02f9d224d05be1b43a8dfd080a0e0759d418"
+    },
+    {
+      "path": "artifacts/rust-training-profile/kineto.stderr",
+      "bytes": 531,
+      "sha256": "3fbffac0c935830b3ecdaf2bd2f897c2cf7cdd3d766f699fec3972c0ae9dd35c"
+    },
+    {
+      "path": "artifacts/rust-training-profile/shapes.stdout",
+      "bytes": 843,
+      "sha256": "a64a37f0c7c84e8e41061de86d83f0322e02cff38f8e74689829e14f1f5100ad"
+    },
+    {
+      "path": "artifacts/rust-training-profile/shapes.stderr",
+      "bytes": 363,
+      "sha256": "4811f5a0dbc4cb775889469dde82df4c4ad77fa3b9410403663987cbc1e5b9b1"
+    },
+    {
+      "path": "artifacts/rust-training-profile/prepare-update3.stdout",
+      "bytes": 839,
+      "sha256": "ad4211ef9b40227c5a93ddc097a4a15cf7b4cca880ccbb0765e9494194db3a87"
+    },
+    {
+      "path": "artifacts/rust-training-profile/prepare-update3.stderr",
+      "bytes": 177,
+      "sha256": "06a23b9979089ded0f70911bef65f0d492cc799f2027943065fd10c72e7832d7"
+    },
+    {
+      "path": "artifacts/rust-training-profile/cached-kineto/report.json",
+      "bytes": 706,
+      "sha256": "16de3e116b2514e3dbc01f017e58652dfac54b5ab40d2d4f278e44f49bff2949"
+    },
+    {
+      "path": "artifacts/rust-training-profile/cached-kineto/updates/00000003.json",
+      "bytes": 1561,
+      "sha256": "0d3b162d375ad00d595fd3812aec8ddf3fb5c9d527ef23ab2de87a0fec202093"
+    },
+    {
+      "path": "artifacts/rust-training-profile/cached-kineto/updates/00000004.json",
+      "bytes": 11318,
+      "sha256": "9f4105205f209eff8aa519aa06572d0e8249856032a20c8b465e2e34d66fd8c2"
+    },
+    {
+      "path": "artifacts/rust-training-profile/cached-shapes/report.json",
+      "bytes": 701,
+      "sha256": "212476c444f940b215841f576b36acb2f3db01c541cd3ba71358b6157d2a7b72"
+    },
+    {
+      "path": "artifacts/rust-training-profile/cached-shapes/updates/00000003.json",
+      "bytes": 1558,
+      "sha256": "93eef1ce8aecaa5d7eaa41b4837637c7e237db6378653ce05cde81057dc53d3d"
+    },
+    {
+      "path": "artifacts/rust-training-profile/cached-shapes/updates/00000004.json",
+      "bytes": 11331,
+      "sha256": "4add2a24a3ee317c4f95cde6ffa80a23f24fce2ee2c5adbb7b292ac7a66c7744"
+    }
+  ],
+  "runs": {
+    "cached-kineto": {
+      "admission_seconds": 0.28775736900000004,
+      "best_evaluation": null,
+      "checkpoint_seconds": 0.063928704,
+      "collection_seconds": 3.579366577,
+      "completed_updates": 4,
+      "evaluation_seconds": 0.0,
+      "latest_checkpoint": "checkpoints/00000004",
+      "new_samples": 8192,
+      "optimization_seconds": 10.611875995,
+      "output_bytes": 29192077,
+      "peak_rss_bytes": 7880982528,
+      "previous_update": 2,
+      "replay": {
+        "active_streams": 0,
+        "admissions": 178,
+        "bytes": 22697784,
+        "duplicates": 0,
+        "evictions": 0,
+        "labels": 694,
+        "positive_improvements": 178,
+        "selected_uses": 640,
+        "sequences": 178
+      },
+      "resumed": true,
+      "samples_per_minute": 30806.694897271624,
+      "schema": "aic-training-report-v1",
+      "status": "completed",
+      "streams": 128,
+      "total_samples": 16384,
+      "total_seconds": 15.954973477,
+      "workers": 16
+    },
+    "cached-shapes": {
+      "admission_seconds": 2.48e-07,
+      "best_evaluation": null,
+      "checkpoint_seconds": 0.042242211,
+      "collection_seconds": 1.8869429119999999,
+      "completed_updates": 4,
+      "evaluation_seconds": 0.0,
+      "latest_checkpoint": "checkpoints/00000004",
+      "new_samples": 4096,
+      "optimization_seconds": 7.904734475,
+      "output_bytes": 423908523,
+      "peak_rss_bytes": 7744536576,
+      "previous_update": 3,
+      "replay": {
+        "active_streams": 0,
+        "admissions": 178,
+        "bytes": 22697784,
+        "duplicates": 0,
+        "evictions": 0,
+        "labels": 694,
+        "positive_improvements": 178,
+        "selected_uses": 640,
+        "sequences": 178
+      },
+      "resumed": true,
+      "samples_per_minute": 21007.100331957103,
+      "schema": "aic-training-report-v1",
+      "status": "completed",
+      "streams": 128,
+      "total_samples": 16384,
+      "total_seconds": 11.698901615,
+      "workers": 16
+    }
+  },
+  "scope": "Existing release binary, unchanged deterministic algorithms; actual cached inputs. First arm profiles updates 3-4; second records shapes only for update 4 after unprofiled preparation to checkpoint 3. Raw timings include profiling and exclude trace export.",
+  "instrument_identity_note": "The retained preload binary/source is the final shape-capable revision used for the second trace. The first trace used its initial fixed-no-shapes version. The training binary is identical in both runs; no production source was changed.",
+  "findings": {
+    "cached": {
+      "kernel_count": 260792,
+      "kernel_busy_seconds": 8.795903038085937,
+      "gpu_busy_seconds": 9.14199248828125,
+      "kernel_median_us": 1.056,
+      "kernel_under_10_us": 253656,
+      "indexing_kernel_ancestry": [
+        {
+          "name": "autograd::engine::evaluate_function: IndexBackward0 > IndexBackward0 > aten::_index_put_impl_",
+          "calls": 9165,
+          "seconds": 7.711750717000076,
+          "mean_us": 841.4348845608375
+        },
+        {
+          "name": "aten::index_add_ > aten::index_put_ > aten::_index_put_impl_",
+          "calls": 16059,
+          "seconds": 0.25863248799999894,
+          "mean_us": 16.105142785976646
+        },
+        {
+          "name": "autograd::engine::evaluate_function: ScatterReduceBackward0 > ScatterReduceBackward0 > aten::scatter_add > aten::index_put_ > aten::_index_put_impl_",
+          "calls": 948,
+          "seconds": 0.034143608000000096,
+          "mean_us": 36.016464135021195
+        },
+        {
+          "name": "aten::index_add > aten::index_put_ > aten::_index_put_impl_",
+          "calls": 1320,
+          "seconds": 0.0030764890000000112,
+          "mean_us": 2.3306734848484933
+        },
+        {
+          "name": "autograd::engine::evaluate_function: IndexSelectBackward0 > IndexSelectBackward0 > aten::index_select_backward > aten::index_add_ > aten::index_put_ > aten::_index_put_impl_",
+          "calls": 576,
+          "seconds": 0.0013350149999999954,
+          "mean_us": 2.3177343749999917
+        }
+      ]
+    },
+    "shape": {
+      "kernel_busy_seconds": 6.719336870117187,
+      "indexing_kernel_ancestry": [
+        {
+          "name": "autograd::engine::evaluate_function: IndexBackward0 > IndexBackward0 > aten::_index_put_impl_",
+          "calls": 7313,
+          "seconds": 6.104831750000056,
+          "mean_us": 834.7917065499871
+        },
+        {
+          "name": "aten::index_add_ > aten::index_put_ > aten::_index_put_impl_",
+          "calls": 8666,
+          "seconds": 0.13334666999999775,
+          "mean_us": 15.387337872143751
+        },
+        {
+          "name": "autograd::engine::evaluate_function: ScatterReduceBackward0 > ScatterReduceBackward0 > aten::scatter_add > aten::index_put_ > aten::_index_put_impl_",
+          "calls": 760,
+          "seconds": 0.02676691700000004,
+          "mean_us": 35.219627631578994
+        },
+        {
+          "name": "aten::index_add > aten::index_put_ > aten::_index_put_impl_",
+          "calls": 752,
+          "seconds": 0.0017087389999999964,
+          "mean_us": 2.2722593085106335
+        },
+        {
+          "name": "autograd::engine::evaluate_function: IndexSelectBackward0 > IndexSelectBackward0 > aten::index_select_backward > aten::index_add_ > aten::index_put_ > aten::_index_put_impl_",
+          "calls": 384,
+          "seconds": 0.0008905249999999983,
+          "mean_us": 2.319075520833329
+        }
+      ],
+      "indexing_backward_gradient_rank": [
+        {
+          "name": "3",
+          "calls": 945,
+          "seconds": 5.881937059999997,
+          "mean_us": 6224.272021164018
+        },
+        {
+          "name": "2",
+          "calls": 4344,
+          "seconds": 0.1679653429999986,
+          "mean_us": 38.66605501841588
+        },
+        {
+          "name": "1",
+          "calls": 2024,
+          "seconds": 0.05492934700000026,
+          "mean_us": 27.13900543478274
+        }
+      ]
+    },
+    "largest_shape_examples": [
+      {
+        "name": "([17137, 40], [342564, 2, 40])",
+        "calls": 5,
+        "seconds": 0.10454865699999999,
+        "mean_us": 20909.731399999997
+      },
+      {
+        "name": "([16059, 40], [316944, 2, 40])",
+        "calls": 5,
+        "seconds": 0.099105609,
+        "mean_us": 19821.1218
+      },
+      {
+        "name": "([15947, 40], [311968, 2, 40])",
+        "calls": 5,
+        "seconds": 0.09644544599999999,
+        "mean_us": 19289.0892
+      }
+    ]
+  }
+}
