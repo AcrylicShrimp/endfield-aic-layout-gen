@@ -529,3 +529,65 @@ fn nonempty_learner_checkpoint_restores_every_field_and_next_update() -> Result<
     }
     Ok(())
 }
+
+#[test]
+fn initial_encoder_replaces_only_shared_parameters() -> Result<()> {
+    let _lock = TORCH.lock().unwrap();
+    let model = ModelConfig {
+        width: 8,
+        message_rounds: 1,
+        node_features: 41,
+        edge_features: 37,
+        global_features: aic_pilot_native::learning::GLOBAL_FEATURES as i64,
+        action_features: 12,
+        port_features: 11,
+    };
+    let (_, mut initial) = Model::initial_state(&model, 271)?;
+    let cold: crate::input::Tensors = initial
+        .iter()
+        .map(|(name, value)| (name.clone(), value.copy()))
+        .collect();
+    let prefixes = [
+        "model.nodes.",
+        "model.edges.",
+        "model.paths.",
+        "model.messages.",
+        "model.updates.",
+        "model.context.",
+        "model.port_pair.",
+    ];
+    let encoder: crate::input::Tensors = initial
+        .iter()
+        .filter(|(name, _)| prefixes.iter().any(|prefix| name.starts_with(prefix)))
+        .map(|(name, value)| (name.clone(), value.zeros_like() + 0.125))
+        .collect();
+    let path = std::env::temp_dir().join(format!(
+        "aic-initial-encoder-{}-{}.safetensors",
+        std::process::id(),
+        271
+    ));
+    aic_torch::tch::Tensor::write_safetensors(&encoder.iter().collect::<Vec<_>>(), &path)?;
+    let hash = crate::input::sha256(&path)?;
+    super::run::apply_initial_encoder(&mut initial, &path, &hash)?;
+    std::fs::remove_file(path)?;
+    for (name, expected) in encoder {
+        assert!(
+            initial[&name].equal(&expected),
+            "encoder not imported: {name}"
+        );
+    }
+    for (name, expected) in cold {
+        if name.starts_with("model.actor.")
+            || name.starts_with("model.critic.")
+            || name.starts_with("model.port_actor.")
+            || name.starts_with("adam.")
+            || name.starts_with("rng.")
+        {
+            assert!(
+                initial[&name].equal(&expected),
+                "cold state changed: {name}"
+            );
+        }
+    }
+    Ok(())
+}

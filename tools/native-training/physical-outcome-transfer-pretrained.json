@@ -1,0 +1,189 @@
+{
+  "schema": "aic-training-v1",
+  "purpose": "bounded-comparison",
+  "catalog_root": "../..",
+  "catalogs": {
+    "recipes": "data/game/normalized/recipes.json",
+    "facilities": "data/game/normalized/facilities.json",
+    "items": "data/game/normalized/items.json",
+    "transports": "data/game/normalized/transports.json",
+    "components": "data/game/normalized/logistics-components.json"
+  },
+  "initialization_seed": 961000,
+  "model": {
+    "width": 40,
+    "message_rounds": 2,
+    "node_features": 41,
+    "edge_features": 37,
+    "global_features": 15,
+    "action_features": 12,
+    "port_features": 11
+  },
+  "optimizer": {
+    "adam_backend": "foreach",
+    "learning_rate": 0.0003,
+    "beta1": 0.9,
+    "beta2": 0.999,
+    "epsilon": 1e-08,
+    "clip_epsilon": 0.2,
+    "entropy_coefficient": 0.001,
+    "imitation_coefficient": 0.05,
+    "gradient_clip": 0.5
+  },
+  "ppo": {
+    "epochs": 4,
+    "target_kl": 0.02
+  },
+  "streams": 32,
+  "workers": 16,
+  "chunk_actions": 32,
+  "minibatch_size": 256,
+  "native": {
+    "schema": "declarative-edit-v2",
+    "max_actions": 64,
+    "elapsed_ms": 300000,
+    "route_expansions": 50000,
+    "max_total_route_expansions": 3200000,
+    "search_padding": 4
+  },
+  "actions": {
+    "translation_steps": [
+      -2,
+      -1,
+      1,
+      2
+    ],
+    "band_counts": [
+      1,
+      2
+    ],
+    "masking": "structural-bands-v1"
+  },
+  "gamma": 1.0,
+  "gae_lambda": 0.95,
+  "advantage_normalization": "center",
+  "generation": {
+    "schema": "aic-native-generation-v2",
+    "identity_limits": {
+      "max_individualization_nodes": 100000
+    },
+    "seed_base": 961100000,
+    "max_attempts": 8,
+    "episode_setup_ms": 180000,
+    "products": [
+      {
+        "id": "medical",
+        "source": "docs/benchmarks/constructive-recipe-breadth/requests/medical-3.json",
+        "duration_ms": [
+          20000,
+          100000
+        ]
+      },
+      {
+        "id": "food",
+        "source": "docs/benchmarks/constructive-recipe-breadth/requests/food-3.json",
+        "duration_ms": [
+          20000,
+          100000
+        ]
+      },
+      {
+        "id": "copper-liquid",
+        "source": "tools/factory-edit-pilot/family-copper-liquid.json",
+        "duration_ms": [
+          2000,
+          20000
+        ]
+      },
+      {
+        "id": "watered-grass",
+        "source": "tools/factory-edit-pilot/family-watered-grass.json",
+        "duration_ms": [
+          2000,
+          20000
+        ]
+      }
+    ],
+    "duration_step_ms": 1000,
+    "max_facilities": 64,
+    "setup_steps": [
+      2,
+      6
+    ],
+    "setup_elapsed_ms": 120000,
+    "setup_kinds": [
+      "pose",
+      "contract",
+      "insert",
+      "port",
+      "reroute",
+      "component",
+      "release_bridge"
+    ],
+    "route_work": 50000,
+    "construction": {
+      "elapsed_ms": 30000,
+      "max_steps": 256,
+      "max_placement_attempts": 256,
+      "max_route_searches": 4096,
+      "analysis_workers": 1,
+      "flow_elapsed_ms": 10000
+    }
+  },
+  "strata": {
+    "large": [
+      "food",
+      "medical"
+    ],
+    "small": [
+      "watered-grass",
+      "copper-liquid"
+    ]
+  },
+  "success": {
+    "sampler": "balanced_available",
+    "max_sequences": 4096,
+    "max_labels": 262144,
+    "max_bytes": 2147483648,
+    "retention": {
+      "ema_alpha": 0.5,
+      "minimum_draws": 8,
+      "minimum_updates": 2,
+      "stale_updates": 64
+    }
+  },
+  "curriculum": {
+    "schema": "aic-best-starts-v1",
+    "percentages": [
+      80,
+      10,
+      10
+    ],
+    "selection_seed": 613500000,
+    "donors": "strict-area-improvement"
+  },
+  "evaluation": {
+    "panel": "../../artifacts/physical-outcome-transfer-panel/panel.json",
+    "interval_updates": 16,
+    "replicates": 2,
+    "max_actions": 64,
+    "elapsed_ms": 10000
+  },
+  "retention": {
+    "checkpoint_interval_updates": 16,
+    "recovery_checkpoints": 1,
+    "keep_updates": []
+  },
+  "resources": {
+    "max_observation_bytes": 2147483648,
+    "max_rss_bytes": 51539607552,
+    "max_output_bytes": 4294967296,
+    "min_free_bytes": 2147483648
+  },
+  "duration_seconds": 1800,
+  "finish_grace_seconds": 600,
+  "initial_encoder": {
+    "path": "../../artifacts/physical-outcome-online-8h-20260916/encoder.safetensors",
+    "sha256": "bc12b95499723ba27f31f381bd747d47eb21747ec7e64a1114effd39f2a4a9b2"
+  }
+}

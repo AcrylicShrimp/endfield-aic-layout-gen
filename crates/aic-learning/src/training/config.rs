@@ -2,7 +2,7 @@
 use super::{curriculum, evaluation, replay, schedule};
 use crate::{
     collection::rollout::Settings,
-    schema::{ModelConfig, UpdateConfig},
+    schema::{Archive, ModelConfig, UpdateConfig},
 };
 use aic_pilot_native::{
     generation::source,
@@ -40,6 +40,8 @@ pub struct Config {
     pub catalog_root: PathBuf,
     pub catalogs: CatalogPaths,
     pub initialization_seed: u64,
+    #[serde(default)]
+    pub initial_encoder: Option<Archive>,
     pub model: ModelConfig,
     pub optimizer: UpdateConfig,
     pub ppo: schedule::Config,
@@ -74,6 +76,9 @@ impl Config {
         let root = path.parent().unwrap_or(Path::new("."));
         config.catalog_root = root.join(&config.catalog_root).canonicalize()?;
         config.evaluation.panel = root.join(&config.evaluation.panel);
+        if let Some(encoder) = &mut config.initial_encoder {
+            encoder.path = root.join(&encoder.path).to_string_lossy().into_owned();
+        }
         Ok(config)
     }
     pub fn validate(&self) -> Result<()> {
@@ -89,6 +94,11 @@ impl Config {
                 && self.minibatch_size > 0
                 && self.minibatch_size <= self.streams * self.chunk_actions
                 && self.initialization_seed <= (u64::MAX - 10_000_000) / 1000
+                && self.initial_encoder.as_ref().is_none_or(|encoder| {
+                    !encoder.path.is_empty()
+                        && encoder.sha256.len() == 64
+                        && encoder.sha256.bytes().all(|byte| byte.is_ascii_hexdigit())
+                })
                 && (0. ..=1.).contains(&self.gamma)
                 && (0. ..=1.).contains(&self.gae_lambda)
                 && matches!(

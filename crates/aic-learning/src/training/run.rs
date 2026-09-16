@@ -14,7 +14,8 @@ use crate::{
         rollout::{self, Rollout},
         storage::write,
     },
-    model::Model,
+    input::{Tensors, sha256},
+    model::{ENCODER_PREFIXES, Model},
     update::{Learner, device_name},
 };
 use aic_pilot_native::{
@@ -24,7 +25,7 @@ use aic_pilot_native::{
 };
 use aic_torch::{
     deterministic,
-    tch::{self, Device},
+    tch::{self, Device, Kind, Tensor, no_grad},
 };
 use anyhow::{Result, ensure};
 use serde_json::{Value, json};
@@ -70,6 +71,9 @@ pub fn run(
     let mut identity = serde_json::to_value(&config)?;
     for field in ["workers", "catalog_root"] {
         identity.as_object_mut().unwrap().remove(field);
+    }
+    if let Some(encoder) = identity["initial_encoder"].as_object_mut() {
+        encoder.insert("path".into(), "<bound-by-sha256>".into());
     }
     let binding = hash(&serde_json::to_vec(
         &json!({"config":identity,"source":source.identity,"catalogs":catalogs.identity,"panel":panel.identity,"device":device_name(device)?}),
@@ -130,7 +134,10 @@ pub fn run(
         );
         storage::restore(&output, &output.join(latest), &binding, &config, device)?
     } else {
-        let (order, initial) = Model::initial_state(&config.model, config.initialization_seed)?;
+        let (order, mut initial) = Model::initial_state(&config.model, config.initialization_seed)?;
+        if let Some(encoder) = &config.initial_encoder {
+            apply_initial_encoder(&mut initial, Path::new(&encoder.path), &encoder.sha256)?;
+        }
         let learner = Learner::load(
             &config.model,
             &config.optimizer,
@@ -332,6 +339,7 @@ pub fn run(
         let seconds = began.elapsed().as_secs_f64();
         let samples = state.samples - previous_samples;
         let report = json!({"schema":"aic-training-report-v1","status":"completed","resumed":resume,"workers":config.workers,"streams":config.streams,"previous_update":previous_update,"completed_updates":state.update,
+            "initial_encoder_sha256":config.initial_encoder.as_ref().map(|encoder|encoder.sha256.as_str()),
             "new_samples":samples,"total_samples":state.samples,"total_seconds":seconds,"samples_per_minute":samples as f64*60./seconds,
             "admission_seconds":generation_seconds,"collection_seconds":collection_seconds,"optimization_seconds":optimization_seconds,"checkpoint_seconds":checkpoint_seconds,"evaluation_seconds":evaluation_seconds,
             "replay":buffer.summary(),"peak_rss_bytes":guard.peak_rss(),"output_bytes":store.ledger.bytes,"latest_checkpoint":format!("checkpoints/{:08}",last_saved),"best_evaluation":state.best_evaluation});
@@ -367,6 +375,52 @@ pub fn run(
         std::io::Write::flush(&mut writer)?;
     }
     result
+}
+
+pub(crate) fn apply_initial_encoder(
+    initial: &mut Tensors,
+    path: &Path,
+    expected_sha256: &str,
+) -> Result<()> {
+    ensure!(
+        sha256(path)? == expected_sha256,
+        "aic-learning.initial-encoder-hash: {}",
+        path.display()
+    );
+    let encoder: Tensors = Tensor::read_safetensors(path)?.into_iter().collect();
+    let expected = initial
+        .keys()
+        .filter(|name| {
+            name.strip_prefix("model.").is_some_and(|name| {
+                ENCODER_PREFIXES
+                    .iter()
+                    .any(|prefix| name.starts_with(prefix))
+            })
+        })
+        .cloned()
+        .collect::<std::collections::BTreeSet<_>>();
+    ensure!(
+        encoder
+            .keys()
+            .cloned()
+            .collect::<std::collections::BTreeSet<_>>()
+            == expected,
+        "aic-learning.initial-encoder-allowlist: {}",
+        path.display()
+    );
+    no_grad(|| {
+        for (name, source) in encoder {
+            let target = initial.get_mut(&name).unwrap();
+            ensure!(
+                source.kind() == Kind::Float
+                    && source.size() == target.size()
+                    && bool::try_from(source.isfinite().all())?,
+                "aic-learning.initial-encoder-tensor: {name}"
+            );
+            target.copy_(&source);
+        }
+        Ok(())
+    })
 }
 fn admit(
     state: &mut State,

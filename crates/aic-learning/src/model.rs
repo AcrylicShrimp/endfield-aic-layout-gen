@@ -14,6 +14,16 @@ mod prior_tests;
 #[cfg(test)]
 mod tests;
 
+pub(crate) const ENCODER_PREFIXES: [&str; 7] = [
+    "nodes.",
+    "edges.",
+    "paths.",
+    "messages.",
+    "updates.",
+    "context.",
+    "port_pair.",
+];
+
 #[cfg(test)]
 thread_local! { static PAIR_ROWS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) }; }
 #[cfg(test)]

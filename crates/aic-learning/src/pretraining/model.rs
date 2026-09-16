@@ -2,7 +2,7 @@ use super::config::Config;
 use crate::{
     collection::batch::graph_inputs,
     input::{Packed, Tensors},
-    model::Model,
+    model::{ENCODER_PREFIXES, Model},
     outcomes::storage::Row,
 };
 use aic_torch::{
@@ -28,15 +28,6 @@ pub const HEADS: [&str; 12] = [
     "route_budget",
 ];
 const BINARY: [usize; 7] = [0, 1, 2, 3, 4, 5, 11];
-const ENCODER_PREFIXES: [&str; 7] = [
-    "nodes.",
-    "edges.",
-    "paths.",
-    "messages.",
-    "updates.",
-    "context.",
-    "port_pair.",
-];
 
 pub struct Labels {
     pub targets: Vec<[f32; 12]>,

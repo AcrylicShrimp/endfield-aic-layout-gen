@@ -1,0 +1,665 @@
+{
+  "schema": "aic-physical-outcome-transfer-screen-v1",
+  "seed": 961000,
+  "updates": 32,
+  "training_samples_per_arm": 32768,
+  "evaluation_cases": 16,
+  "evaluation_replicates": 2,
+  "encoder_sha256": "bc12b95499723ba27f31f381bd747d47eb21747ec7e64a1114effd39f2a4a9b2",
+  "arms": {
+    "cold": {
+      "completed_updates": 32,
+      "new_samples": 32768,
+      "total_seconds": 85.203354232,
+      "samples_per_minute": 23075.147894372396,
+      "peak_rss_bytes": 6924455936,
+      "best_evaluation": 24.377277489941324,
+      "initial_encoder_sha256": null,
+      "report_sha256": "abe9e4c9f4c1b6eaace71f74e632b1e3178928dcaba662326dfe409aef13e4ac"
+    },
+    "pretrained": {
+      "completed_updates": 32,
+      "new_samples": 32768,
+      "total_seconds": 90.764034133,
+      "samples_per_minute": 21661.443530804594,
+      "peak_rss_bytes": 8003747840,
+      "best_evaluation": 23.623604006386138,
+      "initial_encoder_sha256": "bc12b95499723ba27f31f381bd747d47eb21747ec7e64a1114effd39f2a4a9b2",
+      "report_sha256": "cab93589f535dc33c1910281ea0b1b095559188c6f8c6634c4690f5ebe377447"
+    }
+  },
+  "evaluations": {
+    "16": {
+      "panel_sha256": "d3b33ee8251b90e9a6574c122f4ec82fedb40530b0ee0333d84167262ec8e637",
+      "arms": {
+        "cold": {
+          "mean_area_reduction_percent": 19.409292657824505,
+          "complete": true,
+          "seconds": 1.459339312,
+          "evaluation_sha256": "8142eb4579f53dea14bd859ae6cf8fbf4f94ed025e06441ef41564ad921acf3a",
+          "groups": {
+            "stratum=large": {
+              "count": 16,
+              "mean_area_reduction_percent": 5.961697969364346,
+              "improved": 15
+            },
+            "stratum=small": {
+              "count": 16,
+              "mean_area_reduction_percent": 32.856887346284665,
+              "improved": 15
+            },
+            "product=copper-liquid": {
+              "count": 8,
+              "mean_area_reduction_percent": 24.365985576923077,
+              "improved": 7
+            },
+            "product=food": {
+              "count": 6,
+              "mean_area_reduction_percent": 7.994179090259963,
+              "improved": 6
+            },
+            "product=medical": {
+              "count": 10,
+              "mean_area_reduction_percent": 4.742209296826975,
+              "improved": 9
+            },
+            "product=watered-grass": {
+              "count": 8,
+              "mean_area_reduction_percent": 41.34778911564626,
+              "improved": 8
+            }
+          }
+        },
+        "pretrained": {
+          "mean_area_reduction_percent": 21.846180374733784,
+          "complete": true,
+          "seconds": 1.6407793769999999,
+          "evaluation_sha256": "b667be8df56099b42c37419130e1062fd8552054be400a7a3baabc51c2ebb85d",
+          "groups": {
+            "stratum=large": {
+              "count": 16,
+              "mean_area_reduction_percent": 9.1551215749516,
+              "improved": 15
+            },
+            "stratum=small": {
+              "count": 16,
+              "mean_area_reduction_percent": 34.53723917451596,
+              "improved": 13
+            },
+            "product=copper-liquid": {
+              "count": 8,
+              "mean_area_reduction_percent": 28.53451236263736,
+              "improved": 5
+            },
+            "product=food": {
+              "count": 6,
+              "mean_area_reduction_percent": 8.121960560914305,
+              "improved": 6
+            },
+            "product=medical": {
+              "count": 10,
+              "mean_area_reduction_percent": 9.775018183373978,
+              "improved": 9
+            },
+            "product=watered-grass": {
+              "count": 8,
+              "mean_area_reduction_percent": 40.53996598639456,
+              "improved": 8
+            }
+          }
+        }
+      },
+      "paired": {
+        "mean_delta_points": 2.4368877169092746,
+        "median_delta_points": 0.0,
+        "wins": 14,
+        "ties": 11,
+        "losses": 7,
+        "minimum_delta_points": -26.27551020408162,
+        "maximum_delta_points": 25.0,
+        "rows": [
+          {
+            "case": "case-0000",
+            "replicate": 0,
+            "cold": 5.063291139240511,
+            "pretrained": 5.063291139240511,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0000",
+            "replicate": 1,
+            "cold": 6.296235410159456,
+            "pretrained": 6.329113924050633,
+            "delta_points": 0.03287851389117691
+          },
+          {
+            "case": "case-0001",
+            "replicate": 0,
+            "cold": 7.692307692307687,
+            "pretrained": 14.28571428571429,
+            "delta_points": 6.593406593406603
+          },
+          {
+            "case": "case-0001",
+            "replicate": 1,
+            "cold": 0.0,
+            "pretrained": 0.0,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0002",
+            "replicate": 0,
+            "cold": 11.792452830188683,
+            "pretrained": 11.792452830188683,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0002",
+            "replicate": 1,
+            "cold": 4.612159329140464,
+            "pretrained": 1.8867924528301883,
+            "delta_points": -2.725366876310276
+          },
+          {
+            "case": "case-0003",
+            "replicate": 0,
+            "cold": 19.64285714285714,
+            "pretrained": 41.666666666666664,
+            "delta_points": 22.023809523809526
+          },
+          {
+            "case": "case-0003",
+            "replicate": 1,
+            "cold": 23.809523809523814,
+            "pretrained": 14.28571428571429,
+            "delta_points": -9.523809523809524
+          },
+          {
+            "case": "case-0004",
+            "replicate": 0,
+            "cold": 3.7735849056603765,
+            "pretrained": 3.7735849056603765,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0004",
+            "replicate": 1,
+            "cold": 11.32075471698113,
+            "pretrained": 11.32075471698113,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0005",
+            "replicate": 0,
+            "cold": 23.809523809523814,
+            "pretrained": 23.809523809523814,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0005",
+            "replicate": 1,
+            "cold": 23.809523809523814,
+            "pretrained": 23.809523809523814,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0006",
+            "replicate": 0,
+            "cold": 7.1729957805907185,
+            "pretrained": 7.1729957805907185,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0006",
+            "replicate": 1,
+            "cold": 9.21607817010882,
+            "pretrained": 9.21607817010882,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0007",
+            "replicate": 0,
+            "cold": 5.000000000000004,
+            "pretrained": 0.0,
+            "delta_points": -5.000000000000004
+          },
+          {
+            "case": "case-0007",
+            "replicate": 1,
+            "cold": 9.999999999999998,
+            "pretrained": 35.0,
+            "delta_points": 25.0
+          },
+          {
+            "case": "case-0008",
+            "replicate": 0,
+            "cold": 5.263157894736848,
+            "pretrained": 27.17643164515061,
+            "delta_points": 21.913273750413765
+          },
+          {
+            "case": "case-0008",
+            "replicate": 1,
+            "cold": 5.263157894736848,
+            "pretrained": 23.13803376365442,
+            "delta_points": 17.87487586891757
+          },
+          {
+            "case": "case-0009",
+            "replicate": 0,
+            "cold": 67.85714285714286,
+            "pretrained": 71.42857142857143,
+            "delta_points": 3.5714285714285694
+          },
+          {
+            "case": "case-0009",
+            "replicate": 1,
+            "cold": 70.15306122448979,
+            "pretrained": 43.87755102040817,
+            "delta_points": -26.27551020408162
+          },
+          {
+            "case": "case-0010",
+            "replicate": 0,
+            "cold": 0.0,
+            "pretrained": 0.0,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0010",
+            "replicate": 1,
+            "cold": 2.2222222222222254,
+            "pretrained": 2.2222222222222254,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0011",
+            "replicate": 0,
+            "cold": 55.04807692307692,
+            "pretrained": 59.61538461538461,
+            "delta_points": 4.567307692307693
+          },
+          {
+            "case": "case-0011",
+            "replicate": 1,
+            "cold": 15.625,
+            "pretrained": 0.0,
+            "delta_points": -15.625
+          },
+          {
+            "case": "case-0012",
+            "replicate": 0,
+            "cold": 2.2222222222222254,
+            "pretrained": 4.138321995464855,
+            "delta_points": 1.9160997732426295
+          },
+          {
+            "case": "case-0012",
+            "replicate": 1,
+            "cold": 0.952380952380949,
+            "pretrained": 12.301587301587302,
+            "delta_points": 11.349206349206353
+          },
+          {
+            "case": "case-0013",
+            "replicate": 0,
+            "cold": 53.125,
+            "pretrained": 70.0,
+            "delta_points": 16.875
+          },
+          {
+            "case": "case-0013",
+            "replicate": 1,
+            "cold": 48.4375,
+            "pretrained": 49.375,
+            "delta_points": 0.9375
+          },
+          {
+            "case": "case-0014",
+            "replicate": 0,
+            "cold": 3.797468354430378,
+            "pretrained": 14.694551458447991,
+            "delta_points": 10.897083104017614
+          },
+          {
+            "case": "case-0014",
+            "replicate": 1,
+            "cold": 16.419005687029898,
+            "pretrained": 6.25573289304715,
+            "delta_points": -10.163272793982749
+          },
+          {
+            "case": "case-0015",
+            "replicate": 0,
+            "cold": 47.61904761904761,
+            "pretrained": 66.66666666666667,
+            "delta_points": 19.047619047619058
+          },
+          {
+            "case": "case-0015",
+            "replicate": 1,
+            "cold": 54.08163265306123,
+            "pretrained": 38.775510204081634,
+            "delta_points": -15.306122448979593
+          }
+        ]
+      }
+    },
+    "32": {
+      "panel_sha256": "d3b33ee8251b90e9a6574c122f4ec82fedb40530b0ee0333d84167262ec8e637",
+      "arms": {
+        "cold": {
+          "mean_area_reduction_percent": 24.377277489941324,
+          "complete": true,
+          "seconds": 1.459444385,
+          "evaluation_sha256": "d302fc4eeb78d9aeb194a72b650e2cc44fd7e08ecd0aba73024e627dcc9b7b50",
+          "groups": {
+            "stratum=large": {
+              "count": 16,
+              "mean_area_reduction_percent": 5.84253861083503,
+              "improved": 14
+            },
+            "stratum=small": {
+              "count": 16,
+              "mean_area_reduction_percent": 42.91201636904762,
+              "improved": 15
+            },
+            "product=copper-liquid": {
+              "count": 8,
+              "mean_area_reduction_percent": 35.675223214285715,
+              "improved": 7
+            },
+            "product=food": {
+              "count": 6,
+              "mean_area_reduction_percent": 8.310562684458349,
+              "improved": 6
+            },
+            "product=medical": {
+              "count": 10,
+              "mean_area_reduction_percent": 4.3617241666610385,
+              "improved": 8
+            },
+            "product=watered-grass": {
+              "count": 8,
+              "mean_area_reduction_percent": 50.148809523809526,
+              "improved": 8
+            }
+          }
+        },
+        "pretrained": {
+          "mean_area_reduction_percent": 23.623604006386138,
+          "complete": true,
+          "seconds": 1.797263778,
+          "evaluation_sha256": "52ebacb87996f8f248daea7ef283d3e97853c0e2f4a36a174efc4030379c1697",
+          "groups": {
+            "stratum=large": {
+              "count": 16,
+              "mean_area_reduction_percent": 9.587575049009853,
+              "improved": 15
+            },
+            "stratum=small": {
+              "count": 16,
+              "mean_area_reduction_percent": 37.65963296376243,
+              "improved": 14
+            },
+            "product=copper-liquid": {
+              "count": 8,
+              "mean_area_reduction_percent": 34.90685096153846,
+              "improved": 6
+            },
+            "product=food": {
+              "count": 6,
+              "mean_area_reduction_percent": 14.250812735880663,
+              "improved": 6
+            },
+            "product=medical": {
+              "count": 10,
+              "mean_area_reduction_percent": 6.789632436887368,
+              "improved": 9
+            },
+            "product=watered-grass": {
+              "count": 8,
+              "mean_area_reduction_percent": 40.41241496598639,
+              "improved": 8
+            }
+          }
+        }
+      },
+      "paired": {
+        "mean_delta_points": -0.7536734835551842,
+        "median_delta_points": 0.0,
+        "wins": 7,
+        "ties": 15,
+        "losses": 10,
+        "minimum_delta_points": -30.952380952380956,
+        "maximum_delta_points": 22.3922902494331,
+        "rows": [
+          {
+            "case": "case-0000",
+            "replicate": 0,
+            "cold": 5.063291139240511,
+            "pretrained": 20.598388952819334,
+            "delta_points": 15.535097813578822
+          },
+          {
+            "case": "case-0000",
+            "replicate": 1,
+            "cold": 6.329113924050633,
+            "pretrained": 6.329113924050633,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0001",
+            "replicate": 0,
+            "cold": 14.28571428571429,
+            "pretrained": 7.692307692307687,
+            "delta_points": -6.593406593406603
+          },
+          {
+            "case": "case-0001",
+            "replicate": 1,
+            "cold": 0.0,
+            "pretrained": 0.0,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0002",
+            "replicate": 0,
+            "cold": 11.792452830188683,
+            "pretrained": 11.792452830188683,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0002",
+            "replicate": 1,
+            "cold": 0.0,
+            "pretrained": 1.8867924528301883,
+            "delta_points": 1.8867924528301883
+          },
+          {
+            "case": "case-0003",
+            "replicate": 0,
+            "cold": 41.666666666666664,
+            "pretrained": 19.64285714285714,
+            "delta_points": -22.023809523809526
+          },
+          {
+            "case": "case-0003",
+            "replicate": 1,
+            "cold": 41.666666666666664,
+            "pretrained": 10.71428571428571,
+            "delta_points": -30.952380952380956
+          },
+          {
+            "case": "case-0004",
+            "replicate": 0,
+            "cold": 3.7735849056603765,
+            "pretrained": 3.7735849056603765,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0004",
+            "replicate": 1,
+            "cold": 11.32075471698113,
+            "pretrained": 11.32075471698113,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0005",
+            "replicate": 0,
+            "cold": 23.809523809523814,
+            "pretrained": 23.809523809523814,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0005",
+            "replicate": 1,
+            "cold": 23.809523809523814,
+            "pretrained": 23.809523809523814,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0006",
+            "replicate": 0,
+            "cold": 15.722851432378416,
+            "pretrained": 15.722851432378416,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0006",
+            "replicate": 1,
+            "cold": 2.5316455696202556,
+            "pretrained": 2.5316455696202556,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0007",
+            "replicate": 0,
+            "cold": 16.428571428571427,
+            "pretrained": 0.0,
+            "delta_points": -16.428571428571427
+          },
+          {
+            "case": "case-0007",
+            "replicate": 1,
+            "cold": 9.999999999999998,
+            "pretrained": 30.000000000000004,
+            "delta_points": 20.000000000000007
+          },
+          {
+            "case": "case-0008",
+            "replicate": 0,
+            "cold": 5.263157894736848,
+            "pretrained": 5.263157894736848,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0008",
+            "replicate": 1,
+            "cold": 1.8867924528301883,
+            "pretrained": 1.8867924528301883,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0009",
+            "replicate": 0,
+            "cold": 71.42857142857143,
+            "pretrained": 67.85714285714286,
+            "delta_points": -3.5714285714285694
+          },
+          {
+            "case": "case-0009",
+            "replicate": 1,
+            "cold": 75.0,
+            "pretrained": 69.64285714285714,
+            "delta_points": -5.357142857142861
+          },
+          {
+            "case": "case-0010",
+            "replicate": 0,
+            "cold": 0.0,
+            "pretrained": 0.0,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0010",
+            "replicate": 1,
+            "cold": 2.2222222222222254,
+            "pretrained": 2.2222222222222254,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0011",
+            "replicate": 0,
+            "cold": 41.82692307692307,
+            "pretrained": 62.5,
+            "delta_points": 20.673076923076927
+          },
+          {
+            "case": "case-0011",
+            "replicate": 1,
+            "cold": 55.04807692307692,
+            "pretrained": 62.5,
+            "delta_points": 7.45192307692308
+          },
+          {
+            "case": "case-0012",
+            "replicate": 0,
+            "cold": 3.21995464852608,
+            "pretrained": 25.61224489795918,
+            "delta_points": 22.3922902494331
+          },
+          {
+            "case": "case-0012",
+            "replicate": 1,
+            "cold": 4.138321995464855,
+            "pretrained": 4.138321995464855,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0013",
+            "replicate": 0,
+            "cold": 73.59375,
+            "pretrained": 48.4375,
+            "delta_points": -25.15625
+          },
+          {
+            "case": "case-0013",
+            "replicate": 1,
+            "cold": 74.21875,
+            "pretrained": 68.125,
+            "delta_points": -6.09375
+          },
+          {
+            "case": "case-0014",
+            "replicate": 0,
+            "cold": 3.797468354430378,
+            "pretrained": 23.903870849385434,
+            "delta_points": 20.106402494955056
+          },
+          {
+            "case": "case-0014",
+            "replicate": 1,
+            "cold": 16.419005687029898,
+            "pretrained": 16.419005687029898,
+            "delta_points": 0.0
+          },
+          {
+            "case": "case-0015",
+            "replicate": 0,
+            "cold": 57.14285714285714,
+            "pretrained": 48.29931972789115,
+            "delta_points": -8.843537414965986
+          },
+          {
+            "case": "case-0015",
+            "replicate": 1,
+            "cold": 66.66666666666667,
+            "pretrained": 59.523809523809526,
+            "delta_points": -7.142857142857146
+          }
+        ]
+      }
+    }
+  }
+}

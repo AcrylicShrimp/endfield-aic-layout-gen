@@ -46,6 +46,15 @@ For training, prepare a larger panel, for example 32 cases (16 per stratum).
 The panel path is an external configuration field; creating a replacement panel
 requires a new training run because checkpoint identity binds its actual inputs.
 
+An optional `initial_encoder` object starts a fresh run from an encoder-only
+safetensors file. It requires `path` and `sha256`. Admission checks the digest,
+the exact shared-parameter allowlist, tensor shapes and finite values before
+copying `nodes`, `edges`, `paths`, `messages`, `updates`, `context` and
+`port_pair`. Actor, port-actor, critic, Adam, replay and RNG state still use the
+configured cold initialization. The encoder digest, rather than its host path,
+is part of checkpoint identity; the path is resolved relative to the config.
+Use a new output directory and omit `initial_encoder` for the paired cold arm.
+
 ## Physical coordinates
 
 The native limits/decision schema is `declarative-edit-v2`. Working geometry is
