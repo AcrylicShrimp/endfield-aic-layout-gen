@@ -11,6 +11,17 @@ use aic_data::recipes::{
     ValidatedRecipeBook, build_contextual_facility_instance_wiring,
     calculate_contextual_facility_requirements, check_recipe_source_plan, load_recipe_book,
 };
+use aic_data::{
+    layouts::{
+        FactoryEditCatalogs, FactoryEditEndpoint, FactoryEditInstance, FactoryEditRequest,
+        FactoryEditTerminal, FixedFactoryInput, FixedFactoryReport,
+        INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutReport, IntegratedLayoutStatus,
+        construct_fixed_factory, render_integrated_layout_html_with_localization,
+    },
+    logistics::{
+        ValidatedItemCatalog as DataItemCatalog, load_item_catalog as load_data_item_catalog,
+    },
+};
 use aic_layout::{
     facilities::FacilityPortDirection,
     geometry::{Bounds, Point},
@@ -21,14 +32,17 @@ use aic_layout::{
 };
 use aic_layout_gen::{
     io::load_catalogs,
-    placement::{self, DensityBand, DensityPlacementRequest, Placement, PlacementRequest},
+    placement::{
+        self, BALANCED_DENSITY, COMPACT_DENSITY, DensityBand, DensityPlacementRequest,
+        PACKING_DENSITY_POLICY_VERSION, Placement, PlacementRequest, SPACIOUS_DENSITY,
+    },
 };
 use aic_routing::{
     GlobalRouteJob, GlobalRouteTerminal, GlobalRoutingComparison, GlobalRoutingConfig,
     GlobalRoutingProblem, compare_global_routing,
 };
 use anyhow::{Context, Result, anyhow, ensure};
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use serde::Serialize;
 
 const RATE_HORIZON_MS: i64 = 20_000;
@@ -68,12 +82,53 @@ struct Args {
     routing_iterations: usize,
     #[arg(long, default_value_t = 100_000)]
     routing_work_per_route: usize,
+    /// Construct and independently validate a complete shared-network factory.
+    #[arg(long, requires = "catalog_dir")]
+    construct_factory: bool,
+    /// Fresh sequence-pair placements tried for complete physical construction.
+    #[arg(long, default_value_t = 8, requires = "construct_factory")]
+    physical_attempts: usize,
+    /// Total A* calls allowed per fixed-placement construction order.
+    #[arg(long, default_value_t = 200, requires = "construct_factory")]
+    factory_route_searches: u64,
+    /// Optional independently validated physical witness output.
+    #[arg(long, requires = "construct_factory")]
+    layout_output: Option<PathBuf>,
+    /// Optional rendered complete-factory HTML output.
+    #[arg(long, requires = "construct_factory")]
+    html_output: Option<PathBuf>,
     /// Research-only achieved-density band lower bound (inclusive).
     #[arg(long, requires = "placement_density_max")]
     placement_density_min: Option<f64>,
     /// Research-only achieved-density band upper bound (exclusive).
     #[arg(long, requires = "placement_density_min")]
     placement_density_max: Option<f64>,
+    /// Versioned density profile for complete physical factory generation.
+    #[arg(
+        long,
+        value_enum,
+        requires = "catalog_dir",
+        conflicts_with_all = ["placement_density_min", "placement_density_max"]
+    )]
+    packing_profile: Option<RecipePackingProfile>,
+}
+
+#[derive(Clone, Copy, Debug, Serialize, ValueEnum)]
+#[serde(rename_all = "kebab-case")]
+enum RecipePackingProfile {
+    Compact,
+    Balanced,
+    Spacious,
+}
+
+impl RecipePackingProfile {
+    fn band(self) -> DensityBand {
+        match self {
+            Self::Compact => COMPACT_DENSITY,
+            Self::Balanced => BALANCED_DENSITY,
+            Self::Spacious => SPACIOUS_DENSITY,
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -106,12 +161,22 @@ struct Report {
     total_wiring_edges: usize,
     placement: Option<PlacementObservation>,
     routing: Option<RoutingObservation>,
+    factory: Option<FactoryObservation>,
     source_selections: Vec<OutputSelection>,
     moves: Vec<MoveRecord>,
 }
 
+#[derive(Serialize)]
+struct FactoryObservation {
+    placement_attempts: usize,
+    selected_placement_seed: Option<u64>,
+    report: FixedFactoryReport,
+}
+
 #[derive(Clone, Serialize)]
 struct PlacementObservation {
+    packing_policy_version: Option<&'static str>,
+    packing_profile: Option<RecipePackingProfile>,
     semantic_facilities: Vec<SemanticFacilityBlock>,
     sequence_pair: [Vec<usize>; 2],
     body_width: i64,
@@ -280,6 +345,20 @@ fn main() -> Result<()> {
     ensure!(args.max_steps > 0, "--max-steps must be positive");
     ensure!(args.max_depth > 0, "--max-depth must be positive");
     ensure!(
+        (1..=128).contains(&args.physical_attempts),
+        "--physical-attempts must be 1..=128"
+    );
+    ensure!(
+        (1..=10_000).contains(&args.factory_route_searches),
+        "--factory-route-searches must be 1..=10000"
+    );
+    ensure!(
+        !args.construct_factory
+            || args.packing_profile.is_some()
+            || args.placement_density_min.is_some() && args.placement_density_max.is_some(),
+        "--construct-factory requires --packing-profile or an explicit density band"
+    );
+    ensure!(
         (1..=1_024).contains(&args.routing_iterations),
         "--routing-iterations must be 1..=1024"
     );
@@ -360,11 +439,73 @@ fn main() -> Result<()> {
         &best.plan,
         &best.evaluation,
     )?;
-    let physical = args
+    let mut physical = args
         .catalog_dir
         .as_deref()
-        .map(|catalog_dir| place_facilities(catalog_dir, &args, &observations.facility_blocks))
+        .map(|catalog_dir| {
+            place_facilities(catalog_dir, &args, &observations.facility_blocks, args.seed)
+        })
         .transpose()?;
+    let factory = if args.construct_factory {
+        let catalog_dir = args
+            .catalog_dir
+            .as_deref()
+            .expect("clap requires catalogs for construction");
+        let catalogs = load_factory_catalogs(
+            catalog_dir,
+            &book,
+            &physical
+                .as_ref()
+                .expect("catalog placement exists")
+                .catalogs,
+        )?;
+        let request = factory_request(&observations.wiring)?;
+        let mut selected = None;
+        let mut last_candidate = None;
+        let mut last = None;
+        for ordinal in 0..args.physical_attempts {
+            let placement_seed = args
+                .seed
+                .wrapping_add((ordinal as u64).wrapping_mul(0x9e37_79b9_7f4a_7c15));
+            let candidate = if ordinal == 0 {
+                physical.take().expect("catalog placement exists")
+            } else {
+                let Ok(candidate) = place_facilities(
+                    catalog_dir,
+                    &args,
+                    &observations.facility_blocks,
+                    placement_seed,
+                ) else {
+                    continue;
+                };
+                candidate
+            };
+            let input = fixed_factory_input(&candidate, &observations.wiring, placement_seed)?;
+            let result = construct_fixed_factory(
+                &input,
+                &request,
+                &catalogs,
+                8,
+                args.factory_route_searches,
+            );
+            let complete = result.factory_validated;
+            last = Some((ordinal + 1, placement_seed, result));
+            if complete {
+                selected = Some(candidate);
+                break;
+            }
+            last_candidate = Some(candidate);
+        }
+        physical = selected.or(last_candidate);
+        let (placement_attempts, placement_seed, report) = last.expect("positive attempt bound");
+        Some(FactoryObservation {
+            placement_attempts,
+            selected_placement_seed: report.factory_validated.then_some(placement_seed),
+            report,
+        })
+    } else {
+        None
+    };
     let routing = if args.compare_routing {
         let physical = physical
             .as_ref()
@@ -400,8 +541,15 @@ fn main() -> Result<()> {
     exact_plans_evaluated += 1;
     let achieved = best.evaluation.facilities;
     let report = Report {
-        schema_version: 5,
-        status: if achieved == args.facilities {
+        schema_version: 6,
+        status: if factory
+            .as_ref()
+            .is_some_and(|factory| factory.report.factory_validated)
+        {
+            "factory-complete"
+        } else if factory.is_some() {
+            "factory-exhausted"
+        } else if achieved == args.facilities {
             "exact"
         } else {
             "closest"
@@ -432,6 +580,7 @@ fn main() -> Result<()> {
         total_wiring_edges: observations.total_wiring_edges,
         placement,
         routing,
+        factory,
         source_selections: best
             .plan
             .selections
@@ -440,6 +589,39 @@ fn main() -> Result<()> {
             .collect(),
         moves: best.moves,
     };
+    if let Some(factory) = &report.factory {
+        if let (Some(path), Some(witness)) = (&args.layout_output, &factory.report.witness) {
+            ensure!(
+                !path.exists(),
+                "layout output already exists: {}",
+                path.display()
+            );
+            std::fs::write(path, serde_json::to_vec_pretty(witness)?)
+                .with_context(|| format!("writing {}", path.display()))?;
+        }
+        if let (Some(path), Some(witness)) = (&args.html_output, &factory.report.witness) {
+            ensure!(
+                !path.exists(),
+                "HTML output already exists: {}",
+                path.display()
+            );
+            let integrated = IntegratedLayoutReport {
+                schema_version: INTEGRATED_LAYOUT_SCHEMA_VERSION,
+                success: true,
+                status: IntegratedLayoutStatus::Feasible,
+                bounds: Some(factory.report.canvas.clone()),
+                placements: witness.placements.clone(),
+                logistics_components: witness.logistics_components.clone(),
+                transport_networks: witness.transport_networks.clone(),
+                phases: Vec::new(),
+                exact: None,
+                diagnostics: Vec::new(),
+            };
+            let html = render_integrated_layout_html_with_localization(&integrated, None)
+                .map_err(|diagnostic| anyhow!("render failed: {diagnostic:?}"))?;
+            std::fs::write(path, html).with_context(|| format!("writing {}", path.display()))?;
+        }
+    }
     std::fs::write(&args.report_output, serde_json::to_vec_pretty(&report)?)
         .with_context(|| format!("writing {}", args.report_output.display()))?;
     println!(
@@ -1128,6 +1310,7 @@ fn place_facilities(
     catalog_dir: &std::path::Path,
     args: &Args,
     facility_blocks: &[(String, Block)],
+    seed: u64,
 ) -> Result<PhysicalPlacement> {
     ensure!(
         args.placement_gap_min >= 0
@@ -1140,33 +1323,43 @@ fn place_facilities(
         .iter()
         .map(|(_, block)| block.clone())
         .collect::<Vec<_>>();
-    let sampled = match (args.placement_density_min, args.placement_density_max) {
-        (Some(minimum), Some(maximum)) => placement::sample_in_density_band(
+    let requested_band = args
+        .packing_profile
+        .map(RecipePackingProfile::band)
+        .or_else(
+            || match (args.placement_density_min, args.placement_density_max) {
+                (Some(minimum), Some(maximum)) => Some(DensityBand { minimum, maximum }),
+                _ => None,
+            },
+        );
+    let sampled = match requested_band {
+        Some(band) => placement::sample_in_density_band(
             &loaded.catalogs,
             &blocks,
             &DensityPlacementRequest {
-                seed: args.seed,
-                band: DensityBand { minimum, maximum },
+                seed,
+                band,
                 max_uniform_gap: 128,
                 margin: 6,
                 max_cells: 250_000_000,
             },
         ),
-        (None, None) => placement::sample(
+        None => placement::sample(
             &loaded.catalogs,
             &blocks,
             &PlacementRequest {
-                seed: args.seed,
+                seed,
                 gap: [args.placement_gap_min, args.placement_gap_max],
                 margin: 6,
                 max_cells: 250_000_000,
             },
         ),
-        _ => unreachable!("clap requires both density bounds"),
     }
     .map_err(|diagnostic| anyhow!("frozen facility placement failed: {diagnostic:?}"))?;
     Ok(PhysicalPlacement {
         observation: PlacementObservation {
+            packing_policy_version: requested_band.map(|_| PACKING_DENSITY_POLICY_VERSION),
+            packing_profile: args.packing_profile,
             semantic_facilities: facility_blocks
                 .iter()
                 .map(|(semantic_node, block)| SemanticFacilityBlock {
@@ -1187,6 +1380,142 @@ fn place_facilities(
         },
         sampled,
         catalogs: loaded.catalogs,
+    })
+}
+
+fn load_factory_catalogs(
+    catalog_dir: &std::path::Path,
+    recipes: &ValidatedRecipeBook,
+    physical: &Catalogs,
+) -> Result<FactoryEditCatalogs> {
+    let items =
+        DataItemCatalog::try_from_catalog(load_data_item_catalog(catalog_dir.join("items.json"))?)
+            .map_err(|report| anyhow!("item catalog is invalid: {report:?}"))?;
+    Ok(FactoryEditCatalogs {
+        facilities: physical.facilities.clone(),
+        recipes: recipes.clone(),
+        items,
+        transports: physical.transports.clone(),
+        components: physical.components.clone(),
+    })
+}
+
+fn factory_request(wiring: &FacilityInstanceWiringReport) -> Result<FactoryEditRequest> {
+    let members = wiring
+        .nodes
+        .iter()
+        .filter_map(|node| match node {
+            FacilityInstanceWiringNode::Facility {
+                id,
+                recipe,
+                work_seconds_per_second,
+                ..
+            } => Some((id.clone(), (recipe.clone(), *work_seconds_per_second))),
+            _ => None,
+        })
+        .collect::<BTreeMap<_, _>>();
+    let instances = members
+        .iter()
+        .map(|(instance, (recipe, utilization))| FactoryEditInstance {
+            instance: instance.clone(),
+            recipe: recipe.clone(),
+            utilization: *utilization,
+        })
+        .collect();
+    let mut terminal_rates = BTreeMap::new();
+    for edge in &wiring.edges {
+        for (node, direction) in [
+            (&edge.source, FacilityPortDirection::Output),
+            (&edge.target, FacilityPortDirection::Input),
+        ] {
+            let endpoint = if members.contains_key(node) {
+                FactoryEditEndpoint::Facility {
+                    instance: node.clone(),
+                }
+            } else {
+                FactoryEditEndpoint::External { node: node.clone() }
+            };
+            let rate = terminal_rates
+                .entry((endpoint, direction, edge.item.clone()))
+                .or_insert(Rate::zero());
+            *rate = rate
+                .checked_add(edge.rate)
+                .map_err(|_| anyhow!("terminal rate overflow for '{}'", edge.item))?;
+        }
+    }
+    let terminals = terminal_rates
+        .into_iter()
+        .map(|((endpoint, direction, item), rate)| FactoryEditTerminal {
+            endpoint,
+            direction,
+            item,
+            rate,
+        })
+        .collect();
+    Ok(FactoryEditRequest {
+        schema_version: 1,
+        instances,
+        terminals,
+    })
+}
+
+fn fixed_factory_input(
+    physical: &PhysicalPlacement,
+    wiring: &FacilityInstanceWiringReport,
+    routing_seed: u64,
+) -> Result<FixedFactoryInput> {
+    let poses = physical
+        .sampled
+        .poses
+        .iter()
+        .map(|pose| (pose.block.as_str(), pose))
+        .collect::<BTreeMap<_, _>>();
+    let blocks = physical
+        .observation
+        .semantic_facilities
+        .iter()
+        .map(|entry| (entry.semantic_node.as_str(), entry))
+        .collect::<BTreeMap<_, _>>();
+    let recipes = wiring
+        .nodes
+        .iter()
+        .filter_map(|node| match node {
+            FacilityInstanceWiringNode::Facility { id, recipe, .. } => {
+                Some((id.as_str(), recipe.as_str()))
+            }
+            _ => None,
+        })
+        .collect::<BTreeMap<_, _>>();
+    let mut placements = Vec::with_capacity(blocks.len());
+    for (instance, block) in blocks {
+        let pose = poses
+            .get(block.block.as_str())
+            .with_context(|| format!("placement omitted block '{}'", block.block))?;
+        let definition = physical
+            .catalogs
+            .facilities
+            .facility(&block.facility)
+            .with_context(|| format!("catalog omitted facility '{}'", block.facility))?;
+        let (width, height, _) = rotate(definition, pose.rotation, Point::default());
+        placements.push(aic_data::layouts::FacilityPlacement {
+            instance: instance.to_string(),
+            recipe: recipes
+                .get(instance)
+                .with_context(|| format!("wiring omitted facility instance '{instance}'"))?
+                .to_string(),
+            facility: block.facility.clone(),
+            x: pose.position.x,
+            y: pose.position.y,
+            width,
+            height,
+            rotation: pose.rotation,
+        });
+    }
+    Ok(FixedFactoryInput {
+        schema_version: 1,
+        placements,
+        wiring: wiring.clone(),
+        routing_seed,
     })
 }
 

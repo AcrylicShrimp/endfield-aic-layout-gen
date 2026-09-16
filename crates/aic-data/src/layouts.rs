@@ -10,7 +10,10 @@ mod growth;
 mod integrated;
 mod placement;
 mod ports;
-pub use constructive::{FixedRoutingInput, FixedRoutingReport, probe_fixed_routing};
+pub use constructive::{
+    FixedFactoryAttempt, FixedFactoryInput, FixedFactoryReport, FixedRoutingInput,
+    FixedRoutingReport, construct_fixed_factory, probe_fixed_routing,
+};
 pub use constructive::{WitnessProbeInput, WitnessProbeReport, probe_constructive_witness};
 
 pub use constructive::{

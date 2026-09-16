@@ -11,18 +11,18 @@ use aic_layout::{
 };
 use serde::{Deserialize, Serialize};
 
-pub const PACKING_DENSITY_POLICY_VERSION: &str = "recipe-packing-density-v1";
+pub const PACKING_DENSITY_POLICY_VERSION: &str = "recipe-packing-density-v2";
 pub const COMPACT_DENSITY: DensityBand = DensityBand {
-    minimum: 0.30,
-    maximum: 1.0,
+    minimum: 0.06,
+    maximum: 0.12,
 };
 pub const BALANCED_DENSITY: DensityBand = DensityBand {
-    minimum: 0.13,
-    maximum: 0.30,
+    minimum: 0.04,
+    maximum: 0.06,
 };
 pub const SPACIOUS_DENSITY: DensityBand = DensityBand {
-    minimum: 0.035,
-    maximum: 0.12,
+    minimum: 0.02,
+    maximum: 0.04,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -178,9 +178,10 @@ pub fn sample(
     })
 }
 
-/// Keep one seeded rotation/sequence-pair draw fixed and find the smallest
-/// uniform integer gap whose measured density falls inside the requested band.
-/// Density decreases monotonically as that uniform gap grows.
+/// Keep one seeded rotation/sequence-pair draw fixed, find every uniform integer
+/// gap inside the requested band, and select reproducibly within that interval.
+/// Density decreases monotonically as the uniform gap grows. Gap zero is excluded
+/// because facility bodies could cover every outward port connection cell.
 pub fn sample_in_density_band(
     catalogs: &Catalogs,
     blocks: &[Block],
@@ -211,42 +212,77 @@ pub fn sample_in_density_band(
             },
         )
     };
-    let zero = at_gap(0)?;
-    if in_band(zero.body_density, request.band) {
-        return Ok(zero);
+    if request.max_uniform_gap < 1 {
+        return Err(failure(
+            "placement-request",
+            "density-band",
+            "density-controlled placement requires at least one port-escape cell",
+        ));
     }
-    if zero.body_density < request.band.minimum {
-        return Err(packing_target_missed(zero.body_density, request.band));
+    let one = at_gap(1)?;
+    if one.body_density < request.band.minimum {
+        return Err(packing_target_missed(one.body_density, request.band));
     }
-
-    let mut lower = 0_i64;
-    let mut upper = request.max_uniform_gap.min(1);
-    let upper_density = loop {
-        let candidate = at_gap(upper)?;
-        if candidate.body_density < request.band.maximum {
-            break candidate.body_density;
-        }
-        if upper == request.max_uniform_gap {
-            return Err(packing_target_missed(candidate.body_density, request.band));
-        }
-        lower = upper;
-        upper = (upper.saturating_mul(2)).min(request.max_uniform_gap);
-    };
-    debug_assert!(upper_density < request.band.maximum);
-    while lower + 1 < upper {
-        let middle = lower + (upper - lower) / 2;
-        if at_gap(middle)?.body_density >= request.band.maximum {
-            lower = middle;
-        } else {
-            upper = middle;
-        }
-    }
-    let selected = at_gap(upper)?;
-    if in_band(selected.body_density, request.band) {
-        Ok(selected)
+    let first = if one.body_density < request.band.maximum {
+        1
     } else {
-        Err(packing_target_missed(selected.body_density, request.band))
+        first_gap_below(1, request.max_uniform_gap, request.band.maximum, &at_gap)?
+            .ok_or_else(|| packing_target_missed(one.body_density, request.band))?
+    };
+    let last = first_gap_below(
+        first,
+        request.max_uniform_gap,
+        request.band.minimum,
+        &at_gap,
+    )?
+    .map_or(request.max_uniform_gap, |gap| gap - 1);
+    if first > last {
+        return Err(packing_target_missed(one.body_density, request.band));
     }
+    let span = u64::try_from(last - first + 1).expect("positive bounded gap span");
+    let mixed = request
+        .seed
+        .wrapping_mul(0x9e37_79b9_7f4a_7c15)
+        .rotate_left(17)
+        ^ 0xd1b5_4a32_d192_ed03;
+    let selected = first + i64::try_from(mixed % span).expect("gap span fits i64");
+    let placement = at_gap(selected)?;
+    debug_assert!(in_band(placement.body_density, request.band));
+    Ok(placement)
+}
+
+fn first_gap_below(
+    lower: i64,
+    upper: i64,
+    threshold: f64,
+    at_gap: &impl Fn(i64) -> Result<Placement, Diagnostic>,
+) -> Result<Option<i64>, Diagnostic> {
+    let below = |gap| match at_gap(gap) {
+        Ok(placement) => Ok(placement.body_density < threshold),
+        Err(diagnostic) if diagnostic.code == "aic-layout-gen.canvas-guard" => Ok(true),
+        Err(diagnostic) => Err(diagnostic),
+    };
+    let mut outside = lower;
+    let mut inside = lower;
+    loop {
+        if inside == upper {
+            return Ok(None);
+        }
+        inside = (inside.saturating_mul(2)).max(inside + 1).min(upper);
+        if below(inside)? {
+            break;
+        }
+        outside = inside;
+    }
+    while outside + 1 < inside {
+        let middle = outside + (inside - outside) / 2;
+        if below(middle)? {
+            inside = middle;
+        } else {
+            outside = middle;
+        }
+    }
+    Ok(Some(inside))
 }
 
 fn in_band(density: f64, band: DensityBand) -> bool {

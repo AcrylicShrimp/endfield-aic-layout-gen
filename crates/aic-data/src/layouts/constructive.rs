@@ -24,7 +24,11 @@ pub use factory_edit::{
 };
 
 mod assembly;
+mod fixed_factory;
 mod fixed_probe;
+pub use fixed_factory::{
+    FixedFactoryAttempt, FixedFactoryInput, FixedFactoryReport, construct_fixed_factory,
+};
 pub use fixed_probe::{FixedRoutingInput, FixedRoutingReport, probe_fixed_routing};
 mod witness_probe;
 pub use witness_probe::{WitnessProbeInput, WitnessProbeReport, probe_constructive_witness};
