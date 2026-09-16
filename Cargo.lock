@@ -36,6 +36,7 @@ dependencies = [
  "aic-learning",
  "anyhow",
  "clap",
+ "pumpkin-solver",
  "serde",
  "serde_json",
  "sha2 0.11.0",
