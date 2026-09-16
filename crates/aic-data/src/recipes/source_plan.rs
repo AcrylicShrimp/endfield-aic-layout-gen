@@ -203,6 +203,21 @@ pub fn check_recipe_source_plan(
     book: &ValidatedRecipeBook,
     request: &RecipeSourcePlanRequest,
 ) -> RecipeSourceCheckReport {
+    check_recipe_source_plan_impl(book, request, true)
+}
+
+pub(super) fn check_recipe_source_plan_structure(
+    book: &ValidatedRecipeBook,
+    request: &RecipeSourcePlanRequest,
+) -> RecipeSourceCheckReport {
+    check_recipe_source_plan_impl(book, request, false)
+}
+
+fn check_recipe_source_plan_impl(
+    book: &ValidatedRecipeBook,
+    request: &RecipeSourcePlanRequest,
+    include_source_catalog: bool,
+) -> RecipeSourceCheckReport {
     let mut diagnostics = validate_request(request);
     if book
         .index()
@@ -230,7 +245,11 @@ pub fn check_recipe_source_plan(
         };
     }
 
-    let source_catalog = build_source_catalog(book, &request.target.item);
+    let source_catalog = if include_source_catalog {
+        build_source_catalog(book, &request.target.item)
+    } else {
+        Vec::new()
+    };
     let selections = request
         .source_selections
         .iter()

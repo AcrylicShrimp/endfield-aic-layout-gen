@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use crate::recipes::{
     Recipe, RecipeSource, RecipeSourceCheckStatus, RecipeSourceNode, RecipeSourcePlanRequest,
-    ThroughputTarget, ValidatedRecipeBook, check_recipe_source_plan,
+    ThroughputTarget, ValidatedRecipeBook, source_plan::check_recipe_source_plan_structure,
 };
 
 const STAGE: &str = "contextual-production-graph";
@@ -126,7 +126,7 @@ pub fn build_contextual_production_graph(
     book: &ValidatedRecipeBook,
     request: &RecipeSourcePlanRequest,
 ) -> ContextualProductionGraphReport {
-    let source_report = check_recipe_source_plan(book, request);
+    let source_report = check_recipe_source_plan_structure(book, request);
     if !source_report.ready {
         return ContextualProductionGraphReport::failure(
             source_report.status,
