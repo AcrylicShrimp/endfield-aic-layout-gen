@@ -1,6 +1,6 @@
 //! Research-only recipe source-tree dynamic-programming probe.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
@@ -63,6 +63,11 @@ struct Report {
     target_duration_ms: i64,
     active_recipe_occurrences: usize,
     facility_instances: usize,
+    external_source_occurrences: usize,
+    distinct_external_items: usize,
+    catalog_produced_external_sources: usize,
+    external_input_edges: usize,
+    total_wiring_edges: usize,
     source_selections: Vec<OutputSelection>,
     moves: Vec<MoveRecord>,
 }
@@ -92,6 +97,15 @@ struct Plan {
 struct Evaluation {
     facilities: i64,
     active_recipes: usize,
+}
+
+struct FinalObservations {
+    facility_instances: usize,
+    external_source_occurrences: usize,
+    distinct_external_items: usize,
+    catalog_produced_external_sources: usize,
+    external_input_edges: usize,
+    total_wiring_edges: usize,
 }
 
 #[derive(Clone)]
@@ -237,12 +251,17 @@ fn main() -> Result<()> {
             &mut exact_plans_evaluated,
         )?;
     }
-    let facility_instances =
-        validate_final_plan(&book, &args.target_item, &best.plan, &best.evaluation)?;
+    let observations = validate_final_plan(
+        &book,
+        &producers,
+        &args.target_item,
+        &best.plan,
+        &best.evaluation,
+    )?;
     exact_plans_evaluated += 1;
     let achieved = best.evaluation.facilities;
     let report = Report {
-        schema_version: 2,
+        schema_version: 3,
         status: if achieved == args.facilities {
             "exact"
         } else {
@@ -266,7 +285,12 @@ fn main() -> Result<()> {
         target_quantity: best.plan.target_quantity,
         target_duration_ms: RATE_HORIZON_MS,
         active_recipe_occurrences: best.evaluation.active_recipes,
-        facility_instances,
+        facility_instances: observations.facility_instances,
+        external_source_occurrences: observations.external_source_occurrences,
+        distinct_external_items: observations.distinct_external_items,
+        catalog_produced_external_sources: observations.catalog_produced_external_sources,
+        external_input_edges: observations.external_input_edges,
+        total_wiring_edges: observations.total_wiring_edges,
         source_selections: best
             .plan
             .selections
@@ -278,10 +302,12 @@ fn main() -> Result<()> {
     std::fs::write(&args.report_output, serde_json::to_vec_pretty(&report)?)
         .with_context(|| format!("writing {}", args.report_output.display()))?;
     println!(
-        "status={} requested={} achieved={} exact_evaluations={} dp_states={} elapsed_us={}",
+        "status={} requested={} achieved={} external_sources={} external_edges={} exact_evaluations={} dp_states={} elapsed_us={}",
         report.status,
         report.requested_facilities,
         report.achieved_facilities,
+        report.external_source_occurrences,
+        report.external_input_edges,
         report.exact_plans_evaluated,
         report.dp_memo_states,
         report.elapsed_us
@@ -587,10 +613,9 @@ fn insert_best_subtree(
     candidate: SubtreeOption,
     seed: u64,
 ) {
-    let replace = options.get(&candidate.facilities).is_none_or(|current| {
-        (candidate.active_recipes, option_rank(seed, candidate.hash))
-            < (current.active_recipes, option_rank(seed, current.hash))
-    });
+    let replace = options
+        .get(&candidate.facilities)
+        .is_none_or(|current| option_rank(seed, candidate.hash) < option_rank(seed, current.hash));
     if replace {
         options.insert(candidate.facilities, candidate);
     }
@@ -601,10 +626,9 @@ fn insert_best_partial(
     candidate: PartialOption,
     seed: u64,
 ) {
-    let replace = options.get(&candidate.facilities).is_none_or(|current| {
-        (candidate.active_recipes, option_rank(seed, candidate.hash))
-            < (current.active_recipes, option_rank(seed, current.hash))
-    });
+    let replace = options
+        .get(&candidate.facilities)
+        .is_none_or(|current| option_rank(seed, candidate.hash) < option_rank(seed, current.hash));
     if replace {
         options.insert(candidate.facilities, candidate);
     }
@@ -870,10 +894,11 @@ fn evaluate_plan(book: &ValidatedRecipeBook, target_item: &str, plan: &Plan) -> 
 
 fn validate_final_plan(
     book: &ValidatedRecipeBook,
+    producers: &BTreeMap<String, Vec<String>>,
     target_item: &str,
     plan: &Plan,
     expected: &Evaluation,
-) -> Result<usize> {
+) -> Result<FinalObservations> {
     let throughput = book.calculate_contextual_throughput(&request_for(target_item, plan));
     ensure!(
         throughput.success,
@@ -913,7 +938,27 @@ fn validate_final_plan(
         i64::try_from(facility_instances)? == expected.facilities,
         "selected plan facility count changed during final wiring validation"
     );
-    Ok(facility_instances)
+    let external_items = throughput
+        .external_input_rates
+        .iter()
+        .map(|input| input.item.as_str())
+        .collect::<BTreeSet<_>>();
+    Ok(FinalObservations {
+        facility_instances,
+        external_source_occurrences: throughput.external_input_rates.len(),
+        distinct_external_items: external_items.len(),
+        catalog_produced_external_sources: throughput
+            .external_input_rates
+            .iter()
+            .filter(|input| producers.contains_key(&input.item))
+            .count(),
+        external_input_edges: wiring
+            .edges
+            .iter()
+            .filter(|edge| edge.kind == "external-input")
+            .count(),
+        total_wiring_edges: wiring.edges.len(),
+    })
 }
 
 fn request_for(target_item: &str, plan: &Plan) -> RecipeSourcePlanRequest {
@@ -1042,6 +1087,39 @@ mod tests {
             result.plan.selections["/target/recipe:root/input:b"],
             RecipeSource::Recipe { ref recipe } if recipe == "b-three"
         ));
+    }
+
+    #[test]
+    fn equal_size_representatives_do_not_prefer_fewer_recipe_occurrences() {
+        let seed = 19;
+        let first_hash = 3;
+        let second_hash = (4..10_000)
+            .find(|hash| option_rank(seed, *hash) < option_rank(seed, first_hash))
+            .expect("the fixed search range contains a better seeded rank");
+        let mut options = BTreeMap::new();
+        insert_best_subtree(
+            &mut options,
+            SubtreeOption {
+                facilities: 8,
+                active_recipes: 1,
+                hash: first_hash,
+                blueprint: Arc::new(Blueprint::External),
+            },
+            seed,
+        );
+        insert_best_subtree(
+            &mut options,
+            SubtreeOption {
+                facilities: 8,
+                active_recipes: 9,
+                hash: second_hash,
+                blueprint: Arc::new(Blueprint::External),
+            },
+            seed,
+        );
+
+        assert_eq!(options[&8].active_recipes, 9);
+        assert_eq!(options[&8].hash, second_hash);
     }
 
     fn producer_index_from_recipes(

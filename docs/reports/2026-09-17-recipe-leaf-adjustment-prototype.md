@@ -25,8 +25,9 @@ subtree option:
 Producer inputs recursively receive their exact demanded rates. Child option
 maps are convolved by total facility count, so choices on several root branches
 are selected together. For a given facility total, the retained representative
-first minimizes recipe occurrences and then uses the seed to choose between
-equal-size topologies. Choosing the zero-facility option is the precomputed
+is selected by the seed. Recipe occurrence count is still bounded and reported,
+but it is not minimized: doing so systematically preferred shallow factories
+with replicated facilities. Choosing the zero-facility option is the precomputed
 equivalent of removing a subtree; no trial contraction is needed.
 
 The DP stores immutable subtree blueprints and materializes one full source plan
@@ -145,6 +146,34 @@ The controlled sibling-choice test demonstrates the non-greedy case directly.
 One branch offers facility increments of four or two, a sibling offers three,
 and the remaining target is five. Greedy selection commits to four and cannot
 finish; the DP combines two and three and materializes the exact plan.
+
+## Representative-selection bias follow-up
+
+The first DP implementation used active recipe occurrence count before the seed
+when retaining one representative for a facility total. That rule was an
+unjustified directional bias: fewer occurrences often meant a shallow plan with
+many copies of the same facility stage. It was removed rather than replaced by
+an external-input target. External boundaries, distinct external items and
+facility-instance wiring edges are now report observations.
+
+A controlled before/after panel used 20 seeds for a 16-facility battery proposal
+and 20 seeds for a 59-facility xiranite proposal. All 40 results still reached the
+nominal count. Removing the occurrence minimization widened the observed recipe
+and boundary distributions:
+
+| Proposal | Observation | Before min / median / max | After min / median / max |
+| --- | --- | ---: | ---: |
+| Battery, 16 | Active recipe occurrences | 2 / 3 / 5 | 2 / 3 / 9 |
+| Battery, 16 | External source occurrences | 3 / 3 / 4 | 3 / 3 / 7 |
+| Xiranite, 59 | Active recipe occurrences | 4 / 5 / 14 | 4 / 5 / 21 |
+| Xiranite, 59 | External source occurrences | 2 / 4 / 9 | 2 / 5 / 10 |
+
+In the updated panel, battery plans had 12--24 external-input wiring edges and
+xiranite plans had 20--59. These values are distribution evidence, not desired
+limits. The change removes the known shallow-plan preference without installing
+the remembered 59-facility/96-requirement example, one edge count or one boundary
+count as a new optimization objective. Broader dataset-level sampling must decide
+whether the generated population has useful coverage or a material imbalance.
 
 ## Continuity
 

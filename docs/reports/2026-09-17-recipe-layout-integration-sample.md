@@ -10,6 +10,8 @@ end-to-end path produce across several facility counts?
 
 The remembered benchmark size was 59 facility instances and 96 logical wiring
 requirements. The 96 value was the requirement count, not the facility count.
+Both values are a prior reference for this integration check, not generator
+acceptance targets or a desired dataset distribution.
 
 ## Recipe selection
 
