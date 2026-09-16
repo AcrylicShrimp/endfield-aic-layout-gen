@@ -45,7 +45,14 @@ Three relevance formulations were compared:
 
 The probe also implements lazy active-graph cuts. It solves the compact balance
 model, finds active recipes with no active dependency path to a target producer,
-forbids that disconnected active set, and resumes the same solver.
+forbids that disconnected active set, and resumes the same solver. Once a
+candidate passes that cheap test, a second CP model is built only for its active
+recipes. For every item, this model allocates exact recipe output and external
+input to exact recipe demand, target output and waste. A relevance flow may use
+an allocation arc only when at least one material unit traverses that arc. Every
+active recipe injects one relevance unit, and only the target boundary can absorb
+those units. An accepted candidate therefore has a concrete positive material
+path from every active recipe to the target.
 
 ## Controlled observations
 
@@ -102,9 +109,27 @@ plant-moss seed
 
 The solution used 16 facilities across four active recipes and zero waste. It
 needed three lazy cuts and 9,023 ms. The analogous 64-facility case reached five
-cuts but timed out at 15 seconds. Static active-graph reachability is useful as a
-cheap separation oracle, but it does not yet prove that positive material flow
-on those arcs reaches the target.
+cuts but timed out at 15 seconds.
+
+### Selected-topology material decomposition
+
+The same 16-facility case was repeated after adding the selected-topology
+decomposition. It found the same four-recipe chain after three graph cuts in
+8,823 ms. The second model contained only 16 integer variables and 31 linear
+constraints and solved in less than one reported millisecond. Its eight positive
+allocations included all four internal or target arcs and all four external
+input arcs. The allocations exactly covered recipe inputs and outputs, 26 target
+battery units and zero waste.
+
+The 64-facility case again timed out after five graph cuts and 15,002 ms, before
+reaching a candidate eligible for decomposition. The new correctness check is
+therefore negligible for the demonstrated 16-facility candidate and does not
+address the larger case's base-search cliff.
+
+If decomposition rejects a candidate, the research sampler currently forbids
+that complete active recipe set. Workload quantities can change whether a fixed
+set is decomposable, so exhausting those sampling cuts is not a proof of global
+infeasibility. Accepted results remain exact witnesses.
 
 ## Findings
 
@@ -118,6 +143,12 @@ SCC condensation removes most of that cost, but the game catalog contains one
 connectivity alone can admit an irrelevant subcycle inside that component. It is
 a useful relaxation, not the final correctness authority.
 
+Selected-topology decomposition closes that correctness gap without slowing the
+accepted small case. The remaining bottleneck is finding a useful active recipe
+set: the compact balance model spends nearly all of the 16-facility runtime
+rejecting graph-disconnected candidates, and the 64-facility case does not reach
+the decomposition stage within 15 seconds.
+
 The current source-plan pipeline cannot represent the aggregate model without
 loss. It creates path-specific recipe occurrences and rounds facility counts per
 occurrence, while the CP model shares production across consumers and rounds the
@@ -127,22 +158,21 @@ graph and direct facility-instance expansion.
 
 ## Next prototype
 
-Keep the compact CP kernel and add an explicit positive material-flow
-decomposition for the selected active recipes. This stage should:
+Keep the compact CP kernel and its selected-topology material decomposition. The
+next stage should:
 
-1. allocate each produced item to active consumers, target output or surplus;
-2. allocate external cuts to concrete consumer demands;
-3. reject or cut active recipes whose positive flow cannot reach the target;
-4. expand aggregate workloads directly into facility instances and verify the
-   exact requested count; and
-5. sample topology with seeded weights or bounded constraints over cut count,
+1. expand aggregate workloads directly into facility instances and verify the
+   exact requested count and per-instance capacity;
+2. split the concrete recipe-level allocations across those instances without
+   changing item totals; and
+3. sample topology with seeded weights or bounded constraints over cut count,
    recipe types and depth instead of maximizing throughput.
 
-Use lazy separation so the common case keeps the 1,500-variable compact model.
-Only selected active recipes should receive detailed flow variables. Persistent
-workers should reuse the catalog, SCC condensation and base model across sample
-requests. The next measurement must include decomposition, instance expansion
-and validation; the 11 ms balance solve alone is not an integrated throughput
+Persistent workers should reuse the catalog, SCC condensation and base model
+across sample requests. The next search experiment should address the 64-facility
+active-set cliff with seeded structural guidance rather than weakening material
+or target relevance. The next integrated measurement must include instance
+expansion and validation; the 11 ms balance solve alone is not a throughput
 claim.
 
 ## Reproduction

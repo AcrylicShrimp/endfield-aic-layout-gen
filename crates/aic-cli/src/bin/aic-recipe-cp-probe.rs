@@ -74,6 +74,8 @@ struct ModelSummary {
     integer_variables: usize,
     linear_constraints: usize,
     lazy_connectivity_cuts: usize,
+    material_decomposition_attempts: usize,
+    material_decomposition_rejections: usize,
 }
 
 #[derive(Serialize)]
@@ -88,6 +90,23 @@ struct SolutionSummary {
     external_inputs: Vec<ItemUnits>,
     waste_outputs: Vec<ItemUnits>,
     relevance_arcs: Vec<ActiveRelevanceArc>,
+    material_flow: Option<MaterialFlowSummary>,
+}
+
+#[derive(Serialize)]
+struct MaterialFlowSummary {
+    integer_variables: usize,
+    linear_constraints: usize,
+    solve_ms: u128,
+    allocations: Vec<MaterialAllocation>,
+}
+
+#[derive(Serialize)]
+struct MaterialAllocation {
+    item: String,
+    source: String,
+    target: String,
+    units: i32,
 }
 
 #[derive(Serialize)]
@@ -209,86 +228,95 @@ fn main() -> Result<()> {
     let mut brancher = solver.default_brancher();
     let mut resolver = ResolutionResolver::default();
     let mut termination = TimeBudget::starting_now(Duration::from_millis(args.time_limit_ms));
-    let (status, solution, lazy_cuts) = if args.connectivity == ConnectivityMode::Lazy {
-        ensure!(
-            !args.maximize_target,
-            "lazy connectivity currently supports satisfaction or --free-target"
-        );
-        solve_with_lazy_connectivity(
-            &mut solver,
-            &mut brancher,
-            &mut termination,
-            &mut resolver,
-            book.recipe_book().recipes.as_slice(),
-            &recipe_vars,
-            &item_vars,
-            &relevance,
-            target_units,
-            &args.target_item,
-            args.max_lazy_cuts,
-        )
-    } else if args.maximize_target {
-        let callback = |_: &Solver,
-                        _: SolutionReference,
-                        _: &DefaultBrancher,
-                        _: &ResolutionResolver|
-         -> ControlFlow<()> { ControlFlow::Continue(()) };
-        match solver.optimise(
-            &mut brancher,
-            &mut termination,
-            &mut resolver,
-            LinearSatUnsat::new(OptimisationDirection::Maximise, target_units, callback),
-        ) {
-            OptimisationResult::Optimal(solution) => (
-                "optimal",
-                Some(extract_solution(
-                    &solution,
-                    book.recipe_book().recipes.as_slice(),
-                    &recipe_vars,
-                    &item_vars,
-                    &relevance,
-                    target_units,
-                )),
-                0,
-            ),
-            OptimisationResult::Satisfiable(solution)
-            | OptimisationResult::Stopped(solution, ()) => (
-                "feasible-time-limit",
-                Some(extract_solution(
-                    &solution,
-                    book.recipe_book().recipes.as_slice(),
-                    &recipe_vars,
-                    &item_vars,
-                    &relevance,
-                    target_units,
-                )),
-                0,
-            ),
-            OptimisationResult::Unsatisfiable => ("unsatisfiable", None, 0),
-            OptimisationResult::Unknown => ("time-limit", None, 0),
-        }
-    } else {
-        match solver.satisfy(&mut brancher, &mut termination, &mut resolver) {
-            SatisfactionResult::Satisfiable(result) => (
-                "satisfiable",
-                Some(extract_solution(
-                    &result.solution(),
-                    book.recipe_book().recipes.as_slice(),
-                    &recipe_vars,
-                    &item_vars,
-                    &relevance,
-                    target_units,
-                )),
-                0,
-            ),
-            SatisfactionResult::Unsatisfiable(_, _, _) => ("unsatisfiable", None, 0),
-            SatisfactionResult::Unknown(_, _, _) => ("time-limit", None, 0),
-        }
-    };
+    let (status, solution, lazy_cuts, decomposition_attempts, decomposition_rejections) =
+        if args.connectivity == ConnectivityMode::Lazy {
+            ensure!(
+                !args.maximize_target,
+                "lazy connectivity currently supports satisfaction or --free-target"
+            );
+            solve_with_lazy_connectivity(
+                &mut solver,
+                &mut brancher,
+                &mut termination,
+                &mut resolver,
+                book.recipe_book().recipes.as_slice(),
+                &recipe_vars,
+                &item_vars,
+                &relevance,
+                target_units,
+                &args.target_item,
+                args.max_lazy_cuts,
+            )
+        } else if args.maximize_target {
+            let callback = |_: &Solver,
+                            _: SolutionReference,
+                            _: &DefaultBrancher,
+                            _: &ResolutionResolver|
+             -> ControlFlow<()> { ControlFlow::Continue(()) };
+            match solver.optimise(
+                &mut brancher,
+                &mut termination,
+                &mut resolver,
+                LinearSatUnsat::new(OptimisationDirection::Maximise, target_units, callback),
+            ) {
+                OptimisationResult::Optimal(solution) => (
+                    "optimal",
+                    Some(extract_solution(
+                        &solution,
+                        book.recipe_book().recipes.as_slice(),
+                        &recipe_vars,
+                        &item_vars,
+                        &relevance,
+                        target_units,
+                    )),
+                    0,
+                    0,
+                    0,
+                ),
+                OptimisationResult::Satisfiable(solution)
+                | OptimisationResult::Stopped(solution, ()) => (
+                    "feasible-time-limit",
+                    Some(extract_solution(
+                        &solution,
+                        book.recipe_book().recipes.as_slice(),
+                        &recipe_vars,
+                        &item_vars,
+                        &relevance,
+                        target_units,
+                    )),
+                    0,
+                    0,
+                    0,
+                ),
+                OptimisationResult::Unsatisfiable => ("unsatisfiable", None, 0, 0, 0),
+                OptimisationResult::Unknown => ("time-limit", None, 0, 0, 0),
+            }
+        } else {
+            match solver.satisfy(&mut brancher, &mut termination, &mut resolver) {
+                SatisfactionResult::Satisfiable(result) => (
+                    "satisfiable",
+                    Some(extract_solution(
+                        &result.solution(),
+                        book.recipe_book().recipes.as_slice(),
+                        &recipe_vars,
+                        &item_vars,
+                        &relevance,
+                        target_units,
+                    )),
+                    0,
+                    0,
+                    0,
+                ),
+                SatisfactionResult::Unsatisfiable(_, _, _) => ("unsatisfiable", None, 0, 0, 0),
+                SatisfactionResult::Unknown(_, _, _) => ("time-limit", None, 0, 0, 0),
+            }
+        };
     model.lazy_connectivity_cuts = lazy_cuts;
+    model.material_decomposition_attempts = decomposition_attempts;
+    model.material_decomposition_rejections = decomposition_rejections;
     let elapsed_ms = started.elapsed().as_millis();
     let report = Report {
-        schema_version: 1,
+        schema_version: 2,
         status,
         target_item: args.target_item,
         requested_facilities: args.facilities,
@@ -309,7 +337,7 @@ fn main() -> Result<()> {
                     "SCC relevance proves component connectivity; recipes inside one active SCC can still form an irrelevant subcycle."
                 }
                 ConnectivityMode::Lazy => {
-                    "Lazy cuts enforce target reachability in the active recipe graph but are not linked to item-specific material allocation."
+                    "Lazy mode verifies accepted solutions with item-specific material allocation; rejected active sets are sampling cuts, not a proof that every workload on that topology is infeasible."
                 }
             },
             "The first feasible solution has no quality or diversity objective.",
@@ -338,15 +366,18 @@ fn solve_with_lazy_connectivity(
     target_units: DomainId,
     target_item: &str,
     max_cuts: usize,
-) -> (&'static str, Option<SolutionSummary>, usize) {
+) -> (&'static str, Option<SolutionSummary>, usize, usize, usize) {
     enum Step {
         Connected(SolutionSummary),
         Disconnected(Vec<usize>, SolutionSummary),
+        DecompositionUnknown(SolutionSummary),
         Unsatisfiable,
         Unknown,
     }
 
     let mut cuts = 0;
+    let mut decomposition_attempts = 0;
+    let mut decomposition_rejections = 0;
     loop {
         let step = match solver.satisfy(brancher, termination, resolver) {
             SatisfactionResult::Satisfiable(result) => {
@@ -362,7 +393,30 @@ fn solve_with_lazy_connectivity(
                 let disconnected =
                     disconnected_active_recipes(&solution, recipes, recipe_vars, target_item);
                 if disconnected.is_empty() {
-                    Step::Connected(summary)
+                    decomposition_attempts += 1;
+                    match decompose_material_flow(
+                        &solution,
+                        recipes,
+                        recipe_vars,
+                        item_vars,
+                        target_units,
+                        target_item,
+                        termination,
+                    ) {
+                        MaterialDecompositionResult::Feasible(material_flow) => {
+                            let mut summary = summary;
+                            summary.material_flow = Some(material_flow);
+                            Step::Connected(summary)
+                        }
+                        MaterialDecompositionResult::Infeasible => {
+                            decomposition_rejections += 1;
+                            Step::Disconnected(
+                                active_recipe_indices(&solution, recipe_vars),
+                                summary,
+                            )
+                        }
+                        MaterialDecompositionResult::Unknown => Step::DecompositionUnknown(summary),
+                    }
                 } else {
                     Step::Disconnected(disconnected, summary)
                 }
@@ -371,9 +425,23 @@ fn solve_with_lazy_connectivity(
             SatisfactionResult::Unknown(_, _, _) => Step::Unknown,
         };
         match step {
-            Step::Connected(solution) => return ("satisfiable", Some(solution), cuts),
+            Step::Connected(solution) => {
+                return (
+                    "satisfiable",
+                    Some(solution),
+                    cuts,
+                    decomposition_attempts,
+                    decomposition_rejections,
+                );
+            }
             Step::Disconnected(_, solution) if cuts >= max_cuts => {
-                return ("lazy-cut-limit", Some(solution), cuts);
+                return (
+                    "lazy-cut-limit",
+                    Some(solution),
+                    cuts,
+                    decomposition_attempts,
+                    decomposition_rejections,
+                );
             }
             Step::Disconnected(disconnected, _) => {
                 let rhs = i32::try_from(disconnected.len().saturating_sub(1))
@@ -391,9 +459,457 @@ fn solve_with_lazy_connectivity(
                     .post();
                 cuts += 1;
             }
-            Step::Unsatisfiable => return ("unsatisfiable", None, cuts),
-            Step::Unknown => return ("time-limit", None, cuts),
+            Step::DecompositionUnknown(solution) => {
+                return (
+                    "decomposition-time-limit",
+                    Some(solution),
+                    cuts,
+                    decomposition_attempts,
+                    decomposition_rejections,
+                );
+            }
+            Step::Unsatisfiable => {
+                return (
+                    "unsatisfiable",
+                    None,
+                    cuts,
+                    decomposition_attempts,
+                    decomposition_rejections,
+                );
+            }
+            Step::Unknown => {
+                return (
+                    "time-limit",
+                    None,
+                    cuts,
+                    decomposition_attempts,
+                    decomposition_rejections,
+                );
+            }
         }
+    }
+}
+
+fn active_recipe_indices(
+    solution: &impl ProblemSolution,
+    recipe_vars: &[RecipeVars],
+) -> Vec<usize> {
+    recipe_vars
+        .iter()
+        .enumerate()
+        .filter_map(|(index, vars)| (solution.get_integer_value(vars.active) == 1).then_some(index))
+        .collect()
+}
+
+enum MaterialDecompositionResult {
+    Feasible(MaterialFlowSummary),
+    Infeasible,
+    Unknown,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum MaterialSource {
+    Recipe(usize),
+    External,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum MaterialTarget {
+    Recipe(usize),
+    Target,
+    Waste,
+}
+
+struct MaterialAllocationVar {
+    item: String,
+    source: MaterialSource,
+    target: MaterialTarget,
+    units: DomainId,
+    relevance: Option<DomainId>,
+}
+
+#[allow(clippy::too_many_arguments)]
+fn decompose_material_flow(
+    solution: &impl ProblemSolution,
+    recipes: &[Recipe],
+    recipe_vars: &[RecipeVars],
+    item_vars: &BTreeMap<String, ItemVars>,
+    target_units_var: DomainId,
+    target_item: &str,
+    termination: &mut TimeBudget,
+) -> MaterialDecompositionResult {
+    let started = Instant::now();
+    let active = active_recipe_indices(solution, recipe_vars);
+    let active_set = active.iter().copied().collect::<BTreeSet<_>>();
+    let runs = recipe_vars
+        .iter()
+        .map(|vars| solution.get_integer_value(vars.runs))
+        .collect::<Vec<_>>();
+    let target_units = solution.get_integer_value(target_units_var);
+    let mut solver = Solver::default();
+    let tag = solver.new_constraint_tag();
+    let mut allocations = Vec::<MaterialAllocationVar>::new();
+    let mut linear_constraints = 0_usize;
+    let relevance_bound = i32::try_from(active.len()).expect("active recipe count fits i32");
+
+    for item in item_vars.keys() {
+        let producers = active
+            .iter()
+            .filter_map(|&recipe| {
+                let quantity = quantity_for(&recipes[recipe].outputs, item)
+                    .expect("base model already validated recipe output quantities");
+                let supply = runs[recipe]
+                    .checked_mul(quantity)
+                    .expect("base model material bound covers recipe output");
+                (supply > 0).then_some((recipe, supply))
+            })
+            .collect::<Vec<_>>();
+        let consumers = active
+            .iter()
+            .filter_map(|&recipe| {
+                let quantity = quantity_for(&recipes[recipe].inputs, item)
+                    .expect("base model already validated recipe input quantities");
+                let demand = runs[recipe]
+                    .checked_mul(quantity)
+                    .expect("base model material bound covers recipe input");
+                (demand > 0).then_some((recipe, demand))
+            })
+            .collect::<Vec<_>>();
+        let external = solution.get_integer_value(item_vars[item].external);
+        let waste = solution.get_integer_value(item_vars[item].waste);
+        let target = if item == target_item { target_units } else { 0 };
+
+        for &(source, supply) in &producers {
+            for &(consumer, demand) in &consumers {
+                add_material_allocation(
+                    &mut solver,
+                    &mut allocations,
+                    &mut linear_constraints,
+                    item,
+                    MaterialSource::Recipe(source),
+                    MaterialTarget::Recipe(consumer),
+                    supply.min(demand),
+                    relevance_bound,
+                    tag,
+                );
+            }
+            if target > 0 {
+                add_material_allocation(
+                    &mut solver,
+                    &mut allocations,
+                    &mut linear_constraints,
+                    item,
+                    MaterialSource::Recipe(source),
+                    MaterialTarget::Target,
+                    supply.min(target),
+                    relevance_bound,
+                    tag,
+                );
+            }
+            if waste > 0 {
+                add_material_allocation(
+                    &mut solver,
+                    &mut allocations,
+                    &mut linear_constraints,
+                    item,
+                    MaterialSource::Recipe(source),
+                    MaterialTarget::Waste,
+                    supply.min(waste),
+                    relevance_bound,
+                    tag,
+                );
+            }
+        }
+        if external > 0 {
+            for &(consumer, demand) in &consumers {
+                add_material_allocation(
+                    &mut solver,
+                    &mut allocations,
+                    &mut linear_constraints,
+                    item,
+                    MaterialSource::External,
+                    MaterialTarget::Recipe(consumer),
+                    external.min(demand),
+                    relevance_bound,
+                    tag,
+                );
+            }
+        }
+
+        for &(producer, supply) in &producers {
+            post_allocation_total(
+                &mut solver,
+                &allocations,
+                |arc| arc.item == *item && arc.source == MaterialSource::Recipe(producer),
+                supply,
+                tag,
+            );
+            linear_constraints += 1;
+        }
+        for &(consumer, demand) in &consumers {
+            post_allocation_total(
+                &mut solver,
+                &allocations,
+                |arc| arc.item == *item && arc.target == MaterialTarget::Recipe(consumer),
+                demand,
+                tag,
+            );
+            linear_constraints += 1;
+        }
+        if external > 0 {
+            post_allocation_total(
+                &mut solver,
+                &allocations,
+                |arc| arc.item == *item && arc.source == MaterialSource::External,
+                external,
+                tag,
+            );
+            linear_constraints += 1;
+        }
+        if waste > 0 {
+            post_allocation_total(
+                &mut solver,
+                &allocations,
+                |arc| arc.item == *item && arc.target == MaterialTarget::Waste,
+                waste,
+                tag,
+            );
+            linear_constraints += 1;
+        }
+        if target > 0 {
+            post_allocation_total(
+                &mut solver,
+                &allocations,
+                |arc| arc.item == *item && arc.target == MaterialTarget::Target,
+                target,
+                tag,
+            );
+            linear_constraints += 1;
+        }
+    }
+
+    for &recipe in &active {
+        let mut terms = Vec::new();
+        for arc in &allocations {
+            let Some(relevance) = arc.relevance else {
+                continue;
+            };
+            if arc.source == MaterialSource::Recipe(recipe) {
+                terms.push(relevance.scaled(1));
+            }
+            if arc.target == MaterialTarget::Recipe(recipe) {
+                terms.push(relevance.scaled(-1));
+            }
+        }
+        solver
+            .add_constraint(pumpkin_solver::equals(terms, 1, tag))
+            .post();
+        linear_constraints += 1;
+    }
+
+    debug_assert!(allocations.iter().all(|arc| match arc.source {
+        MaterialSource::Recipe(recipe) => active_set.contains(&recipe),
+        MaterialSource::External => true,
+    }));
+    let integer_variables = allocations.len()
+        + allocations
+            .iter()
+            .filter(|arc| arc.relevance.is_some())
+            .count()
+            * 2;
+    let mut brancher = solver.default_brancher();
+    let mut resolver = ResolutionResolver::default();
+    match solver.satisfy(&mut brancher, termination, &mut resolver) {
+        SatisfactionResult::Satisfiable(result) => {
+            let assignment = result.solution();
+            let material_allocations = allocations
+                .iter()
+                .filter_map(|arc| {
+                    let units = assignment.get_integer_value(arc.units);
+                    (units > 0).then(|| MaterialAllocation {
+                        item: arc.item.clone(),
+                        source: material_source_name(arc.source, recipes),
+                        target: material_target_name(arc.target, recipes, target_item),
+                        units,
+                    })
+                })
+                .collect();
+            MaterialDecompositionResult::Feasible(MaterialFlowSummary {
+                integer_variables,
+                linear_constraints,
+                solve_ms: started.elapsed().as_millis(),
+                allocations: material_allocations,
+            })
+        }
+        SatisfactionResult::Unsatisfiable(_, _, _) => MaterialDecompositionResult::Infeasible,
+        SatisfactionResult::Unknown(_, _, _) => MaterialDecompositionResult::Unknown,
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn add_material_allocation(
+    solver: &mut Solver,
+    allocations: &mut Vec<MaterialAllocationVar>,
+    linear_constraints: &mut usize,
+    item: &str,
+    source: MaterialSource,
+    target: MaterialTarget,
+    upper: i32,
+    relevance_bound: i32,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) {
+    if upper <= 0 {
+        return;
+    }
+    let units = solver.new_named_bounded_integer(
+        0,
+        upper,
+        format!(
+            "material:{item}:{}->{}",
+            source_label(source),
+            target_label(target)
+        ),
+    );
+    let relevance = match (source, target) {
+        (MaterialSource::Recipe(source_recipe), MaterialTarget::Recipe(target_recipe))
+            if source_recipe != target_recipe =>
+        {
+            Some(post_material_relevance(
+                solver,
+                units,
+                upper,
+                relevance_bound,
+                item,
+                source,
+                target,
+                tag,
+                linear_constraints,
+            ))
+        }
+        (MaterialSource::Recipe(_), MaterialTarget::Target) => Some(post_material_relevance(
+            solver,
+            units,
+            upper,
+            relevance_bound,
+            item,
+            source,
+            target,
+            tag,
+            linear_constraints,
+        )),
+        _ => None,
+    };
+    allocations.push(MaterialAllocationVar {
+        item: item.to_owned(),
+        source,
+        target,
+        units,
+        relevance,
+    });
+}
+
+#[allow(clippy::too_many_arguments)]
+fn post_material_relevance(
+    solver: &mut Solver,
+    units: DomainId,
+    units_upper: i32,
+    relevance_bound: i32,
+    item: &str,
+    source: MaterialSource,
+    target: MaterialTarget,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+    linear_constraints: &mut usize,
+) -> DomainId {
+    let used = solver.new_named_bounded_integer(
+        0,
+        1,
+        format!(
+            "material-used:{item}:{}->{}",
+            source_label(source),
+            target_label(target)
+        ),
+    );
+    solver
+        .add_constraint(pumpkin_solver::less_than_or_equals(
+            vec![units.scaled(1), used.scaled(-units_upper)],
+            0,
+            tag,
+        ))
+        .post();
+    solver
+        .add_constraint(pumpkin_solver::less_than_or_equals(
+            vec![used.scaled(1), units.scaled(-1)],
+            0,
+            tag,
+        ))
+        .post();
+    let relevance = solver.new_named_bounded_integer(
+        0,
+        relevance_bound,
+        format!(
+            "material-relevance:{item}:{}->{}",
+            source_label(source),
+            target_label(target)
+        ),
+    );
+    solver
+        .add_constraint(pumpkin_solver::less_than_or_equals(
+            vec![relevance.scaled(1), used.scaled(-relevance_bound)],
+            0,
+            tag,
+        ))
+        .post();
+    *linear_constraints += 3;
+    relevance
+}
+
+fn post_allocation_total(
+    solver: &mut Solver,
+    allocations: &[MaterialAllocationVar],
+    select: impl Fn(&MaterialAllocationVar) -> bool,
+    total: i32,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) {
+    solver
+        .add_constraint(pumpkin_solver::equals(
+            allocations
+                .iter()
+                .filter(|arc| select(arc))
+                .map(|arc| arc.units.scaled(1))
+                .collect::<Vec<_>>(),
+            total,
+            tag,
+        ))
+        .post();
+}
+
+fn source_label(source: MaterialSource) -> String {
+    match source {
+        MaterialSource::Recipe(recipe) => format!("recipe-{recipe}"),
+        MaterialSource::External => "external".to_owned(),
+    }
+}
+
+fn target_label(target: MaterialTarget) -> String {
+    match target {
+        MaterialTarget::Recipe(recipe) => format!("recipe-{recipe}"),
+        MaterialTarget::Target => "target".to_owned(),
+        MaterialTarget::Waste => "waste".to_owned(),
+    }
+}
+
+fn material_source_name(source: MaterialSource, recipes: &[Recipe]) -> String {
+    match source {
+        MaterialSource::Recipe(recipe) => recipes[recipe].id.clone(),
+        MaterialSource::External => "external".to_owned(),
+    }
+}
+
+fn material_target_name(target: MaterialTarget, recipes: &[Recipe], target_item: &str) -> String {
+    match target {
+        MaterialTarget::Recipe(recipe) => recipes[recipe].id.clone(),
+        MaterialTarget::Target => format!("target:{target_item}"),
+        MaterialTarget::Waste => "waste".to_owned(),
     }
 }
 
@@ -813,6 +1329,8 @@ fn build_model(
             integer_variables,
             linear_constraints,
             lazy_connectivity_cuts: 0,
+            material_decomposition_attempts: 0,
+            material_decomposition_rejections: 0,
         },
     })
 }
@@ -1110,6 +1628,7 @@ fn extract_solution(
         external_inputs,
         waste_outputs,
         relevance_arcs: active_relevance,
+        material_flow: None,
     }
 }
 
