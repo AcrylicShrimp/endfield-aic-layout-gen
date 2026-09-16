@@ -14,6 +14,12 @@ This probe asks whether a global constraint model is a better semantic-selection
 kernel. It is deliberately separate from production generation and does not
 claim compatibility with the existing path-specific source-plan contract.
 
+**Final decision (2026-09-17):** do not use this CP formulation as the semantic
+selector. Its compact balance and selected-topology verification stages are
+fast, but discovering a useful connected active set took 8,823 ms at only 16
+facilities and timed out at 64. The leaf-adjustment replacement is documented in
+`2026-09-17-recipe-leaf-adjustment-prototype.md`.
+
 ## Prototype model
 
 The research binary is `aic-recipe-cp-probe`. It uses a 20-second integral time
