@@ -12,6 +12,8 @@ learning = ["outcomes", "aic-learning/libtorch"]
 
 [dependencies]
 aic-data.workspace = true
+aic-layout.workspace = true
+aic-layout-gen.workspace = true
 aic-learning = { workspace = true, optional = true }
 anyhow.workspace = true
 clap.workspace = true

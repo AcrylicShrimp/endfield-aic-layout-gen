@@ -33,6 +33,8 @@ name = "aic-cli"
 version = "0.1.0"
 dependencies = [
  "aic-data",
+ "aic-layout",
+ "aic-layout-gen",
  "aic-learning",
  "anyhow",
  "clap",

@@ -11,6 +11,11 @@ use aic_data::recipes::{
     build_contextual_facility_instance_wiring, calculate_contextual_facility_requirements,
     check_recipe_source_plan, load_recipe_book,
 };
+use aic_layout::physical::Block;
+use aic_layout_gen::{
+    io::load_catalogs,
+    placement::{self, DensityBand, DensityPlacementRequest, PlacementRequest},
+};
 use anyhow::{Context, Result, anyhow, ensure};
 use clap::Parser;
 use serde::Serialize;
@@ -38,6 +43,19 @@ struct Args {
     max_depth: usize,
     #[arg(long)]
     report_output: PathBuf,
+    /// Optional normalized catalog directory for one frozen-block placement sample.
+    #[arg(long)]
+    catalog_dir: Option<PathBuf>,
+    #[arg(long, default_value_t = 0)]
+    placement_gap_min: i64,
+    #[arg(long, default_value_t = 4)]
+    placement_gap_max: i64,
+    /// Research-only achieved-density band lower bound (inclusive).
+    #[arg(long, requires = "placement_density_max")]
+    placement_density_min: Option<f64>,
+    /// Research-only achieved-density band upper bound (exclusive).
+    #[arg(long, requires = "placement_density_min")]
+    placement_density_max: Option<f64>,
 }
 
 #[derive(Serialize)]
@@ -68,8 +86,30 @@ struct Report {
     catalog_produced_external_sources: usize,
     external_input_edges: usize,
     total_wiring_edges: usize,
+    placement: Option<PlacementObservation>,
     source_selections: Vec<OutputSelection>,
     moves: Vec<MoveRecord>,
+}
+
+#[derive(Serialize)]
+struct PlacementObservation {
+    semantic_facilities: Vec<SemanticFacilityBlock>,
+    sequence_pair: [Vec<usize>; 2],
+    body_width: i64,
+    body_height: i64,
+    body_cells: u64,
+    body_bounding_area: u64,
+    body_density: f64,
+    gap: [i64; 2],
+    canvas_width: i64,
+    canvas_height: i64,
+}
+
+#[derive(Serialize)]
+struct SemanticFacilityBlock {
+    semantic_node: String,
+    block: String,
+    facility: String,
 }
 
 #[derive(Serialize)]
@@ -106,6 +146,7 @@ struct FinalObservations {
     catalog_produced_external_sources: usize,
     external_input_edges: usize,
     total_wiring_edges: usize,
+    facility_blocks: Vec<(String, Block)>,
 }
 
 #[derive(Clone)]
@@ -258,10 +299,15 @@ fn main() -> Result<()> {
         &best.plan,
         &best.evaluation,
     )?;
+    let placement = args
+        .catalog_dir
+        .as_deref()
+        .map(|catalog_dir| place_facilities(catalog_dir, &args, &observations.facility_blocks))
+        .transpose()?;
     exact_plans_evaluated += 1;
     let achieved = best.evaluation.facilities;
     let report = Report {
-        schema_version: 3,
+        schema_version: 4,
         status: if achieved == args.facilities {
             "exact"
         } else {
@@ -291,6 +337,7 @@ fn main() -> Result<()> {
         catalog_produced_external_sources: observations.catalog_produced_external_sources,
         external_input_edges: observations.external_input_edges,
         total_wiring_edges: observations.total_wiring_edges,
+        placement,
         source_selections: best
             .plan
             .selections
@@ -943,6 +990,26 @@ fn validate_final_plan(
         .iter()
         .map(|input| input.item.as_str())
         .collect::<BTreeSet<_>>();
+    let facility_blocks = wiring
+        .nodes
+        .iter()
+        .filter_map(|node| match node {
+            FacilityInstanceWiringNode::Facility { id, facility, .. } => {
+                Some((id.clone(), facility.clone()))
+            }
+            _ => None,
+        })
+        .enumerate()
+        .map(|(index, (semantic_node, facility))| {
+            (
+                semantic_node,
+                Block {
+                    id: format!("block-{index}"),
+                    facility,
+                },
+            )
+        })
+        .collect();
     Ok(FinalObservations {
         facility_instances,
         external_source_occurrences: throughput.external_input_rates.len(),
@@ -958,6 +1025,69 @@ fn validate_final_plan(
             .filter(|edge| edge.kind == "external-input")
             .count(),
         total_wiring_edges: wiring.edges.len(),
+        facility_blocks,
+    })
+}
+
+fn place_facilities(
+    catalog_dir: &std::path::Path,
+    args: &Args,
+    facility_blocks: &[(String, Block)],
+) -> Result<PlacementObservation> {
+    ensure!(
+        args.placement_gap_min >= 0
+            && args.placement_gap_max >= args.placement_gap_min
+            && args.placement_gap_max <= 128,
+        "placement gaps must satisfy 0 <= min <= max <= 128"
+    );
+    let loaded = load_catalogs(catalog_dir)?;
+    let blocks = facility_blocks
+        .iter()
+        .map(|(_, block)| block.clone())
+        .collect::<Vec<_>>();
+    let sampled = match (args.placement_density_min, args.placement_density_max) {
+        (Some(minimum), Some(maximum)) => placement::sample_in_density_band(
+            &loaded.catalogs,
+            &blocks,
+            &DensityPlacementRequest {
+                seed: args.seed,
+                band: DensityBand { minimum, maximum },
+                max_uniform_gap: 128,
+                margin: 6,
+                max_cells: 250_000_000,
+            },
+        ),
+        (None, None) => placement::sample(
+            &loaded.catalogs,
+            &blocks,
+            &PlacementRequest {
+                seed: args.seed,
+                gap: [args.placement_gap_min, args.placement_gap_max],
+                margin: 6,
+                max_cells: 250_000_000,
+            },
+        ),
+        _ => unreachable!("clap requires both density bounds"),
+    }
+    .map_err(|diagnostic| anyhow!("frozen facility placement failed: {diagnostic:?}"))?;
+    Ok(PlacementObservation {
+        semantic_facilities: facility_blocks
+            .iter()
+            .map(|(semantic_node, block)| SemanticFacilityBlock {
+                semantic_node: semantic_node.clone(),
+                block: block.id.clone(),
+                facility: block.facility.clone(),
+            })
+            .collect(),
+        sequence_pair: sampled.sequence_pair,
+        body_width: sampled.body_width,
+        body_height: sampled.body_height,
+        body_cells: sampled.body_cells,
+        body_bounding_area: sampled.body_bounding_area,
+        body_density: sampled.body_density,
+        gap: sampled.gap,
+        canvas_width: sampled.canvas_width,
+        canvas_height: sampled.canvas_height,
     })
 }
 

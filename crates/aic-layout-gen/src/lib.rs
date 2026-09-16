@@ -2,6 +2,7 @@
 mod config;
 mod generate;
 mod packing;
+pub mod placement;
 pub use config::Config;
 pub use generate::{Attempt, Failure, Generated, Generator};
 pub mod batch;
