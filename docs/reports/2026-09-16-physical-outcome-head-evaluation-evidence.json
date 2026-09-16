@@ -1,0 +1,1522 @@
+{
+  "action_sampling": "family-balanced-random-compatible-v1",
+  "cases": 16,
+  "catalog_sha256": "2dfe65fe4a40d942f555303f745a9a9e71f699744c75502b0008883a46fdf0ca",
+  "checkpoint_sha256": "ac9ff8acfadd1ca8e76c49cc437d507bddd828b0c50b7380cb637ed121632377",
+  "complete_episodes": 32,
+  "config_sha256": "35e8cae7dea532954c3ec83188c622d1ca05badd1ef746fe310bdeb3bad7fc92",
+  "episodes": 32,
+  "groups": {
+    "product=copper-liquid": {
+      "metrics": {
+        "area": {
+          "evaluation_fitted_constant_mae": 0.08446315432315964,
+          "labels": 46,
+          "mae": 0.10151814507401508,
+          "raw_mae": 49.97540010576663,
+          "rmse": 0.11472278986775511
+        },
+        "changed": {
+          "accuracy": 0.90625,
+          "auroc": 0.8216145833333334,
+          "brier": 0.07601375810058707,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.9375,
+            "brier": 0.05859375,
+            "log_loss": 0.2337916587064593
+          },
+          "labels": 256,
+          "log_loss": 0.24500800760214153,
+          "negatives": 16,
+          "positives": 240,
+          "prevalence": 0.9375
+        },
+        "completion": {
+          "accuracy": 0.8083333333333333,
+          "auroc": 0.9798296727924698,
+          "brier": 0.18471511475314437,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.8083333333333333,
+            "brier": 0.15493055555555557,
+            "log_loss": 0.48863064377205784
+          },
+          "labels": 240,
+          "log_loss": 0.8784084875738725,
+          "negatives": 194,
+          "positives": 46,
+          "prevalence": 0.19166666666666668
+        },
+        "conflict_count": {
+          "evaluation_fitted_constant_mae": 0.08432403734988639,
+          "labels": 240,
+          "mae": 0.12182799566847582,
+          "raw_mae": 0.9177251223016921,
+          "rmse": 0.14466561279162665
+        },
+        "conflict_flag": {
+          "accuracy": 0.5708333333333333,
+          "auroc": 0.91015625,
+          "brier": 0.4092510134634338,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.5333333333333333,
+            "brier": 0.24888888888888888,
+            "log_loss": 0.6909233093138181
+          },
+          "labels": 240,
+          "log_loss": 2.602283023795477,
+          "negatives": 112,
+          "positives": 128,
+          "prevalence": 0.5333333333333333
+        },
+        "pending_count": {
+          "evaluation_fitted_constant_mae": 0.17026371073184723,
+          "labels": 240,
+          "mae": 0.14368768421312172,
+          "raw_mae": 3.7305589860041284,
+          "rmse": 0.17582404422668124
+        },
+        "pending_flag": {
+          "accuracy": 0.7583333333333333,
+          "auroc": 0.8976885183781735,
+          "brier": 0.23408631402428962,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.7583333333333333,
+            "brier": 0.1832638888888889,
+            "log_loss": 0.5529934580933702
+          },
+          "labels": 240,
+          "log_loss": 1.404813925059916,
+          "negatives": 58,
+          "positives": 182,
+          "prevalence": 0.7583333333333333
+        },
+        "rejected": {
+          "accuracy": 1.0,
+          "auroc": null,
+          "brier": 2.424932009396679e-14,
+          "evaluation_fitted_constant": {
+            "accuracy": 1.0,
+            "brier": 0.0,
+            "log_loss": 0.0
+          },
+          "labels": 256,
+          "log_loss": 1.138206929057472e-7,
+          "negatives": 256,
+          "positives": 0,
+          "prevalence": 0.0
+        },
+        "route_budget": {
+          "accuracy": 1.0,
+          "auroc": null,
+          "brier": 1.6461682384598914e-14,
+          "evaluation_fitted_constant": {
+            "accuracy": 1.0,
+            "brier": 0.0,
+            "log_loss": 0.0
+          },
+          "labels": 240,
+          "log_loss": 1.070005972250914e-7,
+          "negatives": 240,
+          "positives": 0,
+          "prevalence": 0.0
+        },
+        "transport": {
+          "evaluation_fitted_constant_mae": 0.11854671862941144,
+          "labels": 46,
+          "mae": 0.14360209262889365,
+          "raw_mae": 9.38975249166074,
+          "rmse": 0.20238664407467463
+        },
+        "turns": {
+          "evaluation_fitted_constant_mae": 0.14929113214543274,
+          "labels": 46,
+          "mae": 0.13183285360750946,
+          "raw_mae": 1.8173758646716243,
+          "rmse": 0.16378454433777015
+        },
+        "unchanged": {
+          "accuracy": 0.90625,
+          "auroc": 0.8213541666666667,
+          "brier": 0.07793636908399358,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.9375,
+            "brier": 0.05859375,
+            "log_loss": 0.2337916587064593
+          },
+          "labels": 256,
+          "log_loss": 0.24896961178668353,
+          "negatives": 240,
+          "positives": 16,
+          "prevalence": 0.0625
+        }
+      },
+      "rows": 256
+    },
+    "product=food": {
+      "metrics": {
+        "area": {
+          "evaluation_fitted_constant_mae": 0.02263077898154522,
+          "labels": 31,
+          "mae": 0.025038971054938533,
+          "raw_mae": 142.06549607746064,
+          "rmse": 0.030886105400289285
+        },
+        "changed": {
+          "accuracy": 1.0,
+          "auroc": null,
+          "brier": 0.001620970197567375,
+          "evaluation_fitted_constant": {
+            "accuracy": 1.0,
+            "brier": 0.0,
+            "log_loss": 0.0
+          },
+          "labels": 192,
+          "log_loss": 0.030320354605384733,
+          "negatives": 0,
+          "positives": 192,
+          "prevalence": 1.0
+        },
+        "completion": {
+          "accuracy": 0.9739583333333334,
+          "auroc": 0.9985974754558204,
+          "brier": 0.015190355547847591,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.8385416666666666,
+            "brier": 0.13538953993055555,
+            "log_loss": 0.44208023608227076
+          },
+          "labels": 192,
+          "log_loss": 0.05537850405676798,
+          "negatives": 161,
+          "positives": 31,
+          "prevalence": 0.16145833333333334
+        },
+        "conflict_count": {
+          "evaluation_fitted_constant_mae": 0.14794849277920205,
+          "labels": 192,
+          "mae": 0.027337946279052023,
+          "raw_mae": 0.5362146725957201,
+          "rmse": 0.03283053741768042
+        },
+        "conflict_flag": {
+          "accuracy": 0.953125,
+          "auroc": 0.9994415487714073,
+          "brier": 0.015507274937407589,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.8229166666666666,
+            "brier": 0.14572482638888892,
+            "log_loss": 0.46694186653189496
+          },
+          "labels": 192,
+          "log_loss": 0.042222194258852354,
+          "negatives": 34,
+          "positives": 158,
+          "prevalence": 0.8229166666666666
+        },
+        "pending_count": {
+          "evaluation_fitted_constant_mae": 0.2693077392856746,
+          "labels": 192,
+          "mae": 0.04740349715575576,
+          "raw_mae": 1.823504646473828,
+          "rmse": 0.07952060027089754
+        },
+        "pending_flag": {
+          "accuracy": 0.9739583333333334,
+          "auroc": 0.9985974754558204,
+          "brier": 0.01512732158806205,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.8385416666666666,
+            "brier": 0.13538953993055558,
+            "log_loss": 0.44208023608227076
+          },
+          "labels": 192,
+          "log_loss": 0.05532868055850271,
+          "negatives": 31,
+          "positives": 161,
+          "prevalence": 0.8385416666666666
+        },
+        "rejected": {
+          "accuracy": 1.0,
+          "auroc": null,
+          "brier": 9.999999999999981e-15,
+          "evaluation_fitted_constant": {
+            "accuracy": 1.0,
+            "brier": 0.0,
+            "log_loss": 0.0
+          },
+          "labels": 192,
+          "log_loss": 1.0000000494736476e-7,
+          "negatives": 192,
+          "positives": 0,
+          "prevalence": 0.0
+        },
+        "route_budget": {
+          "accuracy": 1.0,
+          "auroc": null,
+          "brier": 9.999999999999981e-15,
+          "evaluation_fitted_constant": {
+            "accuracy": 1.0,
+            "brier": 0.0,
+            "log_loss": 0.0
+          },
+          "labels": 192,
+          "log_loss": 1.0000000494736476e-7,
+          "negatives": 192,
+          "positives": 0,
+          "prevalence": 0.0
+        },
+        "transport": {
+          "evaluation_fitted_constant_mae": 0.009915708006978897,
+          "labels": 31,
+          "mae": 0.01998329354870704,
+          "raw_mae": 13.889367641941194,
+          "rmse": 0.023811180018079352
+        },
+        "turns": {
+          "evaluation_fitted_constant_mae": 0.0,
+          "labels": 31,
+          "mae": 0.01738377924888365,
+          "raw_mae": 2.250426150137378,
+          "rmse": 0.0185823867816935
+        },
+        "unchanged": {
+          "accuracy": 1.0,
+          "auroc": null,
+          "brier": 0.0016529603082117551,
+          "evaluation_fitted_constant": {
+            "accuracy": 1.0,
+            "brier": 0.0,
+            "log_loss": 0.0
+          },
+          "labels": 192,
+          "log_loss": 0.030696583936711652,
+          "negatives": 192,
+          "positives": 0,
+          "prevalence": 0.0
+        }
+      },
+      "rows": 192
+    },
+    "product=medical": {
+      "metrics": {
+        "area": {
+          "evaluation_fitted_constant_mae": 0.030142415314912796,
+          "labels": 24,
+          "mae": 0.03491224596897761,
+          "raw_mae": 152.11271765828133,
+          "rmse": 0.04287800594444269
+        },
+        "changed": {
+          "accuracy": 0.978125,
+          "auroc": 0.7165677772706527,
+          "brier": 0.02094958516081252,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.978125,
+            "brier": 0.02139648437499998,
+            "log_loss": 0.1052492155360998
+          },
+          "labels": 320,
+          "log_loss": 0.1005727614355332,
+          "negatives": 7,
+          "positives": 313,
+          "prevalence": 0.978125
+        },
+        "completion": {
+          "accuracy": 0.9840255591054313,
+          "auroc": 0.995674740484429,
+          "brier": 0.012026168908490755,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.9233226837060703,
+            "brier": 0.07079790545989037,
+            "log_loss": 0.27057825509975836
+          },
+          "labels": 313,
+          "log_loss": 0.047498492329504344,
+          "negatives": 289,
+          "positives": 24,
+          "prevalence": 0.07667731629392971
+        },
+        "conflict_count": {
+          "evaluation_fitted_constant_mae": 0.1376406162672108,
+          "labels": 313,
+          "mae": 0.027209856702139774,
+          "raw_mae": 0.39984255329304036,
+          "rmse": 0.0387246511273228
+        },
+        "conflict_flag": {
+          "accuracy": 0.987220447284345,
+          "auroc": 0.9993327402135231,
+          "brier": 0.011272414705226637,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.8977635782747604,
+            "brier": 0.09178413579805857,
+            "log_loss": 0.3299692896699494
+          },
+          "labels": 313,
+          "log_loss": 0.03278723165790423,
+          "negatives": 32,
+          "positives": 281,
+          "prevalence": 0.8977635782747604
+        },
+        "pending_count": {
+          "evaluation_fitted_constant_mae": 0.18105573577345832,
+          "labels": 313,
+          "mae": 0.040697971281533046,
+          "raw_mae": 3.198548143401725,
+          "rmse": 0.06208004191352403
+        },
+        "pending_flag": {
+          "accuracy": 0.9840255591054313,
+          "auroc": 0.995674740484429,
+          "brier": 0.012021184749178798,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.9233226837060703,
+            "brier": 0.07079790545989037,
+            "log_loss": 0.27057825509975836
+          },
+          "labels": 313,
+          "log_loss": 0.04761893542519929,
+          "negatives": 24,
+          "positives": 289,
+          "prevalence": 0.9233226837060703
+        },
+        "rejected": {
+          "accuracy": 1.0,
+          "auroc": null,
+          "brier": 1.0000000000000052e-14,
+          "evaluation_fitted_constant": {
+            "accuracy": 1.0,
+            "brier": 0.0,
+            "log_loss": 0.0
+          },
+          "labels": 320,
+          "log_loss": 1.0000000494736525e-7,
+          "negatives": 320,
+          "positives": 0,
+          "prevalence": 0.0
+        },
+        "route_budget": {
+          "accuracy": 1.0,
+          "auroc": null,
+          "brier": 1.0000000000000049e-14,
+          "evaluation_fitted_constant": {
+            "accuracy": 1.0,
+            "brier": 0.0,
+            "log_loss": 0.0
+          },
+          "labels": 313,
+          "log_loss": 1.0000000494736524e-7,
+          "negatives": 313,
+          "positives": 0,
+          "prevalence": 0.0
+        },
+        "transport": {
+          "evaluation_fitted_constant_mae": 0.013285669187704722,
+          "labels": 24,
+          "mae": 0.01723615328470866,
+          "raw_mae": 9.535131700336933,
+          "rmse": 0.02372884097321776
+        },
+        "turns": {
+          "evaluation_fitted_constant_mae": 0.004553728633456711,
+          "labels": 24,
+          "mae": 0.017814551790555317,
+          "raw_mae": 1.6467764874299367,
+          "rmse": 0.023011213465484247
+        },
+        "unchanged": {
+          "accuracy": 0.978125,
+          "auroc": 0.716111364673665,
+          "brier": 0.020969200612401585,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.978125,
+            "brier": 0.021396484375,
+            "log_loss": 0.10524921553609987
+          },
+          "labels": 320,
+          "log_loss": 0.10067400422375834,
+          "negatives": 313,
+          "positives": 7,
+          "prevalence": 0.021875
+        }
+      },
+      "rows": 320
+    },
+    "product=watered-grass": {
+      "metrics": {
+        "area": {
+          "evaluation_fitted_constant_mae": 0.2492529912366158,
+          "labels": 59,
+          "mae": 0.14658615548731918,
+          "raw_mae": 31.763139423677476,
+          "rmse": 0.19331652112524392
+        },
+        "changed": {
+          "accuracy": 0.91015625,
+          "auroc": 0.8747086247086248,
+          "brier": 0.07285378718670567,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.9140625,
+            "brier": 0.07855224609375,
+            "log_loss": 0.2930365266374333
+          },
+          "labels": 256,
+          "log_loss": 0.237567132055089,
+          "negatives": 22,
+          "positives": 234,
+          "prevalence": 0.9140625
+        },
+        "completion": {
+          "accuracy": 0.8162393162393162,
+          "auroc": 0.9482808716707022,
+          "brier": 0.1307811675916539,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.7478632478632479,
+            "brier": 0.18856381035868214,
+            "log_loss": 0.5646704545583321
+          },
+          "labels": 234,
+          "log_loss": 0.406576811361656,
+          "negatives": 175,
+          "positives": 59,
+          "prevalence": 0.25213675213675213
+        },
+        "conflict_count": {
+          "evaluation_fitted_constant_mae": 0.08819694454579032,
+          "labels": 234,
+          "mae": 0.10498968449731667,
+          "raw_mae": 0.726351949551099,
+          "rmse": 0.1268353252343168
+        },
+        "conflict_flag": {
+          "accuracy": 0.7948717948717948,
+          "auroc": 0.9879584017515052,
+          "brier": 0.11987092206567015,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.6282051282051282,
+            "brier": 0.23356344510190663,
+            "log_loss": 0.6599040359584578
+          },
+          "labels": 234,
+          "log_loss": 0.38187137418947464,
+          "negatives": 147,
+          "positives": 87,
+          "prevalence": 0.3717948717948718
+        },
+        "pending_count": {
+          "evaluation_fitted_constant_mae": 0.18966039432846404,
+          "labels": 234,
+          "mae": 0.20568291158375576,
+          "raw_mae": 5.808743116860511,
+          "rmse": 0.24804587631661715
+        },
+        "pending_flag": {
+          "accuracy": 0.7350427350427351,
+          "auroc": 0.9093244084682441,
+          "brier": 0.21375618100795707,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.6239316239316239,
+            "brier": 0.23464095258967055,
+            "log_loss": 0.6621065579068497
+          },
+          "labels": 234,
+          "log_loss": 1.0504188404389512,
+          "negatives": 88,
+          "positives": 146,
+          "prevalence": 0.6239316239316239
+        },
+        "rejected": {
+          "accuracy": 1.0,
+          "auroc": null,
+          "brier": 3.600522430656966e-11,
+          "evaluation_fitted_constant": {
+            "accuracy": 1.0,
+            "brier": 0.0,
+            "log_loss": 0.0
+          },
+          "labels": 256,
+          "log_loss": 7.947793199289182e-7,
+          "negatives": 256,
+          "positives": 0,
+          "prevalence": 0.0
+        },
+        "route_budget": {
+          "accuracy": 1.0,
+          "auroc": null,
+          "brier": 9.88515211346428e-12,
+          "evaluation_fitted_constant": {
+            "accuracy": 1.0,
+            "brier": 0.0,
+            "log_loss": 0.0
+          },
+          "labels": 234,
+          "log_loss": 3.675822605881598e-7,
+          "negatives": 234,
+          "positives": 0,
+          "prevalence": 0.0
+        },
+        "transport": {
+          "evaluation_fitted_constant_mae": 0.20450230129009625,
+          "labels": 59,
+          "mae": 0.2593517919718209,
+          "raw_mae": 12.42923910233934,
+          "rmse": 0.34938060611610955
+        },
+        "turns": {
+          "evaluation_fitted_constant_mae": 0.7695243541484109,
+          "labels": 59,
+          "mae": 0.835021067473848,
+          "raw_mae": 3.8837958432860296,
+          "rmse": 1.1522781359841763
+        },
+        "unchanged": {
+          "accuracy": 0.90625,
+          "auroc": 0.8749028749028749,
+          "brier": 0.07365933343163049,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.9140625,
+            "brier": 0.07855224609375,
+            "log_loss": 0.2930365266374333
+          },
+          "labels": 256,
+          "log_loss": 0.23919961006641563,
+          "negatives": 234,
+          "positives": 22,
+          "prevalence": 0.0859375
+        }
+      },
+      "rows": 256
+    },
+    "stratum=large": {
+      "metrics": {
+        "area": {
+          "evaluation_fitted_constant_mae": 0.02582650397434708,
+          "labels": 55,
+          "mae": 0.029347309199246493,
+          "raw_mae": 146.44973822181876,
+          "rmse": 0.03660527983806088
+        },
+        "changed": {
+          "accuracy": 0.986328125,
+          "auroc": 0.7239038189533239,
+          "brier": 0.013701354549595588,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.986328125,
+            "brier": 0.013484954833984375,
+            "log_loss": 0.0722633402202814
+          },
+          "labels": 512,
+          "log_loss": 0.07422810887422752,
+          "negatives": 7,
+          "positives": 505,
+          "prevalence": 0.986328125
+        },
+        "completion": {
+          "accuracy": 0.9801980198019802,
+          "auroc": 0.9974949494949495,
+          "brier": 0.013229186403058113,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.8910891089108911,
+            "brier": 0.09704930889128517,
+            "log_loss": 0.34423221653922054
+          },
+          "labels": 505,
+          "log_loss": 0.050494457184226356,
+          "negatives": 450,
+          "positives": 55,
+          "prevalence": 0.10891089108910891
+        },
+        "conflict_count": {
+          "evaluation_fitted_constant_mae": 0.1416122095162545,
+          "labels": 505,
+          "mae": 0.027258556105639084,
+          "raw_mae": 0.4516909630081186,
+          "rmse": 0.03659574306449986
+        },
+        "conflict_flag": {
+          "accuracy": 0.9742574257425742,
+          "auroc": 0.9992406985573272,
+          "brier": 0.01288250017963982,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.8693069306930693,
+            "brier": 0.1136123909420645,
+            "log_loss": 0.3877020821194305
+          },
+          "labels": 505,
+          "log_loss": 0.03637438575569045,
+          "negatives": 66,
+          "positives": 439,
+          "prevalence": 0.8693069306930693
+        },
+        "pending_count": {
+          "evaluation_fitted_constant_mae": 0.21502583245789056,
+          "labels": 505,
+          "mae": 0.04324739894064346,
+          "raw_mae": 2.6757593287281485,
+          "rmse": 0.06923053121756563
+        },
+        "pending_flag": {
+          "accuracy": 0.9801980198019802,
+          "auroc": 0.9974949494949495,
+          "brier": 0.013202131824556223,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.8910891089108911,
+            "brier": 0.09704930889128516,
+            "log_loss": 0.3442322165392205
+          },
+          "labels": 505,
+          "log_loss": 0.05055016525805915,
+          "negatives": 55,
+          "positives": 450,
+          "prevalence": 0.8910891089108911
+        },
+        "rejected": {
+          "accuracy": 1.0,
+          "auroc": null,
+          "brier": 1.0000000000000091e-14,
+          "evaluation_fitted_constant": {
+            "accuracy": 1.0,
+            "brier": 0.0,
+            "log_loss": 0.0
+          },
+          "labels": 512,
+          "log_loss": 1.0000000494736555e-7,
+          "negatives": 512,
+          "positives": 0,
+          "prevalence": 0.0
+        },
+        "route_budget": {
+          "accuracy": 1.0,
+          "auroc": null,
+          "brier": 1.000000000000009e-14,
+          "evaluation_fitted_constant": {
+            "accuracy": 1.0,
+            "brier": 0.0,
+            "log_loss": 0.0
+          },
+          "labels": 505,
+          "log_loss": 1.0000000494736555e-7,
+          "negatives": 505,
+          "positives": 0,
+          "prevalence": 0.0
+        },
+        "transport": {
+          "evaluation_fitted_constant_mae": 0.012509289812450563,
+          "labels": 55,
+          "mae": 0.018784541433507745,
+          "raw_mae": 11.989337412877516,
+          "rmse": 0.0237752853204671
+        },
+        "turns": {
+          "evaluation_fitted_constant_mae": 0.0022110798733293033,
+          "labels": 55,
+          "mae": 0.017571752721613102,
+          "raw_mae": 1.9870153882286765,
+          "rmse": 0.02063220815632957
+        },
+        "unchanged": {
+          "accuracy": 0.986328125,
+          "auroc": 0.7222065063649222,
+          "brier": 0.013725610498330397,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.986328125,
+            "brier": 0.013484954833984375,
+            "log_loss": 0.0722633402202814
+          },
+          "labels": 512,
+          "log_loss": 0.07443247161611574,
+          "negatives": 505,
+          "positives": 7,
+          "prevalence": 0.013671875
+        }
+      },
+      "rows": 512
+    },
+    "stratum=small": {
+      "metrics": {
+        "area": {
+          "evaluation_fitted_constant_mae": 0.19002996721505586,
+          "labels": 105,
+          "mae": 0.12684207473482403,
+          "raw_mae": 39.741844103449864,
+          "rmse": 0.16360015178564202
+        },
+        "changed": {
+          "accuracy": 0.908203125,
+          "auroc": 0.8528758605374195,
+          "brier": 0.07443377264364645,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.92578125,
+            "brier": 0.0687103271484375,
+            "log_loss": 0.26441731145929503
+          },
+          "labels": 512,
+          "log_loss": 0.24128756982861546,
+          "negatives": 38,
+          "positives": 474,
+          "prevalence": 0.92578125
+        },
+        "completion": {
+          "accuracy": 0.8122362869198312,
+          "auroc": 0.9399406375016132,
+          "brier": 0.15808949526835814,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.7784810126582279,
+            "brier": 0.17244832558884793,
+            "log_loss": 0.5288237807298982
+          },
+          "labels": 474,
+          "log_loss": 0.645478925899487,
+          "negatives": 369,
+          "positives": 105,
+          "prevalence": 0.22151898734177214
+        },
+        "conflict_count": {
+          "evaluation_fitted_constant_mae": 0.08786318699147404,
+          "labels": 474,
+          "mae": 0.11351541167258714,
+          "raw_mae": 0.8232497585387404,
+          "rmse": 0.136155457052999
+        },
+        "conflict_flag": {
+          "accuracy": 0.6814345991561181,
+          "auroc": 0.9525365897458921,
+          "brier": 0.26639248733036097,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.5464135021097046,
+            "brier": 0.24784578682191244,
+            "log_loss": 0.688832545265482
+          },
+          "labels": 474,
+          "log_loss": 1.5061304372811184,
+          "negatives": 259,
+          "positives": 215,
+          "prevalence": 0.45358649789029537
+        },
+        "pending_count": {
+          "evaluation_fitted_constant_mae": 0.18460583387261292,
+          "labels": 474,
+          "mae": 0.17429292304166258,
+          "raw_mae": 4.756497987312976,
+          "rmse": 0.2145382824024271
+        },
+        "pending_flag": {
+          "accuracy": 0.7468354430379747,
+          "auroc": 0.896049114600735,
+          "brier": 0.22404991924407483,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.6919831223628692,
+            "brier": 0.2131424807278036,
+            "log_loss": 0.6175047260844937
+          },
+          "labels": 474,
+          "log_loss": 1.2298593896141226,
+          "negatives": 146,
+          "positives": 328,
+          "prevalence": 0.6919831223628692
+        },
+        "rejected": {
+          "accuracy": 1.0,
+          "auroc": null,
+          "brier": 1.8014736813331788e-11,
+          "evaluation_fitted_constant": {
+            "accuracy": 1.0,
+            "brier": 0.0,
+            "log_loss": 0.0
+          },
+          "labels": 512,
+          "log_loss": 4.5430000641733055e-7,
+          "negatives": 512,
+          "positives": 0,
+          "prevalence": 0.0
+        },
+        "route_budget": {
+          "accuracy": 1.0,
+          "auroc": null,
+          "brier": 4.8883468319049185e-12,
+          "evaluation_fitted_constant": {
+            "accuracy": 1.0,
+            "brier": 0.0,
+            "log_loss": 0.0
+          },
+          "labels": 474,
+          "log_loss": 2.3564217787268258e-7,
+          "negatives": 474,
+          "positives": 0,
+          "prevalence": 0.0
+        },
+        "transport": {
+          "evaluation_fitted_constant_mae": 0.21408193516893465,
+          "labels": 105,
+          "mae": 0.20864239987872896,
+          "raw_mae": 11.09765449194681,
+          "rmse": 0.2941673954621717
+        },
+        "turns": {
+          "evaluation_fitted_constant_mae": 0.6212560225506218,
+          "labels": 105,
+          "mae": 0.5269576594943092,
+          "raw_mae": 2.978507090750195,
+          "rmse": 0.8705275718272594
+        },
+        "unchanged": {
+          "accuracy": 0.90625,
+          "auroc": 0.8522096380190983,
+          "brier": 0.0757978512578121,
+          "evaluation_fitted_constant": {
+            "accuracy": 0.92578125,
+            "brier": 0.0687103271484375,
+            "log_loss": 0.26441731145929503
+          },
+          "labels": 512,
+          "log_loss": 0.24408461092654946,
+          "negatives": 474,
+          "positives": 38,
+          "prevalence": 0.07421875
+        }
+      },
+      "rows": 512
+    }
+  },
+  "largest_errors": {
+    "area": [
+      {
+        "absolute_error": 0.5763970613479614,
+        "case": "case-0003",
+        "family": 0,
+        "prediction": 1.1378886699676514,
+        "product": "watered-grass",
+        "replicate": 0,
+        "state": "pending",
+        "status": "validated",
+        "step": 13,
+        "stratum": "small",
+        "target": 1.7142857313156128
+      },
+      {
+        "absolute_error": 0.4899824857711792,
+        "case": "case-0005",
+        "family": 0,
+        "prediction": 1.231105923652649,
+        "product": "watered-grass",
+        "replicate": 0,
+        "state": "complete",
+        "status": "validated",
+        "step": 4,
+        "stratum": "small",
+        "target": 1.7210884094238281
+      },
+      {
+        "absolute_error": 0.45343315601348877,
+        "case": "case-0003",
+        "family": 0,
+        "prediction": 1.3560906648635864,
+        "product": "watered-grass",
+        "replicate": 0,
+        "state": "complete",
+        "status": "validated",
+        "step": 14,
+        "stratum": "small",
+        "target": 1.8095238208770752
+      }
+    ],
+    "changed": [
+      {
+        "absolute_error": 0.9884571212995863,
+        "case": "case-0008",
+        "family": 2,
+        "prediction": 0.9884571212995863,
+        "product": "medical",
+        "replicate": 1,
+        "state": "pending",
+        "status": "unchanged",
+        "step": 7,
+        "stratum": "large",
+        "target": 0.0
+      },
+      {
+        "absolute_error": 0.9800792846449579,
+        "case": "case-0010",
+        "family": 2,
+        "prediction": 0.9800792846449579,
+        "product": "medical",
+        "replicate": 1,
+        "state": "pending",
+        "status": "unchanged",
+        "step": 13,
+        "stratum": "large",
+        "target": 0.0
+      },
+      {
+        "absolute_error": 0.9771772950192836,
+        "case": "case-0002",
+        "family": 2,
+        "prediction": 0.9771772950192836,
+        "product": "medical",
+        "replicate": 0,
+        "state": "pending",
+        "status": "unchanged",
+        "step": 19,
+        "stratum": "large",
+        "target": 0.0
+      }
+    ],
+    "completion": [
+      {
+        "absolute_error": 0.9992504382171166,
+        "case": "case-0007",
+        "family": 0,
+        "prediction": 0.0007495617828834109,
+        "product": "copper-liquid",
+        "replicate": 0,
+        "state": "pending",
+        "status": "validated",
+        "step": 5,
+        "stratum": "small",
+        "target": 1.0
+      },
+      {
+        "absolute_error": 0.998762977814588,
+        "case": "case-0011",
+        "family": 0,
+        "prediction": 0.0012370221854119715,
+        "product": "copper-liquid",
+        "replicate": 1,
+        "state": "pending",
+        "status": "validated",
+        "step": 7,
+        "stratum": "small",
+        "target": 1.0
+      },
+      {
+        "absolute_error": 0.9983610595518261,
+        "case": "case-0013",
+        "family": 0,
+        "prediction": 0.0016389404481739508,
+        "product": "copper-liquid",
+        "replicate": 0,
+        "state": "complete",
+        "status": "validated",
+        "step": 11,
+        "stratum": "small",
+        "target": 1.0
+      }
+    ],
+    "conflict_count": [
+      {
+        "absolute_error": 0.48557281494140625,
+        "case": "case-0009",
+        "family": 1,
+        "prediction": 0.48557281494140625,
+        "product": "watered-grass",
+        "replicate": 1,
+        "state": "pending",
+        "status": "draft_accepted",
+        "step": 31,
+        "stratum": "small",
+        "target": 0.0
+      },
+      {
+        "absolute_error": 0.37754036113619804,
+        "case": "case-0003",
+        "family": 0,
+        "prediction": -0.045445095747709274,
+        "product": "watered-grass",
+        "replicate": 1,
+        "state": "pending",
+        "status": "draft_accepted",
+        "step": 23,
+        "stratum": "small",
+        "target": 0.33209526538848877
+      },
+      {
+        "absolute_error": 0.36495406180620193,
+        "case": "case-0003",
+        "family": 0,
+        "prediction": -0.032858796417713165,
+        "product": "watered-grass",
+        "replicate": 1,
+        "state": "pending",
+        "status": "draft_accepted",
+        "step": 13,
+        "stratum": "small",
+        "target": 0.33209526538848877
+      }
+    ],
+    "conflict_flag": [
+      {
+        "absolute_error": 0.9999926450551568,
+        "case": "case-0011",
+        "family": 2,
+        "prediction": 0.9999926450551568,
+        "product": "copper-liquid",
+        "replicate": 1,
+        "state": "pending",
+        "status": "draft_accepted",
+        "step": 5,
+        "stratum": "small",
+        "target": 0.0
+      },
+      {
+        "absolute_error": 0.9999906084538092,
+        "case": "case-0007",
+        "family": 1,
+        "prediction": 0.9999906084538092,
+        "product": "copper-liquid",
+        "replicate": 0,
+        "state": "pending",
+        "status": "draft_accepted",
+        "step": 10,
+        "stratum": "small",
+        "target": 0.0
+      },
+      {
+        "absolute_error": 0.9999781471488156,
+        "case": "case-0013",
+        "family": 1,
+        "prediction": 0.9999781471488156,
+        "product": "copper-liquid",
+        "replicate": 0,
+        "state": "complete",
+        "status": "validated",
+        "step": 12,
+        "stratum": "small",
+        "target": 0.0
+      }
+    ],
+    "pending_count": [
+      {
+        "absolute_error": 0.8302340507507324,
+        "case": "case-0009",
+        "family": 0,
+        "prediction": 0.8302340507507324,
+        "product": "watered-grass",
+        "replicate": 1,
+        "state": "pending",
+        "status": "draft_accepted",
+        "step": 17,
+        "stratum": "small",
+        "target": 0.0
+      },
+      {
+        "absolute_error": 0.7450925707817078,
+        "case": "case-0007",
+        "family": 0,
+        "prediction": 0.7450925707817078,
+        "product": "copper-liquid",
+        "replicate": 1,
+        "state": "pending",
+        "status": "draft_accepted",
+        "step": 30,
+        "stratum": "small",
+        "target": 0.0
+      },
+      {
+        "absolute_error": 0.6143144369125366,
+        "case": "case-0011",
+        "family": 0,
+        "prediction": 0.6143144369125366,
+        "product": "copper-liquid",
+        "replicate": 1,
+        "state": "pending",
+        "status": "draft_accepted",
+        "step": 29,
+        "stratum": "small",
+        "target": 0.0
+      }
+    ],
+    "pending_flag": [
+      {
+        "absolute_error": 0.9999997260568301,
+        "case": "case-0009",
+        "family": 2,
+        "prediction": 0.9999997260568301,
+        "product": "watered-grass",
+        "replicate": 1,
+        "state": "pending",
+        "status": "draft_accepted",
+        "step": 10,
+        "stratum": "small",
+        "target": 0.0
+      },
+      {
+        "absolute_error": 0.9999996759944549,
+        "case": "case-0013",
+        "family": 2,
+        "prediction": 0.9999996759944549,
+        "product": "copper-liquid",
+        "replicate": 0,
+        "state": "pending",
+        "status": "draft_accepted",
+        "step": 20,
+        "stratum": "small",
+        "target": 0.0
+      },
+      {
+        "absolute_error": 0.9999996052987375,
+        "case": "case-0009",
+        "family": 2,
+        "prediction": 0.9999996052987375,
+        "product": "watered-grass",
+        "replicate": 1,
+        "state": "pending",
+        "status": "draft_accepted",
+        "step": 22,
+        "stratum": "small",
+        "target": 0.0
+      }
+    ],
+    "rejected": [
+      {
+        "absolute_error": 0.00008408651927076402,
+        "case": "case-0003",
+        "family": 1,
+        "prediction": 0.00008408651927076402,
+        "product": "watered-grass",
+        "replicate": 1,
+        "state": "pending",
+        "status": "unchanged",
+        "step": 31,
+        "stratum": "small",
+        "target": 0.0
+      },
+      {
+        "absolute_error": 0.00004396938966912563,
+        "case": "case-0009",
+        "family": 1,
+        "prediction": 0.00004396938966912563,
+        "product": "watered-grass",
+        "replicate": 1,
+        "state": "pending",
+        "status": "draft_accepted",
+        "step": 16,
+        "stratum": "small",
+        "target": 0.0
+      },
+      {
+        "absolute_error": 5.710189267786298e-6,
+        "case": "case-0003",
+        "family": 1,
+        "prediction": 5.710189267786298e-6,
+        "product": "watered-grass",
+        "replicate": 1,
+        "state": "pending",
+        "status": "unchanged",
+        "step": 9,
+        "stratum": "small",
+        "target": 0.0
+      }
+    ],
+    "route_budget": [
+      {
+        "absolute_error": 0.000047629249166503315,
+        "case": "case-0009",
+        "family": 1,
+        "prediction": 0.000047629249166503315,
+        "product": "watered-grass",
+        "replicate": 1,
+        "state": "pending",
+        "status": "draft_accepted",
+        "step": 16,
+        "stratum": "small",
+        "target": 0.0
+      },
+      {
+        "absolute_error": 4.446583869137966e-6,
+        "case": "case-0003",
+        "family": 2,
+        "prediction": 4.446583869137966e-6,
+        "product": "watered-grass",
+        "replicate": 1,
+        "state": "pending",
+        "status": "draft_accepted",
+        "step": 5,
+        "stratum": "small",
+        "target": 0.0
+      },
+      {
+        "absolute_error": 2.7904398048220603e-6,
+        "case": "case-0003",
+        "family": 2,
+        "prediction": 2.7904398048220603e-6,
+        "product": "watered-grass",
+        "replicate": 1,
+        "state": "pending",
+        "status": "draft_accepted",
+        "step": 28,
+        "stratum": "small",
+        "target": 0.0
+      }
+    ],
+    "transport": [
+      {
+        "absolute_error": 1.1857413053512573,
+        "case": "case-0003",
+        "family": 0,
+        "prediction": 1.1656099557876587,
+        "product": "watered-grass",
+        "replicate": 0,
+        "state": "complete",
+        "status": "validated",
+        "step": 14,
+        "stratum": "small",
+        "target": 2.351351261138916
+      },
+      {
+        "absolute_error": 1.0534327030181885,
+        "case": "case-0003",
+        "family": 0,
+        "prediction": 1.0276484489440918,
+        "product": "watered-grass",
+        "replicate": 0,
+        "state": "pending",
+        "status": "validated",
+        "step": 13,
+        "stratum": "small",
+        "target": 2.0810811519622803
+      },
+      {
+        "absolute_error": 0.7219871282577515,
+        "case": "case-0003",
+        "family": 0,
+        "prediction": 1.1699047088623047,
+        "product": "watered-grass",
+        "replicate": 0,
+        "state": "complete",
+        "status": "validated",
+        "step": 15,
+        "stratum": "small",
+        "target": 1.8918918371200562
+      }
+    ],
+    "turns": [
+      {
+        "absolute_error": 2.805067539215088,
+        "case": "case-0003",
+        "family": 0,
+        "prediction": 1.194932460784912,
+        "product": "watered-grass",
+        "replicate": 0,
+        "state": "complete",
+        "status": "validated",
+        "step": 14,
+        "stratum": "small",
+        "target": 4.0
+      },
+      {
+        "absolute_error": 2.1365413665771484,
+        "case": "case-0009",
+        "family": 2,
+        "prediction": 1.1134586334228516,
+        "product": "watered-grass",
+        "replicate": 1,
+        "state": "complete",
+        "status": "improved",
+        "step": 3,
+        "stratum": "small",
+        "target": 3.25
+      },
+      {
+        "absolute_error": 2.067062020301819,
+        "case": "case-0009",
+        "family": 0,
+        "prediction": 1.1829379796981812,
+        "product": "watered-grass",
+        "replicate": 1,
+        "state": "complete",
+        "status": "validated",
+        "step": 2,
+        "stratum": "small",
+        "target": 3.25
+      }
+    ],
+    "unchanged": [
+      {
+        "absolute_error": 0.9884299850505947,
+        "case": "case-0008",
+        "family": 2,
+        "prediction": 0.011570014949405304,
+        "product": "medical",
+        "replicate": 1,
+        "state": "pending",
+        "status": "unchanged",
+        "step": 7,
+        "stratum": "large",
+        "target": 1.0
+      },
+      {
+        "absolute_error": 0.980081328023993,
+        "case": "case-0010",
+        "family": 2,
+        "prediction": 0.019918671976007045,
+        "product": "medical",
+        "replicate": 1,
+        "state": "pending",
+        "status": "unchanged",
+        "step": 13,
+        "stratum": "large",
+        "target": 1.0
+      },
+      {
+        "absolute_error": 0.976974908326073,
+        "case": "case-0002",
+        "family": 2,
+        "prediction": 0.023025091673926936,
+        "product": "medical",
+        "replicate": 0,
+        "state": "pending",
+        "status": "unchanged",
+        "step": 19,
+        "stratum": "large",
+        "target": 1.0
+      }
+    ]
+  },
+  "metrics": {
+    "area": {
+      "evaluation_fitted_constant_mae": 0.1449767888057977,
+      "labels": 160,
+      "mae": 0.09332824908196927,
+      "raw_mae": 76.42268270663916,
+      "rmse": 0.13425775286997366
+    },
+    "changed": {
+      "accuracy": 0.947265625,
+      "auroc": 0.8775848371353989,
+      "brier": 0.044067563596621125,
+      "evaluation_fitted_constant": {
+        "accuracy": 0.9560546875,
+        "brier": 0.042014122009277344,
+        "log_loss": 0.18028597544609953
+      },
+      "labels": 1024,
+      "log_loss": 0.15775783935142146,
+      "negatives": 45,
+      "positives": 979,
+      "prevalence": 0.9560546875
+    },
+    "completion": {
+      "accuracy": 0.898876404494382,
+      "auroc": 0.9666971916971917,
+      "brier": 0.08336584258503177,
+      "evaluation_fitted_constant": {
+        "accuracy": 0.8365679264555669,
+        "brier": 0.13672203088140011,
+        "log_loss": 0.44531746978988107
+      },
+      "labels": 979,
+      "log_loss": 0.3385666105764982,
+      "negatives": 819,
+      "positives": 160,
+      "prevalence": 0.1634320735444331
+    },
+    "conflict_count": {
+      "evaluation_fitted_constant_mae": 0.14632512771456171,
+      "labels": 979,
+      "mae": 0.06902132376522374,
+      "raw_mae": 0.6315876627849469,
+      "rmse": 0.09831823145623281
+    },
+    "conflict_flag": {
+      "accuracy": 0.832482124616956,
+      "auroc": 0.9547729945895084,
+      "brier": 0.1356238014150253,
+      "evaluation_fitted_constant": {
+        "accuracy": 0.6680286006128703,
+        "brier": 0.22176638937608054,
+        "log_loss": 0.6355659713250226
+      },
+      "labels": 979,
+      "log_loss": 0.7479825251050753,
+      "negatives": 325,
+      "positives": 654,
+      "prevalence": 0.6680286006128703
+    },
+    "pending_count": {
+      "evaluation_fitted_constant_mae": 0.25488967993951983,
+      "labels": 979,
+      "mae": 0.10669538507331258,
+      "raw_mae": 3.6831854004025146,
+      "rmse": 0.15734337292605036
+    },
+    "pending_flag": {
+      "accuracy": 0.8672114402451481,
+      "auroc": 0.9220350688715804,
+      "brier": 0.11528778170898092,
+      "evaluation_fitted_constant": {
+        "accuracy": 0.7946884576098059,
+        "brier": 0.16315871295155362,
+        "log_loss": 0.5076781978618048
+      },
+      "labels": 979,
+      "log_loss": 0.6215333852220781,
+      "negatives": 201,
+      "positives": 778,
+      "prevalence": 0.7946884576098059
+    },
+    "rejected": {
+      "accuracy": 1.0,
+      "auroc": null,
+      "brier": 9.012368406665864e-12,
+      "evaluation_fitted_constant": {
+        "accuracy": 1.0,
+        "brier": 0.0,
+        "log_loss": 0.0
+      },
+      "labels": 1024,
+      "log_loss": 2.771500056823439e-7,
+      "negatives": 1024,
+      "positives": 0,
+      "prevalence": 0.0
+    },
+    "route_budget": {
+      "accuracy": 1.0,
+      "auroc": null,
+      "brier": 2.371937076938613e-12,
+      "evaluation_fitted_constant": {
+        "accuracy": 1.0,
+        "brier": 0.0,
+        "log_loss": 0.0
+      },
+      "labels": 979,
+      "log_loss": 1.6567353913183515e-7,
+      "negatives": 979,
+      "positives": 0,
+      "prevalence": 0.0
+    },
+    "transport": {
+      "evaluation_fitted_constant_mae": 0.18202139129862183,
+      "labels": 160,
+      "mae": 0.14337876103818417,
+      "raw_mae": 11.404170496016741,
+      "rmse": 0.23871017296908123
+    },
+    "turns": {
+      "evaluation_fitted_constant_mae": 0.5027191933244455,
+      "labels": 160,
+      "mae": 0.3518562540411949,
+      "raw_mae": 2.637681818008423,
+      "rmse": 0.705311675070147
+    },
+    "unchanged": {
+      "accuracy": 0.9462890625,
+      "auroc": 0.8770854613551243,
+      "brier": 0.04476173087807122,
+      "evaluation_fitted_constant": {
+        "accuracy": 0.9560546875,
+        "brier": 0.042014122009277344,
+        "log_loss": 0.18028597544609953
+      },
+      "labels": 1024,
+      "log_loss": 0.15925854127133268,
+      "negatives": 979,
+      "positives": 45,
+      "prevalence": 0.0439453125
+    }
+  },
+  "panel_sha256": "d3b33ee8251b90e9a6574c122f4ec82fedb40530b0ee0333d84167262ec8e637",
+  "replicates": 2,
+  "rows": 1024,
+  "schema": "aic-physical-outcome-head-evaluation-v1",
+  "seconds": 1.069262113
+}

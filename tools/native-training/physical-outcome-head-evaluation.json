@@ -1,0 +1,63 @@
+{
+  "schema": "aic-physical-outcome-head-evaluation-v1",
+  "catalogs": {
+    "recipes": "data/game/normalized/recipes.json",
+    "facilities": "data/game/normalized/facilities.json",
+    "items": "data/game/normalized/items.json",
+    "transports": "data/game/normalized/transports.json",
+    "components": "data/game/normalized/logistics-components.json"
+  },
+  "model": {
+    "width": 40,
+    "message_rounds": 2,
+    "node_features": 41,
+    "edge_features": 37,
+    "global_features": 15,
+    "action_features": 12,
+    "port_features": 11
+  },
+  "initialization_seed": 950000,
+  "optimizer": {
+    "learning_rate": 0.0003,
+    "beta1": 0.9,
+    "beta2": 0.999,
+    "epsilon": 1e-08,
+    "gradient_clip": 1.0
+  },
+  "losses": {
+    "completion": 1.0,
+    "changed": 0.25,
+    "pending_flag": 0.25,
+    "conflict_flag": 0.25,
+    "unchanged": 0.25,
+    "rejected": 0.25,
+    "pending_count": 0.25,
+    "conflict_count": 0.25,
+    "area": 0.5,
+    "transport": 0.25,
+    "turns": 0.25,
+    "route_budget": 0.25
+  },
+  "count_scale": 64.0,
+  "native": {
+    "schema": "declarative-edit-v2",
+    "max_actions": 32,
+    "elapsed_ms": 10000,
+    "route_expansions": 50000,
+    "max_total_route_expansions": 1600000,
+    "search_padding": 4
+  },
+  "actions": {
+    "translation_steps": [-2, -1, 1, 2],
+    "band_counts": [1, 2],
+    "masking": "structural-bands-v1"
+  },
+  "identity_limits": {
+    "max_individualization_nodes": 100000
+  },
+  "workers": 16,
+  "replicates": 2,
+  "actions_per_episode": 32,
+  "max_input_bytes": 1073741824,
+  "prediction_batch_rows": 128
+}

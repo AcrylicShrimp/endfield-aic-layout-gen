@@ -55,6 +55,24 @@ configured cold initialization. The encoder digest, rather than its host path,
 is part of checkpoint identity; the path is resolved relative to the config.
 Use a new output directory and omit `initial_encoder` for the paired cold arm.
 
+Evaluate the pretrained outcome heads directly on a retained actual-factory
+panel with a full online checkpoint:
+
+```sh
+target/release/aic-cli learning evaluate-outcome-heads \
+  --config tools/native-training/physical-outcome-head-evaluation.json \
+  --catalog-root . \
+  --panel artifacts/physical-panel/panel.json \
+  --checkpoint artifacts/online/checkpoints/update-N/state.safetensors \
+  --output artifacts/outcome-head-evaluation.json
+```
+
+The command samples fixed-seed family-balanced actions, derives post-action
+labels from the next authoritative factory observation, and reports every head's
+error plus its largest misses. The output path must be new. Rejected and route
+budget heads need positive events before their discrimination metrics are
+meaningful.
+
 ## Physical coordinates
 
 The native limits/decision schema is `declarative-edit-v2`. Working geometry is

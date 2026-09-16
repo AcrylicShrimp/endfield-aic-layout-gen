@@ -30,14 +30,33 @@ pub struct SelectedAction {
 }
 
 pub fn choose(observation: &Observation, rng: &mut Rng) -> Result<SelectedAction> {
+    choose_from(
+        &observation.input,
+        &observation.domain,
+        Some(&observation.current_ports),
+        rng,
+    )
+}
+
+/// Choose from the shared action domain when the owning runtime does not expose
+/// its current port names. Placement actions then use a fresh compatible port
+/// assignment, while all family balancing remains identical.
+pub fn choose_random(
+    input: &aic_pilot_native::physical_editor::learning::Input,
+    domain: &aic_pilot_native::physical_editor::learning::Domain,
+    rng: &mut Rng,
+) -> Result<SelectedAction> {
+    choose_from(input, domain, None, rng)
+}
+
+fn choose_from(
+    input: &aic_pilot_native::physical_editor::learning::Input,
+    domain: &aic_pilot_native::physical_editor::learning::Domain,
+    current_ports: Option<&[Option<String>]>,
+    rng: &mut Rng,
+) -> Result<SelectedAction> {
     let mut families: [Vec<usize>; 3] = Default::default();
-    for (root, (&invalid, meta)) in observation
-        .input
-        .root_invalid
-        .iter()
-        .zip(&observation.input.root_meta)
-        .enumerate()
-    {
+    for (root, (&invalid, meta)) in input.root_invalid.iter().zip(&input.root_meta).enumerate() {
         ensure!(
             meta[0] >= 0 && meta[0] < 3,
             "aic-learning.outcomes-action: invalid action family"
@@ -68,21 +87,20 @@ pub fn choose(observation: &Observation, rng: &mut Rng) -> Result<SelectedAction
         });
     }
 
-    let meta = observation.input.root_meta[root];
-    let groups = observation
-        .domain
+    let meta = input.root_meta[root];
+    let groups = domain
         .groups
         .get(meta[1] as usize)
         .ok_or_else(|| anyhow::anyhow!("aic-learning.outcomes-action: invalid port owner"))?;
-    let requested = if rng.index(2) == 0 {
+    let requested = if current_ports.is_some() && rng.index(2) == 0 {
         PortMode::RetainCompatible
     } else {
         PortMode::RandomCompatible
     };
-    let retained = (requested == PortMode::RetainCompatible)
-        .then(|| retain(observation, groups))
-        .transpose()?
-        .flatten();
+    let retained = match (requested, current_ports) {
+        (PortMode::RetainCompatible, Some(current_ports)) => retain(current_ports, groups)?,
+        _ => None,
+    };
     let (actual, ports) = match retained {
         Some(ports) => (PortMode::RetainCompatible, ports),
         None => (PortMode::RandomCompatible, random(groups, rng)?),
@@ -98,7 +116,7 @@ pub fn choose(observation: &Observation, rng: &mut Rng) -> Result<SelectedAction
         );
         assignments.push(Assignment {
             terminal: group.graph_node as i64,
-            port: observation.input.port_features[start + port],
+            port: input.port_features[start + port],
         });
     }
     Ok(SelectedAction {
@@ -112,13 +130,13 @@ pub fn choose(observation: &Observation, rng: &mut Rng) -> Result<SelectedAction
 }
 
 fn retain(
-    observation: &Observation,
+    current_ports: &[Option<String>],
     groups: &[aic_pilot_native::physical_editor::learning::PortGroup],
 ) -> Result<Option<Vec<usize>>> {
     let mut used = BTreeSet::new();
     let mut ports = Vec::with_capacity(groups.len());
     for group in groups {
-        let Some(Some(current)) = observation.current_ports.get(group.graph_node) else {
+        let Some(Some(current)) = current_ports.get(group.graph_node) else {
             return Ok(None);
         };
         let Some(port) = group

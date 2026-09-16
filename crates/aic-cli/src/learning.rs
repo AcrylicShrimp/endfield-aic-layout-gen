@@ -55,6 +55,23 @@ pub enum LearningCommand {
         #[arg(long)]
         workers: Option<usize>,
     },
+    /// Measure all physical-outcome heads on held-out factory inputs.
+    #[cfg(feature = "learning")]
+    EvaluateOutcomeHeads {
+        #[arg(long)]
+        config: PathBuf,
+        /// Directory containing the five normalized runtime catalog files.
+        #[arg(long)]
+        catalog_root: PathBuf,
+        #[arg(long)]
+        panel: PathBuf,
+        #[arg(long)]
+        checkpoint: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long, default_value = "cuda:0")]
+        device: String,
+    },
     /// Recompute physical reservations from verified v1 panel payloads into a new directory.
     #[cfg(feature = "learning")]
     MigratePanel {
@@ -114,6 +131,8 @@ pub fn run(command: LearningCommand) -> Result<()> {
         LearningCommand::PretrainOutcomes { config, .. } => config,
         #[cfg(feature = "learning")]
         LearningCommand::PretrainOutcomesOnline { config, .. } => config,
+        #[cfg(feature = "learning")]
+        LearningCommand::EvaluateOutcomeHeads { config, .. } => config,
         #[cfg(feature = "learning")]
         LearningCommand::MigratePanel { input: config, .. } => config,
         #[cfg(feature = "learning")]
@@ -180,6 +199,22 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             updates,
             resume,
             workers,
+        ),
+        #[cfg(feature = "learning")]
+        LearningCommand::EvaluateOutcomeHeads {
+            config,
+            catalog_root,
+            panel,
+            checkpoint,
+            output,
+            device,
+        } => aic_learning::pretraining::evaluate(
+            &config,
+            &catalog_root,
+            &panel,
+            &checkpoint,
+            &output,
+            update::parse_device(&device)?,
         ),
         #[cfg(feature = "learning")]
         LearningCommand::MigratePanel {
