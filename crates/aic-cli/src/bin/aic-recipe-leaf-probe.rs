@@ -6,15 +6,26 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use aic_data::recipes::{
-    FacilityInstanceWiringNode, Rate, Recipe, RecipeSource, RecipeSourceNode,
-    RecipeSourcePlanRequest, RecipeSourceSelection, ThroughputTarget, ValidatedRecipeBook,
-    build_contextual_facility_instance_wiring, calculate_contextual_facility_requirements,
-    check_recipe_source_plan, load_recipe_book,
+    FacilityInstanceWiringNode, FacilityInstanceWiringReport, Rate, Recipe, RecipeSource,
+    RecipeSourceNode, RecipeSourcePlanRequest, RecipeSourceSelection, ThroughputTarget,
+    ValidatedRecipeBook, build_contextual_facility_instance_wiring,
+    calculate_contextual_facility_requirements, check_recipe_source_plan, load_recipe_book,
 };
-use aic_layout::physical::Block;
+use aic_layout::{
+    facilities::FacilityPortDirection,
+    geometry::{Bounds, Point},
+    logistics::{ValidatedItemCatalog, load_item_catalog},
+    physical::Block,
+    projection::{Port, edge_index, rotate},
+    validation::Catalogs,
+};
 use aic_layout_gen::{
     io::load_catalogs,
-    placement::{self, DensityBand, DensityPlacementRequest, PlacementRequest},
+    placement::{self, DensityBand, DensityPlacementRequest, Placement, PlacementRequest},
+};
+use aic_routing::{
+    GlobalRouteJob, GlobalRouteTerminal, GlobalRoutingComparison, GlobalRoutingConfig,
+    GlobalRoutingProblem, compare_global_routing,
 };
 use anyhow::{Context, Result, anyhow, ensure};
 use clap::Parser;
@@ -50,6 +61,13 @@ struct Args {
     placement_gap_min: i64,
     #[arg(long, default_value_t = 4)]
     placement_gap_max: i64,
+    /// Compare irreversible sequential guides with negotiated congestion on the frozen placement.
+    #[arg(long, requires = "catalog_dir")]
+    compare_routing: bool,
+    #[arg(long, default_value_t = 24)]
+    routing_iterations: usize,
+    #[arg(long, default_value_t = 100_000)]
+    routing_work_per_route: usize,
     /// Research-only achieved-density band lower bound (inclusive).
     #[arg(long, requires = "placement_density_max")]
     placement_density_min: Option<f64>,
@@ -87,11 +105,12 @@ struct Report {
     external_input_edges: usize,
     total_wiring_edges: usize,
     placement: Option<PlacementObservation>,
+    routing: Option<RoutingObservation>,
     source_selections: Vec<OutputSelection>,
     moves: Vec<MoveRecord>,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 struct PlacementObservation {
     semantic_facilities: Vec<SemanticFacilityBlock>,
     sequence_pair: [Vec<usize>; 2],
@@ -106,6 +125,39 @@ struct PlacementObservation {
 }
 
 #[derive(Serialize)]
+struct RoutingObservation {
+    status: &'static str,
+    guide_only: bool,
+    shared_network_legalization_performed: bool,
+    exact_component_legalization_performed: bool,
+    frozen_obligations: usize,
+    internal_obligations: usize,
+    external_obligations: usize,
+    boundary_only_obligations: usize,
+    jobs: Vec<RoutingJobObservation>,
+    diagnostic: Option<String>,
+    comparison: Option<GlobalRoutingComparison>,
+}
+
+#[derive(Serialize)]
+struct RoutingJobObservation {
+    id: String,
+    source: String,
+    target: String,
+    commodity: String,
+    transport: aic_layout::logistics::TransportKind,
+    rate: Rate,
+    source_candidates: usize,
+    target_candidates: usize,
+}
+
+struct PhysicalPlacement {
+    observation: PlacementObservation,
+    sampled: Placement,
+    catalogs: Catalogs,
+}
+
+#[derive(Clone, Serialize)]
 struct SemanticFacilityBlock {
     semantic_node: String,
     block: String,
@@ -147,6 +199,7 @@ struct FinalObservations {
     external_input_edges: usize,
     total_wiring_edges: usize,
     facility_blocks: Vec<(String, Block)>,
+    wiring: FacilityInstanceWiringReport,
 }
 
 #[derive(Clone)]
@@ -227,6 +280,14 @@ fn main() -> Result<()> {
     ensure!(args.max_steps > 0, "--max-steps must be positive");
     ensure!(args.max_depth > 0, "--max-depth must be positive");
     ensure!(
+        (1..=1_024).contains(&args.routing_iterations),
+        "--routing-iterations must be 1..=1024"
+    );
+    ensure!(
+        (1..=10_000_000).contains(&args.routing_work_per_route),
+        "--routing-work-per-route must be 1..=10000000"
+    );
+    ensure!(
         !args.report_output.exists(),
         "report output already exists: {}",
         args.report_output.display()
@@ -299,15 +360,47 @@ fn main() -> Result<()> {
         &best.plan,
         &best.evaluation,
     )?;
-    let placement = args
+    let physical = args
         .catalog_dir
         .as_deref()
         .map(|catalog_dir| place_facilities(catalog_dir, &args, &observations.facility_blocks))
         .transpose()?;
+    let routing = if args.compare_routing {
+        let physical = physical
+            .as_ref()
+            .expect("clap requires a catalog directory for routing comparison");
+        Some(
+            compare_recipe_routing(
+                args.catalog_dir.as_deref().unwrap(),
+                &args,
+                &observations,
+                physical,
+            )
+            .unwrap_or_else(|error| {
+                let diagnostic = format!("{error:#}");
+                RoutingObservation {
+                    status: "invalid-input",
+                    guide_only: true,
+                    shared_network_legalization_performed: false,
+                    exact_component_legalization_performed: false,
+                    frozen_obligations: observations.wiring.edges.len(),
+                    internal_obligations: 0,
+                    external_obligations: 0,
+                    boundary_only_obligations: 0,
+                    jobs: vec![],
+                    diagnostic: Some(diagnostic),
+                    comparison: None,
+                }
+            }),
+        )
+    } else {
+        None
+    };
+    let placement = physical.as_ref().map(|value| value.observation.clone());
     exact_plans_evaluated += 1;
     let achieved = best.evaluation.facilities;
     let report = Report {
-        schema_version: 4,
+        schema_version: 5,
         status: if achieved == args.facilities {
             "exact"
         } else {
@@ -338,6 +431,7 @@ fn main() -> Result<()> {
         external_input_edges: observations.external_input_edges,
         total_wiring_edges: observations.total_wiring_edges,
         placement,
+        routing,
         source_selections: best
             .plan
             .selections
@@ -1026,6 +1120,7 @@ fn validate_final_plan(
             .count(),
         total_wiring_edges: wiring.edges.len(),
         facility_blocks,
+        wiring,
     })
 }
 
@@ -1033,7 +1128,7 @@ fn place_facilities(
     catalog_dir: &std::path::Path,
     args: &Args,
     facility_blocks: &[(String, Block)],
-) -> Result<PlacementObservation> {
+) -> Result<PhysicalPlacement> {
     ensure!(
         args.placement_gap_min >= 0
             && args.placement_gap_max >= args.placement_gap_min
@@ -1070,25 +1165,242 @@ fn place_facilities(
         _ => unreachable!("clap requires both density bounds"),
     }
     .map_err(|diagnostic| anyhow!("frozen facility placement failed: {diagnostic:?}"))?;
-    Ok(PlacementObservation {
-        semantic_facilities: facility_blocks
-            .iter()
-            .map(|(semantic_node, block)| SemanticFacilityBlock {
-                semantic_node: semantic_node.clone(),
-                block: block.id.clone(),
-                facility: block.facility.clone(),
-            })
-            .collect(),
-        sequence_pair: sampled.sequence_pair,
-        body_width: sampled.body_width,
-        body_height: sampled.body_height,
-        body_cells: sampled.body_cells,
-        body_bounding_area: sampled.body_bounding_area,
-        body_density: sampled.body_density,
-        gap: sampled.gap,
-        canvas_width: sampled.canvas_width,
-        canvas_height: sampled.canvas_height,
+    Ok(PhysicalPlacement {
+        observation: PlacementObservation {
+            semantic_facilities: facility_blocks
+                .iter()
+                .map(|(semantic_node, block)| SemanticFacilityBlock {
+                    semantic_node: semantic_node.clone(),
+                    block: block.id.clone(),
+                    facility: block.facility.clone(),
+                })
+                .collect(),
+            sequence_pair: sampled.sequence_pair.clone(),
+            body_width: sampled.body_width,
+            body_height: sampled.body_height,
+            body_cells: sampled.body_cells,
+            body_bounding_area: sampled.body_bounding_area,
+            body_density: sampled.body_density,
+            gap: sampled.gap,
+            canvas_width: sampled.canvas_width,
+            canvas_height: sampled.canvas_height,
+        },
+        sampled,
+        catalogs: loaded.catalogs,
     })
+}
+
+fn compare_recipe_routing(
+    catalog_dir: &std::path::Path,
+    args: &Args,
+    observations: &FinalObservations,
+    physical: &PhysicalPlacement,
+) -> Result<RoutingObservation> {
+    let items =
+        ValidatedItemCatalog::try_from_catalog(load_item_catalog(catalog_dir.join("items.json"))?)
+            .map_err(|report| anyhow!("item catalog is invalid: {report:?}"))?;
+    let bounds = Bounds {
+        min_x: 0,
+        min_y: 0,
+        max_x: physical.sampled.canvas_width - 1,
+        max_y: physical.sampled.canvas_height - 1,
+    };
+    let poses = physical
+        .sampled
+        .poses
+        .iter()
+        .map(|pose| (pose.block.as_str(), pose))
+        .collect::<BTreeMap<_, _>>();
+    let mut body = BTreeSet::new();
+    let mut ports = BTreeMap::<String, Vec<Port>>::new();
+    for (semantic_node, block) in &observations.facility_blocks {
+        let pose = poses
+            .get(block.id.as_str())
+            .with_context(|| format!("placement omitted block '{}'", block.id))?;
+        let definition = physical
+            .catalogs
+            .facilities
+            .facility(&block.facility)
+            .with_context(|| format!("catalog omitted facility '{}'", block.facility))?;
+        let (width, height, projected) = rotate(definition, pose.rotation, pose.position);
+        for y in pose.position.y..pose.position.y + height {
+            for x in pose.position.x..pose.position.x + width {
+                body.insert(Point { x, y });
+            }
+        }
+        ports.insert(semantic_node.clone(), projected);
+    }
+
+    let boundary_sources = boundary_terminals("external-source", bounds, true, &body);
+    let boundary_targets = boundary_terminals("external-target", bounds, false, &body);
+    let mut jobs = Vec::with_capacity(observations.wiring.edges.len());
+    let mut job_observations = Vec::with_capacity(observations.wiring.edges.len());
+    let internal = observations
+        .wiring
+        .edges
+        .iter()
+        .filter(|edge| ports.contains_key(&edge.source) && ports.contains_key(&edge.target))
+        .count();
+    let boundary_only = observations
+        .wiring
+        .edges
+        .iter()
+        .filter(|edge| !ports.contains_key(&edge.source) && !ports.contains_key(&edge.target))
+        .count();
+    let external = observations.wiring.edges.len() - internal;
+    for edge in &observations.wiring.edges {
+        let item = items
+            .item(&edge.item)
+            .with_context(|| format!("wiring edge '{}' references unknown item", edge.id))?;
+        let sources = if let Some(candidates) = ports.get(&edge.source) {
+            facility_terminals(
+                &format!("source:{}", edge.source),
+                candidates,
+                FacilityPortDirection::Output,
+                item.transport,
+                bounds,
+                &body,
+            )
+        } else {
+            boundary_sources.clone()
+        };
+        let targets = if let Some(candidates) = ports.get(&edge.target) {
+            facility_terminals(
+                &format!("target:{}", edge.target),
+                candidates,
+                FacilityPortDirection::Input,
+                item.transport,
+                bounds,
+                &body,
+            )
+        } else {
+            boundary_targets.clone()
+        };
+        job_observations.push(RoutingJobObservation {
+            id: edge.id.clone(),
+            source: edge.source.clone(),
+            target: edge.target.clone(),
+            commodity: edge.item.clone(),
+            transport: item.transport,
+            rate: edge.rate,
+            source_candidates: sources.len(),
+            target_candidates: targets.len(),
+        });
+        if sources.is_empty() || targets.is_empty() {
+            return Ok(RoutingObservation {
+                status: "terminal-domain-empty",
+                guide_only: true,
+                shared_network_legalization_performed: false,
+                exact_component_legalization_performed: false,
+                frozen_obligations: observations.wiring.edges.len(),
+                internal_obligations: internal,
+                external_obligations: external,
+                boundary_only_obligations: boundary_only,
+                jobs: job_observations,
+                diagnostic: Some(format!(
+                    "wiring edge '{}' has {} source and {} target candidates",
+                    edge.id,
+                    sources.len(),
+                    targets.len()
+                )),
+                comparison: None,
+            });
+        }
+        jobs.push(GlobalRouteJob {
+            id: edge.id.clone(),
+            commodity: edge.item.clone(),
+            transport: item.transport,
+            rate: edge.rate,
+            sources,
+            targets,
+        });
+    }
+    let problem = GlobalRoutingProblem {
+        bounds,
+        blocked: body.iter().copied().collect(),
+        jobs,
+    };
+    let comparison = compare_global_routing(
+        &problem,
+        &GlobalRoutingConfig {
+            max_iterations: args.routing_iterations,
+            work_per_route: args.routing_work_per_route,
+            present_penalty: 8,
+            history_increment: 2,
+        },
+    )
+    .map_err(|diagnostic| anyhow!("global routing comparison failed: {diagnostic:?}"))?;
+    Ok(RoutingObservation {
+        status: "compared",
+        guide_only: true,
+        shared_network_legalization_performed: false,
+        exact_component_legalization_performed: false,
+        frozen_obligations: observations.wiring.edges.len(),
+        internal_obligations: internal,
+        external_obligations: external,
+        boundary_only_obligations: boundary_only,
+        jobs: job_observations,
+        diagnostic: None,
+        comparison: Some(comparison),
+    })
+}
+
+fn facility_terminals(
+    label: &str,
+    ports: &[Port],
+    expected: FacilityPortDirection,
+    transport: aic_layout::logistics::TransportKind,
+    bounds: Bounds,
+    body: &BTreeSet<Point>,
+) -> Vec<GlobalRouteTerminal> {
+    ports
+        .iter()
+        .filter(|port| {
+            port.direction == expected
+                && port.transport == transport
+                && bounds.contains(port.connection)
+                && !body.contains(&port.connection)
+        })
+        .map(|port| GlobalRouteTerminal {
+            id: format!("{label}:{}", port.id),
+            point: port.connection,
+            direction: Some(match expected {
+                FacilityPortDirection::Output => edge_index(port.edge),
+                FacilityPortDirection::Input => (edge_index(port.edge) + 2) % 4,
+            }),
+        })
+        .collect()
+}
+
+fn boundary_terminals(
+    label: &str,
+    bounds: Bounds,
+    source: bool,
+    body: &BTreeSet<Point>,
+) -> Vec<GlobalRouteTerminal> {
+    let mut terminals = Vec::new();
+    let mut push = |side: &str, point: Point, inward: usize| {
+        if !body.contains(&point) {
+            terminals.push(GlobalRouteTerminal {
+                id: format!("{label}:{side}:{}:{}", point.x, point.y),
+                point,
+                direction: Some(if source { inward } else { (inward + 2) % 4 }),
+            });
+        }
+    };
+    for x in bounds.min_x..=bounds.max_x {
+        push("north", Point { x, y: bounds.min_y }, 1);
+        if bounds.max_y != bounds.min_y {
+            push("south", Point { x, y: bounds.max_y }, 3);
+        }
+    }
+    for y in bounds.min_y + 1..bounds.max_y {
+        push("west", Point { x: bounds.min_x, y }, 0);
+        if bounds.max_x != bounds.min_x {
+            push("east", Point { x: bounds.max_x, y }, 2);
+        }
+    }
+    terminals
 }
 
 fn request_for(target_item: &str, plan: &Plan) -> RecipeSourcePlanRequest {
@@ -1167,6 +1479,45 @@ fn stable_tie(seed: u64, value: &str) -> u64 {
 mod tests {
     use super::*;
     use aic_data::recipes::ItemAmount;
+
+    #[test]
+    fn external_boundary_domains_are_unique_and_directional() {
+        let bounds = Bounds {
+            min_x: 0,
+            min_y: 0,
+            max_x: 2,
+            max_y: 2,
+        };
+        let sources = boundary_terminals("source", bounds, true, &BTreeSet::new());
+        let targets = boundary_terminals("target", bounds, false, &BTreeSet::new());
+
+        assert_eq!(sources.len(), 8);
+        assert_eq!(targets.len(), 8);
+        assert_eq!(
+            sources
+                .iter()
+                .map(|terminal| &terminal.id)
+                .collect::<BTreeSet<_>>()
+                .len(),
+            sources.len()
+        );
+        assert_eq!(
+            sources
+                .iter()
+                .find(|terminal| terminal.point == Point { x: 1, y: 0 })
+                .unwrap()
+                .direction,
+            Some(1)
+        );
+        assert_eq!(
+            targets
+                .iter()
+                .find(|terminal| terminal.point == Point { x: 1, y: 0 })
+                .unwrap()
+                .direction,
+            Some(3)
+        );
+    }
 
     fn recipe(id: &str, inputs: &[&str], output: &str, duration_ms: i64) -> Recipe {
         Recipe {

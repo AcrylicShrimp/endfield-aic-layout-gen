@@ -28,7 +28,12 @@ pub struct RouteJob {
     pub rate: Rate,
 }
 
+mod negotiated;
 mod reachability;
+pub use negotiated::{
+    GlobalRoute, GlobalRouteJob, GlobalRouteTerminal, GlobalRoutingComparison, GlobalRoutingConfig,
+    GlobalRoutingOverflowCell, GlobalRoutingProblem, GlobalRoutingResult, compare_global_routing,
+};
 #[cfg(test)]
 mod tests;
 

@@ -93,5 +93,11 @@ This slice establishes frozen-block placement and packing control only. It does
 not assign ports, convert logical wiring into physical networks, route, legalize
 components or admit a complete layout. The density policy therefore remains
 subject to a new version if routing evidence shows that one band is not
-routable across the supported domain. The next comparison must use identical
-frozen semantic instances and placements for sequential and negotiated routing.
+routable across the supported domain. The next comparison used identical frozen
+semantic instances and placements for sequential and negotiated routing. Its
+results are in
+[`2026-09-17-recipe-routing-negotiation-prototype.md`](2026-09-17-recipe-routing-negotiation-prototype.md).
+They show that the compact zero-gap samples in the bounded comparison can block
+compatible port escape even though facility bodies do not overlap. The current
+density policy therefore remains placement-only and cannot yet be used for
+complete-layout admission.

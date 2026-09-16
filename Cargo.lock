@@ -36,6 +36,7 @@ dependencies = [
  "aic-layout",
  "aic-layout-gen",
  "aic-learning",
+ "aic-routing",
  "anyhow",
  "clap",
  "pumpkin-solver",
