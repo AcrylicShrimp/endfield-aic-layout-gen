@@ -1,4 +1,4 @@
-use aic_layout_gen::{Config, batch, io};
+use aic_layout_gen::{Config, batch, io, survey};
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -28,6 +28,17 @@ enum Command {
         count: usize,
         #[arg(long, default_value_t = 1)]
         workers: usize,
+        #[arg(long)]
+        output: PathBuf,
+    },
+    /// Measure generator yield, cost and spatial occupancy across equal-size buckets.
+    Survey {
+        #[arg(long)]
+        config: PathBuf,
+        #[arg(long, default_value = "data/game/normalized")]
+        catalog_dir: PathBuf,
+        #[arg(long)]
+        seed: u64,
         #[arg(long)]
         output: PathBuf,
     },
@@ -63,6 +74,23 @@ fn run() -> anyhow::Result<bool> {
                 "report":output.join("report.json"),"gallery":output.join("index.html")})
             );
             return Ok(report.complete == report.requested);
+        }
+        Command::Survey {
+            config,
+            catalog_dir,
+            seed,
+            output,
+        } => {
+            let config: survey::SurveyConfig = io::read(&config)?;
+            let report = survey::run(config, &catalog_dir, seed, &output)?;
+            println!(
+                "{}",
+                serde_json::json!({"completed":report.completed,"requested":report.requested,
+                "successes":report.successes,"incomplete":report.incomplete,
+                "deadline_reached":report.deadline_reached,"elapsed_seconds":report.elapsed_seconds,
+                "report":output.join("report.json")})
+            );
+            return Ok(report.incomplete == 0);
         }
         Command::Validate {
             layout,

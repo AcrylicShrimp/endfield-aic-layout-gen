@@ -7,5 +7,6 @@ pub use generate::{Attempt, Failure, Generated, Generator};
 pub mod batch;
 pub mod io;
 pub mod render;
+pub mod survey;
 #[cfg(test)]
 mod tests;

@@ -21,6 +21,25 @@ target/release/aic-layout-gen validate \
   --catalog-dir artifacts/my-procedural-layouts/catalogs
 ```
 
+To measure generator yield and spatial occupancy without retaining full layouts:
+
+```sh
+target/release/aic-layout-gen survey \
+  --config crates/aic-layout-gen/examples/survey.json \
+  --catalog-dir data/game/normalized --seed 10000 \
+  --output artifacts/layout-generation-survey
+```
+
+The survey gives every configured facility-count bucket the same number of slots.
+It writes one compact row for every slot and per-bucket success, cost, status and
+occupancy summaries to `report.json`. Occupancy is measured by independent layout
+validation. Reported quantiles select the value at `floor((n - 1) * p / 100)` in
+sorted order; min/max expose rare extremes separately from the central quantiles.
+The deadline is checked between bounded generator operations. Interrupted and
+not-started slots remain explicit and make the command exit with status 2. A
+terminal generation failure is measured evidence, so it does not make a completed
+survey command fail.
+
 Open the output's `index.html` for the gallery. Individual pages offer belt, pipe
 and port visibility controls, route isolation by clicking, and hover descriptions.
 Orange lines are belts, blue lines are pipes; outlined squares mark catalog bridges.
