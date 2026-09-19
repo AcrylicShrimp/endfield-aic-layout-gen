@@ -47,11 +47,11 @@ bool aic_rng_restore(void* h, const void* state) noexcept {
 bool aic_rng_draw(void* h, int mode, int64_t n, int64_t high, const void* input, void** out) noexcept {
   AIC_TRY
   auto& g=static_cast<Rng*>(h)->value;
-  const auto options=torch::TensorOptions().dtype(torch::kInt64).device(torch::kCPU);
   torch::Tensor result;
-  if (mode==0) result=at::randperm(n,g,options);
-  else if (mode==1) result=at::randint(high,{n},g,options);
+  if (mode==0) result=at::randperm(n,g,torch::TensorOptions().dtype(torch::kInt64).device(torch::kCPU));
+  else if (mode==1) result=at::randint(high,{n},g,torch::TensorOptions().dtype(torch::kInt64).device(torch::kCPU));
   else if (mode==2) result=at::multinomial(*static_cast<const torch::Tensor*>(input),n,false,g);
+  else if (mode==3) result=at::rand({n},g,torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU));
   else TORCH_CHECK(false,"Unknown RNG operation");
   *out=new torch::Tensor(std::move(result)); return true;
   AIC_CATCH

@@ -38,6 +38,17 @@
 - Keep expensive audits explicit, bounded, and separate from normal runs. Do not add them per step, per batch, periodically, or at every completion by default. End diagnostic processes and restore normal settings before a long run.
 - Use existing evidence and the smallest sufficient check. Do not rerun successful checks or workloads without a new change, failure, or specific unresolved question.
 
+## Training Server
+
+- Run GPU training and CUDA performance measurements on `ashrimp-arch`, accessed
+  with `ssh ashrimp@ashrimp-arch`. Keep every server checkout, build, temporary
+  input and retained result under `~/Srv`; see
+  `docs/maintenance/training-server.md` for the current runtime path and checks.
+- Use local hardware only for bounded compilation, unit tests and smoke runs when
+  the server is available. Check server disk capacity and active GPU processes
+  before building or launching training. Remove only regenerable caches without
+  explicit evidence-retention review.
+
 ## Implementation And Contracts
 
 - Keep architecture simple. Prefer complete internal cutovers, remove obsolete paths, and avoid unnecessary adapters or compatibility shims. Report what became simpler after a cutover.

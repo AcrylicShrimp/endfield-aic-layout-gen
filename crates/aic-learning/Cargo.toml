@@ -9,6 +9,7 @@ publish = false
 [features]
 libtorch = [
     "outcomes",
+    "dep:aic-data",
     "dep:aic-torch",
     "aic-torch/libtorch",
 ]
@@ -16,6 +17,7 @@ outcomes = ["dep:aic-layout", "dep:aic-layout-gen", "dep:aic-pilot-native"]
 
 [dependencies]
 aic-pilot-native = { workspace = true, optional = true }
+aic-data = { workspace = true, optional = true }
 aic-layout = { workspace = true, optional = true }
 aic-layout-gen = { workspace = true, optional = true }
 aic-torch = { workspace = true, optional = true }

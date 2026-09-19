@@ -88,7 +88,10 @@ trajectories.
 The retained source inputs are
 [`config.json`](../benchmarks/direct-constructive-pilot/config.json) and
 [`problems.json`](../benchmarks/direct-constructive-pilot/problems.json). The
-registered config now contains the selected `0.003` learning rate.
+registered config now contains the selected `0.003` learning rate. It has been
+migrated to training schema v2 with an explicit full-batch
+`ppo_minibatch_size`; this preserves the pilot update while rejecting the old
+implicit v1 setting.
 
 ```bash
 export LIBTORCH=/path/to/torch

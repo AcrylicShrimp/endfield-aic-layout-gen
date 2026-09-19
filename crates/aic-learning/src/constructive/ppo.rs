@@ -16,6 +16,7 @@ use crate::{
 
 use super::{Model, policy};
 
+#[derive(Clone, Copy)]
 pub struct Sample<'a> {
     pub observation: &'a Observation,
     pub choice: &'a policy::Choice,
@@ -36,6 +37,8 @@ pub struct Learner {
 #[derive(Clone, Debug, Serialize)]
 pub struct UpdateReport {
     pub step: u64,
+    pub samples: usize,
+    pub minibatches: usize,
     pub loss: f64,
     pub policy_loss: f64,
     pub value_loss: f64,
@@ -104,27 +107,16 @@ impl Learner {
         policy::greedy(&self.model, rows, self.device)
     }
 
-    pub fn update(&mut self, samples: &[Sample<'_>], normalization: &str) -> Result<UpdateReport> {
+    pub fn update_epoch(
+        &mut self,
+        samples: &[Sample<'_>],
+        normalization: &str,
+        minibatch_size: usize,
+    ) -> Result<UpdateReport> {
         ensure!(
-            !samples.is_empty() && self.completed_steps < u64::MAX,
-            "aic-learning.constructive-ppo: empty batch or exhausted step counter"
+            !samples.is_empty() && minibatch_size > 0 && self.completed_steps < u64::MAX,
+            "aic-learning.constructive-ppo: empty batch, zero minibatch or exhausted step counter"
         );
-        let decisions = samples
-            .iter()
-            .map(|sample| policy::TrainingDecision {
-                observation: sample.observation,
-                choice: sample.choice,
-            })
-            .collect::<Vec<_>>();
-        let (logp, entropy, values) =
-            policy::selected_likelihood(&self.model, &decisions, self.device)?;
-        let old_logp = Tensor::from_slice(
-            &samples
-                .iter()
-                .map(|sample| sample.choice.old_logp as f32)
-                .collect::<Vec<_>>(),
-        )
-        .to_device(self.device);
         let raw_advantage = Tensor::from_slice(
             &samples
                 .iter()
@@ -132,51 +124,92 @@ impl Learner {
                 .collect::<Vec<_>>(),
         )
         .to_device(self.device);
-        let advantage = credit::normalize(&raw_advantage, normalization)?;
-        let targets = Tensor::from_slice(
-            &samples
-                .iter()
-                .map(|sample| sample.target)
-                .collect::<Vec<_>>(),
-        )
-        .to_device(self.device);
+        let advantage = Vec::<f32>::try_from(
+            credit::normalize(&raw_advantage, normalization)?.to_device(Device::Cpu),
+        )?;
         self.actor.zero_grad()?;
         self.critic.zero_grad()?;
-        let ratio = (&logp - &old_logp).exp();
-        let clipped = ratio.clamp(1. - self.config.clip_epsilon, 1. + self.config.clip_epsilon);
-        let policy_loss = -(&ratio * &advantage)
-            .minimum(&(&clipped * &advantage))
-            .mean(Kind::Float);
-        let value_loss = (&values - targets).square().mean(Kind::Float) * 0.5;
-        let entropy_mean = entropy.mean(Kind::Float);
-        let loss = &policy_loss + &value_loss - self.config.entropy_coefficient * &entropy_mean;
-        let scalar = f64::try_from(&loss)?;
-        ensure!(
-            scalar.is_finite(),
-            "aic-learning.constructive-ppo: nonfinite objective"
-        );
-        loss.backward();
+        let mut loss_total = 0.;
+        let mut policy_total = 0.;
+        let mut value_total = 0.;
+        let mut entropy_total = 0.;
+        let mut kl_total = 0.;
+        let mut clip_total = 0.;
+        let mut minibatches = 0;
+        for (offset, chunk) in samples.chunks(minibatch_size).enumerate() {
+            let start = offset * minibatch_size;
+            let decisions = chunk
+                .iter()
+                .map(|sample| policy::TrainingDecision {
+                    observation: sample.observation,
+                    choice: sample.choice,
+                })
+                .collect::<Vec<_>>();
+            let (logp, entropy, values) =
+                policy::selected_likelihood(&self.model, &decisions, self.device)?;
+            let old_logp = Tensor::from_slice(
+                &chunk
+                    .iter()
+                    .map(|sample| sample.choice.old_logp as f32)
+                    .collect::<Vec<_>>(),
+            )
+            .to_device(self.device);
+            let advantage =
+                Tensor::from_slice(&advantage[start..start + chunk.len()]).to_device(self.device);
+            let targets =
+                Tensor::from_slice(&chunk.iter().map(|sample| sample.target).collect::<Vec<_>>())
+                    .to_device(self.device);
+            let ratio = (&logp - &old_logp).exp();
+            let clipped = ratio.clamp(1. - self.config.clip_epsilon, 1. + self.config.clip_epsilon);
+            let policy_loss = -(&ratio * &advantage)
+                .minimum(&(&clipped * &advantage))
+                .mean(Kind::Float);
+            let value_loss = (&values - targets).square().mean(Kind::Float) * 0.5;
+            let entropy_mean = entropy.mean(Kind::Float);
+            let loss = &policy_loss + &value_loss - self.config.entropy_coefficient * &entropy_mean;
+            let approximate_kl = (&old_logp - &logp).mean(Kind::Float);
+            let clip_fraction = (&ratio - 1.)
+                .abs()
+                .gt(self.config.clip_epsilon)
+                .to_kind(Kind::Float)
+                .mean(Kind::Float);
+            let weight = chunk.len() as f64 / samples.len() as f64;
+            let metrics = [
+                f64::try_from(&loss)?,
+                f64::try_from(&policy_loss)?,
+                f64::try_from(&value_loss)?,
+                f64::try_from(&entropy_mean)?,
+                f64::try_from(&approximate_kl)?,
+                f64::try_from(&clip_fraction)?,
+            ];
+            ensure!(
+                metrics.iter().all(|value| value.is_finite()),
+                "aic-learning.constructive-ppo: nonfinite objective"
+            );
+            loss_total += weight * metrics[0];
+            policy_total += weight * metrics[1];
+            value_total += weight * metrics[2];
+            entropy_total += weight * metrics[3];
+            kl_total += weight * metrics[4];
+            clip_total += weight * metrics[5];
+            (loss * weight).backward();
+            minibatches += 1;
+        }
         let actor_gradient_norm = self.actor.clip_grad_norm(self.config.gradient_clip)?;
         let critic_gradient_norm = self.critic.clip_grad_norm(self.config.gradient_clip)?;
         self.actor.step()?;
         self.critic.step()?;
         self.completed_steps += 1;
-        let approximate_kl = f64::try_from((&old_logp - &logp).mean(Kind::Float))?;
-        let clip_fraction = f64::try_from(
-            (&ratio - 1.)
-                .abs()
-                .gt(self.config.clip_epsilon)
-                .to_kind(Kind::Float)
-                .mean(Kind::Float),
-        )?;
         Ok(UpdateReport {
             step: self.completed_steps,
-            loss: scalar,
-            policy_loss: f64::try_from(policy_loss)?,
-            value_loss: f64::try_from(value_loss)?,
-            entropy: f64::try_from(entropy_mean)?,
-            approximate_kl,
-            clip_fraction,
+            samples: samples.len(),
+            minibatches,
+            loss: loss_total,
+            policy_loss: policy_total,
+            value_loss: value_total,
+            entropy: entropy_total,
+            approximate_kl: kl_total,
+            clip_fraction: clip_total,
             actor_gradient_norm,
             critic_gradient_norm,
         })
@@ -251,7 +284,7 @@ mod tests {
                 && choice.old_value.is_finite()
         }));
         let report = learner
-            .update(
+            .update_epoch(
                 &[
                     Sample {
                         observation: &first,
@@ -267,9 +300,12 @@ mod tests {
                     },
                 ],
                 "center",
+                1,
             )
             .unwrap();
         assert_eq!(report.step, 1);
+        assert_eq!(report.samples, 2);
+        assert_eq!(report.minibatches, 2);
         assert!(report.loss.is_finite() && report.actor_gradient_norm.is_finite());
         assert!(report.approximate_kl.abs() < 1e-5);
         assert_eq!(report.clip_fraction, 0.);

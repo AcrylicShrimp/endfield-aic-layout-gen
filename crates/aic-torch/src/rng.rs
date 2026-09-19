@@ -39,6 +39,10 @@ impl Generator {
         );
         self.0.draw(2, 1, 0, Some(probabilities))
     }
+    pub fn uniforms(&mut self, count: i64) -> Result<Tensor> {
+        ensure!(count >= 0, "aic-torch.rng-draw: negative uniform count");
+        self.0.draw(3, count, 0, None)
+    }
 }
 
 /// Configure the same deterministic execution requirement as the existing runner.

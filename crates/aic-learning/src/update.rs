@@ -13,6 +13,12 @@ use anyhow::{Result, ensure};
 use serde::Serialize;
 
 pub fn parse_device(value: &str) -> Result<Device> {
+    if value == "auto" {
+        if aic_torch::tch::Cuda::is_available() {
+            return Ok(Device::Cuda(0));
+        }
+        return Ok(Device::Cpu);
+    }
     if value == "cpu" {
         return Ok(Device::Cpu);
     }
@@ -27,7 +33,7 @@ pub fn parse_device(value: &str) -> Result<Device> {
         );
         return Ok(Device::Cuda(index));
     }
-    anyhow::bail!("aic-learning.device: expected cpu or cuda:N, got {value}")
+    anyhow::bail!("aic-learning.device: expected auto, cpu or cuda:N, got {value}")
 }
 
 pub struct Learner {

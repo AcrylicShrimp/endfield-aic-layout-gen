@@ -21,6 +21,7 @@ use crate::{
 
 pub mod policy;
 pub mod ppo;
+pub mod problems;
 pub mod rollout;
 pub mod run;
 #[cfg(test)]
@@ -228,6 +229,10 @@ impl Batch {
 
     pub fn choice_range(&self, graph: usize) -> std::ops::Range<i64> {
         self.choice_offsets[graph]..self.choice_offsets[graph + 1]
+    }
+
+    pub fn choice_offsets(&self) -> &[i64] {
+        &self.choice_offsets
     }
 }
 

@@ -122,6 +122,23 @@ pub enum LearningCommand {
         #[arg(long)]
         seed: u64,
     },
+    /// Prepare a seeded recipe-derived pairwise constructive problem split.
+    #[cfg(feature = "learning")]
+    PrepareConstructiveProblems {
+        #[arg(long)]
+        config: PathBuf,
+        /// Directory containing normalized recipes, items and physical catalogs.
+        #[arg(long)]
+        catalog_root: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long)]
+        seed: u64,
+        #[arg(long)]
+        training: usize,
+        #[arg(long)]
+        evaluation: usize,
+    },
     /// Run the bounded router-free constructive PPO pilot.
     #[cfg(feature = "learning")]
     TrainConstructive {
@@ -135,7 +152,7 @@ pub enum LearningCommand {
         problems: PathBuf,
         #[arg(long)]
         output: PathBuf,
-        #[arg(long, default_value = "cpu")]
+        #[arg(long, default_value = "auto")]
         device: String,
     },
 }
@@ -157,6 +174,8 @@ pub fn run(command: LearningCommand) -> Result<()> {
         LearningCommand::Train { config, .. } => config,
         #[cfg(feature = "learning")]
         LearningCommand::PreparePanel { config, .. } => config,
+        #[cfg(feature = "learning")]
+        LearningCommand::PrepareConstructiveProblems { config, .. } => config,
         #[cfg(feature = "learning")]
         LearningCommand::TrainConstructive { config, .. } => config,
     };
@@ -281,6 +300,22 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             cases,
             seed,
         } => aic_learning::training::evaluation::prepare(&config, &output, cases, seed),
+        #[cfg(feature = "learning")]
+        LearningCommand::PrepareConstructiveProblems {
+            config,
+            catalog_root,
+            output,
+            seed,
+            training,
+            evaluation,
+        } => aic_learning::constructive::problems::prepare(
+            &config,
+            &catalog_root,
+            &output,
+            seed,
+            training,
+            evaluation,
+        ),
         #[cfg(feature = "learning")]
         LearningCommand::TrainConstructive {
             config,

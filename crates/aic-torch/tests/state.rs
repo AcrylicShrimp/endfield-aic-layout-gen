@@ -40,6 +40,11 @@ fn independent_generators_resume_all_draw_kinds() {
             .unwrap()
             .equal(&restored.categorical(&p).unwrap())
     );
+    assert!(
+        a.uniforms(31)
+            .unwrap()
+            .equal(&restored.uniforms(31).unwrap())
+    );
     assert!(a.state().unwrap().equal(&restored.state().unwrap()));
     assert!(
         a.restore(&Tensor::zeros([8], (Kind::Uint8, Device::Cpu)))

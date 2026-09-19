@@ -8,7 +8,7 @@ use aic_torch::{
 use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
 
-use super::{Batch, Decision, Model};
+use super::{Batch, Decision, Model, Prediction};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Factor {
@@ -31,26 +31,102 @@ pub fn sample(
     sampler: &mut Generator,
     device: Device,
 ) -> Result<Vec<Choice>> {
-    sample_with(model, rows, device, |_, probabilities| {
-        Ok(usize::try_from(i64::try_from(
-            sampler.categorical(probabilities)?,
-        )?)?)
-    })
+    if device == Device::Cpu {
+        sample_with(model, rows, device, |batch, prediction| {
+            cpu_sample(batch, prediction, sampler)
+        })
+    } else {
+        sample_with(model, rows, device, |batch, prediction| {
+            device_sample(batch, prediction, sampler, device)
+        })
+    }
 }
 
 pub fn greedy(model: &Model, rows: &[&Observation], device: Device) -> Result<Vec<Choice>> {
-    sample_with(model, rows, device, |_, probabilities| {
-        Ok(usize::try_from(i64::try_from(
-            probabilities.argmax(None, false),
-        )?)?)
+    sample_with(model, rows, device, |batch, prediction| {
+        greedy_selections(batch, prediction)
     })
+}
+
+fn cpu_sample(batch: &Batch, prediction: &Prediction, sampler: &mut Generator) -> Result<Vec<i64>> {
+    let logp = prediction.logp.to_device(Device::Cpu);
+    (0..batch.graphs() as usize)
+        .map(|graph| {
+            let range = batch.choice_range(graph);
+            let probabilities = logp.narrow(0, range.start, range.end - range.start).exp();
+            Ok(range.start + i64::try_from(sampler.categorical(&probabilities)?)?)
+        })
+        .collect()
+}
+
+fn greedy_selections(batch: &Batch, prediction: &Prediction) -> Result<Vec<i64>> {
+    let logp = prediction.logp.to_device(Device::Cpu);
+    (0..batch.graphs() as usize)
+        .map(|graph| {
+            let range = batch.choice_range(graph);
+            Ok(range.start
+                + i64::try_from(
+                    logp.narrow(0, range.start, range.end - range.start)
+                        .argmax(None, false),
+                )?)
+        })
+        .collect()
+}
+
+fn device_sample(
+    batch: &Batch,
+    prediction: &Prediction,
+    sampler: &mut Generator,
+    device: Device,
+) -> Result<Vec<i64>> {
+    let offsets = batch.choice_offsets();
+    // A single packed CDF avoids one host round trip per graph. Accumulate in
+    // f64 so segment totals remain distinct even when thousands of normalized
+    // distributions share the packed vector.
+    let probabilities = prediction.logp.exp().to_kind(aic_torch::tch::Kind::Double);
+    let cumulative = probabilities.cumsum(0, probabilities.kind());
+    let ends = Tensor::from_slice(
+        &offsets[1..]
+            .iter()
+            .map(|offset| offset - 1)
+            .collect::<Vec<_>>(),
+    )
+    .to_device(device);
+    let totals = cumulative.index_select(0, &ends);
+    let bases = if offsets.len() == 2 {
+        Tensor::zeros([1], (probabilities.kind(), device))
+    } else {
+        Tensor::cat(
+            &[
+                Tensor::zeros([1], (probabilities.kind(), device)),
+                cumulative.index_select(
+                    0,
+                    &Tensor::from_slice(
+                        &offsets[1..offsets.len() - 1]
+                            .iter()
+                            .map(|offset| offset - 1)
+                            .collect::<Vec<_>>(),
+                    )
+                    .to_device(device),
+                ),
+            ],
+            0,
+        )
+    };
+    let draws = sampler
+        .uniforms(batch.graphs())?
+        .to_device(device)
+        .to_kind(probabilities.kind());
+    let thresholds = &bases + draws * (totals - &bases);
+    let selected = thresholds.searchsorted(&cumulative, false, true, "right", None::<&Tensor>);
+    Ok(Vec::<i64>::try_from(selected.to_device(Device::Cpu))?)
 }
 
 fn sample_with(
     model: &Model,
     rows: &[&Observation],
     device: Device,
-    mut select: impl FnMut(usize, &Tensor) -> Result<usize>,
+    mut select: impl FnMut(&Batch, &Prediction) -> Result<Vec<i64>>,
 ) -> Result<Vec<Choice>> {
     ensure!(
         !rows.is_empty(),
@@ -90,18 +166,28 @@ fn sample_with(
                 .collect::<Vec<_>>();
             let batch = Batch::from_decisions(&decisions, device)?;
             let prediction = model.predict(&batch)?;
-            let logp = prediction.logp.to_device(Device::Cpu);
+            let selected = select(&batch, &prediction)?;
+            ensure!(
+                selected.len() == owners.len(),
+                "aic-learning.constructive-sample: selector returned wrong graph count"
+            );
+            let selected_logp = Vec::<f32>::try_from(
+                prediction
+                    .logp
+                    .index_select(0, &Tensor::from_slice(&selected).to_device(device))
+                    .to_device(Device::Cpu),
+            )?;
             let values = Vec::<f32>::try_from(prediction.values.to_device(Device::Cpu))?;
             let entropies = Vec::<f32>::try_from(prediction.entropy.to_device(Device::Cpu))?;
             for (local, &owner) in owners.iter().enumerate() {
                 let range = batch.choice_range(local);
-                let probabilities = logp.narrow(0, range.start, range.end - range.start).exp();
-                let selected = select(owner, &probabilities)?;
+                let absolute = selected[local];
                 ensure!(
-                    selected < (range.end - range.start) as usize,
+                    range.contains(&absolute),
                     "aic-learning.constructive-sample: selector returned invalid choice"
                 );
-                old_logp[owner] += logp.double_value(&[range.start + selected as i64]);
+                let selected = usize::try_from(absolute - range.start)?;
+                old_logp[owner] += selected_logp[local] as f64;
                 entropy[owner] += entropies[local] as f64;
                 if depth == 0 {
                     old_value[owner] = values[local] as f64;
