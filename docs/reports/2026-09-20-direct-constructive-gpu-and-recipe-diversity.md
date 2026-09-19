@@ -16,6 +16,13 @@ Greedy completion was transient and ended at zero in all three arms, so the
 broader distribution establishes a robust stochastic learning signal but does
 not yet establish stable modal decoding.
 
+A follow-up encoder-reuse cutover reduced a matched four-update, 1,024-sample
+minibatch control from a 7.217-second median to 5.188 seconds across five
+interleaved runs per binary: **28.1% less wall time, or 1.39x throughput**.
+Peak VRAM fell from 2,102 to 1,606 MiB. The complete 32-update, three-seed run
+then retained the same aggregate final stochastic result, 354/1,536, while
+reducing aggregate wall time by 38.0% against the published 512-minibatch runs.
+
 ## CUDA execution boundary
 
 The CLI device default is `auto`: it selects `cuda:0` when CUDA is available and
@@ -152,7 +159,7 @@ branches, so exact trajectory replay is neither expected nor required. The
 three-seed comparison shows no systematic loss of the stochastic learning
 signal, while greedy decoding remains too unstable for a quality claim.
 
-## Nsight profile and next performance target
+## Nsight profile and encoder-reuse result
 
 An Nsight Systems 2026.3.2 trace used the retained release binary for four
 updates with width 128, four message rounds, 256 training episodes, four PPO
@@ -198,9 +205,91 @@ A one-update sizing check measured the immediate tuning limit:
 
 The 1,024 setting reduced end-to-end time by 7.4% and the residual PPO/startup
 portion by 16.9% without meaningful memory pressure. It is the next bounded
-full-run candidate; larger minibatches regressed slightly in this check. The
-tracked 512 setting remains unchanged until a complete multi-seed run verifies
-throughput and learning behavior together.
+full-run candidate; larger minibatches regressed slightly in this check.
+
+### Encoder reuse cutover
+
+The combined observation-and-choice batch has been replaced internally by an
+observation batch, an encoded observation result, and a factor-choice batch.
+Rollout now encodes each environment observation once before conditional
+decoding. PPO encodes each transition once with autograd retained, then scores
+all stored factors against that shared graph. This removes the old path rather
+than maintaining two batching modes.
+
+The continuity checks were:
+
+- The model layers, weights, checkpoint schema, sampling generator, conditional
+  command order and PPO objective remain unchanged.
+- Input, relation, spatial-owner, focus and choice-reference validation remains
+  at the corresponding packing boundary.
+- Shared PPO encodings stay attached to autograd, so actor factors and the
+  critic still update the encoder. A LibTorch test exercises repeated factors
+  against one encoded observation, and the existing sampled-command PPO and
+  rollout identity tests pass.
+- Five repeated controls per binary were deterministic after excluding measured
+  stage durations. Rollout and evaluation outcomes matched exactly before and
+  after the cutover. PPO scalar differences were limited to floating-point
+  accumulation order; the largest absolute difference was `1.13e-6` in a
+  critic gradient norm.
+
+The matched release-mode control used four updates, width 128, four message
+rounds, 256 episodes per update, four PPO epochs, 1,024-transition minibatches
+and 512 stochastic evaluation episodes. Timing runs did not include the VRAM
+poller:
+
+| Metric | Before | Encoder reuse | Change |
+| --- | ---: | ---: | ---: |
+| Median wall time, 5 runs | 7.217 s | 5.188 s | -28.1% |
+| Training rollout | 1.198 s | 0.712 s | -40.6% |
+| Greedy evaluation | 1.266 s | 0.892 s | -29.5% |
+| Stochastic evaluation | 1.840 s | 1.201 s | -34.7% |
+| Peak VRAM, separate monitored run | 2,102 MiB | 1,606 MiB | -23.6% |
+
+Nsight Systems profiles of that same before/after workload corroborate the wall
+time result. Profile capture time includes instrumentation overhead and is not
+used for the throughput claim:
+
+| Nsight metric | Before | Encoder reuse | Change |
+| --- | ---: | ---: | ---: |
+| Kernel instances | 1,034,303 | 601,499 | -41.8% |
+| CUDA kernel launches | 973,067 | 575,175 | -40.9% |
+| Kernel device time | 2.816 s | 1.777 s | -36.9% |
+| Kernel/memory busy union | 2.938 s | 1.840 s | -37.4% |
+| Host-to-device copies | 41,650 | 24,262 | -41.7% |
+| Host-to-device bytes | 3.111 GB | 1.501 GB | -51.8% |
+| Instrumented capture wall time | 21.339 s | 14.978 s | -29.8% |
+
+### Integrated 32-update result
+
+The separate tracked encoder-reuse configuration adopts the measured
+1,024-transition minibatch. Compared with the earlier 512-minibatch replication,
+the three complete monitored runs reduced aggregate wall time from 156.795 to
+97.227 seconds, or **38.0%**. This integrated gain includes both the encoder
+cutover and the previously isolated minibatch improvement.
+
+| Seed | Old wall / peak | New wall / peak | Old to new final stochastic | New first / last 8 mean |
+| ---: | ---: | ---: | ---: | ---: |
+| 101 | 52.831 s / 1,568 MiB | 32.470 s / 2,046 MiB | 104 to 104 / 512 | 31.88 / 101.88 |
+| 202 | 53.224 s / 1,786 MiB | 32.696 s / 1,826 MiB | 116 to 112 / 512 | 28.63 / 100.00 |
+| 303 | 50.739 s / 2,004 MiB | 32.062 s / 2,046 MiB | 134 to 138 / 512 | 32.00 / 102.63 |
+
+Aggregate final stochastic completion is unchanged at 354/1,536, and every seed
+still improves from its initial evaluation. The maximum full-run peak increased
+by 42 MiB relative to the old 512-minibatch arms and remains near 2 GiB. Greedy
+completion again ended at zero for all seeds.
+
+The compact retained summaries are under
+`~/Srv/aic-direct-constructive-20260920/artifacts/direct-constructive-encoder-reuse-20260920/`:
+`timing-summary.json` (`ef3f9b65...`), `full-summary.json`
+(`dc7f5d44...`) and `nsys-summary.json` (`6d51af52...`). The matched Nsight
+traces are `nsys-before-4u-1024/trace-before.nsys-rep` (`39a5548f...`) and
+`nsys-after-4u-1024/trace-after.nsys-rep` (`d46f856f...`). Their regenerable
+SQLite exports were removed.
+
+After the final feature-enabled workspace tests, removing disposable Cargo
+outputs recovered 8,650,395,648 bytes and left 42,920,816,640 bytes available.
+The byte-precise record is `post-verification-cleanup.json` in the same retained
+artifact directory.
 
 The retained trace is
 `~/Srv/aic-direct-constructive-20260920/artifacts/direct-constructive-20260920/nsys-profile-20260920/recipe-4u.nsys-rep`
@@ -225,19 +314,23 @@ The retained training input is
 It now uses training schema v2, which makes its existing 512-transition PPO
 minibatch declaration mandatory; the measured v1 run had the same value and
 training behavior. No v1 compatibility branch remains.
+The encoder-reuse measurement and subsequent runs use the separate
+[`config.json`](../benchmarks/direct-constructive-encoder-reuse/config.json),
+which differs by setting `ppo_minibatch_size` to 1,024. The 512 configuration is
+retained as the published baseline.
 Generate the logical split and train it on the documented server as follows:
 
 ```bash
 aic learning prepare-constructive-problems \
-  --config docs/benchmarks/direct-constructive-recipe-diverse/config.json \
+  --config docs/benchmarks/direct-constructive-encoder-reuse/config.json \
   --catalog-root data/game/normalized \
   --output target/recipe-pairwise-problems-101.json \
   --seed 101 --training 232 --evaluation 64
 
 aic learning train-constructive \
-  --config docs/benchmarks/direct-constructive-recipe-diverse/config.json \
+  --config docs/benchmarks/direct-constructive-encoder-reuse/config.json \
   --catalog-root data/game/normalized \
   --problems target/recipe-pairwise-problems-101.json \
-  --output target/recipe-diverse-training-101 \
+  --output target/encoder-reuse-training-101 \
   --device auto
 ```

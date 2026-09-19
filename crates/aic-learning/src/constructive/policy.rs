@@ -8,7 +8,7 @@ use aic_torch::{
 use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
 
-use super::{Batch, Decision, Model, Prediction};
+use super::{ChoiceBatch, FactorDecision, InputBatch, Model, Prediction};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Factor {
@@ -48,22 +48,26 @@ pub fn greedy(model: &Model, rows: &[&Observation], device: Device) -> Result<Ve
     })
 }
 
-fn cpu_sample(batch: &Batch, prediction: &Prediction, sampler: &mut Generator) -> Result<Vec<i64>> {
+fn cpu_sample(
+    batch: &ChoiceBatch,
+    prediction: &Prediction,
+    sampler: &mut Generator,
+) -> Result<Vec<i64>> {
     let logp = prediction.logp.to_device(Device::Cpu);
-    (0..batch.graphs() as usize)
-        .map(|graph| {
-            let range = batch.choice_range(graph);
+    (0..batch.factors() as usize)
+        .map(|factor| {
+            let range = batch.choice_range(factor);
             let probabilities = logp.narrow(0, range.start, range.end - range.start).exp();
             Ok(range.start + i64::try_from(sampler.categorical(&probabilities)?)?)
         })
         .collect()
 }
 
-fn greedy_selections(batch: &Batch, prediction: &Prediction) -> Result<Vec<i64>> {
+fn greedy_selections(batch: &ChoiceBatch, prediction: &Prediction) -> Result<Vec<i64>> {
     let logp = prediction.logp.to_device(Device::Cpu);
-    (0..batch.graphs() as usize)
-        .map(|graph| {
-            let range = batch.choice_range(graph);
+    (0..batch.factors() as usize)
+        .map(|factor| {
+            let range = batch.choice_range(factor);
             Ok(range.start
                 + i64::try_from(
                     logp.narrow(0, range.start, range.end - range.start)
@@ -74,7 +78,7 @@ fn greedy_selections(batch: &Batch, prediction: &Prediction) -> Result<Vec<i64>>
 }
 
 fn device_sample(
-    batch: &Batch,
+    batch: &ChoiceBatch,
     prediction: &Prediction,
     sampler: &mut Generator,
     device: Device,
@@ -114,7 +118,7 @@ fn device_sample(
         )
     };
     let draws = sampler
-        .uniforms(batch.graphs())?
+        .uniforms(batch.factors())?
         .to_device(device)
         .to_kind(probabilities.kind());
     let thresholds = &bases + draws * (totals - &bases);
@@ -126,20 +130,29 @@ fn sample_with(
     model: &Model,
     rows: &[&Observation],
     device: Device,
-    mut select: impl FnMut(&Batch, &Prediction) -> Result<Vec<i64>>,
+    mut select: impl FnMut(&ChoiceBatch, &Prediction) -> Result<Vec<i64>>,
 ) -> Result<Vec<Choice>> {
     ensure!(
         !rows.is_empty(),
         "aic-learning.constructive-sample: empty observation batch"
     );
     no_grad(|| {
+        let inputs = rows
+            .iter()
+            .map(|row| row.input.as_ref())
+            .collect::<Vec<_>>();
+        let inputs = InputBatch::from_inputs(&inputs, device)?;
+        let encoded = model.encode(&inputs)?;
         let mut cursors = vec![Cursor::Command; rows.len()];
         let mut factors = vec![Vec::new(); rows.len()];
         let mut commands = vec![None; rows.len()];
         let mut old_logp = vec![0.; rows.len()];
-        let mut old_value = vec![0.; rows.len()];
+        let old_value = Vec::<f32>::try_from(encoded.values.to_device(Device::Cpu))?
+            .into_iter()
+            .map(f64::from)
+            .collect::<Vec<_>>();
         let mut entropy = vec![0.; rows.len()];
-        for depth in 0..8 {
+        for _depth in 0..8 {
             let owners: Vec<_> = commands
                 .iter()
                 .enumerate()
@@ -156,16 +169,16 @@ fn sample_with(
                 banks.iter().all(|bank| !bank.is_empty()),
                 "aic-learning.constructive-sample: empty conditional factor"
             );
-            let decisions = owners
+            let factors_to_score = owners
                 .iter()
                 .zip(&banks)
-                .map(|(&owner, choices)| Decision {
-                    input: &rows[owner].input,
+                .map(|(&owner, choices)| FactorDecision {
+                    observation: owner,
                     choices,
                 })
                 .collect::<Vec<_>>();
-            let batch = Batch::from_decisions(&decisions, device)?;
-            let prediction = model.predict(&batch)?;
+            let batch = inputs.choices(&factors_to_score, device)?;
+            let prediction = model.score(&encoded, &batch)?;
             let selected = select(&batch, &prediction)?;
             ensure!(
                 selected.len() == owners.len(),
@@ -177,7 +190,6 @@ fn sample_with(
                     .index_select(0, &Tensor::from_slice(&selected).to_device(device))
                     .to_device(Device::Cpu),
             )?;
-            let values = Vec::<f32>::try_from(prediction.values.to_device(Device::Cpu))?;
             let entropies = Vec::<f32>::try_from(prediction.entropy.to_device(Device::Cpu))?;
             for (local, &owner) in owners.iter().enumerate() {
                 let range = batch.choice_range(local);
@@ -189,9 +201,6 @@ fn sample_with(
                 let selected = usize::try_from(absolute - range.start)?;
                 old_logp[owner] += selected_logp[local] as f64;
                 entropy[owner] += entropies[local] as f64;
-                if depth == 0 {
-                    old_value[owner] = values[local] as f64;
-                }
                 let cursor = cursors[owner].clone();
                 factors[owner].push(Factor {
                     cursor: cursor.clone(),
@@ -231,13 +240,11 @@ pub(crate) fn selected_likelihood(
     let mut banks = Vec::new();
     let mut owners = Vec::new();
     let mut selected = Vec::new();
-    let mut roots = Vec::with_capacity(rows.len());
     for (owner, row) in rows.iter().enumerate() {
         ensure!(
             !row.choice.factors.is_empty(),
             "aic-learning.constructive-likelihood: command has no factors"
         );
-        roots.push(banks.len() as i64);
         let mut final_command = None;
         let mut expected = Cursor::Command;
         for (depth, factor) in row.choice.factors.iter().enumerate() {
@@ -273,22 +280,22 @@ pub(crate) fn selected_likelihood(
             "aic-learning.constructive-likelihood: factors do not reproduce command"
         );
     }
-    let decisions = rows
+    let input_rows = rows
         .iter()
-        .flat_map(|row| {
-            row.choice.factors.iter().enumerate().map(|(factor, _)| {
-                // Prefix sums are computed below; this iterator only supplies inputs.
-                (row.observation.input.as_ref(), factor)
-            })
-        })
-        .enumerate()
-        .map(|(index, (input, _))| Decision {
-            input,
-            choices: banks[index].as_slice(),
+        .map(|row| row.observation.input.as_ref())
+        .collect::<Vec<_>>();
+    let inputs = InputBatch::from_inputs(&input_rows, device)?;
+    let decisions = owners
+        .iter()
+        .zip(&banks)
+        .map(|(&owner, choices)| FactorDecision {
+            observation: owner as usize,
+            choices,
         })
         .collect::<Vec<_>>();
-    let batch = Batch::from_decisions(&decisions, device)?;
-    let prediction = model.predict(&batch)?;
+    let batch = inputs.choices(&decisions, device)?;
+    let encoded = model.encode(&inputs)?;
+    let prediction = model.score(&encoded, &batch)?;
     let mut absolute = Vec::with_capacity(selected.len());
     for (factor, selected) in selected.into_iter().enumerate() {
         absolute.push(batch.choice_range(factor).start + selected);
@@ -299,9 +306,7 @@ pub(crate) fn selected_likelihood(
         .index_add_(0, &owners, &prediction.logp.index_select(0, &selected));
     let joint_entropy = Tensor::zeros([rows.len() as i64], (prediction.entropy.kind(), device))
         .index_add_(0, &owners, &prediction.entropy);
-    let roots = Tensor::from_slice(&roots).to_device(device);
-    let values = prediction.values.index_select(0, &roots);
-    Ok((joint_logp, joint_entropy, values))
+    Ok((joint_logp, joint_entropy, encoded.values))
 }
 
 pub(crate) struct TrainingDecision<'a> {

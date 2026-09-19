@@ -29,19 +29,25 @@ mod test_support;
 
 pub const CHECKPOINT_SCHEMA: &str = "aic-constructive-attention-checkpoint-v1";
 
-pub struct Decision<'a> {
-    pub input: &'a Input,
+pub struct FactorDecision<'a> {
+    pub observation: usize,
     pub choices: &'a [Choice],
 }
 
-pub struct Batch {
+pub struct InputBatch {
     values: Tensors,
     graphs: i64,
+    entity_offsets: Vec<i64>,
+}
+
+pub struct ChoiceBatch {
+    values: Tensors,
+    factors: i64,
     choice_offsets: Vec<i64>,
 }
 
-impl Batch {
-    pub fn from_decisions(rows: &[Decision<'_>], device: Device) -> Result<Self> {
+impl InputBatch {
+    pub fn from_inputs(rows: &[&Input], device: Device) -> Result<Self> {
         ensure!(
             !rows.is_empty() && rows.len() <= 262_144,
             "aic-learning.constructive-batch: invalid graph count"
@@ -59,33 +65,26 @@ impl Batch {
         let mut globals = Vec::new();
         let mut focuses = Vec::new();
         let mut focus_entities = Vec::new();
-        let mut choices = Vec::new();
-        let mut choice_references = Vec::new();
-        let mut choice_graph = Vec::new();
-        let mut choice_counts = Vec::new();
         let mut entity_offset = 0i64;
-        let mut choice_offset = 0i64;
-        let mut choice_offsets = Vec::with_capacity(rows.len() + 1);
-        choice_offsets.push(0);
-        for (graph, row) in rows.iter().enumerate() {
+        let mut entity_offsets = Vec::with_capacity(rows.len() + 1);
+        entity_offsets.push(0);
+        for (graph, input) in rows.iter().enumerate() {
             ensure!(
-                row.input.schema == aic_pilot_native::constructive::learning::SCHEMA
-                    && !row.input.entity_features.is_empty()
-                    && row.input.entity_features.len() <= 36_864
-                    && row.input.relation_index.len() == row.input.relation_features.len()
-                    && row.input.spatial_features.len() == row.input.spatial_owners.len()
-                    && !row.choices.is_empty()
-                    && row.choices.len() <= 1_000_000,
+                input.schema == aic_pilot_native::constructive::learning::SCHEMA
+                    && !input.entity_features.is_empty()
+                    && input.entity_features.len() <= 36_864
+                    && input.relation_index.len() == input.relation_features.len()
+                    && input.spatial_features.len() == input.spatial_owners.len(),
                 "aic-learning.constructive-batch: malformed graph {graph}"
             );
-            entities.extend(row.input.entity_features.iter().flatten().copied());
-            relations.extend(row.input.relation_features.iter().flatten().copied());
-            for &[source, target] in &row.input.relation_index {
+            entities.extend(input.entity_features.iter().flatten().copied());
+            relations.extend(input.relation_features.iter().flatten().copied());
+            for &[source, target] in &input.relation_index {
                 ensure!(
                     source >= 0
                         && target >= 0
-                        && source < row.input.entity_features.len() as i64
-                        && target < row.input.entity_features.len() as i64,
+                        && source < input.entity_features.len() as i64
+                        && target < input.entity_features.len() as i64,
                     "aic-learning.constructive-batch: invalid relation in graph {graph}"
                 );
                 relation_index[0].push(source + entity_offset);
@@ -93,57 +92,35 @@ impl Batch {
             }
             entity_graph.extend(std::iter::repeat_n(
                 graph as i64,
-                row.input.entity_features.len(),
+                input.entity_features.len(),
             ));
-            entity_counts.push(row.input.entity_features.len() as i64);
-            spatial.extend(row.input.spatial_features.iter().flatten().copied());
-            for &owner in &row.input.spatial_owners {
+            entity_counts.push(input.entity_features.len() as i64);
+            spatial.extend(input.spatial_features.iter().flatten().copied());
+            for &owner in &input.spatial_owners {
                 ensure!(
-                    owner >= 0 && owner < row.input.entity_features.len() as i64,
+                    owner >= 0 && owner < input.entity_features.len() as i64,
                     "aic-learning.constructive-batch: invalid spatial owner in graph {graph}"
                 );
                 spatial_owners.push(owner + entity_offset);
             }
             spatial_graph.extend(std::iter::repeat_n(
                 graph as i64,
-                row.input.spatial_features.len(),
+                input.spatial_features.len(),
             ));
-            spatial_counts.push(row.input.spatial_features.len() as i64);
-            globals.extend_from_slice(&row.input.global_features);
-            focuses.extend_from_slice(&row.input.focus_features);
+            spatial_counts.push(input.spatial_features.len() as i64);
+            globals.extend_from_slice(&input.global_features);
+            focuses.extend_from_slice(&input.focus_features);
             ensure!(
-                row.input.focus_entity >= -1
-                    && row.input.focus_entity < row.input.entity_features.len() as i64,
+                input.focus_entity >= -1 && input.focus_entity < input.entity_features.len() as i64,
                 "aic-learning.constructive-batch: invalid focus in graph {graph}"
             );
-            focus_entities.push(if row.input.focus_entity < 0 {
+            focus_entities.push(if input.focus_entity < 0 {
                 -1
             } else {
-                row.input.focus_entity + entity_offset
+                input.focus_entity + entity_offset
             });
-            for choice in row.choices {
-                ensure!(
-                    choice.references.iter().all(|&reference| {
-                        reference == -1
-                            || (reference >= 0
-                                && reference < row.input.entity_features.len() as i64)
-                    }),
-                    "aic-learning.constructive-batch: invalid choice reference in graph {graph}"
-                );
-                choices.extend_from_slice(&choice.features);
-                choice_references.extend(choice.references.map(|reference| {
-                    if reference < 0 {
-                        -1
-                    } else {
-                        reference + entity_offset
-                    }
-                }));
-                choice_graph.push(graph as i64);
-            }
-            choice_counts.push(row.choices.len() as i64);
-            choice_offset += row.choices.len() as i64;
-            choice_offsets.push(choice_offset);
-            entity_offset += row.input.entity_features.len() as i64;
+            entity_offset += input.entity_features.len() as i64;
+            entity_offsets.push(entity_offset);
         }
         let graphs = rows.len() as i64;
         insert_matrix(
@@ -181,23 +158,10 @@ impl Batch {
             FOCUS_FEATURES as i64,
             device,
         );
-        insert_matrix(
-            &mut values,
-            "choice_features",
-            &choices,
-            CHOICE_FEATURES as i64,
-            device,
-        );
         values.insert(
             "relation_index".into(),
             Tensor::from_slice(&relation_index.into_iter().flatten().collect::<Vec<_>>())
                 .view([2, -1])
-                .to_device(device),
-        );
-        values.insert(
-            "choice_references".into(),
-            Tensor::from_slice(&choice_references)
-                .view([-1, 2])
                 .to_device(device),
         );
         for (name, data) in [
@@ -207,14 +171,83 @@ impl Batch {
             ("spatial_graph", spatial_graph),
             ("spatial_counts", spatial_counts),
             ("focus_entity", focus_entities),
-            ("choice_graph", choice_graph),
-            ("choice_counts", choice_counts),
         ] {
             values.insert(name.into(), Tensor::from_slice(&data).to_device(device));
         }
         Ok(Self {
             values,
             graphs,
+            entity_offsets,
+        })
+    }
+
+    pub fn choices(&self, rows: &[FactorDecision<'_>], device: Device) -> Result<ChoiceBatch> {
+        ensure!(
+            !rows.is_empty() && rows.len() <= 2_097_152,
+            "aic-learning.constructive-batch: invalid factor count"
+        );
+        let mut values = Tensors::new();
+        let mut choices = Vec::new();
+        let mut choice_references = Vec::new();
+        let mut factor_observation = Vec::with_capacity(rows.len());
+        let mut choice_factor = Vec::new();
+        let mut choice_offset = 0i64;
+        let mut choice_offsets = Vec::with_capacity(rows.len() + 1);
+        choice_offsets.push(0);
+        for (factor, row) in rows.iter().enumerate() {
+            ensure!(
+                row.observation < self.graphs as usize
+                    && !row.choices.is_empty()
+                    && row.choices.len() <= 1_000_000,
+                "aic-learning.constructive-batch: malformed factor {factor}"
+            );
+            let entity_start = self.entity_offsets[row.observation];
+            let entity_count = self.entity_offsets[row.observation + 1] - entity_start;
+            for choice in row.choices {
+                ensure!(
+                    choice.references.iter().all(|&reference| {
+                        reference == -1 || (reference >= 0 && reference < entity_count)
+                    }),
+                    "aic-learning.constructive-batch: invalid choice reference in factor {factor}"
+                );
+                choices.extend_from_slice(&choice.features);
+                choice_references.extend(choice.references.map(|reference| {
+                    if reference < 0 {
+                        -1
+                    } else {
+                        reference + entity_start
+                    }
+                }));
+                choice_factor.push(factor as i64);
+            }
+            factor_observation.push(row.observation as i64);
+            choice_offset += row.choices.len() as i64;
+            choice_offsets.push(choice_offset);
+        }
+        insert_matrix(
+            &mut values,
+            "choice_features",
+            &choices,
+            CHOICE_FEATURES as i64,
+            device,
+        );
+        values.insert(
+            "choice_references".into(),
+            Tensor::from_slice(&choice_references)
+                .view([-1, 2])
+                .to_device(device),
+        );
+        values.insert(
+            "factor_observation".into(),
+            Tensor::from_slice(&factor_observation).to_device(device),
+        );
+        values.insert(
+            "choice_factor".into(),
+            Tensor::from_slice(&choice_factor).to_device(device),
+        );
+        Ok(ChoiceBatch {
+            values,
+            factors: rows.len() as i64,
             choice_offsets,
         })
     }
@@ -222,13 +255,15 @@ impl Batch {
     pub fn graphs(&self) -> i64 {
         self.graphs
     }
+}
 
-    pub fn choices(&self) -> i64 {
-        self.values["choice_features"].size()[0]
+impl ChoiceBatch {
+    pub fn factors(&self) -> i64 {
+        self.factors
     }
 
-    pub fn choice_range(&self, graph: usize) -> std::ops::Range<i64> {
-        self.choice_offsets[graph]..self.choice_offsets[graph + 1]
+    pub fn choice_range(&self, factor: usize) -> std::ops::Range<i64> {
+        self.choice_offsets[factor]..self.choice_offsets[factor + 1]
     }
 
     pub fn choice_offsets(&self) -> &[i64] {
@@ -335,7 +370,7 @@ impl Model {
         )
     }
 
-    pub fn predict(&self, batch: &Batch) -> Result<Prediction> {
+    pub fn encode(&self, batch: &InputBatch) -> Result<Encoded> {
         let b = &batch.values;
         let mut entities = self.linear("entities.0", &b["entity_features"]).tanh();
         let relations = self.linear("relations.0", &b["relation_features"]).tanh();
@@ -433,15 +468,33 @@ impl Model {
                 ),
             )
             .tanh();
+        let values = self
+            .linear("critic.2", &self.linear("critic.0", &context).tanh())
+            .squeeze_dim(-1);
+        ensure!(
+            bool::try_from(values.isfinite().all())?,
+            "aic-learning.constructive-forward: nonfinite encoding"
+        );
+        Ok(Encoded {
+            entities,
+            context,
+            values,
+            attention,
+        })
+    }
+
+    pub fn score(&self, encoded: &Encoded, batch: &ChoiceBatch) -> Result<Prediction> {
+        let b = &batch.values;
+        let choice_observation = b["factor_observation"].index_select(0, &b["choice_factor"]);
         let references = masked_references(
-            &entities,
+            &encoded.entities,
             &b["choice_references"],
-            &context.index_select(0, &b["choice_graph"]),
+            &encoded.context.index_select(0, &choice_observation),
         );
         let actor_input = Tensor::cat(
             &[
                 references.flatten(1, -1),
-                context.index_select(0, &b["choice_graph"]),
+                encoded.context.index_select(0, &choice_observation),
                 b["choice_features"].shallow_clone(),
             ],
             -1,
@@ -449,31 +502,18 @@ impl Model {
         let logits = self
             .linear("actor.2", &self.linear("actor.0", &actor_input).tanh())
             .squeeze_dim(-1);
-        let logp = segmented_log_softmax(&logits, &b["choice_graph"], batch.graphs);
+        let logp = segmented_log_softmax(&logits, &b["choice_factor"], batch.factors);
         let safe_logp = logp.masked_fill(&logp.isneginf(), 0.);
-        let entropy = Tensor::zeros([batch.graphs], (Kind::Float, logits.device())).index_add_(
+        let entropy = Tensor::zeros([batch.factors], (Kind::Float, logits.device())).index_add_(
             0,
-            &b["choice_graph"],
+            &b["choice_factor"],
             &(-logp.exp() * safe_logp),
         );
-        let values = self
-            .linear("critic.2", &self.linear("critic.0", &context).tanh())
-            .squeeze_dim(-1);
         ensure!(
-            bool::try_from(
-                logp.isfinite()
-                    .all()
-                    .logical_and(&entropy.isfinite().all())
-                    .logical_and(&values.isfinite().all())
-            )?,
-            "aic-learning.constructive-forward: nonfinite prediction"
+            bool::try_from(logp.isfinite().all().logical_and(&entropy.isfinite().all()))?,
+            "aic-learning.constructive-forward: nonfinite choice scores"
         );
-        Ok(Prediction {
-            logp,
-            entropy,
-            values,
-            attention,
-        })
+        Ok(Prediction { logp, entropy })
     }
 }
 
@@ -545,6 +585,11 @@ pub struct Prediction {
     /// Conditional log probabilities in packed choice order.
     pub logp: Tensor,
     pub entropy: Tensor,
+}
+
+pub struct Encoded {
+    entities: Tensor,
+    context: Tensor,
     pub values: Tensor,
     /// Focus-to-memory attention weights, exposed for bounded diagnostics.
     pub attention: Tensor,
@@ -569,7 +614,7 @@ mod tests {
     }
 
     #[test]
-    fn focus_attention_scores_conditional_choices_and_value() {
+    fn encoded_observations_score_repeated_conditional_factors_and_values() {
         let _guard = crate::TORCH_TEST.lock().unwrap();
         let config = ConstructiveModelConfig {
             schema: ConstructiveModelConfig::SCHEMA.into(),
@@ -590,29 +635,38 @@ mod tests {
         ];
         let first = input(0);
         let second = input(1);
-        let batch = Batch::from_decisions(
-            &[
-                Decision {
-                    input: &first,
-                    choices: &choices,
-                },
-                Decision {
-                    input: &second,
-                    choices: &choices,
-                },
-            ],
-            Device::Cpu,
-        )
-        .unwrap();
-        let prediction = model.predict(&batch).unwrap();
-        assert_eq!(prediction.logp.size(), [4]);
-        assert_eq!(prediction.entropy.size(), [2]);
-        assert_eq!(prediction.values.size(), [2]);
-        assert_eq!(prediction.attention.size(), [6]);
-        let attention = Vec::<f32>::try_from(prediction.attention).unwrap();
+        let inputs = InputBatch::from_inputs(&[&first, &second], Device::Cpu).unwrap();
+        let encoded = model.encode(&inputs).unwrap();
+        let batch = inputs
+            .choices(
+                &[
+                    FactorDecision {
+                        observation: 0,
+                        choices: &choices,
+                    },
+                    FactorDecision {
+                        observation: 0,
+                        choices: &choices,
+                    },
+                    FactorDecision {
+                        observation: 1,
+                        choices: &choices,
+                    },
+                ],
+                Device::Cpu,
+            )
+            .unwrap();
+        let prediction = model.score(&encoded, &batch).unwrap();
+        assert_eq!(prediction.logp.size(), [6]);
+        assert_eq!(prediction.entropy.size(), [3]);
+        let logp = Vec::<f32>::try_from(prediction.logp).unwrap();
+        assert_eq!(&logp[0..2], &logp[2..4]);
+        assert_eq!(encoded.values.size(), [2]);
+        assert_eq!(encoded.attention.size(), [6]);
+        let attention = Vec::<f32>::try_from(encoded.attention).unwrap();
         assert!((attention[0] + attention[1] + attention[4] - 1.).abs() < 1e-5);
         assert!((attention[2] + attention[3] + attention[5] - 1.).abs() < 1e-5);
-        let values = Vec::<f32>::try_from(prediction.values).unwrap();
+        let values = Vec::<f32>::try_from(encoded.values).unwrap();
         assert_ne!(values[0], values[1]);
     }
 }

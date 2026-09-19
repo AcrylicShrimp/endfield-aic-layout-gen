@@ -28,6 +28,7 @@
     "constructive-recipe-breadth/requests/battery-3.json",
     "constructive-recipe-breadth/requests/food-3.json",
     "constructive-recipe-breadth/requests/medical-3.json",
+    "direct-constructive-encoder-reuse/config.json",
     "direct-constructive-pilot/config.json",
     "direct-constructive-pilot/problems.json",
     "direct-constructive-recipe-diverse/config.json",
