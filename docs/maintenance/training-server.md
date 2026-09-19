@@ -32,6 +32,10 @@ nvidia-smi
   'import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_device_name(0))'
 ```
 
+Nsight Systems `2026.3.2.476` is installed as the Arch `nsight-systems`
+package. Process-tree CPU sampling and CUDA tracing work without root; the
+server's perf paranoid level 2 does not permit system-wide CPU profiling.
+
 Keep enough free space for the planned build, snapshots and retained evidence.
 Cargo `target/debug` directories and the `build`, `deps`, `incremental`,
 `.fingerprint` and `examples` children of `target/release` are regenerable cache.
@@ -55,3 +59,7 @@ debug cache, and the schema-cutover CLI check added one disposable output.
 Removing both recovered another 3,625,295,872 bytes and increased available
 space from 41,077,956,608 to 44,703,252,480 bytes. That record is
 `~/Srv/aic-direct-constructive-20260920/artifacts/server-cleanup-20260920/final-verification-cache-cleanup.json`.
+The later Nsight profile retained its 90 MiB `.nsys-rep` and compact summaries.
+Removing its regenerable SQLite export and two temporary training outputs
+recovered 269,254,656 bytes; the record is
+`~/Srv/aic-direct-constructive-20260920/artifacts/server-cleanup-20260920/profile-cache-cleanup.json`.

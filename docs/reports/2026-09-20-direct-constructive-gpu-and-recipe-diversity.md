@@ -152,6 +152,63 @@ branches, so exact trajectory replay is neither expected nor required. The
 three-seed comparison shows no systematic loss of the stochastic learning
 signal, while greedy decoding remains too unstable for a quality claim.
 
+## Nsight profile and next performance target
+
+An Nsight Systems 2026.3.2 trace used the retained release binary for four
+updates with width 128, four message rounds, 256 training episodes, four PPO
+epochs, 512-transition minibatches and 512 stochastic evaluation episodes. The
+retained binary accepts the pre-cutover v1 spelling; its model and update path
+are the same as the v2 configuration. An unprofiled control took 7.939 seconds.
+The trace took 11.648 seconds, so its 46.7% instrumentation overhead is excluded
+from throughput claims.
+
+The trace recorded 1,215,515 GPU kernel instances with 3.032 seconds of total
+kernel time. Median duration was 0.768 microseconds and mean duration was 2.494
+microseconds; 1,045,658 kernels (86.0%) finished below 2 microseconds and 96.9%
+finished below 10 microseconds. Kernels and memory operations occupied 3.164
+seconds, or 27.2% of the instrumented capture. Applying the same device time to
+the control wall time gives an approximate 39.9% device-busy share. Nsight found
+no idle gap longer than 500 ms, but its four utilization regions were only
+21.1–31.2% busy. This is a continuous small-kernel launch bottleneck rather than
+one long CPU or I/O stall.
+
+The GPU kernel time was led by indexing backward (30.8%), vectorized elementwise
+operations (20.1%) and `Kernel2` (16.8%). SGEMM accounted for only 0.6%.
+Nsight also flagged 44,906 pageable host-to-device copies totaling 3.111 GB, but
+their device time was only 83.7 ms. CUDA stream synchronization totaled 172 ms
+across 57,211 short calls. Pinned transfers may help at the margin; neither
+transfer nor synchronization time is the primary target.
+
+Code inspection matches the trace: every conditional factor rebuilds a packed
+batch and reruns the complete graph encoder, while PPO repeats each observation
+once per stored factor before computing the selected likelihood. The larger
+structural opportunity is to encode each distinct observation once and reuse
+its entity, spatial and context representation across conditional factor heads.
+That cutover must preserve gradients during PPO rather than caching detached
+activations.
+
+A one-update sizing check measured the immediate tuning limit:
+
+| PPO minibatch | Minibatches/epoch | Wall time | Peak VRAM |
+| ---: | ---: | ---: | ---: |
+| 512 | 20 | 3.184 s | 1,560 MiB |
+| 1,024 | 10 | 2.949 s | 2,060 MiB |
+| 2,048 | 5 | 3.007 s | 3,916 MiB |
+| 4,096 | 3 | 3.055 s | 6,054 MiB |
+
+The 1,024 setting reduced end-to-end time by 7.4% and the residual PPO/startup
+portion by 16.9% without meaningful memory pressure. It is the next bounded
+full-run candidate; larger minibatches regressed slightly in this check. The
+tracked 512 setting remains unchanged until a complete multi-seed run verifies
+throughput and learning behavior together.
+
+The retained trace is
+`~/Srv/aic-direct-constructive-20260920/artifacts/direct-constructive-20260920/nsys-profile-20260920/recipe-4u.nsys-rep`
+with SHA-256
+`34e35f0f8afe538f5ced17abcad9a5419f4205a0f352db5deaec0827c3e7e948`.
+`summary.json` and `minibatch-sweep.json` retain the compact derived evidence;
+the regenerable SQLite export was removed.
+
 After retaining the final metrics, checkpoints and prepared input, the
 post-training cache cleanup recovered 13,702,201,344 bytes. Server free space
 increased from 31,001,071,616 to 44,703,272,960 bytes. The byte-precise record
