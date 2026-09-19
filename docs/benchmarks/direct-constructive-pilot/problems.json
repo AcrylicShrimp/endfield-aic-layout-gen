@@ -1,0 +1,61 @@
+{
+  "schema": "aic-constructive-problem-set-v1",
+  "training": [
+    {
+      "blocks": [
+        {"id": "train-a-source", "facility": "grinder-1-mode-normal"},
+        {"id": "train-a-target", "facility": "furnance-1-mode-normal"}
+      ],
+      "connections": [
+        {"id": "train-a-flow", "source": "train-a-source", "target": "train-a-target", "commodity": "train-a-item", "transport": "belt", "rate": {"numerator": 1, "denominator": 2}}
+      ]
+    },
+    {
+      "blocks": [
+        {"id": "train-b-source", "facility": "furnance-1-mode-normal"},
+        {"id": "train-b-target", "facility": "grinder-1-mode-normal"}
+      ],
+      "connections": [
+        {"id": "train-b-flow", "source": "train-b-source", "target": "train-b-target", "commodity": "train-b-item", "transport": "belt", "rate": {"numerator": 1, "denominator": 2}}
+      ]
+    },
+    {
+      "blocks": [
+        {"id": "train-c-source", "facility": "component-mc-1-mode-normal"},
+        {"id": "train-c-target", "facility": "grinder-1-mode-normal"}
+      ],
+      "connections": [
+        {"id": "train-c-flow", "source": "train-c-source", "target": "train-c-target", "commodity": "train-c-item", "transport": "belt", "rate": {"numerator": 1, "denominator": 4}}
+      ]
+    },
+    {
+      "blocks": [
+        {"id": "train-d-source", "facility": "grinder-1-mode-normal"},
+        {"id": "train-d-target", "facility": "component-mc-1-mode-normal"}
+      ],
+      "connections": [
+        {"id": "train-d-flow", "source": "train-d-source", "target": "train-d-target", "commodity": "train-d-item", "transport": "belt", "rate": {"numerator": 1, "denominator": 4}}
+      ]
+    }
+  ],
+  "evaluation": [
+    {
+      "blocks": [
+        {"id": "eval-a-source", "facility": "shaper-1-mode-normal"},
+        {"id": "eval-a-target", "facility": "component-mc-1-mode-normal"}
+      ],
+      "connections": [
+        {"id": "eval-a-flow", "source": "eval-a-source", "target": "eval-a-target", "commodity": "eval-a-item", "transport": "belt", "rate": {"numerator": 1, "denominator": 2}}
+      ]
+    },
+    {
+      "blocks": [
+        {"id": "eval-b-source", "facility": "component-mc-1-mode-normal"},
+        {"id": "eval-b-target", "facility": "shaper-1-mode-normal"}
+      ],
+      "connections": [
+        {"id": "eval-b-flow", "source": "eval-b-source", "target": "eval-b-target", "commodity": "eval-b-item", "transport": "belt", "rate": {"numerator": 1, "denominator": 4}}
+      ]
+    }
+  ]
+}

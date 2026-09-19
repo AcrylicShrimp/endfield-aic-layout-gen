@@ -526,11 +526,14 @@ fn route_domains(session: &Session) -> Vec<RouteDomain> {
             let target_block = session.blocks[&obligation.target];
             let source_ports = session.projected_ports(source_block).ok()?;
             let target_ports = session.projected_ports(target_block).ok()?;
+            let occupied = &session.occupied[layer(obligation.transport)];
             let targets: Vec<_> = target_ports
                 .into_iter()
                 .filter(|port| {
                     port.direction == FacilityPortDirection::Input
                         && port.transport == obligation.transport
+                        && !session.bodies.contains(&port.connection)
+                        && !occupied.contains(&port.connection)
                         && !session
                             .used_ports
                             .contains(&(target_block, port.id.clone()))
@@ -542,6 +545,8 @@ fn route_domains(session: &Session) -> Vec<RouteDomain> {
                 .filter(|port| {
                     port.direction == FacilityPortDirection::Output
                         && port.transport == obligation.transport
+                        && !session.bodies.contains(&port.connection)
+                        && !occupied.contains(&port.connection)
                         && !session
                             .used_ports
                             .contains(&(source_block, port.id.clone()))
@@ -642,7 +647,7 @@ impl Input {
                 row[14] = (pose.rotation as f32).to_radians().cos();
             }
             if matches!(session.focus, Some(super::Focus::Block { block, .. }) if block == index) {
-                row[6] = 1.;
+                row[7] = 1.;
             }
             entity_features.push(row);
         }
@@ -662,7 +667,7 @@ impl Input {
                 (connection.rate.numerator as f32 / connection.rate.denominator as f32).ln_1p();
             if matches!(session.focus, Some(super::Focus::Route { connection, .. }) if connection == index)
             {
-                row[6] = 1.;
+                row[7] = 1.;
             }
             entity_features.push(row);
             let source = session.blocks[&connection.source];

@@ -19,6 +19,13 @@ use crate::{
     schema::ConstructiveModelConfig,
 };
 
+pub mod policy;
+pub mod ppo;
+pub mod rollout;
+pub mod run;
+#[cfg(test)]
+mod test_support;
+
 pub const CHECKPOINT_SCHEMA: &str = "aic-constructive-attention-checkpoint-v1";
 
 pub struct Decision<'a> {
@@ -29,12 +36,13 @@ pub struct Decision<'a> {
 pub struct Batch {
     values: Tensors,
     graphs: i64,
+    choice_offsets: Vec<i64>,
 }
 
 impl Batch {
     pub fn from_decisions(rows: &[Decision<'_>], device: Device) -> Result<Self> {
         ensure!(
-            !rows.is_empty() && rows.len() <= 4096,
+            !rows.is_empty() && rows.len() <= 262_144,
             "aic-learning.constructive-batch: invalid graph count"
         );
         let mut values = Tensors::new();
@@ -55,6 +63,9 @@ impl Batch {
         let mut choice_graph = Vec::new();
         let mut choice_counts = Vec::new();
         let mut entity_offset = 0i64;
+        let mut choice_offset = 0i64;
+        let mut choice_offsets = Vec::with_capacity(rows.len() + 1);
+        choice_offsets.push(0);
         for (graph, row) in rows.iter().enumerate() {
             ensure!(
                 row.input.schema == aic_pilot_native::constructive::learning::SCHEMA
@@ -100,7 +111,8 @@ impl Batch {
             globals.extend_from_slice(&row.input.global_features);
             focuses.extend_from_slice(&row.input.focus_features);
             ensure!(
-                row.input.focus_entity < row.input.entity_features.len() as i64,
+                row.input.focus_entity >= -1
+                    && row.input.focus_entity < row.input.entity_features.len() as i64,
                 "aic-learning.constructive-batch: invalid focus in graph {graph}"
             );
             focus_entities.push(if row.input.focus_entity < 0 {
@@ -111,7 +123,9 @@ impl Batch {
             for choice in row.choices {
                 ensure!(
                     choice.references.iter().all(|&reference| {
-                        reference < 0 || reference < row.input.entity_features.len() as i64
+                        reference == -1
+                            || (reference >= 0
+                                && reference < row.input.entity_features.len() as i64)
                     }),
                     "aic-learning.constructive-batch: invalid choice reference in graph {graph}"
                 );
@@ -126,6 +140,8 @@ impl Batch {
                 choice_graph.push(graph as i64);
             }
             choice_counts.push(row.choices.len() as i64);
+            choice_offset += row.choices.len() as i64;
+            choice_offsets.push(choice_offset);
             entity_offset += row.input.entity_features.len() as i64;
         }
         let graphs = rows.len() as i64;
@@ -195,7 +211,11 @@ impl Batch {
         ] {
             values.insert(name.into(), Tensor::from_slice(&data).to_device(device));
         }
-        Ok(Self { values, graphs })
+        Ok(Self {
+            values,
+            graphs,
+            choice_offsets,
+        })
     }
 
     pub fn graphs(&self) -> i64 {
@@ -204,6 +224,10 @@ impl Batch {
 
     pub fn choices(&self) -> i64 {
         self.values["choice_features"].size()[0]
+    }
+
+    pub fn choice_range(&self, graph: usize) -> std::ops::Range<i64> {
+        self.choice_offsets[graph]..self.choice_offsets[graph + 1]
     }
 }
 

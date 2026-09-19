@@ -34,6 +34,8 @@
 !/constructive-recipe-breadth/requests/battery-3.json
 !/constructive-recipe-breadth/requests/food-3.json
 !/constructive-recipe-breadth/requests/medical-3.json
+!/direct-constructive-pilot/config.json
+!/direct-constructive-pilot/problems.json
 !/fixtures/banks.json
 !/fixtures/gap6-layout.json
 !/fixtures/graph.json

@@ -1,0 +1,47 @@
+{
+  "schema": "aic-constructive-training-v1",
+  "model": {
+    "schema": "aic-constructive-attention-model-v1",
+    "width": 32,
+    "message_rounds": 2
+  },
+  "optimizer": {
+    "adam_backend": "foreach",
+    "learning_rate": 0.003,
+    "beta1": 0.9,
+    "beta2": 0.999,
+    "epsilon": 1e-8,
+    "clip_epsilon": 0.2,
+    "entropy_coefficient": 0.01,
+    "imitation_coefficient": 0.0,
+    "gradient_clip": 0.5
+  },
+  "domain": {
+    "placement": {
+      "minX": 0,
+      "minY": 0,
+      "maxX": 7,
+      "maxY": 7
+    },
+    "extension_lengths": [1, 2, 3]
+  },
+  "native": {
+    "max_turns": 24,
+    "max_extension": 3
+  },
+  "reward": {
+    "progress_scale": 1.0,
+    "full_validation_bonus": 5.0,
+    "rejected_penalty": -0.05,
+    "unfinished_penalty": -1.0
+  },
+  "updates": 32,
+  "episodes_per_update": 64,
+  "ppo_epochs": 4,
+  "evaluation_episodes": 128,
+  "evaluation_seed": 700101,
+  "gamma": 0.99,
+  "gae_lambda": 0.95,
+  "advantage_normalization": "standardize",
+  "initialization_seed": 101
+}

@@ -122,6 +122,22 @@ pub enum LearningCommand {
         #[arg(long)]
         seed: u64,
     },
+    /// Run the bounded router-free constructive PPO pilot.
+    #[cfg(feature = "learning")]
+    TrainConstructive {
+        #[arg(long)]
+        config: PathBuf,
+        /// Directory containing normalized facilities, transports and logistics components.
+        #[arg(long)]
+        catalog_root: PathBuf,
+        /// Versioned logical training/evaluation problem set.
+        #[arg(long)]
+        problems: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long, default_value = "cpu")]
+        device: String,
+    },
 }
 pub fn run(command: LearningCommand) -> Result<()> {
     let config = match &command {
@@ -141,6 +157,8 @@ pub fn run(command: LearningCommand) -> Result<()> {
         LearningCommand::Train { config, .. } => config,
         #[cfg(feature = "learning")]
         LearningCommand::PreparePanel { config, .. } => config,
+        #[cfg(feature = "learning")]
+        LearningCommand::TrainConstructive { config, .. } => config,
     };
     let entity = config.display().to_string();
     let report = execute(command).map_err(|error| {
@@ -263,5 +281,19 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             cases,
             seed,
         } => aic_learning::training::evaluation::prepare(&config, &output, cases, seed),
+        #[cfg(feature = "learning")]
+        LearningCommand::TrainConstructive {
+            config,
+            catalog_root,
+            problems,
+            output,
+            device,
+        } => aic_learning::constructive::run::run(
+            &config,
+            &catalog_root,
+            &problems,
+            &output,
+            update::parse_device(&device)?,
+        ),
     }
 }
