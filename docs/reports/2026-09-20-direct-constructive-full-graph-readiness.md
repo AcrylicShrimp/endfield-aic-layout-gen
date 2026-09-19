@@ -3,6 +3,10 @@
 Date: 2026-09-20
 Source commit: `3c8b8a6e7676722021696c43f5179dd06e3a016e`
 
+This report preserves the first fixed-problem-set readiness result. The online
+training cutover supersedes that input path; current training generates a fresh
+balanced graph batch at every update and stores only its fixed held-out panel.
+
 ## Verdict
 
 The full-production-graph cutover builds with the Rust `learning` feature and

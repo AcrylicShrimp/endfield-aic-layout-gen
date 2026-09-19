@@ -387,7 +387,7 @@ impl Session {
     }
 
     pub fn step(&mut self, command: Command) -> Step {
-        let before = self.progress();
+        let before = self.construction_progress();
         if self.done() {
             return Step {
                 accepted: false,
@@ -440,7 +440,7 @@ impl Session {
                 }
             }
         }
-        let after = self.progress();
+        let after = self.construction_progress();
         let diagnostic = outcome.err().or_else(|| self.final_failure.clone());
         Step {
             accepted,
@@ -481,6 +481,18 @@ impl Session {
 
     fn progress(&self) -> f64 {
         self.completed() as f64 / self.routes.len() as f64
+    }
+
+    fn construction_progress(&self) -> f64 {
+        let completed = self.poses.iter().filter(|pose| pose.is_some()).count()
+            + self
+                .terminal_poses
+                .iter()
+                .filter(|pose| pose.is_some())
+                .count()
+            + self.routes.iter().filter(|route| route.is_some()).count();
+        let total = self.poses.len() + self.terminal_poses.len() + self.routes.len();
+        completed as f64 / total as f64
     }
 
     fn completed(&self) -> usize {
@@ -1160,7 +1172,7 @@ mod tests {
     }
 
     #[test]
-    fn authored_commands_complete_without_a_router_and_pay_progress_once() {
+    fn authored_commands_complete_without_a_router_and_finish_construction_progress() {
         let mut session = session();
         place_pair(&mut session);
         assert!(begin(&mut session).accepted);
@@ -1179,9 +1191,9 @@ mod tests {
         );
         let completed = session.step(Command::Connect);
         assert!(completed.accepted && completed.terminal && completed.fully_validated);
-        assert_eq!(completed.progress_before, 0.0);
+        assert!((completed.progress_before - 2.0 / 3.0).abs() < f64::EPSILON);
         assert_eq!(completed.progress_after, 1.0);
-        assert_eq!(completed.progress_delta, 1.0);
+        assert!((completed.progress_delta - 1.0 / 3.0).abs() < f64::EPSILON);
         assert_eq!(
             session.observe().focus,
             Some(Focus::Route {

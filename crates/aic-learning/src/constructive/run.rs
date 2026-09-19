@@ -1,6 +1,7 @@
-//! Bounded direct-construction training pilot over logical problem sets.
+//! Bounded direct-construction training over an online logical-problem stream.
 
 use std::{
+    collections::{BTreeMap, BTreeSet},
     fs::{self, File},
     io::{BufWriter, Read, Write},
     path::Path,
@@ -29,7 +30,9 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    constructive_problems::{PreparedProblem, ProblemSet},
+    constructive_problems::{
+        EVALUATION_SET_SCHEMA, EvaluationSet, PreparedProblem, ProblemGenerator,
+    },
     input::{Tensors, sha256},
     schema::{ConstructiveModelConfig, UpdateConfig},
     update::device_name,
@@ -57,7 +60,9 @@ pub struct Config {
     pub ppo_epochs: usize,
     pub ppo_minibatch_size: usize,
     pub evaluation_episodes: usize,
+    pub evaluation_interval: u64,
     pub evaluation_seed: u64,
+    pub problem_seed: u64,
     pub gamma: f64,
     pub gae_lambda: f64,
     pub advantage_normalization: String,
@@ -98,27 +103,87 @@ struct EvaluatedCase {
     layout: Option<Layout>,
 }
 
+#[derive(Default)]
+struct ProblemCoverage {
+    count: usize,
+    facility_sum: usize,
+    facility_min: Option<usize>,
+    facility_max: Option<usize>,
+    size_bands: BTreeMap<String, usize>,
+    target_items: BTreeSet<String>,
+    graph_signatures: BTreeSet<String>,
+}
+
+impl ProblemCoverage {
+    fn observe(&mut self, problems: &[PreparedProblem]) -> Result<()> {
+        for problem in problems {
+            self.count += 1;
+            self.facility_sum += problem.facility_count;
+            self.facility_min = Some(self.facility_min.map_or(problem.facility_count, |value| {
+                value.min(problem.facility_count)
+            }));
+            self.facility_max = Some(self.facility_max.map_or(problem.facility_count, |value| {
+                value.max(problem.facility_count)
+            }));
+            *self
+                .size_bands
+                .entry(problem.size_band.clone())
+                .or_default() += 1;
+            self.target_items.insert(problem.target_item.clone());
+            let encoded = serde_json::to_vec(&problem.problem)?;
+            let digest = Sha256::digest(encoded);
+            self.graph_signatures
+                .insert(digest.iter().map(|byte| format!("{byte:02x}")).collect());
+        }
+        Ok(())
+    }
+
+    fn summary(&self) -> Value {
+        json!({
+            "problems":self.count,
+            "unique_graphs":self.graph_signatures.len(),
+            "unique_target_items":self.target_items.len(),
+            "facility_count_min":self.facility_min,
+            "facility_count_max":self.facility_max,
+            "facility_count_mean":(self.count > 0).then(|| self.facility_sum as f64 / self.count as f64),
+            "size_bands":self.size_bands,
+        })
+    }
+}
+
 pub fn run(
     config_path: &Path,
+    sampling_path: &Path,
     catalog_root: &Path,
-    problem_path: &Path,
     output: &Path,
     device: Device,
 ) -> Result<Value> {
     let config: Config = read_json(config_path)?;
-    let problems: ProblemSet = read_json(problem_path)?;
-    validate(&config, &problems)?;
+    validate_config(&config)?;
     ensure!(
         !output.exists(),
         "aic-learning.constructive-output: {} already exists",
         output.display()
     );
-    let catalogs = load_catalogs(catalog_root)?;
-    // Admit every immutable problem before creating output or initializing Torch.
-    for problem in problems.training.iter().chain(&problems.evaluation) {
+    let generator = ProblemGenerator::load(sampling_path, catalog_root)?;
+    let catalogs = generator.catalogs();
+    let evaluation_seed = config.problem_seed ^ 0xa076_1d64_78bd_642f;
+    let evaluation = generator.sample(
+        "validation",
+        config.evaluation_episodes,
+        evaluation_seed,
+        "held-out",
+    )?;
+    for problem in &evaluation.problems {
         Session::new(problem.problem.clone(), catalogs.clone(), config.native)
             .map_err(anyhow::Error::new)?;
     }
+    let evaluation_set = EvaluationSet {
+        schema: EVALUATION_SET_SCHEMA.into(),
+        sampling_sha256: generator.sampling_sha256.clone(),
+        seed: evaluation_seed,
+        problems: evaluation.problems,
+    };
     tch::set_num_threads(1);
     tch::set_num_interop_threads(1);
     deterministic()?;
@@ -130,19 +195,20 @@ pub fn run(
     )?;
     fs::create_dir_all(output)?;
     write_json(&output.join("config.json"), &config)?;
-    write_json(&output.join("problems.json"), &problems)?;
+    fs::copy(sampling_path, output.join("sampling.json"))?;
+    write_json(&output.join("evaluation-problems.json"), &evaluation_set)?;
     write_json(&output.join("parameter-order.json"), &parameter_order)?;
     let mut metrics = BufWriter::new(File::create(output.join("metrics.jsonl"))?);
     let initial_greedy = evaluate(
-        &problems.evaluation,
+        &evaluation_set.problems,
         catalogs.clone(),
         &config,
         &mut learner,
-        problems.evaluation.len(),
+        evaluation_set.problems.len(),
         Sampling::GreedyEvaluation,
     )?;
     let initial_stochastic = evaluate(
-        &problems.evaluation,
+        &evaluation_set.problems,
         catalogs.clone(),
         &config,
         &mut learner,
@@ -151,25 +217,41 @@ pub fn run(
             seed: config.evaluation_seed,
         },
     )?;
+    let initial_greedy_by_band = evaluation_by_band(&evaluation_set.problems, &initial_greedy);
+    let initial_stochastic_by_band =
+        evaluation_by_band(&evaluation_set.problems, &initial_stochastic);
     write_row(
         &mut metrics,
         &json!({
             "update":0,
             "evaluation_greedy":summary(&initial_greedy),
+            "evaluation_greedy_by_band":initial_greedy_by_band,
             "evaluation_stochastic":summary(&initial_stochastic),
+            "evaluation_stochastic_by_band":initial_stochastic_by_band,
         }),
     )?;
     let mut total_episodes = 0u64;
     let mut total_turns = 0u64;
+    let mut coverage = ProblemCoverage::default();
     let mut final_greedy = summary(&initial_greedy);
     let mut final_stochastic = summary(&initial_stochastic);
+    let mut final_greedy_by_band = evaluation_by_band(&evaluation_set.problems, &initial_greedy);
+    let mut final_stochastic_by_band =
+        evaluation_by_band(&evaluation_set.problems, &initial_stochastic);
     for update in 1..=config.updates {
-        let offset = (update as usize - 1)
-            .checked_mul(config.episodes_per_update)
-            .ok_or_else(|| anyhow::anyhow!("aic-learning.constructive-schedule: overflow"))?;
-        let mut sessions = (0..config.episodes_per_update)
-            .map(|index| {
-                let problem = &problems.training[(offset + index) % problems.training.len()];
+        let batch_seed = training_problem_seed(config.problem_seed, update);
+        let sampled = generator.sample(
+            "train",
+            config.episodes_per_update,
+            batch_seed,
+            &format!("update-{update:06}"),
+        )?;
+        coverage.observe(&sampled.problems)?;
+        let batch_coverage = problem_coverage(&sampled.problems)?;
+        let mut sessions = sampled
+            .problems
+            .iter()
+            .map(|problem| {
                 Session::new(problem.problem.clone(), catalogs.clone(), config.native)
                     .map_err(anyhow::Error::new)
             })
@@ -191,61 +273,79 @@ pub fn run(
                 config.ppo_minibatch_size,
             )?);
         }
-        let evaluation_greedy = evaluate(
-            &problems.evaluation,
-            catalogs.clone(),
-            &config,
-            &mut learner,
-            problems.evaluation.len(),
-            Sampling::GreedyEvaluation,
-        )?;
-        let evaluation_stochastic = evaluate(
-            &problems.evaluation,
-            catalogs.clone(),
-            &config,
-            &mut learner,
-            config.evaluation_episodes,
-            Sampling::StochasticEvaluation {
-                seed: config.evaluation_seed,
-            },
-        )?;
         total_episodes += collection.episodes.len() as u64;
         total_turns += collection.turns as u64;
-        final_greedy = summary(&evaluation_greedy);
-        final_stochastic = summary(&evaluation_stochastic);
-        write_row(
-            &mut metrics,
-            &json!({
-                "update":update,
-                "training":summary(&collection),
-                "ppo":epochs,
-                "evaluation_greedy":final_greedy,
-                "evaluation_stochastic":final_stochastic,
-            }),
-        )?;
+        let mut row = json!({
+            "update":update,
+            "training_problem_seed":batch_seed,
+            "training_problems":batch_coverage,
+            "training_sampling":sampled.stats,
+            "training":summary(&collection),
+            "ppo":epochs,
+        });
+        if update % config.evaluation_interval == 0 || update == config.updates {
+            let evaluation_greedy = evaluate(
+                &evaluation_set.problems,
+                catalogs.clone(),
+                &config,
+                &mut learner,
+                evaluation_set.problems.len(),
+                Sampling::GreedyEvaluation,
+            )?;
+            let evaluation_stochastic = evaluate(
+                &evaluation_set.problems,
+                catalogs.clone(),
+                &config,
+                &mut learner,
+                config.evaluation_episodes,
+                Sampling::StochasticEvaluation {
+                    seed: config.evaluation_seed,
+                },
+            )?;
+            final_greedy = summary(&evaluation_greedy);
+            final_stochastic = summary(&evaluation_stochastic);
+            final_greedy_by_band = evaluation_by_band(&evaluation_set.problems, &evaluation_greedy);
+            final_stochastic_by_band =
+                evaluation_by_band(&evaluation_set.problems, &evaluation_stochastic);
+            row["evaluation_greedy"] = serde_json::to_value(&final_greedy)?;
+            row["evaluation_greedy_by_band"] = serde_json::to_value(&final_greedy_by_band)?;
+            row["evaluation_stochastic"] = serde_json::to_value(&final_stochastic)?;
+            row["evaluation_stochastic_by_band"] = serde_json::to_value(&final_stochastic_by_band)?;
+        }
+        write_row(&mut metrics, &row)?;
         metrics.flush()?;
     }
     metrics.flush()?;
     let model_path = output.join("learner.safetensors");
     let snapshot = learner.snapshot()?;
     Tensor::write_safetensors(&snapshot.iter().collect::<Vec<_>>(), &model_path)?;
+    let evaluation_path = output.join("evaluation-problems.json");
     let report = json!({
-        "schema":"aic-constructive-training-report-v1",
+        "schema":"aic-constructive-training-report-v2",
         "status":"completed",
         "updates":config.updates,
         "optimizer_steps":learner.completed_steps,
         "training_episodes":total_episodes,
         "training_turns":total_turns,
+        "training_problem_coverage":coverage.summary(),
+        "problem_seed":config.problem_seed,
+        "evaluation_problem_seed":evaluation_seed,
+        "evaluation_problem_sampling":evaluation.stats,
         "final_evaluation_greedy":final_greedy,
+        "final_evaluation_greedy_by_band":final_greedy_by_band,
         "final_evaluation_stochastic":final_stochastic,
+        "final_evaluation_stochastic_by_band":final_stochastic_by_band,
         "parameter_count":learner.model.parameters.iter().map(|(_, value)| value.numel() as u64).sum::<u64>(),
         "device":device_name(device)?,
         "determinism":"strict",
         "config_sha256":sha256(config_path)?,
-        "problems_sha256":sha256(problem_path)?,
+        "sampling_sha256":generator.sampling_sha256,
+        "recipes_sha256":generator.recipes_sha256,
+        "items_sha256":generator.items_sha256,
+        "evaluation_problems_sha256":sha256(&evaluation_path)?,
         "catalog_sha256":catalogs.identity,
         "learner_sha256":sha256(&model_path)?,
-        "files":["config.json","problems.json","parameter-order.json","metrics.jsonl","learner.safetensors","report.json"],
+        "files":["config.json","sampling.json","evaluation-problems.json","parameter-order.json","metrics.jsonl","learner.safetensors","report.json"],
     });
     write_json(&output.join("report.json"), &report)?;
     Ok(report)
@@ -269,26 +369,27 @@ pub fn evaluate_checkpoint(
         output.display()
     );
     let config: Config = read_json(&training_output.join("config.json"))?;
-    let problems: ProblemSet = read_json(&training_output.join("problems.json"))?;
+    let evaluation: EvaluationSet = read_json(&training_output.join("evaluation-problems.json"))?;
     let parameter_order: Vec<String> = read_json(&training_output.join("parameter-order.json"))?;
     let training_report: Value = read_json(&training_output.join("report.json"))?;
     let checkpoint = training_output.join("learner.safetensors");
     let learner_sha256 = sha256(&checkpoint)?;
-    validate(&config, &problems)?;
+    validate_config(&config)?;
     ensure!(
-        (1..=problems.evaluation.len()).contains(&cases),
+        evaluation.schema == EVALUATION_SET_SCHEMA
+            && (1..=evaluation.problems.len()).contains(&cases),
         "aic-learning.constructive-evaluation-cases: requested {cases}, available {}",
-        problems.evaluation.len()
+        evaluation.problems.len()
     );
     let catalogs = load_catalogs(catalog_root)?;
     ensure!(
-        training_report["schema"] == "aic-constructive-training-report-v1"
+        training_report["schema"] == "aic-constructive-training-report-v2"
             && training_report["status"] == "completed"
             && training_report["catalog_sha256"].as_str() == Some(&catalogs.identity)
             && training_report["learner_sha256"].as_str() == Some(learner_sha256.as_str()),
         "aic-learning.constructive-evaluation-identity: training report, catalogs or checkpoint do not match"
     );
-    for problem in problems.evaluation.iter().take(cases) {
+    for problem in evaluation.problems.iter().take(cases) {
         Session::new(problem.problem.clone(), catalogs.clone(), config.native)
             .map_err(anyhow::Error::new)?;
     }
@@ -298,7 +399,7 @@ pub fn evaluate_checkpoint(
     let values: Tensors = Tensor::read_safetensors(&checkpoint)?.into_iter().collect();
     let model = Model::load(&config.model, &parameter_order, &values, device)?;
     let evaluated = greedy_cases(
-        &problems.evaluation[..cases],
+        &evaluation.problems[..cases],
         catalogs.clone(),
         &config,
         &model,
@@ -581,23 +682,15 @@ fn escape_html(value: &str) -> String {
         .replace('\'', "&#39;")
 }
 
-fn validate(config: &Config, problems: &ProblemSet) -> Result<()> {
+fn validate_config(config: &Config) -> Result<()> {
     ensure!(
-        config.schema == "aic-constructive-training-v3"
-            && problems.schema == "aic-constructive-problem-set-v2"
-            && !problems.training.is_empty()
-            && problems.training.len() <= 4096
-            && !problems.evaluation.is_empty()
-            && problems.evaluation.len() <= 4096
-            && problems
-                .evaluation
-                .iter()
-                .all(|problem| !problems.training.contains(problem))
+        config.schema == "aic-constructive-training-v4"
             && (1..=1024).contains(&config.updates)
             && (2..=4096).contains(&config.episodes_per_update)
             && (1..=16).contains(&config.ppo_epochs)
             && (1..=262_144).contains(&config.ppo_minibatch_size)
-            && (problems.evaluation.len()..=4096).contains(&config.evaluation_episodes)
+            && (1..=4096).contains(&config.evaluation_episodes)
+            && (1..=config.updates).contains(&config.evaluation_interval)
             && (0. ..=1.).contains(&config.gamma)
             && (0. ..=1.).contains(&config.gae_lambda)
             && matches!(
@@ -610,6 +703,16 @@ fn validate(config: &Config, problems: &ProblemSet) -> Result<()> {
     config.optimizer.validate()?;
     config.reward.validate()?;
     Ok(())
+}
+
+fn training_problem_seed(base: u64, update: u64) -> u64 {
+    base ^ update.wrapping_mul(0x9e37_79b9_7f4a_7c15)
+}
+
+fn problem_coverage(problems: &[PreparedProblem]) -> Result<Value> {
+    let mut coverage = ProblemCoverage::default();
+    coverage.observe(problems)?;
+    Ok(coverage.summary())
 }
 
 fn evaluate(
@@ -667,6 +770,62 @@ fn summary(collection: &Collection) -> Summary {
             / collection.episodes.len() as f64,
         seconds: collection.seconds,
     }
+}
+
+fn evaluation_by_band(
+    problems: &[PreparedProblem],
+    collection: &Collection,
+) -> BTreeMap<String, Value> {
+    let mut indices = BTreeMap::<String, Vec<usize>>::new();
+    for (index, problem) in problems.iter().enumerate() {
+        indices
+            .entry(problem.size_band.clone())
+            .or_default()
+            .push(index);
+    }
+    indices
+        .into_iter()
+        .map(|(band, indices)| {
+            let episodes = indices
+                .iter()
+                .map(|&index| &collection.episodes[index])
+                .collect::<Vec<_>>();
+            let count = episodes.len();
+            let fully_validated = episodes
+                .iter()
+                .filter(|episode| episode.fully_validated)
+                .count();
+            let dead_ends = episodes.iter().filter(|episode| episode.dead_end).count();
+            let mean_completion_ratio = episodes
+                .iter()
+                .map(|episode| {
+                    episode.completed_connections as f64 / episode.total_connections as f64
+                })
+                .sum::<f64>()
+                / count as f64;
+            let mean_reward = episodes
+                .iter()
+                .map(|episode| {
+                    episode
+                        .transitions
+                        .iter()
+                        .map(|transition| transition.reward)
+                        .sum::<f64>()
+                })
+                .sum::<f64>()
+                / count as f64;
+            (
+                band,
+                json!({
+                    "episodes":count,
+                    "fully_validated":fully_validated,
+                    "dead_ends":dead_ends,
+                    "mean_completion_ratio":mean_completion_ratio,
+                    "mean_reward":mean_reward,
+                }),
+            )
+        })
+        .collect()
 }
 
 pub(super) fn load_catalogs(root: &Path) -> Result<Arc<Catalogs>> {

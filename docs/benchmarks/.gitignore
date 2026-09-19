@@ -35,6 +35,7 @@
 !/constructive-recipe-breadth/requests/food-3.json
 !/constructive-recipe-breadth/requests/medical-3.json
 !/direct-constructive-encoder-reuse/config.json
+!/direct-constructive-full-graph-online/config.json
 !/direct-constructive-full-graphs/config.json
 !/direct-constructive-full-graphs/sampling.json
 !/direct-constructive-pilot/config.json

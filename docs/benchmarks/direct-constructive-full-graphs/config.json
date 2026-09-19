@@ -1,5 +1,5 @@
 {
-  "schema": "aic-constructive-training-v3",
+  "schema": "aic-constructive-training-v4",
   "model": {
     "schema": "aic-constructive-attention-model-v2",
     "width": 128,
@@ -40,7 +40,9 @@
   "ppo_epochs": 4,
   "ppo_minibatch_size": 256,
   "evaluation_episodes": 64,
+  "evaluation_interval": 1,
   "evaluation_seed": 700101,
+  "problem_seed": 101,
   "gamma": 0.99,
   "gae_lambda": 0.95,
   "advantage_normalization": "standardize",

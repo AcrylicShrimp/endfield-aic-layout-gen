@@ -3,7 +3,7 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs::File,
-    io::{BufWriter, Read, Write},
+    io::Read,
     path::Path,
     sync::Arc,
 };
@@ -28,19 +28,18 @@ use aic_layout::{
 };
 use anyhow::{Context, Result, ensure};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
-pub const PROBLEM_SET_SCHEMA: &str = "aic-constructive-problem-set-v2";
+pub const EVALUATION_SET_SCHEMA: &str = "aic-constructive-evaluation-set-v1";
 const MAX_INPUT_BYTES: u64 = 16 * 1024 * 1024;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-pub struct ProblemSet {
+pub struct EvaluationSet {
     pub schema: String,
     pub sampling_sha256: String,
-    pub training: Vec<PreparedProblem>,
-    pub evaluation: Vec<PreparedProblem>,
+    pub seed: u64,
+    pub problems: Vec<PreparedProblem>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -110,14 +109,19 @@ struct TargetLoad {
     denominator: i64,
 }
 
-#[derive(Default, Serialize)]
-struct SamplingStats {
-    attempts: usize,
-    source_failures: usize,
-    flow_failures: usize,
-    facility_guard_rejections: usize,
-    duplicate_graphs: usize,
-    accepted_candidates: usize,
+#[derive(Clone, Debug, Default, Serialize)]
+pub struct SamplingStats {
+    pub attempts: usize,
+    pub source_failures: usize,
+    pub flow_failures: usize,
+    pub facility_guard_rejections: usize,
+    pub duplicate_graphs: usize,
+    pub accepted_candidates: usize,
+}
+
+pub struct SampledProblems {
+    pub problems: Vec<PreparedProblem>,
+    pub stats: SamplingStats,
 }
 
 struct Candidate {
@@ -125,86 +129,77 @@ struct Candidate {
     signature: String,
 }
 
-pub fn prepare(
-    sampling_path: &Path,
-    catalog_root: &Path,
-    output: &Path,
-    seed: u64,
-    training: usize,
-    evaluation: usize,
-) -> Result<Value> {
-    ensure!(
-        training > 0 && evaluation > 0 && !output.exists(),
-        "aic-learning.constructive-problems: invalid counts or existing output {}",
-        output.display()
-    );
-    let document: SamplingDocument = read_json(sampling_path)?;
-    let policy = document.sampling;
-    validate_policy(&policy)?;
+pub struct ProblemGenerator {
+    policy: SamplingPolicy,
+    recipes: ValidatedRecipeBook,
+    items: ValidatedItemCatalog,
+    catalogs: Arc<Catalogs>,
+    producers: BTreeMap<String, Vec<usize>>,
+    pub sampling_sha256: String,
+    pub recipes_sha256: String,
+    pub items_sha256: String,
+}
 
-    let recipe_path = catalog_root.join("recipes.json");
-    let item_path = catalog_root.join("items.json");
-    let recipes = ValidatedRecipeBook::try_from_recipe_book(load_recipe_book(&recipe_path)?)
-        .map_err(|report| anyhow::anyhow!("aic-learning.constructive-recipes: {report:?}"))?;
-    let items = ValidatedItemCatalog::try_from_catalog(load_item_catalog(&item_path)?)
-        .map_err(|report| anyhow::anyhow!("aic-learning.constructive-items: {report:?}"))?;
-    let catalogs = load_catalogs(catalog_root)?;
-    validate_catalog_references(
-        recipes.recipe_book().recipes.as_slice(),
-        &items,
-        &catalogs.facilities,
-    )?;
-    let producers = producer_index(recipes.recipe_book().recipes.as_slice());
+impl ProblemGenerator {
+    pub fn load(sampling_path: &Path, catalog_root: &Path) -> Result<Self> {
+        let document: SamplingDocument = read_json(sampling_path)?;
+        let policy = document.sampling;
+        validate_policy(&policy)?;
+        let recipe_path = catalog_root.join("recipes.json");
+        let item_path = catalog_root.join("items.json");
+        let recipes = ValidatedRecipeBook::try_from_recipe_book(load_recipe_book(&recipe_path)?)
+            .map_err(|report| anyhow::anyhow!("aic-learning.constructive-recipes: {report:?}"))?;
+        let items = ValidatedItemCatalog::try_from_catalog(load_item_catalog(&item_path)?)
+            .map_err(|report| anyhow::anyhow!("aic-learning.constructive-items: {report:?}"))?;
+        let catalogs = load_catalogs(catalog_root)?;
+        validate_catalog_references(
+            recipes.recipe_book().recipes.as_slice(),
+            &items,
+            &catalogs.facilities,
+        )?;
+        let producers = producer_index(recipes.recipe_book().recipes.as_slice());
+        Ok(Self {
+            policy,
+            recipes,
+            items,
+            catalogs,
+            producers,
+            sampling_sha256: sha256(sampling_path)?,
+            recipes_sha256: sha256(&recipe_path)?,
+            items_sha256: sha256(&item_path)?,
+        })
+    }
 
-    let mut training_stats = SamplingStats::default();
-    let mut evaluation_stats = SamplingStats::default();
-    let training_problems = prepare_partition(
-        "train",
-        training,
-        seed,
-        &policy,
-        &recipes,
-        &items,
-        &catalogs.transports,
-        &producers,
-        &mut training_stats,
-    )?;
-    let evaluation_problems = prepare_partition(
-        "validation",
-        evaluation,
-        seed ^ 0xa076_1d64_78bd_642f,
-        &policy,
-        &recipes,
-        &items,
-        &catalogs.transports,
-        &producers,
-        &mut evaluation_stats,
-    )?;
+    pub fn catalogs(&self) -> Arc<Catalogs> {
+        self.catalogs.clone()
+    }
 
-    let problem_set = ProblemSet {
-        schema: PROBLEM_SET_SCHEMA.into(),
-        sampling_sha256: sha256(sampling_path)?,
-        training: training_problems,
-        evaluation: evaluation_problems,
-    };
-    write_json(output, &problem_set)?;
-
-    Ok(json!({
-        "schema":"aic-constructive-problem-preparation-report-v2",
-        "status":"completed",
-        "seed":seed,
-        "training_problems":problem_set.training.len(),
-        "evaluation_problems":problem_set.evaluation.len(),
-        "training_size_bands":band_counts(&problem_set.training),
-        "evaluation_size_bands":band_counts(&problem_set.evaluation),
-        "training_sampling":training_stats,
-        "evaluation_sampling":evaluation_stats,
-        "recipes_sha256":sha256(&recipe_path)?,
-        "items_sha256":sha256(&item_path)?,
-        "sampling_sha256":problem_set.sampling_sha256,
-        "output_sha256":sha256(output)?,
-        "output":output,
-    }))
+    pub fn sample(
+        &self,
+        partition: &str,
+        count: usize,
+        seed: u64,
+        namespace: &str,
+    ) -> Result<SampledProblems> {
+        ensure!(
+            count > 0 && matches!(partition, "train" | "validation" | "test"),
+            "aic-learning.constructive-problems: invalid sample request"
+        );
+        let mut stats = SamplingStats::default();
+        let problems = prepare_partition(
+            partition,
+            count,
+            seed,
+            namespace,
+            &self.policy,
+            &self.recipes,
+            &self.items,
+            &self.catalogs.transports,
+            &self.producers,
+            &mut stats,
+        )?;
+        Ok(SampledProblems { problems, stats })
+    }
 }
 
 fn validate_policy(policy: &SamplingPolicy) -> Result<()> {
@@ -290,6 +285,7 @@ fn prepare_partition(
     partition: &str,
     count: usize,
     seed: u64,
+    namespace: &str,
     policy: &SamplingPolicy,
     book: &ValidatedRecipeBook,
     items: &ValidatedItemCatalog,
@@ -361,7 +357,7 @@ fn prepare_partition(
             .as_ref()
             .expect("successful throughput has target")
             .rate;
-        let id = format!("{partition}-{ordinal}");
+        let id = format!("{partition}-{namespace}-{ordinal}");
         let prepared = compile_problem(
             id,
             partition,
@@ -722,14 +718,6 @@ fn size_band(facilities: usize) -> String {
     format!("{lower}-{upper}")
 }
 
-fn band_counts(problems: &[PreparedProblem]) -> BTreeMap<&str, usize> {
-    let mut counts = BTreeMap::new();
-    for problem in problems {
-        *counts.entry(problem.size_band.as_str()).or_default() += 1;
-    }
-    counts
-}
-
 fn problem_signature(problem: &Problem) -> Result<String> {
     let encoded = serde_json::to_vec(problem)?;
     let digest = Sha256::digest(encoded);
@@ -773,14 +761,6 @@ fn read_json<T: DeserializeOwned>(path: &Path) -> Result<T> {
     serde_json::from_slice(&bytes).with_context(|| format!("parse {}", path.display()))
 }
 
-fn write_json(path: &Path, value: &impl Serialize) -> Result<()> {
-    let mut writer = BufWriter::new(File::create(path)?);
-    serde_json::to_writer_pretty(&mut writer, value)?;
-    writer.write_all(b"\n")?;
-    writer.flush()?;
-    Ok(())
-}
-
 fn sha256(path: &Path) -> Result<String> {
     let mut file = File::open(path).with_context(|| format!("open {}", path.display()))?;
     let mut digest = Sha256::new();
@@ -811,5 +791,46 @@ mod tests {
         assert_eq!(size_band(59), "33-64");
         assert_eq!(size_band(100), "65-128");
         assert_eq!(size_band(257), "257-512");
+    }
+
+    #[test]
+    fn online_problem_batches_are_seeded_and_span_observed_scales() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let generator = ProblemGenerator::load(
+            &root.join("docs/benchmarks/direct-constructive-full-graphs/sampling.json"),
+            &root.join("data/game/normalized"),
+        )
+        .unwrap();
+        let first = generator.sample("train", 8, 101, "update-000001").unwrap();
+        let repeated = generator.sample("train", 8, 101, "update-000001").unwrap();
+        let next = generator.sample("train", 8, 202, "update-000002").unwrap();
+
+        assert_eq!(first.problems, repeated.problems);
+        assert_ne!(
+            first
+                .problems
+                .iter()
+                .map(|problem| &problem.problem)
+                .collect::<Vec<_>>(),
+            next.problems
+                .iter()
+                .map(|problem| &problem.problem)
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            first
+                .problems
+                .iter()
+                .map(|problem| problem.size_band.as_str())
+                .collect::<BTreeSet<_>>()
+                .len(),
+            8
+        );
+        assert!(
+            first
+                .problems
+                .iter()
+                .all(|problem| problem.id.starts_with("train-update-000001-"))
+        );
     }
 }

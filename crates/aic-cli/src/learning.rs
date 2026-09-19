@@ -122,34 +122,16 @@ pub enum LearningCommand {
         #[arg(long)]
         seed: u64,
     },
-    /// Prepare seeded full production graphs without computing physical layouts.
-    #[cfg(feature = "outcomes")]
-    PrepareConstructiveProblems {
+    /// Train on freshly sampled full production graphs and a fixed held-out panel.
+    #[cfg(feature = "learning")]
+    TrainConstructive {
+        #[arg(long)]
+        config: PathBuf,
         #[arg(long)]
         sampling: PathBuf,
         /// Directory containing normalized recipes, items and physical catalogs.
         #[arg(long)]
         catalog_root: PathBuf,
-        #[arg(long)]
-        output: PathBuf,
-        #[arg(long)]
-        seed: u64,
-        #[arg(long)]
-        training: usize,
-        #[arg(long)]
-        evaluation: usize,
-    },
-    /// Run the bounded router-free constructive PPO pilot.
-    #[cfg(feature = "learning")]
-    TrainConstructive {
-        #[arg(long)]
-        config: PathBuf,
-        /// Directory containing normalized facilities, transports and logistics components.
-        #[arg(long)]
-        catalog_root: PathBuf,
-        /// Versioned logical training/evaluation problem set.
-        #[arg(long)]
-        problems: PathBuf,
         #[arg(long)]
         output: PathBuf,
         #[arg(long, default_value = "auto")]
@@ -190,10 +172,6 @@ pub fn run(command: LearningCommand) -> Result<()> {
         LearningCommand::Train { config, .. } => config,
         #[cfg(feature = "learning")]
         LearningCommand::PreparePanel { config, .. } => config,
-        #[cfg(feature = "outcomes")]
-        LearningCommand::PrepareConstructiveProblems {
-            sampling: config, ..
-        } => config,
         #[cfg(feature = "learning")]
         LearningCommand::TrainConstructive { config, .. } => config,
         #[cfg(feature = "learning")]
@@ -323,33 +301,17 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             cases,
             seed,
         } => aic_learning::training::evaluation::prepare(&config, &output, cases, seed),
-        #[cfg(feature = "outcomes")]
-        LearningCommand::PrepareConstructiveProblems {
-            sampling,
-            catalog_root,
-            output,
-            seed,
-            training,
-            evaluation,
-        } => aic_learning::constructive_problems::prepare(
-            &sampling,
-            &catalog_root,
-            &output,
-            seed,
-            training,
-            evaluation,
-        ),
         #[cfg(feature = "learning")]
         LearningCommand::TrainConstructive {
             config,
+            sampling,
             catalog_root,
-            problems,
             output,
             device,
         } => aic_learning::constructive::run::run(
             &config,
+            &sampling,
             &catalog_root,
-            &problems,
             &output,
             update::parse_device(&device)?,
         ),
