@@ -1,8 +1,13 @@
-//! Research-only recipe source-tree dynamic-programming probe.
+//! Bounded recipe-semantic complete factory generator and diagnostic probe.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::fs;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicUsize, Ordering},
+    mpsc,
+};
 use std::time::Instant;
 
 use aic_data::recipes::{
@@ -44,13 +49,14 @@ use aic_routing::{
 use anyhow::{Context, Result, anyhow, ensure};
 use clap::{Parser, ValueEnum};
 use serde::Serialize;
+use sha2::{Digest, Sha256};
 
 const RATE_HORIZON_MS: i64 = 20_000;
 const MAX_DP_MEMO_STATES: usize = 50_000;
 const MAX_DP_COMBINATIONS: usize = 2_000_000;
 
 #[derive(Parser)]
-#[command(about = "Research only: combine precomputed recipe source subtrees by facility count")]
+#[command(about = "Generate a recipe-derived, routed and independently validated AIC factory")]
 struct Args {
     #[arg(long)]
     recipes: PathBuf,
@@ -68,6 +74,15 @@ struct Args {
     max_depth: usize,
     #[arg(long)]
     report_output: PathBuf,
+    /// Number of deterministic seed slots to generate in one persistent run.
+    #[arg(long, default_value_t = 1)]
+    count: usize,
+    /// Persistent generation workers used when count is greater than one.
+    #[arg(long, default_value_t = 1)]
+    workers: usize,
+    /// New directory for per-slot reports and validated layouts in batch mode.
+    #[arg(long)]
+    output_dir: Option<PathBuf>,
     /// Optional normalized catalog directory for one frozen-block placement sample.
     #[arg(long)]
     catalog_dir: Option<PathBuf>,
@@ -86,7 +101,7 @@ struct Args {
     #[arg(long, requires = "catalog_dir")]
     construct_factory: bool,
     /// Fresh sequence-pair placements tried for complete physical construction.
-    #[arg(long, default_value_t = 8, requires = "construct_factory")]
+    #[arg(long, default_value_t = 16, requires = "construct_factory")]
     physical_attempts: usize,
     /// Total A* calls allowed per fixed-placement construction order.
     #[arg(long, default_value_t = 200, requires = "construct_factory")]
@@ -113,7 +128,7 @@ struct Args {
     packing_profile: Option<RecipePackingProfile>,
 }
 
-#[derive(Clone, Copy, Debug, Serialize, ValueEnum)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, ValueEnum)]
 #[serde(rename_all = "kebab-case")]
 enum RecipePackingProfile {
     Compact,
@@ -127,6 +142,14 @@ impl RecipePackingProfile {
             Self::Compact => COMPACT_DENSITY,
             Self::Balanced => BALANCED_DENSITY,
             Self::Spacious => SPACIOUS_DENSITY,
+        }
+    }
+
+    fn maximum_facilities(self) -> i64 {
+        match self {
+            Self::Compact => 8,
+            Self::Balanced => 16,
+            Self::Spacious => 32,
         }
     }
 }
@@ -170,7 +193,58 @@ struct Report {
 struct FactoryObservation {
     placement_attempts: usize,
     selected_placement_seed: Option<u64>,
+    attempts: Vec<FactoryPlacementAttempt>,
     report: FixedFactoryReport,
+}
+
+#[derive(Serialize)]
+struct BatchRow {
+    index: usize,
+    seed: u64,
+    status: String,
+    achieved_facilities: Option<i64>,
+    body_density: Option<f64>,
+    placement_attempts: Option<usize>,
+    factory_validated: bool,
+    layout_sha256: Option<String>,
+    elapsed_ms: f64,
+    error: Option<BatchError>,
+}
+
+#[derive(Serialize)]
+struct BatchReport {
+    schema_version: u32,
+    kind: &'static str,
+    packing_policy_version: Option<&'static str>,
+    catalog_sha256: String,
+    target_item: String,
+    requested_facilities: i64,
+    packing_profile: Option<RecipePackingProfile>,
+    maximum_supported_facilities: Option<i64>,
+    initial_seed: u64,
+    requested: usize,
+    workers: usize,
+    complete: usize,
+    elapsed_seconds: f64,
+    complete_per_second: f64,
+    rows: Vec<BatchRow>,
+}
+
+#[derive(Serialize)]
+struct BatchError {
+    code: &'static str,
+    message: String,
+}
+
+#[derive(Serialize)]
+struct FactoryPlacementAttempt {
+    ordinal: usize,
+    seed: u64,
+    body_density: Option<f64>,
+    gap: Option<[i64; 2]>,
+    status: String,
+    routing_orders: Vec<aic_data::layouts::FixedFactoryAttempt>,
+    elapsed_ms: f64,
 }
 
 #[derive(Clone, Serialize)]
@@ -219,7 +293,6 @@ struct RoutingJobObservation {
 struct PhysicalPlacement {
     observation: PlacementObservation,
     sampled: Placement,
-    catalogs: Catalogs,
 }
 
 #[derive(Clone, Serialize)]
@@ -338,12 +411,42 @@ struct ExternalLeaf {
     item: String,
 }
 
+struct Shared {
+    book: ValidatedRecipeBook,
+    producers: BTreeMap<String, Vec<String>>,
+    recipes: BTreeMap<String, Recipe>,
+    physical_catalogs: Option<aic_layout_gen::io::LoadedCatalogs>,
+    routing_items: Option<ValidatedItemCatalog>,
+    factory_catalogs: Option<FactoryEditCatalogs>,
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
     ensure!(args.facilities > 0, "--facilities must be positive");
     ensure!(args.attempts > 0, "--attempts must be positive");
     ensure!(args.max_steps > 0, "--max-steps must be positive");
     ensure!(args.max_depth > 0, "--max-depth must be positive");
+    ensure!((1..=4096).contains(&args.count), "--count must be 1..=4096");
+    ensure!(
+        (1..=4).contains(&args.workers) && args.workers <= args.count,
+        "--workers must be 1..=4 and no greater than --count"
+    );
+    ensure!(
+        args.count == 1 || args.output_dir.is_some(),
+        "batch generation requires --output-dir"
+    );
+    ensure!(
+        args.count > 1 || args.output_dir.is_none(),
+        "--output-dir requires --count greater than one"
+    );
+    ensure!(
+        args.count == 1 || args.construct_factory,
+        "batch generation requires --construct-factory"
+    );
+    ensure!(
+        args.count == 1 || args.layout_output.is_none() && args.html_output.is_none(),
+        "batch generation publishes layouts and HTML inside --output-dir"
+    );
     ensure!(
         (1..=128).contains(&args.physical_attempts),
         "--physical-attempts must be 1..=128"
@@ -358,6 +461,13 @@ fn main() -> Result<()> {
             || args.placement_density_min.is_some() && args.placement_density_max.is_some(),
         "--construct-factory requires --packing-profile or an explicit density band"
     );
+    if let Some(profile) = args.packing_profile {
+        ensure!(
+            args.facilities <= profile.maximum_facilities(),
+            "{profile:?} profile under {PACKING_DENSITY_POLICY_VERSION} supports at most {} requested facilities",
+            profile.maximum_facilities()
+        );
+    }
     ensure!(
         (1..=1_024).contains(&args.routing_iterations),
         "--routing-iterations must be 1..=1024"
@@ -371,12 +481,282 @@ fn main() -> Result<()> {
         "report output already exists: {}",
         args.report_output.display()
     );
+    if let Some(output_dir) = &args.output_dir {
+        ensure!(
+            !output_dir.exists(),
+            "output directory already exists: {}",
+            output_dir.display()
+        );
+    }
     let raw = load_recipe_book(&args.recipes)
         .with_context(|| format!("loading {}", args.recipes.display()))?;
     let book = ValidatedRecipeBook::try_from_recipe_book(raw)
         .map_err(|report| anyhow!("recipe catalog is invalid: {report:?}"))?;
     let producers = producer_index(&book);
     let recipes = recipe_index(&book);
+    let physical_catalogs = args.catalog_dir.as_deref().map(load_catalogs).transpose()?;
+    let routing_items = args
+        .catalog_dir
+        .as_deref()
+        .map(|catalog_dir| {
+            ValidatedItemCatalog::try_from_catalog(load_item_catalog(
+                catalog_dir.join("items.json"),
+            )?)
+            .map_err(|report| anyhow!("item catalog is invalid: {report:?}"))
+        })
+        .transpose()?;
+    let factory_catalogs = if args.construct_factory {
+        Some(load_factory_catalogs(
+            args.catalog_dir
+                .as_deref()
+                .expect("clap requires catalogs for construction"),
+            &book,
+            &physical_catalogs
+                .as_ref()
+                .expect("catalog placement exists")
+                .catalogs,
+        )?)
+    } else {
+        None
+    };
+    let shared = Shared {
+        book,
+        producers,
+        recipes,
+        physical_catalogs,
+        routing_items,
+        factory_catalogs,
+    };
+    if args.count > 1 {
+        return run_batch(&args, &shared);
+    }
+    let report = generate_one(&args, args.seed, &shared)?;
+    if let Some(factory) = &report.factory {
+        if let (Some(path), Some(witness)) = (
+            args.layout_output
+                .as_ref()
+                .filter(|_| factory.report.factory_validated),
+            &factory.report.witness,
+        ) {
+            ensure!(
+                !path.exists(),
+                "layout output already exists: {}",
+                path.display()
+            );
+            std::fs::write(path, serde_json::to_vec_pretty(witness)?)
+                .with_context(|| format!("writing {}", path.display()))?;
+        }
+        if let (Some(path), Some(html)) = (
+            args.html_output
+                .as_ref()
+                .filter(|_| factory.report.factory_validated),
+            render_factory(factory)?,
+        ) {
+            ensure!(
+                !path.exists(),
+                "HTML output already exists: {}",
+                path.display()
+            );
+            std::fs::write(path, html).with_context(|| format!("writing {}", path.display()))?;
+        }
+    }
+    std::fs::write(&args.report_output, serde_json::to_vec_pretty(&report)?)
+        .with_context(|| format!("writing {}", args.report_output.display()))?;
+    println!(
+        "status={} requested={} achieved={} external_sources={} external_edges={} exact_evaluations={} dp_states={} elapsed_us={}",
+        report.status,
+        report.requested_facilities,
+        report.achieved_facilities,
+        report.external_source_occurrences,
+        report.external_input_edges,
+        report.exact_plans_evaluated,
+        report.dp_memo_states,
+        report.elapsed_us
+    );
+    Ok(())
+}
+
+fn render_factory(factory: &FactoryObservation) -> Result<Option<String>> {
+    let Some(witness) = &factory.report.witness else {
+        return Ok(None);
+    };
+    if !factory.report.factory_validated {
+        return Ok(None);
+    }
+    let integrated = IntegratedLayoutReport {
+        schema_version: INTEGRATED_LAYOUT_SCHEMA_VERSION,
+        success: true,
+        status: IntegratedLayoutStatus::Feasible,
+        bounds: Some(factory.report.canvas.clone()),
+        placements: witness.placements.clone(),
+        logistics_components: witness.logistics_components.clone(),
+        transport_networks: witness.transport_networks.clone(),
+        phases: Vec::new(),
+        exact: None,
+        diagnostics: Vec::new(),
+    };
+    render_integrated_layout_html_with_localization(&integrated, None)
+        .map(Some)
+        .map_err(|diagnostic| anyhow!("render failed: {diagnostic:?}"))
+}
+
+fn run_batch(args: &Args, shared: &Shared) -> Result<()> {
+    let started = Instant::now();
+    let output = args.output_dir.as_ref().expect("batch output was required");
+    if let Some(parent) = output.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    fs::create_dir(output)
+        .with_context(|| format!("creating batch output {}", output.display()))?;
+    let next = AtomicUsize::new(0);
+    let mut rows = std::thread::scope(|scope| -> Result<Vec<BatchRow>> {
+        let (sender, receiver) = mpsc::sync_channel(args.workers * 2);
+        for _ in 0..args.workers {
+            let sender = sender.clone();
+            let next = &next;
+            scope.spawn(move || {
+                loop {
+                    let index = next.fetch_add(1, Ordering::Relaxed);
+                    if index >= args.count {
+                        break;
+                    }
+                    let seed = args.seed.wrapping_add(index as u64);
+                    let began = Instant::now();
+                    let result = generate_one(args, seed, shared);
+                    if sender
+                        .send((index, seed, began.elapsed().as_secs_f64() * 1000.0, result))
+                        .is_err()
+                    {
+                        break;
+                    }
+                }
+            });
+        }
+        drop(sender);
+        let mut rows = Vec::with_capacity(args.count);
+        for (index, seed, elapsed_ms, result) in receiver {
+            match result {
+                Ok(report) => {
+                    let report_bytes = serde_json::to_vec_pretty(&report)?;
+                    ensure!(
+                        report_bytes.len() <= 16 * 1024 * 1024,
+                        "case {index} report exceeds the 16 MiB publication guard"
+                    );
+                    fs::write(output.join(format!("case-{index:05}.json")), report_bytes)?;
+                    let validated = report
+                        .factory
+                        .as_ref()
+                        .is_some_and(|factory| factory.report.factory_validated);
+                    let mut layout_sha256 = None;
+                    if validated {
+                        let factory = report.factory.as_ref().unwrap();
+                        let witness = factory.report.witness.as_ref().unwrap();
+                        let layout_bytes = serde_json::to_vec_pretty(witness)?;
+                        ensure!(
+                            layout_bytes.len() <= 16 * 1024 * 1024,
+                            "case {index} layout exceeds the 16 MiB publication guard"
+                        );
+                        layout_sha256 = Some(
+                            Sha256::digest(&layout_bytes)
+                                .iter()
+                                .map(|byte| format!("{byte:02x}"))
+                                .collect(),
+                        );
+                        fs::write(output.join(format!("layout-{index:05}.json")), layout_bytes)?;
+                        if let Some(html) = render_factory(factory)? {
+                            fs::write(output.join(format!("case-{index:05}.html")), html)?;
+                        }
+                    }
+                    rows.push(BatchRow {
+                        index,
+                        seed,
+                        status: report.status.into(),
+                        achieved_facilities: Some(report.achieved_facilities),
+                        body_density: report
+                            .placement
+                            .as_ref()
+                            .map(|placement| placement.body_density),
+                        placement_attempts: report
+                            .factory
+                            .as_ref()
+                            .map(|factory| factory.placement_attempts),
+                        factory_validated: validated,
+                        layout_sha256,
+                        elapsed_ms,
+                        error: None,
+                    });
+                }
+                Err(error) => rows.push(BatchRow {
+                    index,
+                    seed,
+                    status: "generation-error".into(),
+                    achieved_facilities: None,
+                    body_density: None,
+                    placement_attempts: None,
+                    factory_validated: false,
+                    layout_sha256: None,
+                    elapsed_ms,
+                    error: Some(BatchError {
+                        code: "recipe-layout-generation-error",
+                        message: format!("{error:#}"),
+                    }),
+                }),
+            }
+        }
+        Ok(rows)
+    })?;
+    rows.sort_by_key(|row| row.index);
+    ensure!(
+        rows.len() == args.count,
+        "persistent workers returned {} of {} slots",
+        rows.len(),
+        args.count
+    );
+    let complete = rows.iter().filter(|row| row.factory_validated).count();
+    let elapsed_seconds = started.elapsed().as_secs_f64();
+    let batch = BatchReport {
+        schema_version: 1,
+        kind: "recipe-layout-dataset-batch",
+        packing_policy_version: args.packing_profile.map(|_| PACKING_DENSITY_POLICY_VERSION),
+        catalog_sha256: shared
+            .physical_catalogs
+            .as_ref()
+            .expect("batch construction loaded physical catalogs")
+            .catalogs
+            .identity
+            .clone(),
+        target_item: args.target_item.clone(),
+        requested_facilities: args.facilities,
+        packing_profile: args.packing_profile,
+        maximum_supported_facilities: args
+            .packing_profile
+            .map(RecipePackingProfile::maximum_facilities),
+        initial_seed: args.seed,
+        requested: args.count,
+        workers: args.workers,
+        complete,
+        elapsed_seconds,
+        complete_per_second: complete as f64 / elapsed_seconds,
+        rows,
+    };
+    fs::write(&args.report_output, serde_json::to_vec_pretty(&batch)?)
+        .with_context(|| format!("writing {}", args.report_output.display()))?;
+    println!(
+        "status=batch-complete requested={} complete={} elapsed_seconds={:.3} complete_per_second={:.3}",
+        batch.requested, batch.complete, batch.elapsed_seconds, batch.complete_per_second
+    );
+    Ok(())
+}
+
+fn generate_one(args: &Args, seed: u64, shared: &Shared) -> Result<Report> {
+    let Shared {
+        book,
+        producers,
+        recipes,
+        physical_catalogs,
+        routing_items,
+        factory_catalogs,
+    } = shared;
     let root_producers = producers
         .get(&args.target_item)
         .cloned()
@@ -397,9 +777,9 @@ fn main() -> Result<()> {
         &producers,
         args.facilities,
         max_active_recipes,
-        args.seed,
+        seed,
     );
-    let starts = start_schedule(&root_producers, args.facilities, args.seed, args.attempts)?;
+    let starts = start_schedule(&root_producers, args.facilities, seed, args.attempts)?;
     let mut best: Option<SearchResult> = None;
     let mut attempted_starts = 0_usize;
     for (root_recipe, root_facilities) in starts {
@@ -432,6 +812,14 @@ fn main() -> Result<()> {
             &mut exact_plans_evaluated,
         )?;
     }
+    if let Some(profile) = args.packing_profile {
+        ensure!(
+            best.evaluation.facilities <= profile.maximum_facilities(),
+            "{profile:?} profile under {PACKING_DENSITY_POLICY_VERSION} supports at most {} achieved facilities, but semantic selection achieved {}",
+            profile.maximum_facilities(),
+            best.evaluation.facilities
+        );
+    }
     let observations = validate_final_plan(
         &book,
         &producers,
@@ -439,57 +827,77 @@ fn main() -> Result<()> {
         &best.plan,
         &best.evaluation,
     )?;
-    let mut physical = args
-        .catalog_dir
-        .as_deref()
-        .map(|catalog_dir| {
-            place_facilities(catalog_dir, &args, &observations.facility_blocks, args.seed)
+    let mut physical = physical_catalogs
+        .as_ref()
+        .map(|loaded| {
+            place_facilities(&loaded.catalogs, &args, &observations.facility_blocks, seed)
         })
         .transpose()?;
     let factory = if args.construct_factory {
-        let catalog_dir = args
-            .catalog_dir
-            .as_deref()
-            .expect("clap requires catalogs for construction");
-        let catalogs = load_factory_catalogs(
-            catalog_dir,
-            &book,
-            &physical
-                .as_ref()
-                .expect("catalog placement exists")
-                .catalogs,
-        )?;
+        let catalogs = factory_catalogs
+            .as_ref()
+            .expect("factory catalogs were loaded once");
         let request = factory_request(&observations.wiring)?;
         let mut selected = None;
         let mut last_candidate = None;
         let mut last = None;
+        let mut factory_attempts = Vec::new();
         for ordinal in 0..args.physical_attempts {
-            let placement_seed = args
-                .seed
-                .wrapping_add((ordinal as u64).wrapping_mul(0x9e37_79b9_7f4a_7c15));
+            let placement_seed =
+                seed.wrapping_add((ordinal as u64).wrapping_mul(0x9e37_79b9_7f4a_7c15));
             let candidate = if ordinal == 0 {
                 physical.take().expect("catalog placement exists")
             } else {
+                let attempt_started = Instant::now();
                 let Ok(candidate) = place_facilities(
-                    catalog_dir,
+                    &physical_catalogs
+                        .as_ref()
+                        .expect("catalog placement exists")
+                        .catalogs,
                     &args,
                     &observations.facility_blocks,
                     placement_seed,
                 ) else {
+                    factory_attempts.push(FactoryPlacementAttempt {
+                        ordinal,
+                        seed: placement_seed,
+                        body_density: None,
+                        gap: None,
+                        status: "placement-exhausted".into(),
+                        routing_orders: Vec::new(),
+                        elapsed_ms: attempt_started.elapsed().as_secs_f64() * 1000.0,
+                    });
                     continue;
                 };
                 candidate
             };
-            let input = fixed_factory_input(&candidate, &observations.wiring, placement_seed)?;
-            let result = construct_fixed_factory(
-                &input,
-                &request,
-                &catalogs,
-                8,
-                args.factory_route_searches,
-            );
+            let attempt_started = Instant::now();
+            let input = fixed_factory_input(
+                &candidate,
+                &physical_catalogs
+                    .as_ref()
+                    .expect("catalog placement exists")
+                    .catalogs,
+                &observations.wiring,
+                placement_seed,
+            )?;
+            let result =
+                construct_fixed_factory(&input, &request, catalogs, 8, args.factory_route_searches);
             let complete = result.factory_validated;
-            last = Some((ordinal + 1, placement_seed, result));
+            factory_attempts.push(FactoryPlacementAttempt {
+                ordinal,
+                seed: placement_seed,
+                body_density: Some(candidate.observation.body_density),
+                gap: Some(candidate.observation.gap),
+                status: if complete {
+                    "complete".into()
+                } else {
+                    "routing-exhausted".into()
+                },
+                routing_orders: result.attempts.clone(),
+                elapsed_ms: attempt_started.elapsed().as_secs_f64() * 1000.0,
+            });
+            last = Some((placement_seed, result));
             if complete {
                 selected = Some(candidate);
                 break;
@@ -497,10 +905,12 @@ fn main() -> Result<()> {
             last_candidate = Some(candidate);
         }
         physical = selected.or(last_candidate);
-        let (placement_attempts, placement_seed, report) = last.expect("positive attempt bound");
+        let placement_attempts = factory_attempts.len();
+        let (placement_seed, report) = last.expect("positive attempt bound");
         Some(FactoryObservation {
             placement_attempts,
             selected_placement_seed: report.factory_validated.then_some(placement_seed),
+            attempts: factory_attempts,
             report,
         })
     } else {
@@ -512,10 +922,11 @@ fn main() -> Result<()> {
             .expect("clap requires a catalog directory for routing comparison");
         Some(
             compare_recipe_routing(
-                args.catalog_dir.as_deref().unwrap(),
                 &args,
                 &observations,
                 physical,
+                &physical_catalogs.as_ref().unwrap().catalogs,
+                routing_items.as_ref().unwrap(),
             )
             .unwrap_or_else(|error| {
                 let diagnostic = format!("{error:#}");
@@ -541,7 +952,7 @@ fn main() -> Result<()> {
     exact_plans_evaluated += 1;
     let achieved = best.evaluation.facilities;
     let report = Report {
-        schema_version: 6,
+        schema_version: 7,
         status: if factory
             .as_ref()
             .is_some_and(|factory| factory.report.factory_validated)
@@ -554,11 +965,11 @@ fn main() -> Result<()> {
         } else {
             "closest"
         },
-        target_item: args.target_item,
+        target_item: args.target_item.clone(),
         requested_facilities: args.facilities,
         achieved_facilities: achieved,
         absolute_error: i64::try_from(achieved.abs_diff(args.facilities))?,
-        seed: args.seed,
+        seed: seed,
         elapsed_us: started.elapsed().as_micros(),
         exact_plans_evaluated,
         attempted_starts,
@@ -589,53 +1000,7 @@ fn main() -> Result<()> {
             .collect(),
         moves: best.moves,
     };
-    if let Some(factory) = &report.factory {
-        if let (Some(path), Some(witness)) = (&args.layout_output, &factory.report.witness) {
-            ensure!(
-                !path.exists(),
-                "layout output already exists: {}",
-                path.display()
-            );
-            std::fs::write(path, serde_json::to_vec_pretty(witness)?)
-                .with_context(|| format!("writing {}", path.display()))?;
-        }
-        if let (Some(path), Some(witness)) = (&args.html_output, &factory.report.witness) {
-            ensure!(
-                !path.exists(),
-                "HTML output already exists: {}",
-                path.display()
-            );
-            let integrated = IntegratedLayoutReport {
-                schema_version: INTEGRATED_LAYOUT_SCHEMA_VERSION,
-                success: true,
-                status: IntegratedLayoutStatus::Feasible,
-                bounds: Some(factory.report.canvas.clone()),
-                placements: witness.placements.clone(),
-                logistics_components: witness.logistics_components.clone(),
-                transport_networks: witness.transport_networks.clone(),
-                phases: Vec::new(),
-                exact: None,
-                diagnostics: Vec::new(),
-            };
-            let html = render_integrated_layout_html_with_localization(&integrated, None)
-                .map_err(|diagnostic| anyhow!("render failed: {diagnostic:?}"))?;
-            std::fs::write(path, html).with_context(|| format!("writing {}", path.display()))?;
-        }
-    }
-    std::fs::write(&args.report_output, serde_json::to_vec_pretty(&report)?)
-        .with_context(|| format!("writing {}", args.report_output.display()))?;
-    println!(
-        "status={} requested={} achieved={} external_sources={} external_edges={} exact_evaluations={} dp_states={} elapsed_us={}",
-        report.status,
-        report.requested_facilities,
-        report.achieved_facilities,
-        report.external_source_occurrences,
-        report.external_input_edges,
-        report.exact_plans_evaluated,
-        report.dp_memo_states,
-        report.elapsed_us
-    );
-    Ok(())
+    Ok(report)
 }
 
 impl<'a> DpContext<'a> {
@@ -1307,7 +1672,7 @@ fn validate_final_plan(
 }
 
 fn place_facilities(
-    catalog_dir: &std::path::Path,
+    catalogs: &Catalogs,
     args: &Args,
     facility_blocks: &[(String, Block)],
     seed: u64,
@@ -1318,7 +1683,6 @@ fn place_facilities(
             && args.placement_gap_max <= 128,
         "placement gaps must satisfy 0 <= min <= max <= 128"
     );
-    let loaded = load_catalogs(catalog_dir)?;
     let blocks = facility_blocks
         .iter()
         .map(|(_, block)| block.clone())
@@ -1334,7 +1698,7 @@ fn place_facilities(
         );
     let sampled = match requested_band {
         Some(band) => placement::sample_in_density_band(
-            &loaded.catalogs,
+            catalogs,
             &blocks,
             &DensityPlacementRequest {
                 seed,
@@ -1345,7 +1709,7 @@ fn place_facilities(
             },
         ),
         None => placement::sample(
-            &loaded.catalogs,
+            catalogs,
             &blocks,
             &PlacementRequest {
                 seed,
@@ -1358,7 +1722,7 @@ fn place_facilities(
     .map_err(|diagnostic| anyhow!("frozen facility placement failed: {diagnostic:?}"))?;
     Ok(PhysicalPlacement {
         observation: PlacementObservation {
-            packing_policy_version: requested_band.map(|_| PACKING_DENSITY_POLICY_VERSION),
+            packing_policy_version: args.packing_profile.map(|_| PACKING_DENSITY_POLICY_VERSION),
             packing_profile: args.packing_profile,
             semantic_facilities: facility_blocks
                 .iter()
@@ -1379,7 +1743,6 @@ fn place_facilities(
             canvas_height: sampled.canvas_height,
         },
         sampled,
-        catalogs: loaded.catalogs,
     })
 }
 
@@ -1461,6 +1824,7 @@ fn factory_request(wiring: &FacilityInstanceWiringReport) -> Result<FactoryEditR
 
 fn fixed_factory_input(
     physical: &PhysicalPlacement,
+    catalogs: &Catalogs,
     wiring: &FacilityInstanceWiringReport,
     routing_seed: u64,
 ) -> Result<FixedFactoryInput> {
@@ -1491,8 +1855,7 @@ fn fixed_factory_input(
         let pose = poses
             .get(block.block.as_str())
             .with_context(|| format!("placement omitted block '{}'", block.block))?;
-        let definition = physical
-            .catalogs
+        let definition = catalogs
             .facilities
             .facility(&block.facility)
             .with_context(|| format!("catalog omitted facility '{}'", block.facility))?;
@@ -1520,14 +1883,12 @@ fn fixed_factory_input(
 }
 
 fn compare_recipe_routing(
-    catalog_dir: &std::path::Path,
     args: &Args,
     observations: &FinalObservations,
     physical: &PhysicalPlacement,
+    catalogs: &Catalogs,
+    items: &ValidatedItemCatalog,
 ) -> Result<RoutingObservation> {
-    let items =
-        ValidatedItemCatalog::try_from_catalog(load_item_catalog(catalog_dir.join("items.json"))?)
-            .map_err(|report| anyhow!("item catalog is invalid: {report:?}"))?;
     let bounds = Bounds {
         min_x: 0,
         min_y: 0,
@@ -1546,8 +1907,7 @@ fn compare_recipe_routing(
         let pose = poses
             .get(block.id.as_str())
             .with_context(|| format!("placement omitted block '{}'", block.id))?;
-        let definition = physical
-            .catalogs
+        let definition = catalogs
             .facilities
             .facility(&block.facility)
             .with_context(|| format!("catalog omitted facility '{}'", block.facility))?;

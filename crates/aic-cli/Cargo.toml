@@ -6,6 +6,10 @@ license.workspace = true
 rust-version.workspace = true
 publish = false
 
+[[bin]]
+name = "aic-recipe-layout-gen"
+path = "src/bin/aic-recipe-leaf-probe.rs"
+
 [features]
 outcomes = ["dep:aic-learning", "aic-learning/outcomes"]
 learning = ["outcomes", "aic-learning/libtorch"]

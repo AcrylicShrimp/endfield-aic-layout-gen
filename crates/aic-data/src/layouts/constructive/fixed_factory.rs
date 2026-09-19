@@ -532,12 +532,42 @@ pub fn construct_fixed_factory(
         };
     }
 
-    let orders = [
-        (3, "seeded"),
-        (4, "commodity-neighbor-first"),
-        (0, "constrained-first"),
-        (2, "pipe-first"),
-    ];
+    let body_left = base.placements.iter().map(|p| p.x).min().unwrap_or(0);
+    let body_top = base.placements.iter().map(|p| p.y).min().unwrap_or(0);
+    let body_right = base
+        .placements
+        .iter()
+        .map(|p| p.x + p.width)
+        .max()
+        .unwrap_or(0);
+    let body_bottom = base
+        .placements
+        .iter()
+        .map(|p| p.y + p.height)
+        .max()
+        .unwrap_or(0);
+    let body_cells = base
+        .placements
+        .iter()
+        .map(|p| p.width * p.height)
+        .sum::<i64>();
+    let body_area = (body_right - body_left) * (body_bottom - body_top);
+    let dense = body_area > 0 && body_cells as f64 / body_area as f64 >= 0.12;
+    let orders = if dense {
+        [
+            (0, "constrained-first"),
+            (3, "seeded"),
+            (2, "pipe-first"),
+            (4, "commodity-neighbor-first"),
+        ]
+    } else {
+        [
+            (3, "seeded"),
+            (0, "constrained-first"),
+            (2, "pipe-first"),
+            (4, "commodity-neighbor-first"),
+        ]
+    };
     let mut last_validation = None;
     for (mode, name) in orders {
         let attempt_started = Instant::now();

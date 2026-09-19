@@ -11,18 +11,18 @@ use aic_layout::{
 };
 use serde::{Deserialize, Serialize};
 
-pub const PACKING_DENSITY_POLICY_VERSION: &str = "recipe-packing-density-v2";
+pub const PACKING_DENSITY_POLICY_VERSION: &str = "recipe-packing-density-v3";
 pub const COMPACT_DENSITY: DensityBand = DensityBand {
+    minimum: 0.12,
+    maximum: 0.30,
+};
+pub const BALANCED_DENSITY: DensityBand = DensityBand {
     minimum: 0.06,
     maximum: 0.12,
 };
-pub const BALANCED_DENSITY: DensityBand = DensityBand {
-    minimum: 0.04,
-    maximum: 0.06,
-};
 pub const SPACIOUS_DENSITY: DensityBand = DensityBand {
     minimum: 0.02,
-    maximum: 0.04,
+    maximum: 0.06,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
