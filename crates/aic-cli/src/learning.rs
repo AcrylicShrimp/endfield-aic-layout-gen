@@ -155,6 +155,22 @@ pub enum LearningCommand {
         #[arg(long, default_value = "auto")]
         device: String,
     },
+    /// Render greedy held-out layouts produced by a constructive checkpoint.
+    #[cfg(feature = "learning")]
+    EvaluateConstructive {
+        /// Completed train-constructive output directory.
+        #[arg(long)]
+        training_output: PathBuf,
+        /// Directory containing normalized facilities, transports and logistics components.
+        #[arg(long)]
+        catalog_root: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long, default_value_t = 8)]
+        cases: usize,
+        #[arg(long, default_value = "auto")]
+        device: String,
+    },
 }
 pub fn run(command: LearningCommand) -> Result<()> {
     let config = match &command {
@@ -178,6 +194,11 @@ pub fn run(command: LearningCommand) -> Result<()> {
         LearningCommand::PrepareConstructiveProblems { config, .. } => config,
         #[cfg(feature = "learning")]
         LearningCommand::TrainConstructive { config, .. } => config,
+        #[cfg(feature = "learning")]
+        LearningCommand::EvaluateConstructive {
+            training_output: config,
+            ..
+        } => config,
     };
     let entity = config.display().to_string();
     let report = execute(command).map_err(|error| {
@@ -328,6 +349,20 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             &catalog_root,
             &problems,
             &output,
+            update::parse_device(&device)?,
+        ),
+        #[cfg(feature = "learning")]
+        LearningCommand::EvaluateConstructive {
+            training_output,
+            catalog_root,
+            output,
+            cases,
+            device,
+        } => aic_learning::constructive::run::evaluate_checkpoint(
+            &training_output,
+            &catalog_root,
+            &output,
+            cases,
             update::parse_device(&device)?,
         ),
     }

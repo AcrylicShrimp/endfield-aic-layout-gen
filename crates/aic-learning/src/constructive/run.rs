@@ -9,14 +9,16 @@ use std::{
 
 use aic_layout::{
     facilities::{FacilityCatalog, ValidatedFacilityCatalog},
+    geometry::Point,
     logistics::{
-        LogisticsComponentCatalog, TransportCatalog, ValidatedLogisticsComponentCatalog,
-        ValidatedTransportCatalog,
+        LogisticsComponentCatalog, TransportCatalog, TransportKind,
+        ValidatedLogisticsComponentCatalog, ValidatedTransportCatalog,
     },
-    physical::Problem,
+    physical::{Layout, Problem},
+    projection::rotate,
     validation::Catalogs,
 };
-use aic_pilot_native::constructive::{Limits, Session, learning::Config as DomainConfig};
+use aic_pilot_native::constructive::{Command, Limits, Session, learning::Config as DomainConfig};
 use aic_torch::{
     deterministic,
     tch::{self, Device, Tensor},
@@ -27,12 +29,13 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    input::sha256,
+    input::{Tensors, sha256},
     schema::{ConstructiveModelConfig, UpdateConfig},
     update::device_name,
 };
 
 use super::{
+    Model, policy,
     ppo::Learner,
     problems::ProblemSet,
     rollout::{self, Collection, RewardConfig, Sampling},
@@ -71,6 +74,24 @@ struct Summary {
     mean_completion_ratio: f64,
     mean_reward: f64,
     seconds: f64,
+}
+
+#[derive(Serialize)]
+struct EvaluationCase {
+    problem_index: usize,
+    fully_validated: bool,
+    turns: u64,
+    completed_connections: usize,
+    total_connections: usize,
+    terminal_reason: String,
+    layout_file: Option<String>,
+    visualization_file: Option<String>,
+    commands: Vec<Command>,
+}
+
+struct EvaluatedCase {
+    summary: EvaluationCase,
+    layout: Option<Layout>,
 }
 
 pub fn run(
@@ -224,6 +245,332 @@ pub fn run(
     });
     write_json(&output.join("report.json"), &report)?;
     Ok(report)
+}
+
+pub fn evaluate_checkpoint(
+    training_output: &Path,
+    catalog_root: &Path,
+    output: &Path,
+    cases: usize,
+    device: Device,
+) -> Result<Value> {
+    ensure!(
+        training_output.is_dir(),
+        "aic-learning.constructive-evaluation-input: missing {}",
+        training_output.display()
+    );
+    ensure!(
+        !output.exists(),
+        "aic-learning.constructive-evaluation-output: {} already exists",
+        output.display()
+    );
+    let config: Config = read_json(&training_output.join("config.json"))?;
+    let problems: ProblemSet = read_json(&training_output.join("problems.json"))?;
+    let parameter_order: Vec<String> = read_json(&training_output.join("parameter-order.json"))?;
+    let training_report: Value = read_json(&training_output.join("report.json"))?;
+    let checkpoint = training_output.join("learner.safetensors");
+    let learner_sha256 = sha256(&checkpoint)?;
+    validate(&config, &problems)?;
+    ensure!(
+        (1..=problems.evaluation.len()).contains(&cases),
+        "aic-learning.constructive-evaluation-cases: requested {cases}, available {}",
+        problems.evaluation.len()
+    );
+    let catalogs = load_catalogs(catalog_root)?;
+    ensure!(
+        training_report["schema"] == "aic-constructive-training-report-v1"
+            && training_report["status"] == "completed"
+            && training_report["catalog_sha256"].as_str() == Some(&catalogs.identity)
+            && training_report["learner_sha256"].as_str() == Some(learner_sha256.as_str()),
+        "aic-learning.constructive-evaluation-identity: training report, catalogs or checkpoint do not match"
+    );
+    for problem in problems.evaluation.iter().take(cases) {
+        Session::new(problem.clone(), catalogs.clone(), config.native)
+            .map_err(anyhow::Error::new)?;
+    }
+    tch::set_num_threads(1);
+    tch::set_num_interop_threads(1);
+    deterministic()?;
+    let values: Tensors = Tensor::read_safetensors(&checkpoint)?.into_iter().collect();
+    let model = Model::load(&config.model, &parameter_order, &values, device)?;
+    let evaluated = greedy_cases(
+        &problems.evaluation[..cases],
+        catalogs.clone(),
+        &config,
+        &model,
+        device,
+    )?;
+    fs::create_dir_all(output)?;
+    for case in &evaluated {
+        if let (Some(file), Some(layout)) = (&case.summary.layout_file, &case.layout) {
+            write_json(&output.join(file), layout)?;
+        }
+        if let (Some(file), Some(layout)) = (&case.summary.visualization_file, &case.layout) {
+            fs::write(output.join(file), render_layout_svg(layout, &catalogs)?)?;
+        }
+    }
+    let summaries = evaluated
+        .iter()
+        .map(|case| &case.summary)
+        .collect::<Vec<_>>();
+    let successful = evaluated
+        .iter()
+        .filter(|case| case.summary.fully_validated)
+        .count();
+    let report = json!({
+        "schema":"aic-constructive-checkpoint-evaluation-v1",
+        "status":"completed",
+        "sampling":"greedy",
+        "cases":summaries,
+        "requested_cases":cases,
+        "fully_validated":successful,
+        "device":device_name(device)?,
+        "catalog_sha256":catalogs.identity,
+        "learner_sha256":learner_sha256,
+        "training_output":training_output,
+        "gallery":"index.html",
+    });
+    write_json(&output.join("report.json"), &report)?;
+    fs::write(
+        output.join("index.html"),
+        render_gallery(&evaluated, &catalogs, &report)?,
+    )?;
+    Ok(report)
+}
+
+fn greedy_cases(
+    problems: &[Problem],
+    catalogs: Arc<Catalogs>,
+    config: &Config,
+    model: &Model,
+    device: Device,
+) -> Result<Vec<EvaluatedCase>> {
+    let mut sessions = problems
+        .iter()
+        .cloned()
+        .map(|problem| {
+            Session::new(problem, catalogs.clone(), config.native).map_err(anyhow::Error::new)
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let mut commands = vec![Vec::new(); sessions.len()];
+    let mut terminal_reasons = vec![None; sessions.len()];
+    let mut active = (0..sessions.len()).collect::<Vec<_>>();
+    while !active.is_empty() {
+        let mut owners = Vec::new();
+        let mut observations = Vec::new();
+        for &owner in &active {
+            match sessions[owner].learning_observation(&config.domain) {
+                Ok(observation) => {
+                    owners.push(owner);
+                    observations.push(observation);
+                }
+                Err(diagnostic) if diagnostic.code == "constructive.empty-learning-domain" => {
+                    terminal_reasons[owner] = Some("empty-learning-domain".to_string());
+                }
+                Err(diagnostic) => return Err(diagnostic.into()),
+            }
+        }
+        if owners.is_empty() {
+            break;
+        }
+        let rows = observations.iter().collect::<Vec<_>>();
+        let choices = policy::greedy(model, &rows, device)?;
+        for (owner, choice) in owners.into_iter().zip(choices) {
+            commands[owner].push(choice.command.command.clone());
+            sessions[owner].step_selected(choice.command);
+        }
+        active.retain(|&owner| !sessions[owner].done() && terminal_reasons[owner].is_none());
+    }
+    Ok(sessions
+        .into_iter()
+        .enumerate()
+        .map(|(problem_index, session)| {
+            let observation = session.observe();
+            let layout = session.layout();
+            let terminal_reason = terminal_reasons[problem_index].take().unwrap_or_else(|| {
+                if observation.fully_validated {
+                    "fully-validated".to_string()
+                } else if observation.turns >= observation.max_turns {
+                    "turn-limit".to_string()
+                } else {
+                    "terminal-failure".to_string()
+                }
+            });
+            EvaluatedCase {
+                summary: EvaluationCase {
+                    problem_index,
+                    fully_validated: observation.fully_validated,
+                    turns: observation.turns,
+                    completed_connections: observation.completed,
+                    total_connections: observation.total,
+                    terminal_reason,
+                    layout_file: layout
+                        .as_ref()
+                        .map(|_| format!("case-{problem_index:03}.layout.json")),
+                    visualization_file: layout
+                        .as_ref()
+                        .map(|_| format!("case-{problem_index:03}.svg")),
+                    commands: std::mem::take(&mut commands[problem_index]),
+                },
+                layout,
+            }
+        })
+        .collect())
+}
+
+fn render_gallery(cases: &[EvaluatedCase], catalogs: &Catalogs, report: &Value) -> Result<String> {
+    let mut cards = String::new();
+    for case in cases {
+        let status = if case.summary.fully_validated {
+            "validated"
+        } else {
+            "unfinished"
+        };
+        let drawing = match &case.layout {
+            Some(layout) => render_layout_svg(layout, catalogs)?,
+            None => format!(
+                "<div class=\"empty\">No validated layout ({})</div>",
+                escape_html(&case.summary.terminal_reason)
+            ),
+        };
+        cards.push_str(&format!(
+            "<section><header><h2>Held-out case {}</h2><span class=\"{}\">{}</span></header><p>{} turns · {}/{} connections</p>{}</section>",
+            case.summary.problem_index,
+            status,
+            status,
+            case.summary.turns,
+            case.summary.completed_connections,
+            case.summary.total_connections,
+            drawing,
+        ));
+    }
+    let report_json = escape_html(&serde_json::to_string_pretty(report)?);
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Constructive checkpoint layouts</title><style>
+:root{{color-scheme:dark}}body{{margin:0;padding:28px;background:#07121d;color:#dceaf5;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}}main{{max-width:1200px;margin:auto}}h1{{font:700 26px system-ui,sans-serif;margin:0 0 8px}}.lede{{color:#8facbf;margin:0 0 24px}}section{{background:#0c1b29;border:1px solid #29465b;border-radius:12px;padding:18px;margin:0 0 20px;box-shadow:0 10px 30px #0005}}header{{display:flex;align-items:center;gap:12px}}h2{{font:650 18px system-ui,sans-serif;margin:0;flex:1}}header span{{padding:4px 8px;border-radius:999px;font-weight:700}}.validated{{background:#143d32;color:#7ff0bd}}.unfinished{{background:#452629;color:#ff9da4}}section p{{color:#92adbf}}svg{{display:block;width:100%;height:auto;max-height:680px;background:#061019;border-radius:8px}}.empty{{padding:50px;text-align:center;color:#d58c93;background:#190f15;border-radius:8px}}details{{color:#9cb5c6}}pre{{white-space:pre-wrap;overflow:auto;background:#061019;padding:14px;border-radius:8px}}
+</style></head><body><main><h1>Greedy layouts from the trained constructive policy</h1><p class="lede">Every displayed layout was produced from an empty held-out problem and passed the independent physical validator.</p>{cards}<details><summary>Evaluation report</summary><pre>{report_json}</pre></details></main></body></html>"#
+    ))
+}
+
+fn render_layout_svg(layout: &Layout, catalogs: &Catalogs) -> Result<String> {
+    let mut min_x = i64::MAX;
+    let mut min_y = i64::MAX;
+    let mut max_x = i64::MIN;
+    let mut max_y = i64::MIN;
+    let mut facilities = Vec::new();
+    for pose in &layout.solution.poses {
+        let block = layout
+            .problem
+            .blocks
+            .iter()
+            .find(|block| block.id == pose.block)
+            .context("layout pose references missing block")?;
+        let definition = catalogs
+            .facilities
+            .facility(&block.facility)
+            .context("layout block references missing facility")?;
+        let (width, height, _) = rotate(definition, pose.rotation, pose.position);
+        min_x = min_x.min(pose.position.x);
+        min_y = min_y.min(pose.position.y);
+        max_x = max_x.max(pose.position.x + width - 1);
+        max_y = max_y.max(pose.position.y + height - 1);
+        facilities.push((pose, block, width, height));
+    }
+    for route in &layout.solution.routes {
+        for point in &route.cells {
+            min_x = min_x.min(point.x);
+            min_y = min_y.min(point.y);
+            max_x = max_x.max(point.x);
+            max_y = max_y.max(point.y);
+        }
+    }
+    ensure!(
+        min_x <= max_x && min_y <= max_y,
+        "aic-learning.constructive-render: empty layout"
+    );
+    const CELL: i64 = 32;
+    const PAD: i64 = 2;
+    let origin = Point {
+        x: min_x - PAD,
+        y: min_y - PAD,
+    };
+    let width = (max_x - min_x + 1 + 2 * PAD) * CELL;
+    let height = (max_y - min_y + 1 + 2 * PAD) * CELL;
+    let coordinate = |point: Point| {
+        (
+            (point.x - origin.x) * CELL + CELL / 2,
+            (point.y - origin.y) * CELL + CELL / 2,
+        )
+    };
+    let mut drawing = format!(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 {width} {height}\" role=\"img\" aria-label=\"Validated factory layout\"><defs><pattern id=\"grid\" width=\"{CELL}\" height=\"{CELL}\" patternUnits=\"userSpaceOnUse\"><path d=\"M {CELL} 0 L 0 0 0 {CELL}\" fill=\"none\" stroke=\"#183044\" stroke-width=\"1\"/></pattern></defs><rect width=\"100%\" height=\"100%\" fill=\"#061019\"/><rect width=\"100%\" height=\"100%\" fill=\"url(#grid)\"/>"
+    );
+    for route in &layout.solution.routes {
+        let connection = layout
+            .problem
+            .connections
+            .iter()
+            .find(|connection| connection.id == route.connection)
+            .context("layout route references missing connection")?;
+        let color = match connection.transport {
+            TransportKind::Belt => "#ffb454",
+            TransportKind::Pipe => "#5bd6ff",
+        };
+        let points = route
+            .cells
+            .iter()
+            .map(|&point| {
+                let (x, y) = coordinate(point);
+                format!("{x},{y}")
+            })
+            .collect::<Vec<_>>()
+            .join(" ");
+        drawing.push_str(&format!(
+            "<polyline points=\"{points}\" fill=\"none\" stroke=\"#02070b\" stroke-width=\"14\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><polyline points=\"{points}\" fill=\"none\" stroke=\"{color}\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+        ));
+    }
+    for (pose, block, facility_width, facility_height) in facilities {
+        let x = (pose.position.x - origin.x) * CELL + 2;
+        let y = (pose.position.y - origin.y) * CELL + 2;
+        let rect_width = facility_width * CELL - 4;
+        let rect_height = facility_height * CELL - 4;
+        let role = if block.id.ends_with("-source") {
+            "SOURCE"
+        } else if block.id.ends_with("-target") {
+            "TARGET"
+        } else {
+            "FACILITY"
+        };
+        let label_chars = usize::try_from(rect_width / 7).unwrap_or(8).clamp(8, 28);
+        let facility_label = escape_html(&short_label(&block.facility, label_chars));
+        let full_label = escape_html(&format!("{} · {}", block.id, block.facility));
+        drawing.push_str(&format!(
+            "<g><title>{full_label}</title><rect x=\"{x}\" y=\"{y}\" width=\"{rect_width}\" height=\"{rect_height}\" rx=\"5\" fill=\"#3c5b90\" stroke=\"#9ebeff\" stroke-width=\"2\"/><text x=\"{}\" y=\"{}\" text-anchor=\"middle\" fill=\"#f5f8ff\" font-family=\"ui-monospace,monospace\"><tspan x=\"{}\" font-size=\"13\" font-weight=\"700\">{role}</tspan><tspan x=\"{}\" dy=\"17\" font-size=\"10\">{facility_label}</tspan></text></g>",
+            x + rect_width / 2,
+            y + rect_height / 2 - 7,
+            x + rect_width / 2,
+            x + rect_width / 2,
+        ));
+    }
+    drawing.push_str("</svg>");
+    Ok(drawing)
+}
+
+fn short_label(value: &str, max_chars: usize) -> String {
+    let mut label = value.chars().take(max_chars).collect::<String>();
+    if value.chars().count() > max_chars {
+        label.push('…');
+    }
+    label
+}
+
+fn escape_html(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
 }
 
 fn validate(config: &Config, problems: &ProblemSet) -> Result<()> {
