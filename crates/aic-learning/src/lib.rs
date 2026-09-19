@@ -15,6 +15,8 @@ pub mod update;
 #[cfg(feature = "libtorch")]
 pub mod collection;
 #[cfg(feature = "libtorch")]
+pub mod constructive;
+#[cfg(feature = "libtorch")]
 pub mod training;
 
 // LibTorch's cold initializer uses a process-global seed. Serialize tests that

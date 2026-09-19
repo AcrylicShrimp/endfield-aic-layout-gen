@@ -19,6 +19,8 @@ use aic_layout::{
 };
 use serde::{Deserialize, Serialize};
 
+pub mod learning;
+
 const COORDINATE_MAX: i64 = 1_000_000;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -386,6 +388,30 @@ impl Session {
             fully_validated: self.metrics.is_some(),
             diagnostic,
         }
+    }
+
+    /// Applies a command produced by a learning domain only while that domain
+    /// still describes this exact state.
+    pub fn step_selected(&mut self, selected: learning::SelectedCommand) -> Step {
+        if selected.revision != self.revision {
+            let progress = self.progress();
+            return Step {
+                accepted: false,
+                turn: self.turns,
+                revision: self.revision,
+                progress_before: progress,
+                progress_after: progress,
+                progress_delta: 0.0,
+                terminal: self.done(),
+                fully_validated: self.metrics.is_some(),
+                diagnostic: Some(error(
+                    "stale-learning-domain",
+                    "learning-domain",
+                    "selected command belongs to an earlier constructive revision",
+                )),
+            };
+        }
+        self.step(selected.command)
     }
 
     fn progress(&self) -> f64 {
@@ -868,6 +894,18 @@ mod tests {
         );
     }
 
+    fn learning_config() -> learning::Config {
+        learning::Config {
+            placement: aic_layout::geometry::Bounds {
+                min_x: 0,
+                min_y: 0,
+                max_x: 15,
+                max_y: 15,
+            },
+            extension_lengths: vec![1, 2, 4],
+        }
+    }
+
     fn begin(session: &mut Session) -> Step {
         session.step(Command::BeginRoute {
             connection: "connection-0".into(),
@@ -910,6 +948,82 @@ mod tests {
         );
         assert!(session.metrics().is_some());
         assert!(session.layout().is_some());
+    }
+
+    #[test]
+    fn learning_domain_factorizes_commands_and_rejects_stale_selections() {
+        let mut session = session();
+        let observation = session.learning_observation(&learning_config()).unwrap();
+        assert_eq!(
+            observation.domain.choices(&learning::Cursor::Command).len(),
+            1
+        );
+        let learning::Advance::Continue(blocks) = observation
+            .domain
+            .advance(&learning::Cursor::Command, 0)
+            .unwrap()
+        else {
+            panic!("place command should continue to its block factor")
+        };
+        assert_eq!(observation.domain.choices(&blocks).len(), 2);
+        let learning::Advance::Continue(poses) = observation.domain.advance(&blocks, 0).unwrap()
+        else {
+            panic!("block choice should continue to its pose factor")
+        };
+        let learning::Advance::Command(selected) = observation.domain.advance(&poses, 0).unwrap()
+        else {
+            panic!("pose choice should complete a command")
+        };
+        assert!(matches!(&selected.command, Command::Place { block, .. } if block == "source"));
+        assert!(session.step_selected(selected.clone()).accepted);
+        let stale = session.step_selected(selected);
+        assert!(!stale.accepted);
+        assert_eq!(
+            stale.diagnostic.unwrap().code,
+            "constructive.stale-learning-domain"
+        );
+    }
+
+    #[test]
+    fn learning_input_keeps_exact_route_cells_and_persistent_focus() {
+        let mut session = session();
+        place_pair(&mut session);
+        assert!(begin(&mut session).accepted);
+        let observation = session.learning_observation(&learning_config()).unwrap();
+        assert_eq!(observation.input.focus_entity, 2);
+        assert_eq!(observation.input.focus_features[2], 1.0);
+        assert_eq!(observation.input.focus_features[3], 1.0);
+        assert!(
+            observation
+                .input
+                .spatial_features
+                .iter()
+                .any(|row| row[6] == 1.0)
+        );
+        assert!(
+            observation
+                .input
+                .spatial_features
+                .iter()
+                .any(|row| row[7] == 1.0)
+        );
+        // Extend and abort are the only locally legal command families here.
+        assert_eq!(
+            observation.domain.choices(&learning::Cursor::Command).len(),
+            2
+        );
+        let learning::Advance::Command(abort) = observation
+            .domain
+            .advance(&learning::Cursor::Command, 1)
+            .unwrap()
+        else {
+            panic!("abort has no conditional factor")
+        };
+        assert!(session.step_selected(abort).accepted);
+        assert!(matches!(
+            session.observe().focus,
+            Some(Focus::Route { active: false, .. })
+        ));
     }
 
     #[test]

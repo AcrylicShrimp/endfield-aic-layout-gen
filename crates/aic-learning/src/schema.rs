@@ -13,6 +13,28 @@ pub struct ModelConfig {
     pub action_features: i64,
     pub port_features: i64,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct ConstructiveModelConfig {
+    pub schema: String,
+    pub width: i64,
+    pub message_rounds: usize,
+}
+
+impl ConstructiveModelConfig {
+    pub const SCHEMA: &'static str = "aic-constructive-attention-model-v1";
+
+    pub fn validate(&self) -> Result<()> {
+        ensure!(
+            self.schema == Self::SCHEMA
+                && (8..=4096).contains(&self.width)
+                && self.message_rounds <= 32,
+            "aic-learning.constructive-model-config: invalid schema or dimensions"
+        );
+        Ok(())
+    }
+}
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct UpdateConfig {
