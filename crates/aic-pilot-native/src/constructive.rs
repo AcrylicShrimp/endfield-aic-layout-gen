@@ -5,14 +5,17 @@
 //! performs local checks and invokes independent validation only at completion.
 
 use std::{
-    collections::{BTreeMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     sync::Arc,
 };
 
+use aic_layout::rate::Rate;
 use aic_layout::{
     facilities::FacilityPortDirection,
     geometry::{Point, layer},
-    physical::{Layout, Metrics, Pose, Problem, Route, SCHEMA, Solution},
+    physical::{
+        Layout, Metrics, Pose, Problem, Route, SCHEMA, Solution, TerminalDirection, TerminalPose,
+    },
     projection::{Port, rotate},
     stable_id::is_stable_id,
     validation::{Catalogs, validate, within_capacity},
@@ -58,10 +61,14 @@ pub enum Command {
         position: Point,
         rotation: i64,
     },
+    PlaceTerminal {
+        terminal: String,
+        position: Point,
+    },
     BeginRoute {
         connection: String,
-        source_port: String,
-        target_port: String,
+        source_port: Option<String>,
+        target_port: Option<String>,
     },
     Extend {
         direction: Direction,
@@ -75,8 +82,8 @@ pub enum Command {
 #[serde(deny_unknown_fields)]
 pub struct ActiveRoute {
     pub connection: usize,
-    pub source_port: String,
-    pub target_port: String,
+    pub source_port: Option<String>,
+    pub target_port: Option<String>,
     pub target: Point,
     pub cells: Vec<Point>,
 }
@@ -88,6 +95,10 @@ pub struct ActiveRoute {
 pub enum Focus {
     Block {
         block: usize,
+        position: Point,
+    },
+    Terminal {
+        terminal: usize,
         position: Point,
     },
     Route {
@@ -104,6 +115,7 @@ pub struct Observation {
     pub turns: u64,
     pub max_turns: u64,
     pub poses: Vec<Option<Pose>>,
+    pub terminal_poses: Vec<Option<TerminalPose>>,
     pub routes: Vec<Option<Route>>,
     pub active: Option<ActiveRoute>,
     pub focus: Option<Focus>,
@@ -163,19 +175,29 @@ pub struct Session {
     catalogs: Arc<Catalogs>,
     limits: Limits,
     blocks: BTreeMap<String, usize>,
+    terminals: BTreeMap<String, usize>,
     connections: BTreeMap<String, usize>,
     poses: Vec<Option<Pose>>,
+    terminal_poses: Vec<Option<TerminalPose>>,
     routes: Vec<Option<Route>>,
     active: Option<ActiveRoute>,
     active_cells: HashSet<Point>,
     focus: Option<Focus>,
     bodies: HashSet<Point>,
-    occupied: [HashSet<Point>; 2],
-    used_ports: HashSet<(usize, String)>,
+    occupied: [HashMap<Point, Vec<usize>>; 2],
+    used_ports: HashMap<(usize, String), UsedPort>,
     turns: u64,
     revision: u64,
     metrics: Option<Metrics>,
     final_failure: Option<Diagnostic>,
+}
+
+#[derive(Clone)]
+struct UsedPort {
+    commodity: String,
+    transport: aic_layout::logistics::TransportKind,
+    direction: FacilityPortDirection,
+    rate: Rate,
 }
 
 impl Session {
@@ -207,6 +229,7 @@ impl Session {
         }
         if problem.blocks.is_empty()
             || problem.blocks.len() > 4096
+            || problem.terminals.len() > 32_768
             || problem.connections.is_empty()
             || problem.connections.len() > 32_768
         {
@@ -229,17 +252,34 @@ impl Session {
                 ));
             }
         }
+        let mut terminals = BTreeMap::new();
+        for (index, terminal) in problem.terminals.iter().enumerate() {
+            if !is_stable_id(&terminal.id)
+                || !is_stable_id(&terminal.commodity)
+                || blocks.contains_key(&terminal.id)
+                || terminals.insert(terminal.id.clone(), index).is_some()
+            {
+                return Err(error(
+                    "terminal",
+                    &terminal.id,
+                    "terminal ID or commodity is invalid/repeated or collides with a block",
+                ));
+            }
+        }
         let mut connections = BTreeMap::new();
         for (index, connection) in problem.connections.iter().enumerate() {
-            let source = blocks.get(&connection.source).copied();
-            let target = blocks.get(&connection.target).copied();
+            let source_block = blocks.get(&connection.source).copied();
+            let target_block = blocks.get(&connection.target).copied();
+            let source_terminal = terminals.get(&connection.source).copied();
+            let target_terminal = terminals.get(&connection.target).copied();
             let capacity = catalogs.transports.capacity(connection.transport);
             if !is_stable_id(&connection.id)
                 || !is_stable_id(&connection.commodity)
                 || connections.insert(connection.id.clone(), index).is_some()
-                || source.is_none()
-                || target.is_none()
-                || source == target
+                || source_block.is_none() && source_terminal.is_none()
+                || target_block.is_none() && target_terminal.is_none()
+                || source_terminal.is_some() && target_terminal.is_some()
+                || connection.source == connection.target
                 || !within_capacity(connection.rate, capacity.quantity, capacity.duration_ms)
             {
                 return Err(error(
@@ -249,9 +289,10 @@ impl Session {
                 ));
             }
             for (block, direction) in [
-                (source.unwrap(), FacilityPortDirection::Output),
-                (target.unwrap(), FacilityPortDirection::Input),
+                (source_block, FacilityPortDirection::Output),
+                (target_block, FacilityPortDirection::Input),
             ] {
+                let Some(block) = block else { continue };
                 let definition = catalogs
                     .facilities
                     .facility(&problem.blocks[block].facility)
@@ -266,23 +307,43 @@ impl Session {
                     ));
                 }
             }
+            for (terminal, direction) in [
+                (source_terminal, TerminalDirection::Input),
+                (target_terminal, TerminalDirection::Output),
+            ] {
+                if terminal.is_some_and(|terminal| {
+                    let terminal = &problem.terminals[terminal];
+                    terminal.direction != direction
+                        || terminal.commodity != connection.commodity
+                        || terminal.transport != connection.transport
+                }) {
+                    return Err(error(
+                        "terminal-connection",
+                        &connection.id,
+                        "terminal role, commodity or transport does not match its connection",
+                    ));
+                }
+            }
         }
         let block_count = problem.blocks.len();
+        let terminal_count = problem.terminals.len();
         let connection_count = problem.connections.len();
         Ok(Self {
             problem,
             catalogs,
             limits,
             blocks,
+            terminals,
             connections,
             poses: vec![None; block_count],
+            terminal_poses: vec![None; terminal_count],
             routes: vec![None; connection_count],
             active: None,
             active_cells: HashSet::new(),
             focus: None,
             bodies: HashSet::new(),
-            occupied: [HashSet::new(), HashSet::new()],
-            used_ports: HashSet::new(),
+            occupied: std::array::from_fn(|_| HashMap::new()),
+            used_ports: HashMap::new(),
             turns: 0,
             revision: 0,
             metrics: None,
@@ -296,6 +357,7 @@ impl Session {
             turns: self.turns,
             max_turns: self.limits.max_turns,
             poses: self.poses.clone(),
+            terminal_poses: self.terminal_poses.clone(),
             routes: self.routes.clone(),
             active: self.active.clone(),
             focus: self.focus.clone(),
@@ -350,11 +412,14 @@ impl Session {
                 position,
                 rotation,
             } => self.place(&block, position, rotation),
+            Command::PlaceTerminal { terminal, position } => {
+                self.place_terminal(&terminal, position)
+            }
             Command::BeginRoute {
                 connection,
                 source_port,
                 target_port,
-            } => self.begin_route(&connection, &source_port, &target_port),
+            } => self.begin_route(&connection, source_port.as_deref(), target_port.as_deref()),
             Command::Extend { direction, length } => self.extend(direction, length),
             Command::Connect => self.connect(),
             Command::AbortRoute => self.abort_route(),
@@ -425,6 +490,7 @@ impl Session {
     fn is_complete(&self) -> bool {
         self.active.is_none()
             && self.poses.iter().all(Option::is_some)
+            && self.terminal_poses.iter().all(Option::is_some)
             && self.routes.iter().all(Option::is_some)
     }
 
@@ -435,6 +501,7 @@ impl Session {
             problem: self.problem.clone(),
             solution: Solution {
                 poses: self.poses.iter().flatten().cloned().collect(),
+                terminal_poses: self.terminal_poses.iter().flatten().cloned().collect(),
                 routes: self.routes.iter().flatten().cloned().collect(),
                 bridges: vec![],
             },
@@ -504,7 +571,12 @@ impl Session {
                     || self
                         .occupied
                         .iter()
-                        .any(|occupied| occupied.contains(&cell))
+                        .any(|occupied| occupied.contains_key(&cell))
+                    || self
+                        .terminal_poses
+                        .iter()
+                        .flatten()
+                        .any(|pose| pose.position == cell)
                 {
                     return Err(error(
                         "placement-collision",
@@ -523,6 +595,60 @@ impl Session {
         });
         self.focus = Some(Focus::Block {
             block: index,
+            position,
+        });
+        Ok(())
+    }
+
+    fn place_terminal(&mut self, terminal: &str, position: Point) -> Result<(), Diagnostic> {
+        if self.active.is_some() {
+            return Err(error(
+                "active-route",
+                terminal,
+                "finish or abort the active route before placing a boundary terminal",
+            ));
+        }
+        let Some(&index) = self.terminals.get(terminal) else {
+            return Err(error(
+                "unknown-terminal",
+                terminal,
+                "place-terminal references an unknown boundary terminal",
+            ));
+        };
+        if self.terminal_poses[index].is_some() {
+            return Err(error(
+                "placed-terminal",
+                terminal,
+                "boundary terminal is already placed",
+            ));
+        }
+        if position.x < 0
+            || position.y < 0
+            || position.x > COORDINATE_MAX
+            || position.y > COORDINATE_MAX
+            || self.bodies.contains(&position)
+            || self
+                .occupied
+                .iter()
+                .any(|occupied| occupied.contains_key(&position))
+            || self
+                .terminal_poses
+                .iter()
+                .flatten()
+                .any(|pose| pose.position == position)
+        {
+            return Err(error(
+                "terminal-position",
+                terminal,
+                "boundary terminal coordinate is invalid or occupied",
+            ));
+        }
+        self.terminal_poses[index] = Some(TerminalPose {
+            terminal: terminal.into(),
+            position,
+        });
+        self.focus = Some(Focus::Terminal {
+            terminal: index,
             position,
         });
         Ok(())
@@ -550,6 +676,8 @@ impl Session {
         id: &str,
         expected: FacilityPortDirection,
         transport: aic_layout::logistics::TransportKind,
+        commodity: &str,
+        rate: Rate,
         connection: &str,
     ) -> Result<Port, Diagnostic> {
         let port = self
@@ -564,21 +692,113 @@ impl Session {
                 "selected port has the wrong direction or transport kind",
             ));
         }
-        if self.used_ports.contains(&(block, id.to_owned())) {
-            return Err(error(
-                "used-port",
-                connection,
-                "selected facility port already belongs to a completed route",
-            ));
+        if let Some(used) = self.used_ports.get(&(block, id.to_owned())) {
+            let total = used.rate.checked_add(rate).map_err(|_| {
+                error(
+                    "port-capacity",
+                    connection,
+                    "shared facility port rate overflow",
+                )
+            })?;
+            let capacity = self.catalogs.transports.capacity(transport);
+            if used.commodity != commodity
+                || used.transport != transport
+                || used.direction != expected
+                || !within_capacity(total, capacity.quantity, capacity.duration_ms)
+            {
+                return Err(error(
+                    "used-port",
+                    connection,
+                    "selected facility port cannot carry this additional material flow",
+                ));
+            }
         }
         Ok(port)
+    }
+
+    fn route_endpoint(
+        &self,
+        endpoint: &str,
+        selected_port: Option<&str>,
+        expected: FacilityPortDirection,
+        obligation: &aic_layout::physical::Connection,
+    ) -> Result<(Point, Option<(usize, String)>), Diagnostic> {
+        if let Some(&block) = self.blocks.get(endpoint) {
+            let id = selected_port.ok_or_else(|| {
+                error(
+                    "missing-port",
+                    &obligation.id,
+                    "facility route endpoint requires a selected port",
+                )
+            })?;
+            let port = self.selected_port(
+                block,
+                id,
+                expected,
+                obligation.transport,
+                &obligation.commodity,
+                obligation.rate,
+                &obligation.id,
+            )?;
+            return Ok((port.connection, Some((block, id.to_owned()))));
+        }
+        let terminal = self.terminals[endpoint];
+        if selected_port.is_some() {
+            return Err(error(
+                "terminal-port",
+                &obligation.id,
+                "boundary terminal route endpoint must not select a facility port",
+            ));
+        }
+        let position = self.terminal_poses[terminal]
+            .as_ref()
+            .ok_or_else(|| {
+                error(
+                    "unplaced-terminal",
+                    endpoint,
+                    "route endpoint boundary terminal is not placed",
+                )
+            })?
+            .position;
+        Ok((position, None))
+    }
+
+    fn shared_cell_available(&self, point: Point, connection: usize) -> bool {
+        let obligation = &self.problem.connections[connection];
+        if self
+            .terminal_poses
+            .iter()
+            .enumerate()
+            .any(|(terminal, pose)| {
+                pose.as_ref().is_some_and(|pose| pose.position == point)
+                    && self.problem.terminals[terminal].id != obligation.source
+                    && self.problem.terminals[terminal].id != obligation.target
+            })
+        {
+            return false;
+        }
+        let users = self.occupied[layer(obligation.transport)].get(&point);
+        let Some(users) = users else { return true };
+        let mut load = obligation.rate;
+        for &other in users {
+            let existing = &self.problem.connections[other];
+            if existing.commodity != obligation.commodity {
+                return false;
+            }
+            let Some(total) = load.checked_add(existing.rate).ok() else {
+                return false;
+            };
+            load = total;
+        }
+        let capacity = self.catalogs.transports.capacity(obligation.transport);
+        within_capacity(load, capacity.quantity, capacity.duration_ms)
     }
 
     fn begin_route(
         &mut self,
         connection: &str,
-        source_port: &str,
-        target_port: &str,
+        source_port: Option<&str>,
+        target_port: Option<&str>,
     ) -> Result<(), Diagnostic> {
         if self.active.is_some() {
             return Err(error(
@@ -602,31 +822,27 @@ impl Session {
             ));
         }
         let obligation = &self.problem.connections[index];
-        let source_block = self.blocks[&obligation.source];
-        let target_block = self.blocks[&obligation.target];
-        let source = self.selected_port(
-            source_block,
+        let (source, _) = self.route_endpoint(
+            &obligation.source,
             source_port,
             FacilityPortDirection::Output,
-            obligation.transport,
-            connection,
+            obligation,
         )?;
-        let target = self.selected_port(
-            target_block,
+        let (target, _) = self.route_endpoint(
+            &obligation.target,
             target_port,
             FacilityPortDirection::Input,
-            obligation.transport,
-            connection,
+            obligation,
         )?;
-        if self.bodies.contains(&source.connection) || self.bodies.contains(&target.connection) {
+        if self.bodies.contains(&source) || self.bodies.contains(&target) {
             return Err(error(
                 "blocked-port",
                 connection,
                 "a selected port connection cell is covered by a facility body",
             ));
         }
-        let occupied = &self.occupied[layer(obligation.transport)];
-        if occupied.contains(&source.connection) || occupied.contains(&target.connection) {
+        if !self.shared_cell_available(source, index) || !self.shared_cell_available(target, index)
+        {
             return Err(error(
                 "occupied-port",
                 connection,
@@ -635,17 +851,17 @@ impl Session {
         }
         self.active = Some(ActiveRoute {
             connection: index,
-            source_port: source_port.into(),
-            target_port: target_port.into(),
-            target: target.connection,
-            cells: vec![source.connection],
+            source_port: source_port.map(str::to_owned),
+            target_port: target_port.map(str::to_owned),
+            target,
+            cells: vec![source],
         });
         self.active_cells.clear();
-        self.active_cells.insert(source.connection);
+        self.active_cells.insert(source);
         self.focus = Some(Focus::Route {
             connection: index,
-            endpoint: source.connection,
-            target: target.connection,
+            endpoint: source,
+            target,
             active: true,
         });
         Ok(())
@@ -666,8 +882,6 @@ impl Session {
                 "extend requires an active route",
             )
         })?;
-        let transport = self.problem.connections[active.connection].transport;
-        let occupied = &self.occupied[layer(transport)];
         let focus_connection = active.connection;
         let focus_target = active.target;
         let (dx, dy) = direction.offset();
@@ -716,11 +930,11 @@ impl Session {
                     "extension revisits its active route",
                 ));
             }
-            if occupied.contains(&point) {
+            if !self.shared_cell_available(point, focus_connection) {
                 return Err(error(
                     "same-layer-intersection",
                     "active-route",
-                    "same-layer crossings are outside the first constructive domain",
+                    "same-layer cell is incompatible or lacks residual shared capacity",
                 ));
             }
             added.push(point);
@@ -758,17 +972,47 @@ impl Session {
         let active = self.active.take().expect("active route checked above");
         self.active_cells.clear();
         let obligation = &self.problem.connections[active.connection];
-        let source_block = self.blocks[&obligation.source];
-        let target_block = self.blocks[&obligation.target];
         let route = Route {
             connection: obligation.id.clone(),
             source_port: active.source_port.clone(),
             target_port: active.target_port.clone(),
             cells: active.cells,
         };
-        self.occupied[layer(obligation.transport)].extend(route.cells.iter().copied());
-        self.used_ports.insert((source_block, active.source_port));
-        self.used_ports.insert((target_block, active.target_port));
+        for &cell in &route.cells {
+            self.occupied[layer(obligation.transport)]
+                .entry(cell)
+                .or_default()
+                .push(active.connection);
+        }
+        for (endpoint, port, direction) in [
+            (
+                &obligation.source,
+                active.source_port.as_ref(),
+                FacilityPortDirection::Output,
+            ),
+            (
+                &obligation.target,
+                active.target_port.as_ref(),
+                FacilityPortDirection::Input,
+            ),
+        ] {
+            let (Some(&block), Some(port)) = (self.blocks.get(endpoint), port) else {
+                continue;
+            };
+            let entry = self
+                .used_ports
+                .entry((block, port.clone()))
+                .or_insert_with(|| UsedPort {
+                    commodity: obligation.commodity.clone(),
+                    transport: obligation.transport,
+                    direction,
+                    rate: Rate::zero(),
+                });
+            entry.rate = entry
+                .rate
+                .checked_add(obligation.rate)
+                .expect("begin-route checked shared port rate");
+        }
         self.routes[active.connection] = Some(route);
         self.focus = Some(Focus::Route {
             connection: active.connection,
@@ -807,7 +1051,7 @@ mod tests {
             LogisticsComponentCatalog, TransportKind, ValidatedLogisticsComponentCatalog,
             ValidatedTransportCatalog,
         },
-        physical::{Block, Connection},
+        physical::{Block, Connection, Terminal},
         rate::Rate,
     };
     use serde::de::DeserializeOwned;
@@ -847,6 +1091,7 @@ mod tests {
                     facility: "grinder-1-mode-normal".into(),
                 })
                 .collect(),
+            terminals: vec![],
             connections: vec![Connection {
                 id: "connection-0".into(),
                 source: "source".into(),
@@ -909,8 +1154,8 @@ mod tests {
     fn begin(session: &mut Session) -> Step {
         session.step(Command::BeginRoute {
             connection: "connection-0".into(),
-            source_port: "output-belt-1".into(),
-            target_port: "input-belt-1".into(),
+            source_port: Some("output-belt-1".into()),
+            target_port: Some("input-belt-1".into()),
         })
     }
 
@@ -951,13 +1196,150 @@ mod tests {
     }
 
     #[test]
+    fn external_terminals_and_capacity_bounded_shared_flow_validate() {
+        let problem = Problem {
+            blocks: vec![Block {
+                id: "machine".into(),
+                facility: "grinder-1-mode-normal".into(),
+            }],
+            terminals: vec![
+                Terminal {
+                    id: "supply".into(),
+                    direction: TerminalDirection::Input,
+                    commodity: "test-item".into(),
+                    transport: TransportKind::Belt,
+                },
+                Terminal {
+                    id: "sink-a".into(),
+                    direction: TerminalDirection::Output,
+                    commodity: "test-item".into(),
+                    transport: TransportKind::Belt,
+                },
+                Terminal {
+                    id: "sink-b".into(),
+                    direction: TerminalDirection::Output,
+                    commodity: "test-item".into(),
+                    transport: TransportKind::Belt,
+                },
+            ],
+            connections: vec![
+                Connection {
+                    id: "supply-flow".into(),
+                    source: "supply".into(),
+                    target: "machine".into(),
+                    commodity: "test-item".into(),
+                    transport: TransportKind::Belt,
+                    rate: Rate {
+                        numerator: 1,
+                        denominator: 2,
+                    },
+                },
+                Connection {
+                    id: "output-a".into(),
+                    source: "machine".into(),
+                    target: "sink-a".into(),
+                    commodity: "test-item".into(),
+                    transport: TransportKind::Belt,
+                    rate: Rate {
+                        numerator: 1,
+                        denominator: 4,
+                    },
+                },
+                Connection {
+                    id: "output-b".into(),
+                    source: "machine".into(),
+                    target: "sink-b".into(),
+                    commodity: "test-item".into(),
+                    transport: TransportKind::Belt,
+                    rate: Rate {
+                        numerator: 1,
+                        denominator: 4,
+                    },
+                },
+            ],
+        };
+        let mut session = Session::new(
+            problem,
+            catalogs(),
+            Limits {
+                max_turns: 32,
+                max_extension: 16,
+            },
+        )
+        .unwrap();
+        for command in [
+            Command::Place {
+                block: "machine".into(),
+                position: Point { x: 5, y: 8 },
+                rotation: 0,
+            },
+            Command::PlaceTerminal {
+                terminal: "supply".into(),
+                position: Point { x: 6, y: 15 },
+            },
+            Command::PlaceTerminal {
+                terminal: "sink-a".into(),
+                position: Point { x: 4, y: 0 },
+            },
+            Command::PlaceTerminal {
+                terminal: "sink-b".into(),
+                position: Point { x: 8, y: 0 },
+            },
+        ] {
+            assert!(session.step(command).accepted);
+        }
+        assert!(
+            session
+                .step(Command::BeginRoute {
+                    connection: "supply-flow".into(),
+                    source_port: None,
+                    target_port: Some("input-belt-1".into()),
+                })
+                .accepted
+        );
+        assert!(
+            session
+                .step(Command::Extend {
+                    direction: Direction::North,
+                    length: 4,
+                })
+                .accepted
+        );
+        assert!(session.step(Command::Connect).accepted);
+        for (connection, horizontal) in
+            [("output-a", Direction::West), ("output-b", Direction::East)]
+        {
+            assert!(
+                session
+                    .step(Command::BeginRoute {
+                        connection: connection.into(),
+                        source_port: Some("output-belt-1".into()),
+                        target_port: None,
+                    })
+                    .accepted
+            );
+            for (direction, length) in [
+                (Direction::North, 3),
+                (horizontal, 2),
+                (Direction::North, 4),
+            ] {
+                assert!(session.step(Command::Extend { direction, length }).accepted);
+            }
+            assert!(session.step(Command::Connect).accepted);
+        }
+        assert!(session.done());
+        assert!(session.metrics().is_some());
+        assert_eq!(session.observe().completed, 3);
+    }
+
+    #[test]
     fn learning_domain_factorizes_commands_and_rejects_stale_selections() {
         let mut session = session();
         let observation = session.learning_observation(&learning_config()).unwrap();
-        assert_eq!(
-            observation.domain.choices(&learning::Cursor::Command).len(),
-            1
-        );
+        let command_choices = observation.domain.choices(&learning::Cursor::Command);
+        assert_eq!(command_choices.len(), 1);
+        assert_eq!(command_choices[0].features[0], 1.0);
+        assert_eq!(command_choices[0].features[6], 0.0);
         let learning::Advance::Continue(blocks) = observation
             .domain
             .advance(&learning::Cursor::Command, 0)
@@ -965,7 +1347,10 @@ mod tests {
         else {
             panic!("place command should continue to its block factor")
         };
-        assert_eq!(observation.domain.choices(&blocks).len(), 2);
+        let block_choices = observation.domain.choices(&blocks);
+        assert_eq!(block_choices.len(), 2);
+        assert_eq!(block_choices[0].features[6], 1.0);
+        assert_eq!(block_choices[0].features[5], 0.0);
         let learning::Advance::Continue(poses) = observation.domain.advance(&blocks, 0).unwrap()
         else {
             panic!("block choice should continue to its pose factor")
@@ -1065,8 +1450,8 @@ mod tests {
         place_pair(&mut session);
         let rejected = session.step(Command::BeginRoute {
             connection: "connection-0".into(),
-            source_port: "input-belt-1".into(),
-            target_port: "input-belt-1".into(),
+            source_port: Some("input-belt-1".into()),
+            target_port: Some("input-belt-1".into()),
         });
         assert!(!rejected.accepted);
         assert_eq!(
@@ -1125,8 +1510,8 @@ mod tests {
         assert!(session.step(Command::Connect).accepted);
         let rejected = session.step(Command::BeginRoute {
             connection: "connection-1".into(),
-            source_port: "output-belt-1".into(),
-            target_port: "input-belt-1".into(),
+            source_port: Some("output-belt-1".into()),
+            target_port: Some("input-belt-1".into()),
         });
         assert!(!rejected.accepted);
         assert_eq!(rejected.diagnostic.unwrap().code, "constructive.used-port");
@@ -1143,6 +1528,7 @@ mod tests {
                     facility: "grinder-1-mode-normal".into(),
                 })
                 .collect(),
+            terminals: vec![],
             connections: vec![
                 Connection {
                     id: "horizontal".into(),
@@ -1197,8 +1583,8 @@ mod tests {
             session
                 .step(Command::BeginRoute {
                     connection: "horizontal".into(),
-                    source_port: "output-belt-1".into(),
-                    target_port: "input-belt-1".into(),
+                    source_port: Some("output-belt-1".into()),
+                    target_port: Some("input-belt-1".into()),
                 })
                 .accepted
         );
@@ -1215,8 +1601,8 @@ mod tests {
             session
                 .step(Command::BeginRoute {
                     connection: "vertical".into(),
-                    source_port: "output-belt-1".into(),
-                    target_port: "input-belt-1".into(),
+                    source_port: Some("output-belt-1".into()),
+                    target_port: Some("input-belt-1".into()),
                 })
                 .accepted
         );

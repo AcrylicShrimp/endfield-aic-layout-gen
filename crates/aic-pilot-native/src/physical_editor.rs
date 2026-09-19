@@ -101,7 +101,7 @@ fn diagnostic(
         code: format!("physical-editor.{code}"),
         severity: "error",
         stage,
-        source: "aic-physical-layout-v1",
+        source: "aic-physical-layout-v2",
         entity: entity.into(),
         message: message.into(),
     }
@@ -155,6 +155,13 @@ impl ProceduralAdmission {
                 format!("cannot decode procedural layout: {failure}"),
             )
         })?;
+        if !original.problem.terminals.is_empty() || !original.solution.terminal_poses.is_empty() {
+            return Err(error(
+                "source-terminals",
+                "source",
+                "the procedural physical editor does not accept boundary-terminal layouts",
+            ));
+        }
         let initial_metrics = validation::validate(&original, catalogs).map_err(|failure| {
             error(
                 "source-validation",
@@ -332,13 +339,25 @@ impl ProceduralAdmission {
                 terminal: Some(CompiledTerminal::Facility {
                     block: block_indices[connection.source.as_str()],
                     source_terminal: format!("{}:source", connection.id),
-                    original_port: route.source_port.clone(),
+                    original_port: route.source_port.clone().ok_or_else(|| {
+                        error(
+                            "terminal-endpoint",
+                            &connection.id,
+                            "physical editor does not edit boundary-terminal routes",
+                        )
+                    })?,
                     direction: aic_layout::facilities::FacilityPortDirection::Output,
                     rate: connection.rate,
                 }),
                 components: Vec::new(),
             });
-            selected_ports.push(Some(route.source_port.clone()));
+            selected_ports.push(Some(route.source_port.clone().ok_or_else(|| {
+                error(
+                    "terminal-endpoint",
+                    &connection.id,
+                    "physical editor does not edit boundary-terminal routes",
+                )
+            })?));
             anchors.push(canonical(route.cells[0]));
 
             let target_node = source_node + 1;
@@ -350,13 +369,25 @@ impl ProceduralAdmission {
                 terminal: Some(CompiledTerminal::Facility {
                     block: block_indices[connection.target.as_str()],
                     source_terminal: format!("{}:target", connection.id),
-                    original_port: route.target_port.clone(),
+                    original_port: route.target_port.clone().ok_or_else(|| {
+                        error(
+                            "terminal-endpoint",
+                            &connection.id,
+                            "physical editor does not edit boundary-terminal routes",
+                        )
+                    })?,
                     direction: aic_layout::facilities::FacilityPortDirection::Input,
                     rate: connection.rate,
                 }),
                 components: Vec::new(),
             });
-            selected_ports.push(Some(route.target_port.clone()));
+            selected_ports.push(Some(route.target_port.clone().ok_or_else(|| {
+                error(
+                    "terminal-endpoint",
+                    &connection.id,
+                    "physical editor does not edit boundary-terminal routes",
+                )
+            })?));
             anchors.push(canonical(*route.cells.last().unwrap()));
             source_nodes.push((source_node, target_node));
 
@@ -570,16 +601,12 @@ impl ProceduralAdmission {
             let (source_node, target_node) = self.owner.source_nodes[routes.len()];
             routes.push(Route {
                 connection: connection.id.clone(),
-                source_port: self.draft.selected_ports[source_node]
-                    .clone()
-                    .ok_or_else(|| {
-                        error("missing-port", &connection.id, "source port is missing")
-                    })?,
-                target_port: self.draft.selected_ports[target_node]
-                    .clone()
-                    .ok_or_else(|| {
-                        error("missing-port", &connection.id, "target port is missing")
-                    })?,
+                source_port: Some(self.draft.selected_ports[source_node].clone().ok_or_else(
+                    || error("missing-port", &connection.id, "source port is missing"),
+                )?),
+                target_port: Some(self.draft.selected_ports[target_node].clone().ok_or_else(
+                    || error("missing-port", &connection.id, "target port is missing"),
+                )?),
                 cells,
             });
         }
@@ -594,6 +621,7 @@ impl ProceduralAdmission {
             problem: self.owner.original.problem.clone(),
             solution: Solution {
                 poses,
+                terminal_poses: vec![],
                 routes,
                 bridges,
             },

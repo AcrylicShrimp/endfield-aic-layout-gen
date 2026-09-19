@@ -23,7 +23,7 @@ pub struct ConstructiveModelConfig {
 }
 
 impl ConstructiveModelConfig {
-    pub const SCHEMA: &'static str = "aic-constructive-attention-model-v1";
+    pub const SCHEMA: &'static str = "aic-constructive-attention-model-v2";
 
     pub fn validate(&self) -> Result<()> {
         ensure!(

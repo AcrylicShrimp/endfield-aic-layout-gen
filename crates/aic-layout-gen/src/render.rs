@@ -60,17 +60,25 @@ pub fn svg(layout: &Layout, catalogs: &Catalogs) -> String {
     );
     for route in &layout.solution.routes {
         let edge = edges[route.connection.as_str()];
-        active_ports.insert((edge.source.as_str(), route.source_port.as_str()));
-        active_ports.insert((edge.target.as_str(), route.target_port.as_str()));
+        let source_port = route
+            .source_port
+            .as_deref()
+            .expect("procedural generator routes have facility sources");
+        let target_port = route
+            .target_port
+            .as_deref()
+            .expect("procedural generator routes have facility targets");
+        active_ports.insert((edge.source.as_str(), source_port));
+        active_ports.insert((edge.target.as_str(), target_port));
         let source = projected[edge.source.as_str()]
             .3
             .iter()
-            .find(|p| p.id == route.source_port)
+            .find(|p| p.id == source_port)
             .unwrap();
         let target = projected[edge.target.as_str()]
             .3
             .iter()
-            .find(|p| p.id == route.target_port)
+            .find(|p| p.id == target_port)
             .unwrap();
         let (color, kind) = match edge.transport {
             TransportKind::Belt => ("#ffc56d", "belt"),

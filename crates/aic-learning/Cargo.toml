@@ -13,7 +13,7 @@ libtorch = [
     "dep:aic-torch",
     "aic-torch/libtorch",
 ]
-outcomes = ["dep:aic-layout", "dep:aic-layout-gen", "dep:aic-pilot-native"]
+outcomes = ["dep:aic-data", "dep:aic-layout", "dep:aic-layout-gen", "dep:aic-pilot-native"]
 
 [dependencies]
 aic-pilot-native = { workspace = true, optional = true }

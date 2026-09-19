@@ -50,6 +50,7 @@ pub(super) fn session(max_turns: u64) -> Session {
                 facility: "grinder-1-mode-normal".into(),
             })
             .collect(),
+        terminals: vec![],
         connections: vec![Connection {
             id: "connection-0".into(),
             source: "source".into(),

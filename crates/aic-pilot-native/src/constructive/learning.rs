@@ -11,13 +11,13 @@ use serde::{Deserialize, Serialize};
 
 use super::{Command, Diagnostic, Direction, Session, error};
 
-pub const SCHEMA: &str = "aic-constructive-learning-v1";
+pub const SCHEMA: &str = "aic-constructive-learning-v2";
 pub const ENTITY_FEATURES: usize = 18;
 pub const RELATION_FEATURES: usize = 6;
 pub const SPATIAL_FEATURES: usize = 12;
 pub const GLOBAL_FEATURES: usize = 8;
 pub const FOCUS_FEATURES: usize = 12;
-pub const CHOICE_FEATURES: usize = 18;
+pub const CHOICE_FEATURES: usize = 22;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -53,6 +53,7 @@ pub struct Observation {
 #[serde(rename_all = "kebab-case")]
 pub enum CommandKind {
     Place,
+    PlaceTerminal,
     BeginRoute,
     Extend,
     Connect,
@@ -65,6 +66,8 @@ pub enum Cursor {
     Command,
     PlaceBlock,
     PlacePose { block: usize },
+    PlaceTerminal,
+    TerminalPosition { terminal: usize },
     RouteConnection,
     RouteSource { connection: usize },
     RouteTarget { connection: usize, source: usize },
@@ -94,7 +97,11 @@ pub struct SelectedCommand {
 pub struct Domain {
     revision: u64,
     scale: f32,
+    placement: Bounds,
+    blocked: BTreeSet<Point>,
     placements: Vec<PlacementDomain>,
+    terminals: Vec<TerminalDomain>,
+    terminal_positions: Vec<Point>,
     routes: Vec<RouteDomain>,
     extensions: Vec<ExtensionDomain>,
     focus_entity: i64,
@@ -106,7 +113,16 @@ pub struct Domain {
 struct PlacementDomain {
     block: usize,
     id: String,
-    poses: Vec<(Point, i64)>,
+    width: i64,
+    height: i64,
+    rotations: Vec<i64>,
+}
+
+#[derive(Clone, Debug, Serialize, PartialEq)]
+struct TerminalDomain {
+    terminal: usize,
+    entity: i64,
+    id: String,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
@@ -120,8 +136,8 @@ struct RouteDomain {
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
 struct PortDomain {
-    id: String,
-    targets: Vec<String>,
+    id: Option<String>,
+    targets: Vec<Option<String>>,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
@@ -151,22 +167,22 @@ impl Config {
         };
         let area = width.checked_mul(height);
         let pose_upper_bound = area.and_then(|area| {
-            session
+            let rotations = session
                 .problem
                 .blocks
                 .iter()
-                .enumerate()
-                .filter(|(block, _)| session.poses[*block].is_none())
-                .try_fold(0i64, |total, (_, block)| {
-                    let rotations = session
+                .map(|block| {
+                    session
                         .catalogs
                         .facilities
                         .facility(&block.facility)
                         .expect("constructive problem admitted facilities")
                         .allowed_rotations
-                        .len() as i64;
-                    total.checked_add(area.checked_mul(rotations)?)
+                        .len() as i64
                 })
+                .max()
+                .unwrap_or(0);
+            area.checked_mul(rotations)
         });
         let spatial_upper_bound = session
             .bodies
@@ -179,6 +195,7 @@ impl Config {
                     .sum::<usize>(),
             )
             .and_then(|count| count.checked_add(session.active_cells.len()))
+            .and_then(|count| count.checked_add(session.terminal_poses.len()))
             .and_then(|count| count.checked_add(2));
         let ordered = self
             .extension_lengths
@@ -239,22 +256,41 @@ impl Domain {
                 .placements
                 .iter()
                 .map(|placement| {
-                    choice(5, placement.block as i64, 0., [placement.block as i64, -1])
+                    choice(6, placement.block as i64, 0., [placement.block as i64, -1])
                 })
                 .collect(),
             Cursor::PlacePose { block } => self
                 .placements
                 .get(block)
                 .map(|domain| {
-                    domain
-                        .poses
+                    self.placement_poses(domain)
+                        .into_iter()
+                        .map(|(point, rotation)| {
+                            let mut value = choice(7, rotation / 90, 0., [domain.block as i64, -1]);
+                            value.features[17] = point.x as f32 / self.scale;
+                            value.features[18] = point.y as f32 / self.scale;
+                            value.features[19] = (rotation as f32).to_radians().sin();
+                            value.features[20] = (rotation as f32).to_radians().cos();
+                            value
+                        })
+                        .collect()
+                })
+                .unwrap_or_default(),
+            Cursor::PlaceTerminal => self
+                .terminals
+                .iter()
+                .map(|terminal| choice(8, terminal.terminal as i64, 0., [terminal.entity, -1]))
+                .collect(),
+            Cursor::TerminalPosition { terminal } => self
+                .terminals
+                .get(terminal)
+                .map(|domain| {
+                    self.terminal_positions
                         .iter()
-                        .map(|&(point, rotation)| {
-                            let mut value = choice(6, rotation / 90, 0., [domain.block as i64, -1]);
-                            value.features[14] = point.x as f32 / self.scale;
-                            value.features[15] = point.y as f32 / self.scale;
-                            value.features[16] = (rotation as f32).to_radians().sin();
-                            value.features[17] = (rotation as f32).to_radians().cos();
+                        .map(|&point| {
+                            let mut value = choice(9, 0, 0., [domain.entity, -1]);
+                            value.features[17] = point.x as f32 / self.scale;
+                            value.features[18] = point.y as f32 / self.scale;
                             value
                         })
                         .collect()
@@ -263,7 +299,7 @@ impl Domain {
             Cursor::RouteConnection => self
                 .routes
                 .iter()
-                .map(|route| choice(7, route.connection as i64, 0., [route.entity, -1]))
+                .map(|route| choice(10, route.connection as i64, 0., [route.entity, -1]))
                 .collect(),
             Cursor::RouteSource { connection } => self
                 .routes
@@ -274,7 +310,7 @@ impl Domain {
                         .iter()
                         .enumerate()
                         .map(|(index, _)| {
-                            choice(8, index as i64, 0., [route.entity, route.endpoints[0]])
+                            choice(11, index as i64, 0., [route.entity, route.endpoints[0]])
                         })
                         .collect()
                 })
@@ -289,7 +325,7 @@ impl Domain {
                         .iter()
                         .enumerate()
                         .map(|(index, _)| {
-                            choice(9, index as i64, 0., [route.entity, route.endpoints[1]])
+                            choice(12, index as i64, 0., [route.entity, route.endpoints[1]])
                         })
                         .collect()
                 })
@@ -300,7 +336,7 @@ impl Domain {
                 .enumerate()
                 .map(|(index, domain)| {
                     choice(
-                        10,
+                        13,
                         direction_index(domain.direction),
                         index as f32,
                         [self.focus_entity, -1],
@@ -316,7 +352,7 @@ impl Domain {
                         .iter()
                         .map(|&length| {
                             choice(
-                                11,
+                                14,
                                 length,
                                 length as f32 / self.scale,
                                 [self.focus_entity, -1],
@@ -339,6 +375,7 @@ impl Domain {
         let next = match *cursor {
             Cursor::Command => match self.command_kinds()[selected] {
                 CommandKind::Place => Advance::Continue(Cursor::PlaceBlock),
+                CommandKind::PlaceTerminal => Advance::Continue(Cursor::PlaceTerminal),
                 CommandKind::BeginRoute => Advance::Continue(Cursor::RouteConnection),
                 CommandKind::Extend => Advance::Continue(Cursor::ExtendDirection),
                 CommandKind::Connect => Advance::Command(self.selected(Command::Connect)),
@@ -347,11 +384,21 @@ impl Domain {
             Cursor::PlaceBlock => Advance::Continue(Cursor::PlacePose { block: selected }),
             Cursor::PlacePose { block } => {
                 let domain = &self.placements[block];
-                let (position, rotation) = domain.poses[selected];
+                let (position, rotation) = self.placement_poses(domain)[selected];
                 Advance::Command(self.selected(Command::Place {
                     block: domain.id.clone(),
                     position,
                     rotation,
+                }))
+            }
+            Cursor::PlaceTerminal => {
+                Advance::Continue(Cursor::TerminalPosition { terminal: selected })
+            }
+            Cursor::TerminalPosition { terminal } => {
+                let domain = &self.terminals[terminal];
+                Advance::Command(self.selected(Command::PlaceTerminal {
+                    terminal: domain.id.clone(),
+                    position: self.terminal_positions[selected],
                 }))
             }
             Cursor::RouteConnection => Advance::Continue(Cursor::RouteSource {
@@ -392,9 +439,12 @@ impl Domain {
     }
 
     fn command_kinds(&self) -> Vec<CommandKind> {
-        let mut kinds = Vec::with_capacity(5);
+        let mut kinds = Vec::with_capacity(6);
         if !self.placements.is_empty() {
             kinds.push(CommandKind::Place);
+        }
+        if !self.terminals.is_empty() {
+            kinds.push(CommandKind::PlaceTerminal);
         }
         if !self.routes.is_empty() {
             kinds.push(CommandKind::BeginRoute);
@@ -424,7 +474,11 @@ impl Domain {
             .width()
             .max(config.placement.height())
             .max(1) as f32;
-        let placements = placement_domains(session, config);
+        let blocked = blocked_cells(session);
+        let placement = config.placement;
+        let placements = placement_domains(session, placement, &blocked);
+        let terminal_positions = terminal_positions(session, placement, &blocked);
+        let terminals = terminal_domains(session, !terminal_positions.is_empty());
         let routes = route_domains(session);
         let extensions = extension_domains(session, config);
         let connect = session
@@ -432,12 +486,17 @@ impl Domain {
             .as_ref()
             .is_some_and(|active| active.cells.last() == Some(&active.target));
         let focus_entity = session.active.as_ref().map_or(-1, |active| {
-            (session.problem.blocks.len() + active.connection) as i64
+            (session.problem.blocks.len() + session.problem.terminals.len() + active.connection)
+                as i64
         });
         Self {
             revision: session.revision,
             scale,
+            placement,
+            blocked,
             placements,
+            terminals,
+            terminal_positions,
             routes,
             extensions,
             focus_entity,
@@ -445,20 +504,49 @@ impl Domain {
             abort: session.active.is_some(),
         }
     }
+
+    fn placement_poses(&self, domain: &PlacementDomain) -> Vec<(Point, i64)> {
+        placement_poses(self.placement, &self.blocked, domain, false)
+    }
 }
 
 fn choice(kind: usize, value: i64, scalar: f32, references: [i64; 2]) -> Choice {
     let mut features = [0.; CHOICE_FEATURES];
     features[kind] = 1.;
-    features[12] = (value as f32).ln_1p();
-    features[13] = scalar;
+    features[15] = (value as f32).ln_1p();
+    features[16] = scalar;
     Choice {
         features,
         references,
     }
 }
 
-fn placement_domains(session: &Session, config: &Config) -> Vec<PlacementDomain> {
+fn blocked_cells(session: &Session) -> BTreeSet<Point> {
+    session
+        .bodies
+        .iter()
+        .copied()
+        .chain(
+            session
+                .occupied
+                .iter()
+                .flat_map(|occupied| occupied.keys().copied()),
+        )
+        .chain(
+            session
+                .terminal_poses
+                .iter()
+                .flatten()
+                .map(|pose| pose.position),
+        )
+        .collect()
+}
+
+fn placement_domains(
+    session: &Session,
+    placement: Bounds,
+    blocked: &BTreeSet<Point>,
+) -> Vec<PlacementDomain> {
     if session.active.is_some() {
         return vec![];
     }
@@ -468,47 +556,154 @@ fn placement_domains(session: &Session, config: &Config) -> Vec<PlacementDomain>
         .iter()
         .enumerate()
         .filter(|(block, _)| session.poses[*block].is_none())
-        .filter_map(|(block, problem)| {
+        .map(|(block, problem)| {
             let definition = session
                 .catalogs
                 .facilities
                 .facility(&problem.facility)
                 .expect("constructive problem admitted facilities");
-            let mut poses = Vec::new();
-            for &rotation in &definition.allowed_rotations {
-                let (width, height, _) = rotate(definition, rotation, Point::default());
-                for y in config.placement.min_y..=config.placement.max_y {
-                    for x in config.placement.min_x..=config.placement.max_x {
-                        let end = x.checked_add(width - 1).zip(y.checked_add(height - 1));
-                        if end.is_some_and(|(max_x, max_y)| {
-                            max_x <= config.placement.max_x
-                                && max_y <= config.placement.max_y
-                                && (y..=max_y).all(|cell_y| {
-                                    (x..=max_x).all(|cell_x| {
-                                        let cell = Point {
-                                            x: cell_x,
-                                            y: cell_y,
-                                        };
-                                        !session.bodies.contains(&cell)
-                                            && session
-                                                .occupied
-                                                .iter()
-                                                .all(|occupied| !occupied.contains(&cell))
-                                    })
+            PlacementDomain {
+                block,
+                id: problem.id.clone(),
+                width: definition.footprint.width,
+                height: definition.footprint.height,
+                rotations: definition.allowed_rotations.clone(),
+            }
+        })
+        .filter(|domain| !placement_poses(placement, blocked, domain, true).is_empty())
+        .collect()
+}
+
+fn placement_poses(
+    placement: Bounds,
+    blocked: &BTreeSet<Point>,
+    domain: &PlacementDomain,
+    first_only: bool,
+) -> Vec<(Point, i64)> {
+    let mut poses = Vec::new();
+    for &rotation in &domain.rotations {
+        let (width, height) = if rotation.rem_euclid(180) == 0 {
+            (domain.width, domain.height)
+        } else {
+            (domain.height, domain.width)
+        };
+        for y in placement.min_y..=placement.max_y {
+            for x in placement.min_x..=placement.max_x {
+                let end = x.checked_add(width - 1).zip(y.checked_add(height - 1));
+                if end.is_some_and(|(max_x, max_y)| {
+                    max_x <= placement.max_x
+                        && max_y <= placement.max_y
+                        && (y..=max_y).all(|cell_y| {
+                            (x..=max_x).all(|cell_x| {
+                                !blocked.contains(&Point {
+                                    x: cell_x,
+                                    y: cell_y,
                                 })
-                        }) {
-                            poses.push((Point { x, y }, rotation));
-                        }
+                            })
+                        })
+                }) {
+                    poses.push((Point { x, y }, rotation));
+                    if first_only {
+                        return poses;
                     }
                 }
             }
-            (!poses.is_empty()).then_some(PlacementDomain {
-                block,
-                id: problem.id.clone(),
-                poses,
-            })
+        }
+    }
+    poses
+}
+
+fn terminal_positions(
+    session: &Session,
+    placement: Bounds,
+    blocked: &BTreeSet<Point>,
+) -> Vec<Point> {
+    if session.active.is_some() {
+        return vec![];
+    }
+    let mut positions = Vec::new();
+    for y in placement.min_y..=placement.max_y {
+        for x in placement.min_x..=placement.max_x {
+            if x != placement.min_x
+                && x != placement.max_x
+                && y != placement.min_y
+                && y != placement.max_y
+            {
+                continue;
+            }
+            let point = Point { x, y };
+            if !blocked.contains(&point) {
+                positions.push(point);
+            }
+        }
+    }
+    positions
+}
+
+fn terminal_domains(session: &Session, have_positions: bool) -> Vec<TerminalDomain> {
+    if !have_positions {
+        return vec![];
+    }
+    session
+        .problem
+        .terminals
+        .iter()
+        .enumerate()
+        .filter(|(terminal, _)| session.terminal_poses[*terminal].is_none())
+        .map(|(terminal, problem)| TerminalDomain {
+            terminal,
+            entity: (session.problem.blocks.len() + terminal) as i64,
+            id: problem.id.clone(),
         })
         .collect()
+}
+
+fn endpoint_entity(session: &Session, endpoint: &str) -> i64 {
+    if let Some(&block) = session.blocks.get(endpoint) {
+        block as i64
+    } else {
+        (session.problem.blocks.len() + session.terminals[endpoint]) as i64
+    }
+}
+
+fn endpoint_ports(
+    session: &Session,
+    endpoint: &str,
+    direction: FacilityPortDirection,
+    connection: usize,
+) -> Vec<Option<String>> {
+    let obligation = &session.problem.connections[connection];
+    if let Some(&block) = session.blocks.get(endpoint) {
+        return session
+            .projected_ports(block)
+            .into_iter()
+            .flatten()
+            .filter(|port| {
+                port.direction == direction
+                    && port.transport == obligation.transport
+                    && !session.bodies.contains(&port.connection)
+                    && session.shared_cell_available(port.connection, connection)
+                    && session
+                        .selected_port(
+                            block,
+                            &port.id,
+                            direction,
+                            obligation.transport,
+                            &obligation.commodity,
+                            obligation.rate,
+                            &obligation.id,
+                        )
+                        .is_ok()
+            })
+            .map(|port| Some(port.id))
+            .collect();
+    }
+    let terminal = session.terminals[endpoint];
+    session.terminal_poses[terminal]
+        .as_ref()
+        .filter(|pose| session.shared_cell_available(pose.position, connection))
+        .map(|_| vec![None])
+        .unwrap_or_default()
 }
 
 fn route_domains(session: &Session) -> Vec<RouteDomain> {
@@ -522,45 +717,34 @@ fn route_domains(session: &Session) -> Vec<RouteDomain> {
         .enumerate()
         .filter(|(connection, _)| session.routes[*connection].is_none())
         .filter_map(|(connection, obligation)| {
-            let source_block = session.blocks[&obligation.source];
-            let target_block = session.blocks[&obligation.target];
-            let source_ports = session.projected_ports(source_block).ok()?;
-            let target_ports = session.projected_ports(target_block).ok()?;
-            let occupied = &session.occupied[layer(obligation.transport)];
-            let targets: Vec<_> = target_ports
-                .into_iter()
-                .filter(|port| {
-                    port.direction == FacilityPortDirection::Input
-                        && port.transport == obligation.transport
-                        && !session.bodies.contains(&port.connection)
-                        && !occupied.contains(&port.connection)
-                        && !session
-                            .used_ports
-                            .contains(&(target_block, port.id.clone()))
-                })
-                .map(|port| port.id)
-                .collect();
-            let sources = source_ports
-                .into_iter()
-                .filter(|port| {
-                    port.direction == FacilityPortDirection::Output
-                        && port.transport == obligation.transport
-                        && !session.bodies.contains(&port.connection)
-                        && !occupied.contains(&port.connection)
-                        && !session
-                            .used_ports
-                            .contains(&(source_block, port.id.clone()))
-                })
-                .map(|port| PortDomain {
-                    id: port.id,
-                    targets: targets.clone(),
-                })
-                .filter(|source| !source.targets.is_empty())
-                .collect::<Vec<_>>();
+            let targets = endpoint_ports(
+                session,
+                &obligation.target,
+                FacilityPortDirection::Input,
+                connection,
+            );
+            let sources = endpoint_ports(
+                session,
+                &obligation.source,
+                FacilityPortDirection::Output,
+                connection,
+            )
+            .into_iter()
+            .map(|id| PortDomain {
+                id,
+                targets: targets.clone(),
+            })
+            .filter(|source| !source.targets.is_empty())
+            .collect::<Vec<_>>();
             (!sources.is_empty()).then_some(RouteDomain {
                 connection,
-                entity: (session.problem.blocks.len() + connection) as i64,
-                endpoints: [source_block as i64, target_block as i64],
+                entity: (session.problem.blocks.len()
+                    + session.problem.terminals.len()
+                    + connection) as i64,
+                endpoints: [
+                    endpoint_entity(session, &obligation.source),
+                    endpoint_entity(session, &obligation.target),
+                ],
                 id: obligation.id.clone(),
                 sources,
             })
@@ -572,8 +756,6 @@ fn extension_domains(session: &Session, config: &Config) -> Vec<ExtensionDomain>
     let Some(active) = session.active.as_ref() else {
         return vec![];
     };
-    let transport = session.problem.connections[active.connection].transport;
-    let occupied = &session.occupied[layer(transport)];
     [
         Direction::East,
         Direction::South,
@@ -596,10 +778,12 @@ fn extension_domains(session: &Session, config: &Config) -> Vec<ExtensionDomain>
                         .zip(start.y.checked_add(dy * step))
                         .map(|(x, y)| Point { x, y });
                     point.is_some_and(|point| {
-                        point.x >= 0
-                            && point.y >= 0
+                        point.x >= config.placement.min_x
+                            && point.y >= config.placement.min_y
+                            && point.x <= config.placement.max_x
+                            && point.y <= config.placement.max_y
                             && !session.bodies.contains(&point)
-                            && !occupied.contains(&point)
+                            && session.shared_cell_available(point, active.connection)
                             && !session.active_cells.contains(&point)
                     })
                 })
@@ -627,7 +811,10 @@ impl Input {
             .max(config.placement.height())
             .max(1) as f32;
         let blocks = session.problem.blocks.len();
-        let mut entity_features = Vec::with_capacity(blocks + session.problem.connections.len());
+        let terminals = session.problem.terminals.len();
+        let connection_offset = blocks + terminals;
+        let mut entity_features =
+            Vec::with_capacity(connection_offset + session.problem.connections.len());
         for (index, block) in session.problem.blocks.iter().enumerate() {
             let definition = session
                 .catalogs
@@ -651,10 +838,29 @@ impl Input {
             }
             entity_features.push(row);
         }
+        for (index, terminal) in session.problem.terminals.iter().enumerate() {
+            let mut row = [0.; ENTITY_FEATURES];
+            row[16
+                + matches!(
+                    terminal.direction,
+                    aic_layout::physical::TerminalDirection::Output
+                ) as usize] = 1.;
+            row[5 + layer(terminal.transport)] = 1.;
+            if let Some(pose) = &session.terminal_poses[index] {
+                row[2] = 1.;
+                row[11] = pose.position.x as f32 / scale;
+                row[12] = pose.position.y as f32 / scale;
+            }
+            if matches!(session.focus, Some(super::Focus::Terminal { terminal, .. }) if terminal == index)
+            {
+                row[7] = 1.;
+            }
+            entity_features.push(row);
+        }
         let mut relation_index = Vec::with_capacity(session.problem.connections.len() * 2);
         let mut relation_features = Vec::with_capacity(session.problem.connections.len() * 2);
         for (index, connection) in session.problem.connections.iter().enumerate() {
-            let entity = blocks + index;
+            let entity = connection_offset + index;
             let mut row = [0.; ENTITY_FEATURES];
             row[1] = 1.;
             row[3] = session.routes[index].is_some() as u8 as f32;
@@ -670,12 +876,9 @@ impl Input {
                 row[7] = 1.;
             }
             entity_features.push(row);
-            let source = session.blocks[&connection.source];
-            let target = session.blocks[&connection.target];
-            relation_index.extend([
-                [source as i64, entity as i64],
-                [entity as i64, target as i64],
-            ]);
+            let source = endpoint_entity(session, &connection.source);
+            let target = endpoint_entity(session, &connection.target);
+            relation_index.extend([[source, entity as i64], [entity as i64, target]]);
             let mut source_row = [0.; RELATION_FEATURES];
             source_row[0] = 1.;
             source_row[2 + layer(connection.transport)] = 1.;
@@ -718,9 +921,20 @@ impl Input {
                     point,
                     scale,
                     kind,
-                    (blocks + connection) as i64,
+                    (connection_offset + connection) as i64,
                 );
             }
+        }
+        for (terminal, pose) in session.terminal_poses.iter().enumerate() {
+            let Some(pose) = pose else { continue };
+            push_spatial(
+                &mut spatial_features,
+                &mut spatial_owners,
+                pose.position,
+                scale,
+                8,
+                (blocks + terminal) as i64,
+            );
         }
         if let Some(active) = &session.active {
             for &point in &active.cells {
@@ -730,7 +944,7 @@ impl Input {
                     point,
                     scale,
                     5,
-                    (blocks + active.connection) as i64,
+                    (connection_offset + active.connection) as i64,
                 );
             }
             let endpoint = *active.cells.last().expect("active route contains source");
@@ -740,7 +954,7 @@ impl Input {
                 endpoint,
                 scale,
                 6,
-                (blocks + active.connection) as i64,
+                (connection_offset + active.connection) as i64,
             );
             push_spatial(
                 &mut spatial_features,
@@ -748,7 +962,7 @@ impl Input {
                 active.target,
                 scale,
                 7,
-                (blocks + active.connection) as i64,
+                (connection_offset + active.connection) as i64,
             );
         }
         let mut focus_features = [0.; FOCUS_FEATURES];
@@ -760,6 +974,12 @@ impl Input {
                 focus_features[4] = position.x as f32 / scale;
                 focus_features[5] = position.y as f32 / scale;
                 focus_entity = *block as i64;
+            }
+            Some(super::Focus::Terminal { terminal, position }) => {
+                focus_features[11] = 1.;
+                focus_features[4] = position.x as f32 / scale;
+                focus_features[5] = position.y as f32 / scale;
+                focus_entity = (blocks + terminal) as i64;
             }
             Some(super::Focus::Route {
                 connection,
@@ -776,21 +996,39 @@ impl Input {
                 focus_features[8] = (target.x - endpoint.x) as f32 / scale;
                 focus_features[9] = (target.y - endpoint.y) as f32 / scale;
                 focus_features[10] = endpoint.distance(*target) as f32 / scale;
-                focus_entity = (blocks + connection) as i64;
+                focus_entity = (connection_offset + connection) as i64;
             }
         }
         let occupied: BTreeSet<_> = session
             .bodies
             .iter()
-            .chain(session.occupied.iter().flatten())
             .copied()
+            .chain(
+                session
+                    .occupied
+                    .iter()
+                    .flat_map(|occupied| occupied.keys().copied()),
+            )
+            .chain(
+                session
+                    .terminal_poses
+                    .iter()
+                    .flatten()
+                    .map(|pose| pose.position),
+            )
             .collect();
+        let placed = session.poses.iter().filter(|pose| pose.is_some()).count()
+            + session
+                .terminal_poses
+                .iter()
+                .filter(|pose| pose.is_some())
+                .count();
+        let placeable = session.poses.len() + session.terminal_poses.len();
         let global_features = [
             session.turns as f32 / session.limits.max_turns as f32,
             (session.limits.max_turns - session.turns) as f32 / session.limits.max_turns as f32,
             session.completed() as f32 / session.routes.len() as f32,
-            session.poses.iter().filter(|pose| pose.is_some()).count() as f32
-                / session.poses.len() as f32,
+            placed as f32 / placeable as f32,
             session.active.is_some() as u8 as f32,
             occupied.len() as f32 / (config.placement.width() * config.placement.height()) as f32,
             config.placement.width() as f32 / scale,

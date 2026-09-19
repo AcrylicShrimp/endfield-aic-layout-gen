@@ -14,7 +14,7 @@ use aic_layout::{
         LogisticsComponentCatalog, TransportCatalog, TransportKind,
         ValidatedLogisticsComponentCatalog, ValidatedTransportCatalog,
     },
-    physical::{Layout, Problem},
+    physical::Layout,
     projection::rotate,
     validation::Catalogs,
 };
@@ -29,6 +29,7 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 use crate::{
+    constructive_problems::{PreparedProblem, ProblemSet},
     input::{Tensors, sha256},
     schema::{ConstructiveModelConfig, UpdateConfig},
     update::device_name,
@@ -37,7 +38,6 @@ use crate::{
 use super::{
     Model, policy,
     ppo::Learner,
-    problems::ProblemSet,
     rollout::{self, Collection, RewardConfig, Sampling},
 };
 
@@ -79,6 +79,10 @@ struct Summary {
 #[derive(Serialize)]
 struct EvaluationCase {
     problem_index: usize,
+    problem_id: String,
+    target_item: String,
+    size_band: String,
+    facility_count: usize,
     fully_validated: bool,
     turns: u64,
     completed_connections: usize,
@@ -112,7 +116,7 @@ pub fn run(
     let catalogs = load_catalogs(catalog_root)?;
     // Admit every immutable problem before creating output or initializing Torch.
     for problem in problems.training.iter().chain(&problems.evaluation) {
-        Session::new(problem.clone(), catalogs.clone(), config.native)
+        Session::new(problem.problem.clone(), catalogs.clone(), config.native)
             .map_err(anyhow::Error::new)?;
     }
     tch::set_num_threads(1);
@@ -166,7 +170,7 @@ pub fn run(
         let mut sessions = (0..config.episodes_per_update)
             .map(|index| {
                 let problem = &problems.training[(offset + index) % problems.training.len()];
-                Session::new(problem.clone(), catalogs.clone(), config.native)
+                Session::new(problem.problem.clone(), catalogs.clone(), config.native)
                     .map_err(anyhow::Error::new)
             })
             .collect::<Result<Vec<_>>>()?;
@@ -285,7 +289,7 @@ pub fn evaluate_checkpoint(
         "aic-learning.constructive-evaluation-identity: training report, catalogs or checkpoint do not match"
     );
     for problem in problems.evaluation.iter().take(cases) {
-        Session::new(problem.clone(), catalogs.clone(), config.native)
+        Session::new(problem.problem.clone(), catalogs.clone(), config.native)
             .map_err(anyhow::Error::new)?;
     }
     tch::set_num_threads(1);
@@ -339,7 +343,7 @@ pub fn evaluate_checkpoint(
 }
 
 fn greedy_cases(
-    problems: &[Problem],
+    problems: &[PreparedProblem],
     catalogs: Arc<Catalogs>,
     config: &Config,
     model: &Model,
@@ -347,9 +351,9 @@ fn greedy_cases(
 ) -> Result<Vec<EvaluatedCase>> {
     let mut sessions = problems
         .iter()
-        .cloned()
         .map(|problem| {
-            Session::new(problem, catalogs.clone(), config.native).map_err(anyhow::Error::new)
+            Session::new(problem.problem.clone(), catalogs.clone(), config.native)
+                .map_err(anyhow::Error::new)
         })
         .collect::<Result<Vec<_>>>()?;
     let mut commands = vec![Vec::new(); sessions.len()];
@@ -399,6 +403,10 @@ fn greedy_cases(
             EvaluatedCase {
                 summary: EvaluationCase {
                     problem_index,
+                    problem_id: problems[problem_index].id.clone(),
+                    target_item: problems[problem_index].target_item.clone(),
+                    size_band: problems[problem_index].size_band.clone(),
+                    facility_count: problems[problem_index].facility_count,
                     fully_validated: observation.fully_validated,
                     turns: observation.turns,
                     completed_connections: observation.completed,
@@ -575,8 +583,8 @@ fn escape_html(value: &str) -> String {
 
 fn validate(config: &Config, problems: &ProblemSet) -> Result<()> {
     ensure!(
-        config.schema == "aic-constructive-training-v2"
-            && problems.schema == "aic-constructive-problem-set-v1"
+        config.schema == "aic-constructive-training-v3"
+            && problems.schema == "aic-constructive-problem-set-v2"
             && !problems.training.is_empty()
             && problems.training.len() <= 4096
             && !problems.evaluation.is_empty()
@@ -605,7 +613,7 @@ fn validate(config: &Config, problems: &ProblemSet) -> Result<()> {
 }
 
 fn evaluate(
-    problems: &[Problem],
+    problems: &[PreparedProblem],
     catalogs: Arc<Catalogs>,
     config: &Config,
     learner: &mut Learner,
@@ -615,7 +623,7 @@ fn evaluate(
     let mut sessions = (0..episodes)
         .map(|index| {
             let problem = &problems[index % problems.len()];
-            Session::new(problem.clone(), catalogs.clone(), config.native)
+            Session::new(problem.problem.clone(), catalogs.clone(), config.native)
                 .map_err(anyhow::Error::new)
         })
         .collect::<Result<Vec<_>>>()?;

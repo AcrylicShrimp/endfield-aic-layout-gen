@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{geometry::Point, logistics::TransportKind, rate::Rate};
 
-pub const SCHEMA: &str = "aic-physical-layout-v1";
+pub const SCHEMA: &str = "aic-physical-layout-v2";
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -23,6 +23,7 @@ pub struct Layout {
 #[serde(deny_unknown_fields)]
 pub struct Problem {
     pub blocks: Vec<Block>,
+    pub terminals: Vec<Terminal>,
     pub connections: Vec<Connection>,
 }
 
@@ -31,6 +32,24 @@ pub struct Problem {
 pub struct Block {
     pub id: String,
     pub facility: String,
+}
+
+/// A physical factory-boundary endpoint. Input terminals supply the factory;
+/// output terminals receive target or surplus production.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Terminal {
+    pub id: String,
+    pub direction: TerminalDirection,
+    pub commodity: String,
+    pub transport: TransportKind,
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum TerminalDirection {
+    Input,
+    Output,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -49,6 +68,7 @@ pub struct Connection {
 #[serde(deny_unknown_fields)]
 pub struct Solution {
     pub poses: Vec<Pose>,
+    pub terminal_poses: Vec<TerminalPose>,
     pub routes: Vec<Route>,
     pub bridges: Vec<Bridge>,
 }
@@ -63,10 +83,19 @@ pub struct Pose {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct TerminalPose {
+    pub terminal: String,
+    pub position: Point,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Route {
     pub connection: String,
-    pub source_port: String,
-    pub target_port: String,
+    /// Present for facility endpoints and absent for boundary terminals.
+    pub source_port: Option<String>,
+    /// Present for facility endpoints and absent for boundary terminals.
+    pub target_port: Option<String>,
     pub cells: Vec<Point>,
 }
 

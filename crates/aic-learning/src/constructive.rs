@@ -21,13 +21,12 @@ use crate::{
 
 pub mod policy;
 pub mod ppo;
-pub mod problems;
 pub mod rollout;
 pub mod run;
 #[cfg(test)]
 mod test_support;
 
-pub const CHECKPOINT_SCHEMA: &str = "aic-constructive-attention-checkpoint-v1";
+pub const CHECKPOINT_SCHEMA: &str = "aic-constructive-attention-checkpoint-v2";
 
 pub struct FactorDecision<'a> {
     pub observation: usize,
@@ -72,7 +71,7 @@ impl InputBatch {
             ensure!(
                 input.schema == aic_pilot_native::constructive::learning::SCHEMA
                     && !input.entity_features.is_empty()
-                    && input.entity_features.len() <= 36_864
+                    && input.entity_features.len() <= 69_632
                     && input.relation_index.len() == input.relation_features.len()
                     && input.spatial_features.len() == input.spatial_owners.len(),
                 "aic-learning.constructive-batch: malformed graph {graph}"

@@ -16,6 +16,8 @@ pub mod update;
 pub mod collection;
 #[cfg(feature = "libtorch")]
 pub mod constructive;
+#[cfg(feature = "outcomes")]
+pub mod constructive_problems;
 #[cfg(feature = "libtorch")]
 pub mod training;
 

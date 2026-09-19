@@ -122,11 +122,11 @@ pub enum LearningCommand {
         #[arg(long)]
         seed: u64,
     },
-    /// Prepare a seeded recipe-derived pairwise constructive problem split.
-    #[cfg(feature = "learning")]
+    /// Prepare seeded full production graphs without computing physical layouts.
+    #[cfg(feature = "outcomes")]
     PrepareConstructiveProblems {
         #[arg(long)]
-        config: PathBuf,
+        sampling: PathBuf,
         /// Directory containing normalized recipes, items and physical catalogs.
         #[arg(long)]
         catalog_root: PathBuf,
@@ -190,8 +190,10 @@ pub fn run(command: LearningCommand) -> Result<()> {
         LearningCommand::Train { config, .. } => config,
         #[cfg(feature = "learning")]
         LearningCommand::PreparePanel { config, .. } => config,
-        #[cfg(feature = "learning")]
-        LearningCommand::PrepareConstructiveProblems { config, .. } => config,
+        #[cfg(feature = "outcomes")]
+        LearningCommand::PrepareConstructiveProblems {
+            sampling: config, ..
+        } => config,
         #[cfg(feature = "learning")]
         LearningCommand::TrainConstructive { config, .. } => config,
         #[cfg(feature = "learning")]
@@ -321,16 +323,16 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             cases,
             seed,
         } => aic_learning::training::evaluation::prepare(&config, &output, cases, seed),
-        #[cfg(feature = "learning")]
+        #[cfg(feature = "outcomes")]
         LearningCommand::PrepareConstructiveProblems {
-            config,
+            sampling,
             catalog_root,
             output,
             seed,
             training,
             evaluation,
-        } => aic_learning::constructive::problems::prepare(
-            &config,
+        } => aic_learning::constructive_problems::prepare(
+            &sampling,
             &catalog_root,
             &output,
             seed,

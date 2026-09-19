@@ -109,10 +109,12 @@ The retained generator borrows validated catalogs. Workers share these immutable
 inputs, retain typed route state during construction and publish through a bounded
 queue. Catalogs are read, validated and hashed once per command, not per edge.
 
-`aic-layout` owns `aic-physical-layout-v1`: `problem` contains block/facility
-identities and connection endpoint identities, commodity labels, transports and
-exact rates. `solution` contains poses, selected port IDs, complete paths and
-bridge placements. Array ordering is not identity. `catalog_sha256` binds the
+`aic-layout` owns `aic-physical-layout-v2`: `problem` contains block/facility
+identities, boundary terminals, and connection endpoint identities, commodity
+labels, transports and exact rates. `solution` contains facility and terminal
+poses, optional facility port IDs, complete paths and bridge placements. Compatible
+same-commodity routes may share a transport cell within catalog line capacity.
+Array ordering is not identity. `catalog_sha256` binds the
 layout to the exact external files; the CLI hashes each filename and file bytes
 with their little-endian u64 lengths, in facilities/transports/components order.
 Independent validation checks coverage, body overlap, ports, rates, adjacency,
@@ -122,9 +124,10 @@ layers and declared bridge use. Metrics are derived from actual geometry.
 Existing native factory editing and generation use this same implementation.
 Existing `aic-data` catalog/rate exports reference the common types directly.
 
-The physical schema currently describes facility blocks and pairwise routes,
-including crossings. It does not encode external anchors, splitter/converger
-placements, recipe balance or recipe execution. Synthetic commodity labels are
+The physical schema currently describes facility blocks, boundary anchors and
+pairwise flow routes, including crossings and shared same-commodity cells. It
+does not encode explicit splitter/converger component placements, recipe balance
+or recipe execution. Synthetic commodity labels are
 opaque. Physically valid samples are not automatically admitted by the current
 recipe-bound PPO environment, nor are they optimal layouts. Pretraining integration
 requires its separate data/admission and evaluation design.

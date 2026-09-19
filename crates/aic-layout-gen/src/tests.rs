@@ -25,10 +25,12 @@ fn sequence_pairs_are_nonoverlapping_for_varied_rectangles_and_rotations() {
             catalog_sha256: loaded.catalogs.identity.clone(),
             problem: Problem {
                 blocks: p.blocks,
+                terminals: vec![],
                 connections: vec![],
             },
             solution: Solution {
                 poses: p.poses,
+                terminal_poses: vec![],
                 routes: vec![],
                 bridges: vec![],
             },
@@ -116,7 +118,7 @@ fn independent_validation_rejects_corrupted_obligations_ports_capacity_and_bridg
     bad.problem.connections[1].id = bad.problem.connections[0].id.clone();
     expect(bad, "connection");
     let mut bad = good.clone();
-    bad.solution.routes[0].source_port = "missing-port".into();
+    bad.solution.routes[0].source_port = Some("missing-port".into());
     expect(bad, "port");
     let mut bad = good.clone();
     bad.solution.poses[1].position = bad.solution.poses[0].position;
@@ -245,6 +247,7 @@ fn oversized_catalog_geometry_is_rejected_before_port_projection() {
                 id: "block-0".into(),
                 facility: id,
             }],
+            terminals: vec![],
             connections: vec![],
         },
         solution: Solution {
@@ -253,6 +256,7 @@ fn oversized_catalog_geometry_is_rejected_before_port_projection() {
                 position: aic_layout::geometry::Point { x: 100, y: 100 },
                 rotation: 0,
             }],
+            terminal_poses: vec![],
             routes: vec![],
             bridges: vec![],
         },

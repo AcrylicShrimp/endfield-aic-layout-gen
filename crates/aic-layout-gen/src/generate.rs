@@ -442,8 +442,8 @@ impl<'a> Generator<'a> {
                 });
                 routes.push(Route {
                     connection: id,
-                    source_port: a.id.clone(),
-                    target_port: b.id.clone(),
+                    source_port: Some(a.id.clone()),
+                    target_port: Some(b.id.clone()),
                     cells,
                 });
                 attempt.connected = connections.len();
@@ -465,10 +465,12 @@ impl<'a> Generator<'a> {
                 catalog_sha256: self.catalogs.identity.clone(),
                 problem: Problem {
                     blocks: packing.blocks.clone(),
+                    terminals: vec![],
                     connections,
                 },
                 solution: Solution {
                     poses: packing.poses.clone(),
+                    terminal_poses: vec![],
                     routes,
                     bridges,
                 },

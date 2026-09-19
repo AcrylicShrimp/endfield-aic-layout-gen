@@ -7,7 +7,7 @@ use crate::logistics::{
     LogisticsComponentKind, TransportKind, ValidatedLogisticsComponentCatalog,
     ValidatedTransportCatalog,
 };
-use crate::physical::{Layout, Metrics, SCHEMA};
+use crate::physical::{Layout, Metrics, SCHEMA, TerminalDirection};
 use crate::projection::{cardinal_index, rotate};
 use crate::rate::Rate;
 use crate::stable_id::is_stable_id;
@@ -65,7 +65,9 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
     }
     if problem.blocks.is_empty()
         || problem.blocks.len() > 4096
+        || problem.terminals.len() > 32768
         || solution.poses.len() != problem.blocks.len()
+        || solution.terminal_poses.len() != problem.terminals.len()
         || problem.connections.len() > 32768
         || solution.routes.len() != problem.connections.len()
         || solution.bridges.len() > 32768
@@ -86,6 +88,20 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
                 "block",
                 block.id.clone(),
                 "Duplicate/invalid block identity or unknown catalog facility",
+            ));
+        }
+    }
+    let mut terminals = BTreeMap::new();
+    for (i, terminal) in problem.terminals.iter().enumerate() {
+        if !is_stable_id(&terminal.id)
+            || !is_stable_id(&terminal.commodity)
+            || blocks.contains_key(terminal.id.as_str())
+            || terminals.insert(terminal.id.as_str(), i).is_some()
+        {
+            return Err(error(
+                "terminal",
+                terminal.id.clone(),
+                "Duplicate/invalid terminal identity or commodity",
             ));
         }
     }
@@ -160,26 +176,72 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
         }
         ports[i] = Some(projected);
     }
+    let mut terminal_positions = vec![None; problem.terminals.len()];
+    let mut occupied_terminal_positions = HashSet::new();
+    for pose in &solution.terminal_poses {
+        let Some(&i) = terminals.get(pose.terminal.as_str()) else {
+            return Err(error(
+                "terminal-pose",
+                pose.terminal.clone(),
+                "Terminal pose references an unknown boundary terminal",
+            ));
+        };
+        if terminal_positions[i].is_some()
+            || !valid_point(pose.position)
+            || !occupied_terminal_positions.insert(pose.position)
+            || body.contains(&pose.position)
+        {
+            return Err(error(
+                "terminal-pose",
+                pose.terminal.clone(),
+                "Duplicate terminal, invalid coordinate or occupied boundary cell",
+            ));
+        }
+        include(pose.position);
+        terminal_positions[i] = Some(pose.position);
+    }
     let mut connection_ids = BTreeMap::new();
-    let mut parent: Vec<_> = (0..blocks.len()).collect();
+    let mut parent: Vec<_> = (0..blocks.len() + terminals.len()).collect();
     let mut incoming = vec![0; blocks.len()];
     let mut outgoing = vec![0; blocks.len()];
     let mut transports = [0; 2];
     for (i, connection) in problem.connections.iter().enumerate() {
-        let source = blocks.get(connection.source.as_str()).copied();
-        let target = blocks.get(connection.target.as_str()).copied();
+        let source_block = blocks.get(connection.source.as_str()).copied();
+        let target_block = blocks.get(connection.target.as_str()).copied();
+        let source_terminal = terminals.get(connection.source.as_str()).copied();
+        let target_terminal = terminals.get(connection.target.as_str()).copied();
+        let source = source_block.or_else(|| source_terminal.map(|index| blocks.len() + index));
+        let target = target_block.or_else(|| target_terminal.map(|index| blocks.len() + index));
         if !is_stable_id(&connection.id)
             || !is_stable_id(&connection.commodity)
             || connection_ids.insert(connection.id.as_str(), i).is_some()
             || source.is_none()
             || target.is_none()
             || source == target
+            || source_terminal.is_some() && target_terminal.is_some()
         {
             return Err(error(
                 "connection",
                 connection.id.clone(),
                 "Invalid/duplicate connection or missing/self endpoint",
             ));
+        }
+        for (terminal, expected) in [
+            (source_terminal, TerminalDirection::Input),
+            (target_terminal, TerminalDirection::Output),
+        ] {
+            if terminal.is_some_and(|index| {
+                let terminal = &problem.terminals[index];
+                terminal.direction != expected
+                    || terminal.commodity != connection.commodity
+                    || terminal.transport != connection.transport
+            }) {
+                return Err(error(
+                    "terminal-connection",
+                    connection.id.clone(),
+                    "Boundary terminal role, commodity or transport does not match the connection",
+                ));
+            }
         }
         let capacity = catalogs.transports.capacity(connection.transport);
         if !within_capacity(connection.rate, capacity.quantity, capacity.duration_ms) {
@@ -192,12 +254,16 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
         let (s, t) = (source.unwrap(), target.unwrap());
         let (a, b) = (root(&parent, s), root(&parent, t));
         parent[a] = b;
-        outgoing[s] += 1;
-        incoming[t] += 1;
+        if let Some(s) = source_block {
+            outgoing[s] += 1;
+        }
+        if let Some(t) = target_block {
+            incoming[t] += 1;
+        }
         transports[crate::geometry::layer(connection.transport)] += 1;
     }
     let mut routed = HashSet::new();
-    let mut selected_ports = HashSet::new();
+    let mut selected_ports = HashMap::new();
     let mut visits: HashMap<(TransportKind, Point), Vec<(usize, usize)>> = HashMap::new();
     let mut route_indices = vec![0; problem.connections.len()];
     let mut total_cells = 0usize;
@@ -229,7 +295,7 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
         }
         route_indices[ci] = ri;
         let connection = &problem.connections[ci];
-        for (block, port_id, expected, endpoint) in [
+        for (endpoint_id, port_id, expected, endpoint) in [
             (
                 &connection.source,
                 &route.source_port,
@@ -243,27 +309,88 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
                 *route.cells.last().unwrap(),
             ),
         ] {
-            let bi = blocks[block.as_str()];
-            let port = ports[bi]
-                .as_ref()
-                .unwrap()
-                .iter()
-                .find(|p| p.id == *port_id);
-            if port.is_none_or(|p| {
-                p.direction != expected
-                    || p.transport != connection.transport
-                    || p.connection != endpoint
-            }) || !selected_ports.insert((bi, port_id.as_str()))
-            {
-                return Err(error(
-                    "port",
-                    route.connection.clone(),
-                    "Wrong/reused port, transport, direction or endpoint position",
-                ));
+            if let Some(&bi) = blocks.get(endpoint_id.as_str()) {
+                let Some(port_id) = port_id.as_deref() else {
+                    return Err(error(
+                        "port",
+                        route.connection.clone(),
+                        "Facility route endpoint omitted its selected port",
+                    ));
+                };
+                let port = ports[bi].as_ref().unwrap().iter().find(|p| p.id == port_id);
+                if port.is_none_or(|p| {
+                    p.direction != expected
+                        || p.transport != connection.transport
+                        || p.connection != endpoint
+                }) {
+                    return Err(error(
+                        "port",
+                        route.connection.clone(),
+                        "Wrong port, transport, direction or endpoint position",
+                    ));
+                }
+                let key = (bi, port_id.to_owned());
+                let entry = selected_ports.entry(key).or_insert_with(|| {
+                    (
+                        connection.commodity.clone(),
+                        connection.transport,
+                        expected,
+                        Rate::zero(),
+                    )
+                });
+                if entry.0 != connection.commodity
+                    || entry.1 != connection.transport
+                    || entry.2 != expected
+                {
+                    return Err(error(
+                        "port",
+                        route.connection.clone(),
+                        "A facility port is shared by incompatible material flows",
+                    ));
+                }
+                entry.3 = entry.3.checked_add(connection.rate).map_err(|_| {
+                    error(
+                        "port-capacity",
+                        route.connection.clone(),
+                        "Shared port rate overflow",
+                    )
+                })?;
+                let capacity = catalogs.transports.capacity(connection.transport);
+                if !within_capacity(entry.3, capacity.quantity, capacity.duration_ms) {
+                    return Err(error(
+                        "port-capacity",
+                        route.connection.clone(),
+                        "Aggregate shared port demand exceeds one transport line",
+                    ));
+                }
+            } else {
+                let ti = terminals[endpoint_id.as_str()];
+                if port_id.is_some() || terminal_positions[ti] != Some(endpoint) {
+                    return Err(error(
+                        "terminal-route",
+                        route.connection.clone(),
+                        "Boundary route endpoint has a port or misses its terminal position",
+                    ));
+                }
             }
         }
         let mut local = HashSet::new();
         for (pi, &p) in route.cells.iter().enumerate() {
+            if terminal_positions
+                .iter()
+                .enumerate()
+                .any(|(terminal, position)| {
+                    *position == Some(p)
+                        && problem.terminals[terminal].id != connection.source
+                        && problem.terminals[terminal].id != connection.target
+                })
+            {
+                return Err(error(
+                    "terminal-intersection",
+                    route.connection.clone(),
+                    "Route crosses an unrelated boundary terminal",
+                ));
+            }
             if !valid_point(p)
                 || body.contains(&p)
                 || !local.insert(p)
@@ -289,6 +416,35 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
         let distance = route.cells[0].distance(*route.cells.last().unwrap());
         distance_sum += distance;
         detour_sum += (route.cells.len() - 1) as f64 / distance.max(1) as f64;
+    }
+    let mut shared_sites = HashSet::new();
+    for (&(transport, point), users) in &visits {
+        if users.len() <= 1 {
+            continue;
+        }
+        let commodities = users
+            .iter()
+            .map(|&(connection, _)| problem.connections[connection].commodity.as_str())
+            .collect::<BTreeSet<_>>();
+        if commodities.len() == 1 {
+            let mut load = Rate::zero();
+            for &(connection, _) in users {
+                load = load
+                    .checked_add(problem.connections[connection].rate)
+                    .map_err(|_| {
+                        error("shared-capacity", "routes", "Shared route rate overflow")
+                    })?;
+            }
+            let capacity = catalogs.transports.capacity(transport);
+            if !within_capacity(load, capacity.quantity, capacity.duration_ms) {
+                return Err(error(
+                    "shared-capacity",
+                    "routes",
+                    "Aggregate same-commodity route demand exceeds line capacity",
+                ));
+            }
+            shared_sites.insert((transport, point));
+        }
     }
     let mut bridge_sites = HashSet::new();
     let mut bridge_ids = HashSet::new();
@@ -369,10 +525,9 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
             }
         }
     }
-    if visits
-        .iter()
-        .any(|(tag, users)| users.len() > 1 && !bridge_sites.contains(tag))
-    {
+    if visits.iter().any(|(tag, users)| {
+        users.len() > 1 && !bridge_sites.contains(tag) && !shared_sites.contains(tag)
+    }) {
         return Err(error(
             "intersection",
             "routes",
@@ -381,6 +536,15 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
     }
     let width = hi.x - lo.x + 1;
     let height = hi.y - lo.y + 1;
+    if terminal_positions.iter().flatten().any(|position| {
+        position.x != lo.x && position.x != hi.x && position.y != lo.y && position.y != hi.y
+    }) {
+        return Err(error(
+            "terminal-boundary",
+            "terminals",
+            "Every external terminal must lie on the final used layout boundary",
+        ));
+    }
     let area = (width as u64) * (height as u64);
     let unique_transport: HashSet<_> = visits.keys().map(|(_, p)| *p).collect();
     Ok(Metrics {
