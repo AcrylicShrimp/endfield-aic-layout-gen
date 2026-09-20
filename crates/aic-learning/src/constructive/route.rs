@@ -1,5 +1,6 @@
 //! Self-roll-in training for one-connection learned route options.
 
+mod curriculum;
 mod frontier;
 mod replay;
 
@@ -47,6 +48,7 @@ use super::{
     run::{load_catalogs, read_json, write_json},
 };
 
+use curriculum::{Buffer as FrontierBuffer, Config as FrontierConfig};
 use replay::{Buffer as ReplayBuffer, Config as ReplayConfig};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -61,6 +63,8 @@ pub struct Config {
     pub reward: RewardConfig,
     #[serde(default)]
     pub replay: ReplayConfig,
+    #[serde(default)]
+    pub frontier: FrontierConfig,
     pub updates: u64,
     pub sessions_per_update: usize,
     pub ppo_epochs: usize,
@@ -129,6 +133,7 @@ struct Summary {
     maximum_rollin_depth: usize,
     by_rollin_depth: BTreeMap<usize, Value>,
     by_task_shape: BTreeMap<String, Value>,
+    by_shape_and_rollin_depth: BTreeMap<String, Value>,
     by_requested_connections: BTreeMap<usize, Value>,
     seconds: f64,
 }
@@ -139,6 +144,8 @@ struct RouteCollection {
     fully_routed_sessions: usize,
     blocked: Vec<BlockedOption>,
     dead_ends: usize,
+    frontier_candidates: Vec<curriculum::Candidate>,
+    blocked_frontier_candidates: usize,
 }
 
 struct BlockedOption {
@@ -149,12 +156,14 @@ struct BlockedOption {
 
 struct TaskState {
     session: Session,
+    spec: TaskSpec,
     targets: usize,
     next: usize,
     route_steps: usize,
     current: Episode,
     last_success_episode: Option<usize>,
     successful_episodes: Vec<usize>,
+    committed_commands: Vec<Command>,
     crossed: bool,
     allow_abort: bool,
     stopped: bool,
@@ -387,6 +396,7 @@ pub fn run(
     )?;
     let mut final_greedy = summary(&initial_greedy);
     let mut final_stochastic = summary(&initial_stochastic);
+    let mut fresh_greedy_depth_one = crossed_depth_successes(&initial_greedy, 1);
     write_row(
         &mut metrics,
         &json!({
@@ -400,13 +410,16 @@ pub fn run(
     let mut total_options = 0usize;
     let mut total_turns = 0usize;
     let mut replay = ReplayBuffer::new(config.replay.clone());
+    let mut frontier = FrontierBuffer::new(config.frontier.clone());
     for update in 1..=config.updates {
-        let specs = training_specs(&config, update);
+        let frontier_plan = frontier.plan(fresh_greedy_depth_one);
+        let root_session_count = config.sessions_per_update - frontier_plan.sessions;
+        let specs = training_specs(&config, update, root_session_count);
         let sessions = specs
             .iter()
             .map(|spec| Ok((builder.build(spec)?, spec.clone())))
             .collect::<Result<Vec<_>>>()?;
-        let collected = collect(
+        let mut root_collected = collect(
             sessions,
             &builder.domain,
             &config.reward,
@@ -415,7 +428,37 @@ pub fn run(
             config.gamma,
             &mut learner,
             Sampling::Training,
+            0,
+            1.,
         )?;
+        let root_summary = summary(&root_collected);
+        let blocked_frontier_candidates = root_collected.blocked_frontier_candidates;
+        let frontier_candidates = std::mem::take(&mut root_collected.frontier_candidates);
+        let mut frontier_collected = if frontier_plan.sessions > 0 {
+            Some(collect(
+                frontier.sessions(&builder, frontier_plan.sessions)?,
+                &builder.domain,
+                &config.reward,
+                config.task.route_turns,
+                config.task.allow_abort,
+                config.gamma,
+                &mut learner,
+                Sampling::Training,
+                1,
+                frontier_plan.temperature,
+            )?)
+        } else {
+            None
+        };
+        let frontier_summary = frontier_collected.as_ref().map(summary);
+        if let Some(collected) = &frontier_collected {
+            frontier.observe(&collected.rollout.episodes, collected.blocked.len())?;
+        }
+        let collected = if let Some(frontier_collected) = frontier_collected.take() {
+            merge_collections(root_collected, frontier_collected)
+        } else {
+            root_collected
+        };
         let credit = rollout::gae(&collected.rollout, config.gamma, config.gae_lambda)?;
         let samples = rollout::ppo_samples(&collected.rollout, &credit)?;
         let mut epochs = Vec::with_capacity(config.ppo_epochs);
@@ -436,6 +479,7 @@ pub fn run(
         // Causal boundary: successes from this collection become eligible only
         // after every learner epoch for the update has finished.
         let admissions = replay.admit(&collected.rollout.episodes, config.gamma, update)?;
+        let frontier_admissions = frontier.admit(&builder, frontier_candidates, update)?;
         total_sessions += collected.sessions;
         total_options += collected.rollout.episodes.len() + collected.blocked.len();
         total_turns += collected.rollout.turns;
@@ -443,6 +487,9 @@ pub fn run(
             "update":update,
             "available_connections":available_connections(&config, update),
             "training":summary(&collected),
+            "training_root":root_summary,
+            "training_frontier":frontier_summary,
+            "blocked_frontier_candidates":blocked_frontier_candidates,
             "ppo":epochs,
             "replay":replay.report(admissions),
         });
@@ -465,9 +512,15 @@ pub fn run(
             )?;
             final_greedy = summary(&greedy);
             final_stochastic = summary(&stochastic);
+            fresh_greedy_depth_one = crossed_depth_successes(&greedy, 1);
             row["evaluation_greedy"] = serde_json::to_value(&final_greedy)?;
             row["evaluation_stochastic"] = serde_json::to_value(&final_stochastic)?;
         }
+        row["frontier"] = serde_json::to_value(frontier.report(
+            frontier_plan,
+            frontier_admissions,
+            fresh_greedy_depth_one,
+        ))?;
         write_row(&mut metrics, &row)?;
         metrics.flush()?;
     }
@@ -487,6 +540,11 @@ pub fn run(
         "training_turns":total_turns,
         "final_evaluation_greedy":final_greedy,
         "final_evaluation_stochastic":final_stochastic,
+        "final_frontier":frontier.report(
+            frontier.plan(fresh_greedy_depth_one),
+            curriculum::AdmissionReport::default(),
+            fresh_greedy_depth_one,
+        ),
         "parameter_count":learner.model.parameters.iter().map(|(_, value)| value.numel() as u64).sum::<u64>(),
         "device":device_name(device)?,
         "determinism":"strict",
@@ -531,6 +589,7 @@ fn validate_config(config: &Config) -> Result<()> {
     config
         .replay
         .validate(config.optimizer.imitation_coefficient)?;
+    config.frontier.validate(config.sessions_per_update)?;
     Ok(())
 }
 
@@ -545,14 +604,14 @@ fn available_connections(config: &Config, update: u64) -> usize {
     .expect("bounded curriculum depth")
 }
 
-fn training_specs(config: &Config, update: u64) -> Vec<TaskSpec> {
+fn training_specs(config: &Config, update: u64, sessions: usize) -> Vec<TaskSpec> {
     let available = available_connections(config, update);
     let shapes = if update > config.task.aligned_warmup_updates {
         2
     } else {
         1
     };
-    (0..config.sessions_per_update)
+    (0..sessions)
         .map(|index| {
             let combination = (index + update as usize - 1) % (available * shapes);
             let connections = 1 + combination % available;
@@ -602,6 +661,8 @@ fn evaluate(
         config.gamma,
         learner,
         sampling,
+        0,
+        1.,
     )
 }
 
@@ -614,6 +675,8 @@ fn collect(
     gamma: f64,
     learner: &mut Learner,
     sampling: Sampling,
+    start_depth: usize,
+    training_temperature: f64,
 ) -> Result<RouteCollection> {
     ensure!(
         !sessions.is_empty(),
@@ -623,25 +686,33 @@ fn collect(
     let count = sessions.len();
     let mut states = sessions
         .into_iter()
-        .map(|(session, spec)| {
+        .map(|(session, spec)| -> Result<TaskState> {
             let targets = session.problem().connections.len();
-            TaskState {
+            ensure!(
+                start_depth < targets && session.observe().completed == start_depth,
+                "aic-learning.constructive-route-collection: invalid start depth"
+            );
+            Ok(TaskState {
                 session,
+                spec: spec.clone(),
                 targets,
-                next: 0,
+                next: start_depth,
                 route_steps: 0,
-                current: route_episode(0, targets, spec.crossed),
+                current: route_episode(start_depth, targets, spec.crossed),
                 last_success_episode: None,
                 successful_episodes: Vec::new(),
+                committed_commands: Vec::new(),
                 crossed: spec.crossed,
                 allow_abort,
                 stopped: false,
-            }
+            })
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>>>()?;
     let mut episodes: Vec<Episode> = Vec::new();
     let mut blocked = Vec::new();
     let mut dead_ends = 0;
+    let mut frontier_candidates = Vec::new();
+    let mut blocked_frontier_candidates = 0;
     let mut evaluation_sampler = match sampling {
         Sampling::StochasticEvaluation { seed } => Some(Generator::new(seed)?),
         _ => None,
@@ -715,7 +786,7 @@ fn collect(
         }
         let rows = observations.iter().collect::<Vec<_>>();
         let choices = match sampling {
-            Sampling::Training => learner.sample(&rows)?,
+            Sampling::Training => learner.sample_temperature(&rows, training_temperature)?,
             Sampling::GreedyEvaluation => learner.greedy(&rows)?,
             Sampling::StochasticEvaluation { .. } => policy::sample(
                 &learner.model,
@@ -782,6 +853,34 @@ fn collect(
                 state.current.completed_connections = after.completed;
                 let episode = episodes.len();
                 episodes.push(std::mem::take(&mut state.current));
+                if succeeded {
+                    state.committed_commands.extend(
+                        episodes[episode]
+                            .transitions
+                            .iter()
+                            .filter(|transition| transition.accepted)
+                            .map(|transition| transition.choice.command.command.clone()),
+                    );
+                    if start_depth == 0 && state.crossed && state.targets == 2 && state.next == 0 {
+                        match state.session.route_learning_observation_with_abort(
+                            domain,
+                            1,
+                            state.allow_abort,
+                        ) {
+                            Ok(_) => frontier_candidates.push(curriculum::Candidate {
+                                task: state.spec.clone(),
+                                commands: state.committed_commands.clone(),
+                            }),
+                            Err(diagnostic)
+                                if diagnostic.code
+                                    == "constructive.empty-route-learning-domain" =>
+                            {
+                                blocked_frontier_candidates += 1;
+                            }
+                            Err(diagnostic) => return Err(diagnostic.into()),
+                        }
+                    }
+                }
                 if succeeded && state.next + 1 < state.targets && !state.session.done() {
                     state.last_success_episode = Some(episode);
                     state.successful_episodes.push(episode);
@@ -830,6 +929,8 @@ fn collect(
         fully_routed_sessions,
         blocked,
         dead_ends,
+        frontier_candidates,
+        blocked_frontier_candidates,
     })
 }
 
@@ -839,6 +940,22 @@ fn finalize_route_outcomes(episodes: &mut [Episode], state: &TaskState) {
         episodes[episode].route_observed_depth = observation.completed;
         episodes[episode].route_full_session = observation.fully_validated;
     }
+}
+
+fn merge_collections(mut left: RouteCollection, mut right: RouteCollection) -> RouteCollection {
+    left.rollout.episodes.append(&mut right.rollout.episodes);
+    left.rollout.turns += right.rollout.turns;
+    left.rollout.accepted += right.rollout.accepted;
+    left.rollout.completed += right.rollout.completed;
+    left.rollout.seconds += right.rollout.seconds;
+    left.sessions += right.sessions;
+    left.fully_routed_sessions += right.fully_routed_sessions;
+    left.blocked.append(&mut right.blocked);
+    left.dead_ends += right.dead_ends;
+    left.frontier_candidates
+        .append(&mut right.frontier_candidates);
+    left.blocked_frontier_candidates += right.blocked_frontier_candidates;
+    left
 }
 
 fn route_episode(depth: usize, total: usize, crossed: bool) -> Episode {
@@ -897,6 +1014,7 @@ fn summary(collection: &RouteCollection) -> Summary {
         .count();
     let mut depths = BTreeMap::<usize, (usize, usize)>::new();
     let mut shapes = BTreeMap::<String, (usize, usize)>::new();
+    let mut shape_depths = BTreeMap::<String, (usize, usize)>::new();
     let mut requested = BTreeMap::<usize, (usize, usize)>::new();
     for episode in &collection.rollout.episodes {
         let succeeded = usize::from(episode.route_succeeded);
@@ -915,6 +1033,11 @@ fn summary(collection: &RouteCollection) -> Summary {
         let entry = shapes.entry(shape.into()).or_default();
         entry.0 += 1;
         entry.1 += succeeded;
+        let entry = shape_depths
+            .entry(format!("{shape}-depth-{}", episode.rollin_depth))
+            .or_default();
+        entry.0 += 1;
+        entry.1 += succeeded;
     }
     for blocked in &collection.blocked {
         depths.entry(blocked.depth).or_default().0 += 1;
@@ -925,6 +1048,15 @@ fn summary(collection: &RouteCollection) -> Summary {
             } else {
                 "aligned".into()
             })
+            .or_default()
+            .0 += 1;
+        let shape = if blocked.crossed {
+            "crossed"
+        } else {
+            "aligned"
+        };
+        shape_depths
+            .entry(format!("{shape}-depth-{}", blocked.depth))
             .or_default()
             .0 += 1;
     }
@@ -961,9 +1093,21 @@ fn summary(collection: &RouteCollection) -> Summary {
             .unwrap_or(0),
         by_rollin_depth: grouped_summary(depths),
         by_task_shape: grouped_summary(shapes),
+        by_shape_and_rollin_depth: grouped_summary(shape_depths),
         by_requested_connections: grouped_summary(requested),
         seconds: collection.rollout.seconds,
     }
+}
+
+fn crossed_depth_successes(collection: &RouteCollection, depth: usize) -> usize {
+    collection
+        .rollout
+        .episodes
+        .iter()
+        .filter(|episode| {
+            episode.route_crossed && episode.rollin_depth == depth && episode.route_succeeded
+        })
+        .count()
 }
 
 fn grouped_summary<K: Ord>(groups: BTreeMap<K, (usize, usize)>) -> BTreeMap<K, Value> {
@@ -1009,15 +1153,15 @@ mod tests {
         assert_eq!(available_connections(&config, 5), 3);
         assert_eq!(available_connections(&config, 7), 4);
         assert!(
-            training_specs(&config, 1)
+            training_specs(&config, 1, config.sessions_per_update)
                 .iter()
                 .all(|spec| spec.connections == 1 && spec.rows == 1 && !spec.crossed)
         );
-        let offset_specs = training_specs(&config, 2);
+        let offset_specs = training_specs(&config, 2, config.sessions_per_update);
         assert!(offset_specs.iter().any(|spec| {
             spec.connections == 1 && spec.rows == config.task.max_connections && spec.crossed
         }));
-        let final_specs = training_specs(&config, 7);
+        let final_specs = training_specs(&config, 7, config.sessions_per_update);
         assert_eq!(
             final_specs
                 .iter()
@@ -1146,6 +1290,63 @@ mod tests {
             );
         }
         assert!(session.observe().fully_validated);
+        Ok(())
+    }
+
+    #[test]
+    fn mixed_temperature_likelihood_reproduces_behavior_log_probability() -> Result<()> {
+        let _guard = crate::TORCH_TEST.lock().unwrap();
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut config: Config =
+            read_json(&root.join("docs/benchmarks/direct-constructive-route-options/config.json"))?;
+        config.model.width = 16;
+        config.model.message_rounds = 1;
+        let catalogs = load_catalogs(&root.join("data/game/normalized"))?;
+        let builder = TaskBuilder::new(&config, catalogs)?;
+        let sessions = [
+            TaskSpec {
+                connections: 1,
+                rows: 1,
+                crossed: false,
+                seed: 1,
+            },
+            TaskSpec {
+                connections: 1,
+                rows: 4,
+                crossed: true,
+                seed: 2,
+            },
+        ]
+        .iter()
+        .map(|spec| builder.build(spec))
+        .collect::<Result<Vec<_>>>()?;
+        let observations = sessions
+            .iter()
+            .map(|session| session.route_learning_observation(&builder.domain, 0))
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        let (_, mut learner) = Learner::cold(
+            &config.model,
+            &config.optimizer,
+            config.initialization_seed,
+            Device::Cpu,
+        )?;
+        let cold = learner.sample_temperature(&[&observations[0]], 0.5)?;
+        let hot = learner.sample_temperature(&[&observations[1]], 2.)?;
+        let choices = [&cold[0], &hot[0]];
+        let decisions = observations
+            .iter()
+            .zip(choices)
+            .map(|(observation, choice)| policy::TrainingDecision {
+                observation,
+                choice,
+            })
+            .collect::<Vec<_>>();
+        let (logp, _, _) =
+            policy::selected_likelihood(&learner.model, &decisions, Device::Cpu, true)?;
+        let recomputed = Vec::<f32>::try_from(logp)?;
+        for (actual, choice) in recomputed.into_iter().zip(choices) {
+            assert!((f64::from(actual) - choice.old_logp).abs() < 1e-5);
+        }
         Ok(())
     }
 }

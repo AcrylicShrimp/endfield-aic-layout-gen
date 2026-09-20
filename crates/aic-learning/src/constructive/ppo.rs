@@ -115,6 +115,20 @@ impl Learner {
         policy::sample(&self.model, rows, &mut self.sampler, self.device)
     }
 
+    pub fn sample_temperature(
+        &mut self,
+        rows: &[&Observation],
+        temperature: f64,
+    ) -> Result<Vec<policy::Choice>> {
+        policy::sample_temperature(
+            &self.model,
+            rows,
+            &mut self.sampler,
+            self.device,
+            temperature,
+        )
+    }
+
     pub fn greedy(&self, rows: &[&Observation]) -> Result<Vec<policy::Choice>> {
         policy::greedy(&self.model, rows, self.device)
     }
@@ -159,7 +173,7 @@ impl Learner {
                 })
                 .collect::<Vec<_>>();
             let (logp, entropy, values) =
-                policy::selected_likelihood(&self.model, &decisions, self.device)?;
+                policy::selected_likelihood(&self.model, &decisions, self.device, true)?;
             let old_logp = Tensor::from_slice(
                 &chunk
                     .iter()
@@ -220,7 +234,7 @@ impl Learner {
                 })
                 .collect::<Vec<_>>();
             let (logp, _, values) =
-                policy::selected_likelihood(&self.model, &decisions, self.device)?;
+                policy::selected_likelihood(&self.model, &decisions, self.device, false)?;
             let returns = Tensor::from_slice(
                 &replay
                     .iter()

@@ -20,6 +20,7 @@ pub struct Factor {
 pub struct Choice {
     pub factors: Vec<Factor>,
     pub command: SelectedCommand,
+    pub temperature: f64,
     pub old_logp: f64,
     pub old_value: f64,
     pub entropy: f64,
@@ -77,17 +78,24 @@ pub fn greedy(model: &Model, rows: &[&Observation], device: Device) -> Result<Ve
 fn temperature_prediction(
     batch: &ChoiceBatch,
     prediction: &Prediction,
-    temperature: f64,
-) -> Prediction {
-    if temperature == 1. {
-        return Prediction {
+    temperatures: &[f64],
+) -> Result<Prediction> {
+    ensure!(
+        temperatures.len() == batch.factors() as usize
+            && temperatures
+                .iter()
+                .all(|temperature| temperature.is_finite() && *temperature > 0.),
+        "aic-learning.constructive-sample: invalid factor temperatures"
+    );
+    if temperatures.iter().all(|temperature| *temperature == 1.) {
+        return Ok(Prediction {
             logp: prediction.logp.shallow_clone(),
             entropy: prediction.entropy.shallow_clone(),
-        };
+        });
     }
     let mut logp = Vec::with_capacity(batch.factors() as usize);
     let mut entropy = Vec::with_capacity(batch.factors() as usize);
-    for factor in 0..batch.factors() as usize {
+    for (factor, &temperature) in temperatures.iter().enumerate() {
         let range = batch.choice_range(factor);
         let factor_logp = (prediction
             .logp
@@ -97,10 +105,10 @@ fn temperature_prediction(
         entropy.push(-(&factor_logp.exp() * &factor_logp).sum(Kind::Float));
         logp.push(factor_logp);
     }
-    Prediction {
+    Ok(Prediction {
         logp: Tensor::cat(&logp, 0),
         entropy: Tensor::stack(&entropy, 0),
-    }
+    })
 }
 
 fn cpu_sample(
@@ -235,7 +243,11 @@ fn sample_with(
                 .collect::<Vec<_>>();
             let batch = inputs.choices(&factors_to_score, device)?;
             let base_prediction = model.score(&encoded, &batch)?;
-            let prediction = temperature_prediction(&batch, &base_prediction, temperature);
+            let prediction = temperature_prediction(
+                &batch,
+                &base_prediction,
+                &vec![temperature; batch.factors() as usize],
+            )?;
             let selected = select(&batch, &prediction)?;
             ensure!(
                 selected.len() == owners.len(),
@@ -277,6 +289,7 @@ fn sample_with(
             .map(|owner| Choice {
                 factors: std::mem::take(&mut factors[owner]),
                 command: commands[owner].take().unwrap(),
+                temperature,
                 old_logp: old_logp[owner],
                 old_value: old_value[owner],
                 entropy: entropy[owner],
@@ -301,11 +314,11 @@ mod temperature_tests {
             logp: Tensor::from_slice(&[0.25f32, 0.75, 0.2, 0.3, 0.5]).log(),
             entropy: Tensor::from_slice(&[0.5623351f32, 1.029653]),
         };
-        let one = temperature_prediction(&batch, &original, 1.);
+        let one = temperature_prediction(&batch, &original, &[1., 1.]).unwrap();
         assert!(bool::try_from(one.logp.equal(&original.logp)).unwrap());
         assert!(bool::try_from(one.entropy.equal(&original.entropy)).unwrap());
 
-        let hot = temperature_prediction(&batch, &original, 2.);
+        let hot = temperature_prediction(&batch, &original, &[2., 2.]).unwrap();
         for factor in 0..2 {
             let range = batch.choice_range(factor);
             let total = f64::try_from(
@@ -325,6 +338,7 @@ pub(crate) fn selected_likelihood(
     model: &Model,
     rows: &[TrainingDecision<'_>],
     device: Device,
+    behavior_temperature: bool,
 ) -> Result<(Tensor, Tensor, Tensor)> {
     ensure!(
         !rows.is_empty(),
@@ -333,6 +347,7 @@ pub(crate) fn selected_likelihood(
     let mut banks = Vec::new();
     let mut owners = Vec::new();
     let mut selected = Vec::new();
+    let mut temperatures = Vec::new();
     for (owner, row) in rows.iter().enumerate() {
         ensure!(
             !row.choice.factors.is_empty(),
@@ -367,6 +382,11 @@ pub(crate) fn selected_likelihood(
             banks.push(choices);
             owners.push(owner as i64);
             selected.push(factor.selected as i64);
+            temperatures.push(if behavior_temperature {
+                row.choice.temperature
+            } else {
+                1.
+            });
         }
         ensure!(
             final_command.as_ref() == Some(&row.choice.command),
@@ -388,7 +408,8 @@ pub(crate) fn selected_likelihood(
         .collect::<Vec<_>>();
     let batch = inputs.choices(&decisions, device)?;
     let encoded = model.encode(&inputs)?;
-    let prediction = model.score(&encoded, &batch)?;
+    let base_prediction = model.score(&encoded, &batch)?;
+    let prediction = temperature_prediction(&batch, &base_prediction, &temperatures)?;
     let mut absolute = Vec::with_capacity(selected.len());
     for (factor, selected) in selected.into_iter().enumerate() {
         absolute.push(batch.choice_range(factor).start + selected);

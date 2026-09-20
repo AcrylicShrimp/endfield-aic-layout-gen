@@ -46,6 +46,7 @@
 !/direct-constructive-route-frontier-probe/config.json
 !/direct-constructive-route-options-v2/config.json
 !/direct-constructive-route-options-v3/config.json
+!/direct-constructive-route-options-v4/config.json
 !/direct-constructive-route-options/config.json
 !/fixtures/banks.json
 !/fixtures/gap6-layout.json
