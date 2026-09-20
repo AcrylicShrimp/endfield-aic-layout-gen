@@ -1,6 +1,9 @@
 //! Self-roll-in training for one-connection learned route options.
 
+mod frontier;
 mod replay;
+
+pub use frontier::probe_frontier;
 
 use std::{
     collections::BTreeMap,

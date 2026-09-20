@@ -3,7 +3,7 @@
 use aic_pilot_native::constructive::learning::{Advance, Cursor, Observation, SelectedCommand};
 use aic_torch::{
     Generator,
-    tch::{Device, Tensor, no_grad},
+    tch::{Device, Kind, Tensor, no_grad},
 };
 use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
@@ -32,20 +32,75 @@ pub fn sample(
     device: Device,
 ) -> Result<Vec<Choice>> {
     if device == Device::Cpu {
-        sample_with(model, rows, device, |batch, prediction| {
+        sample_with(model, rows, device, 1., |batch, prediction| {
             cpu_sample(batch, prediction, sampler)
         })
     } else {
-        sample_with(model, rows, device, |batch, prediction| {
+        sample_with(model, rows, device, 1., |batch, prediction| {
+            device_sample(batch, prediction, sampler, device)
+        })
+    }
+}
+
+/// Sample from the exact factor distribution induced by scaling the policy's
+/// logits by `1 / temperature`. The returned likelihood and entropy describe
+/// that behavior distribution, so callers may retain the choices for a later
+/// on-policy update without relabeling them as base-policy samples.
+pub fn sample_temperature(
+    model: &Model,
+    rows: &[&Observation],
+    sampler: &mut Generator,
+    device: Device,
+    temperature: f64,
+) -> Result<Vec<Choice>> {
+    ensure!(
+        temperature.is_finite() && temperature > 0.,
+        "aic-learning.constructive-sample: invalid temperature"
+    );
+    if device == Device::Cpu {
+        sample_with(model, rows, device, temperature, |batch, prediction| {
+            cpu_sample(batch, prediction, sampler)
+        })
+    } else {
+        sample_with(model, rows, device, temperature, |batch, prediction| {
             device_sample(batch, prediction, sampler, device)
         })
     }
 }
 
 pub fn greedy(model: &Model, rows: &[&Observation], device: Device) -> Result<Vec<Choice>> {
-    sample_with(model, rows, device, |batch, prediction| {
+    sample_with(model, rows, device, 1., |batch, prediction| {
         greedy_selections(batch, prediction)
     })
+}
+
+fn temperature_prediction(
+    batch: &ChoiceBatch,
+    prediction: &Prediction,
+    temperature: f64,
+) -> Prediction {
+    if temperature == 1. {
+        return Prediction {
+            logp: prediction.logp.shallow_clone(),
+            entropy: prediction.entropy.shallow_clone(),
+        };
+    }
+    let mut logp = Vec::with_capacity(batch.factors() as usize);
+    let mut entropy = Vec::with_capacity(batch.factors() as usize);
+    for factor in 0..batch.factors() as usize {
+        let range = batch.choice_range(factor);
+        let factor_logp = (prediction
+            .logp
+            .narrow(0, range.start, range.end - range.start)
+            / temperature)
+            .log_softmax(0, Kind::Float);
+        entropy.push(-(&factor_logp.exp() * &factor_logp).sum(Kind::Float));
+        logp.push(factor_logp);
+    }
+    Prediction {
+        logp: Tensor::cat(&logp, 0),
+        entropy: Tensor::stack(&entropy, 0),
+    }
 }
 
 fn cpu_sample(
@@ -130,6 +185,7 @@ fn sample_with(
     model: &Model,
     rows: &[&Observation],
     device: Device,
+    temperature: f64,
     mut select: impl FnMut(&ChoiceBatch, &Prediction) -> Result<Vec<i64>>,
 ) -> Result<Vec<Choice>> {
     ensure!(
@@ -178,7 +234,8 @@ fn sample_with(
                 })
                 .collect::<Vec<_>>();
             let batch = inputs.choices(&factors_to_score, device)?;
-            let prediction = model.score(&encoded, &batch)?;
+            let base_prediction = model.score(&encoded, &batch)?;
+            let prediction = temperature_prediction(&batch, &base_prediction, temperature);
             let selected = select(&batch, &prediction)?;
             ensure!(
                 selected.len() == owners.len(),
@@ -226,6 +283,42 @@ fn sample_with(
             })
             .collect())
     })
+}
+
+#[cfg(test)]
+mod temperature_tests {
+    use super::*;
+    use std::collections::BTreeMap;
+
+    #[test]
+    fn temperature_distribution_normalizes_each_factor_and_preserves_one() {
+        let batch = ChoiceBatch {
+            values: BTreeMap::new(),
+            factors: 2,
+            choice_offsets: vec![0, 2, 5],
+        };
+        let original = Prediction {
+            logp: Tensor::from_slice(&[0.25f32, 0.75, 0.2, 0.3, 0.5]).log(),
+            entropy: Tensor::from_slice(&[0.5623351f32, 1.029653]),
+        };
+        let one = temperature_prediction(&batch, &original, 1.);
+        assert!(bool::try_from(one.logp.equal(&original.logp)).unwrap());
+        assert!(bool::try_from(one.entropy.equal(&original.entropy)).unwrap());
+
+        let hot = temperature_prediction(&batch, &original, 2.);
+        for factor in 0..2 {
+            let range = batch.choice_range(factor);
+            let total = f64::try_from(
+                hot.logp
+                    .narrow(0, range.start, range.end - range.start)
+                    .exp()
+                    .sum(Kind::Float),
+            )
+            .unwrap();
+            assert!((total - 1.).abs() < 1e-6);
+        }
+        assert!(f64::try_from(hot.entropy.get(0)).unwrap() > 0.5623351);
+    }
 }
 
 pub(crate) fn selected_likelihood(

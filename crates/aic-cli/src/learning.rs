@@ -150,6 +150,22 @@ pub enum LearningCommand {
         #[arg(long, default_value = "auto")]
         device: String,
     },
+    /// Probe a frozen route checkpoint at its first crossed continuation frontier.
+    #[cfg(feature = "learning")]
+    ProbeConstructiveRouteFrontier {
+        /// Completed train-constructive-routes output directory.
+        #[arg(long)]
+        training_output: PathBuf,
+        #[arg(long)]
+        probe_config: PathBuf,
+        /// Directory containing normalized facilities, transports and logistics components.
+        #[arg(long)]
+        catalog_root: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long, default_value = "auto")]
+        device: String,
+    },
     /// Render greedy held-out layouts produced by a constructive checkpoint.
     #[cfg(feature = "learning")]
     EvaluateConstructive {
@@ -189,6 +205,8 @@ pub fn run(command: LearningCommand) -> Result<()> {
         LearningCommand::TrainConstructive { config, .. } => config,
         #[cfg(feature = "learning")]
         LearningCommand::TrainConstructiveRoutes { config, .. } => config,
+        #[cfg(feature = "learning")]
+        LearningCommand::ProbeConstructiveRouteFrontier { probe_config, .. } => probe_config,
         #[cfg(feature = "learning")]
         LearningCommand::EvaluateConstructive {
             training_output: config,
@@ -338,6 +356,20 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             device,
         } => aic_learning::constructive::route::run(
             &config,
+            &catalog_root,
+            &output,
+            update::parse_device(&device)?,
+        ),
+        #[cfg(feature = "learning")]
+        LearningCommand::ProbeConstructiveRouteFrontier {
+            training_output,
+            probe_config,
+            catalog_root,
+            output,
+            device,
+        } => aic_learning::constructive::route::probe_frontier(
+            &training_output,
+            &probe_config,
             &catalog_root,
             &output,
             update::parse_device(&device)?,

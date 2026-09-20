@@ -37,6 +37,7 @@
     "direct-constructive-recipe-diverse/config.json",
     "direct-constructive-replication/config.json",
     "direct-constructive-replication/problems.json",
+    "direct-constructive-route-frontier-probe/config.json",
     "direct-constructive-route-options-v2/config.json",
     "direct-constructive-route-options-v3/config.json",
     "direct-constructive-route-options/config.json",

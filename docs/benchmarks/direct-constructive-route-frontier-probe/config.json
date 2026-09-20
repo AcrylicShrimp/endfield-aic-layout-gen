@@ -1,0 +1,9 @@
+{
+  "schema": "aic-constructive-route-frontier-probe-v1",
+  "prefix_target": 8,
+  "prefix_discovery_attempts": 4096,
+  "discovery_batch_size": 64,
+  "attempts_per_prefix_per_temperature": 64,
+  "temperatures": [0.5, 1.0, 1.5, 2.0],
+  "seed": 920303
+}
