@@ -24,6 +24,16 @@ pub struct Sample<'a> {
     pub target: f32,
 }
 
+#[derive(Clone, Copy)]
+pub struct ReplaySample<'a> {
+    pub entry: u64,
+    pub observation: &'a Observation,
+    pub choice: &'a policy::Choice,
+    pub returned: f32,
+    /// Gives every sampled sequence equal mass regardless of its length.
+    pub weight: f32,
+}
+
 pub struct Learner {
     pub model: Model,
     actor: Adam,
@@ -47,6 +57,12 @@ pub struct UpdateReport {
     pub clip_fraction: f64,
     pub actor_gradient_norm: f64,
     pub critic_gradient_norm: f64,
+    pub replay_sequences: usize,
+    pub replay_labels: usize,
+    pub positive_replay_labels: usize,
+    pub imitation_loss: f64,
+    #[serde(skip)]
+    pub replay_utility: Vec<(u64, f64)>,
 }
 
 impl Learner {
@@ -57,10 +73,6 @@ impl Learner {
         device: Device,
     ) -> Result<(Vec<String>, Self)> {
         update.validate()?;
-        ensure!(
-            update.imitation_coefficient == 0.,
-            "aic-learning.constructive-ppo: imitation is outside the first pilot"
-        );
         let (order, state) = Model::initial_state(model_config, initialization_seed)?;
         let model = Model::load(model_config, &order, &state, device)?;
         let backend = if update.adam_backend == "fused" {
@@ -110,6 +122,7 @@ impl Learner {
     pub fn update_epoch(
         &mut self,
         samples: &[Sample<'_>],
+        replay: &[ReplaySample<'_>],
         normalization: &str,
         minibatch_size: usize,
     ) -> Result<UpdateReport> {
@@ -195,6 +208,57 @@ impl Learner {
             (loss * weight).backward();
             minibatches += 1;
         }
+        let mut imitation_loss = 0.;
+        let mut positive_replay_labels = 0;
+        let mut replay_utility = Vec::new();
+        if !replay.is_empty() && self.config.imitation_coefficient > 0. {
+            let decisions = replay
+                .iter()
+                .map(|sample| policy::TrainingDecision {
+                    observation: sample.observation,
+                    choice: sample.choice,
+                })
+                .collect::<Vec<_>>();
+            let (logp, _, values) =
+                policy::selected_likelihood(&self.model, &decisions, self.device)?;
+            let returns = Tensor::from_slice(
+                &replay
+                    .iter()
+                    .map(|sample| sample.returned)
+                    .collect::<Vec<_>>(),
+            )
+            .to_device(self.device);
+            let weights = Tensor::from_slice(
+                &replay
+                    .iter()
+                    .map(|sample| sample.weight)
+                    .collect::<Vec<_>>(),
+            )
+            .to_device(self.device);
+            let replay_advantage = (returns - values.detach()).clamp_min(0.);
+            positive_replay_labels =
+                usize::try_from(i64::try_from(replay_advantage.gt(0.).sum(Kind::Int64))?)?;
+            let contributions = -logp * replay_advantage;
+            let teacher = (&contributions * weights).sum(Kind::Float);
+            imitation_loss = f64::try_from(&teacher)?;
+            ensure!(
+                imitation_loss.is_finite(),
+                "aic-learning.constructive-ppo: nonfinite imitation objective"
+            );
+            let utilities = Vec::<f32>::try_from(contributions.detach().to_device(Device::Cpu))?;
+            let mut grouped = std::collections::BTreeMap::<u64, (f64, usize)>::new();
+            for (sample, utility) in replay.iter().zip(utilities) {
+                let entry = grouped.entry(sample.entry).or_default();
+                entry.0 += f64::from(utility);
+                entry.1 += 1;
+            }
+            replay_utility = grouped
+                .into_iter()
+                .map(|(entry, (total, labels))| (entry, total / labels as f64))
+                .collect();
+            (teacher * self.config.imitation_coefficient).backward();
+            loss_total += self.config.imitation_coefficient * imitation_loss;
+        }
         let actor_gradient_norm = self.actor.clip_grad_norm(self.config.gradient_clip)?;
         let critic_gradient_norm = self.critic.clip_grad_norm(self.config.gradient_clip)?;
         self.actor.step()?;
@@ -212,6 +276,11 @@ impl Learner {
             clip_fraction: clip_total,
             actor_gradient_norm,
             critic_gradient_norm,
+            replay_sequences: replay_utility.len(),
+            replay_labels: replay.len(),
+            positive_replay_labels,
+            imitation_loss,
+            replay_utility,
         })
     }
 
@@ -269,7 +338,7 @@ mod tests {
             epsilon: 1e-8,
             clip_epsilon: 0.2,
             entropy_coefficient: 0.01,
-            imitation_coefficient: 0.,
+            imitation_coefficient: 0.05,
             gradient_clip: 0.5,
         };
         let (_, mut learner) = Learner::cold(&model, &update, 73, Device::Cpu).unwrap();
@@ -299,6 +368,13 @@ mod tests {
                         target: -0.5,
                     },
                 ],
+                &[ReplaySample {
+                    entry: 7,
+                    observation: &first,
+                    choice: &choices[0],
+                    returned: 10.,
+                    weight: 1.,
+                }],
                 "center",
                 1,
             )
@@ -306,6 +382,11 @@ mod tests {
         assert_eq!(report.step, 1);
         assert_eq!(report.samples, 2);
         assert_eq!(report.minibatches, 2);
+        assert_eq!(report.replay_sequences, 1);
+        assert_eq!(report.replay_labels, 1);
+        assert_eq!(report.positive_replay_labels, 1);
+        assert_eq!(report.replay_utility.len(), 1);
+        assert!(report.imitation_loss > 0.);
         assert!(report.loss.is_finite() && report.actor_gradient_norm.is_finite());
         assert!(report.approximate_kl.abs() < 1e-5);
         assert_eq!(report.clip_fraction, 0.);

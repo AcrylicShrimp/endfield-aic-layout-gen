@@ -1,5 +1,7 @@
 //! Self-roll-in training for one-connection learned route options.
 
+mod replay;
+
 use std::{
     collections::BTreeMap,
     fs::{self, File},
@@ -42,6 +44,8 @@ use super::{
     run::{load_catalogs, read_json, write_json},
 };
 
+use replay::{Buffer as ReplayBuffer, Config as ReplayConfig};
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
@@ -52,6 +56,8 @@ pub struct Config {
     pub native: Limits,
     pub task: TaskConfig,
     pub reward: RewardConfig,
+    #[serde(default)]
+    pub replay: ReplayConfig,
     pub updates: u64,
     pub sessions_per_update: usize,
     pub ppo_epochs: usize,
@@ -74,6 +80,8 @@ pub struct TaskConfig {
     pub rate: Rate,
     pub rotation: i64,
     pub max_connections: usize,
+    #[serde(default)]
+    pub aligned_warmup_updates: u64,
     pub route_turns: usize,
     pub allow_abort: bool,
     pub facility_margin: i64,
@@ -108,6 +116,7 @@ struct Summary {
     sessions: usize,
     options: usize,
     blocked_before_action: usize,
+    dead_ends: usize,
     route_successes: usize,
     route_success_rate: f64,
     fully_routed_sessions: usize,
@@ -126,6 +135,7 @@ struct RouteCollection {
     sessions: usize,
     fully_routed_sessions: usize,
     blocked: Vec<BlockedOption>,
+    dead_ends: usize,
 }
 
 struct BlockedOption {
@@ -141,6 +151,7 @@ struct TaskState {
     route_steps: usize,
     current: Episode,
     last_success_episode: Option<usize>,
+    successful_episodes: Vec<usize>,
     crossed: bool,
     allow_abort: bool,
     stopped: bool,
@@ -385,6 +396,7 @@ pub fn run(
     let mut total_sessions = 0usize;
     let mut total_options = 0usize;
     let mut total_turns = 0usize;
+    let mut replay = ReplayBuffer::new(config.replay.clone());
     for update in 1..=config.updates {
         let specs = training_specs(&config, update);
         let sessions = specs
@@ -405,12 +417,22 @@ pub fn run(
         let samples = rollout::ppo_samples(&collected.rollout, &credit)?;
         let mut epochs = Vec::with_capacity(config.ppo_epochs);
         for _ in 0..config.ppo_epochs {
-            epochs.push(learner.update_epoch(
-                &samples,
-                &config.advantage_normalization,
-                config.ppo_minibatch_size,
-            )?);
+            let draw = replay.draw(update);
+            let report = {
+                let replay_samples = replay.samples(&draw);
+                learner.update_epoch(
+                    &samples,
+                    &replay_samples,
+                    &config.advantage_normalization,
+                    config.ppo_minibatch_size,
+                )?
+            };
+            replay.observe_utility(&report.replay_utility);
+            epochs.push(report);
         }
+        // Causal boundary: successes from this collection become eligible only
+        // after every learner epoch for the update has finished.
+        let admissions = replay.admit(&collected.rollout.episodes, config.gamma, update)?;
         total_sessions += collected.sessions;
         total_options += collected.rollout.episodes.len() + collected.blocked.len();
         total_turns += collected.rollout.turns;
@@ -419,6 +441,7 @@ pub fn run(
             "available_connections":available_connections(&config, update),
             "training":summary(&collected),
             "ppo":epochs,
+            "replay":replay.report(admissions),
         });
         if update % config.evaluation_interval == 0 || update == config.updates {
             let greedy = evaluate(
@@ -484,6 +507,7 @@ fn validate_config(config: &Config) -> Result<()> {
             && (2..=4096).contains(&config.evaluation_sessions)
             && (1..=config.updates).contains(&config.evaluation_interval)
             && (1..=8).contains(&config.task.max_connections)
+            && config.task.aligned_warmup_updates < config.updates
             && (2..=4096).contains(&config.task.route_turns)
             && config.task.facility_margin >= 1
             && config.task.route_gap >= 1
@@ -501,6 +525,9 @@ fn validate_config(config: &Config) -> Result<()> {
     config.model.validate()?;
     config.optimizer.validate()?;
     config.reward.validate()?;
+    config
+        .replay
+        .validate(config.optimizer.imitation_coefficient)?;
     Ok(())
 }
 
@@ -517,12 +544,26 @@ fn available_connections(config: &Config, update: u64) -> usize {
 
 fn training_specs(config: &Config, update: u64) -> Vec<TaskSpec> {
     let available = available_connections(config, update);
+    let shapes = if update > config.task.aligned_warmup_updates {
+        2
+    } else {
+        1
+    };
     (0..config.sessions_per_update)
-        .map(|index| TaskSpec {
-            connections: 1 + (index + update as usize - 1) % available,
-            rows: available,
-            crossed: available > 1 && (index + update as usize).is_multiple_of(2),
-            seed: config.task_seed ^ update.wrapping_mul(0x9e37_79b9_7f4a_7c15) ^ index as u64,
+        .map(|index| {
+            let combination = (index + update as usize - 1) % (available * shapes);
+            let connections = 1 + combination % available;
+            let crossed = combination / available == 1;
+            TaskSpec {
+                connections,
+                rows: if crossed && available == 1 {
+                    config.task.max_connections
+                } else {
+                    available
+                },
+                crossed,
+                seed: config.task_seed ^ update.wrapping_mul(0x9e37_79b9_7f4a_7c15) ^ index as u64,
+            }
         })
         .collect()
 }
@@ -588,6 +629,7 @@ fn collect(
                 route_steps: 0,
                 current: route_episode(0, targets, spec.crossed),
                 last_success_episode: None,
+                successful_episodes: Vec::new(),
                 crossed: spec.crossed,
                 allow_abort,
                 stopped: false,
@@ -596,6 +638,7 @@ fn collect(
         .collect::<Vec<_>>();
     let mut episodes: Vec<Episode> = Vec::new();
     let mut blocked = Vec::new();
+    let mut dead_ends = 0;
     let mut evaluation_sampler = match sampling {
         Sampling::StochasticEvaluation { seed } => Some(Generator::new(seed)?),
         _ => None,
@@ -624,19 +667,42 @@ fn collect(
                 Err(diagnostic)
                     if diagnostic.code == "constructive.empty-route-learning-domain" =>
                 {
-                    blocked.push(BlockedOption {
-                        depth: states[owner].next,
-                        requested: states[owner].targets,
-                        crossed: states[owner].crossed,
-                    });
-                    if let Some(episode) = states[owner].last_success_episode {
-                        episodes[episode]
+                    let state = &mut states[owner];
+                    if state.current.transitions.is_empty() {
+                        blocked.push(BlockedOption {
+                            depth: state.next,
+                            requested: state.targets,
+                            crossed: state.crossed,
+                        });
+                        if let Some(episode) = state.last_success_episode {
+                            episodes[episode]
+                                .transitions
+                                .last_mut()
+                                .expect("successful route option has a terminal transition")
+                                .reward += reward.blocked_rollin_penalty;
+                            episodes[episode].route_blocked_after = true;
+                        }
+                    } else {
+                        let observation = state.session.observe();
+                        let current_potential =
+                            potential(&observation, domain, reward.potential_scale);
+                        let remaining = normalized_distance(&observation, domain).unwrap_or(1.);
+                        let last = state
+                            .current
                             .transitions
                             .last_mut()
-                            .expect("successful route option has a terminal transition")
-                            .reward += reward.blocked_rollin_penalty;
+                            .expect("nonempty dead-end route has a final transition");
+                        last.terminal = true;
+                        last.reward +=
+                            dead_end_adjustment(current_potential, remaining, reward, gamma);
+                        state.current.dead_end = true;
+                        state.current.fully_validated = observation.fully_validated;
+                        state.current.completed_connections = observation.completed;
+                        episodes.push(std::mem::take(&mut state.current));
+                        dead_ends += 1;
                     }
-                    states[owner].stopped = true;
+                    finalize_route_outcomes(&mut episodes, state);
+                    state.stopped = true;
                 }
                 Err(diagnostic) => return Err(diagnostic.into()),
             }
@@ -715,10 +781,15 @@ fn collect(
                 episodes.push(std::mem::take(&mut state.current));
                 if succeeded && state.next + 1 < state.targets && !state.session.done() {
                     state.last_success_episode = Some(episode);
+                    state.successful_episodes.push(episode);
                     state.next += 1;
                     state.route_steps = 0;
                     state.current = route_episode(state.next, state.targets, state.crossed);
                 } else {
+                    if succeeded {
+                        state.successful_episodes.push(episode);
+                    }
+                    finalize_route_outcomes(&mut episodes, state);
                     state.stopped = true;
                 }
             }
@@ -755,7 +826,16 @@ fn collect(
         sessions: count,
         fully_routed_sessions,
         blocked,
+        dead_ends,
     })
+}
+
+fn finalize_route_outcomes(episodes: &mut [Episode], state: &TaskState) {
+    let observation = state.session.observe();
+    for &episode in &state.successful_episodes {
+        episodes[episode].route_observed_depth = observation.completed;
+        episodes[episode].route_full_session = observation.fully_validated;
+    }
 }
 
 fn route_episode(depth: usize, total: usize, crossed: bool) -> Episode {
@@ -790,6 +870,17 @@ fn normalized_distance(observation: &NativeObservation, domain: &DomainConfig) -
 
 fn shaping(current: f64, next: f64, terminal: bool, gamma: f64) -> f64 {
     gamma * if terminal { 0. } else { next } - current
+}
+
+fn dead_end_adjustment(
+    current_potential: f64,
+    remaining_distance: f64,
+    reward: &RewardConfig,
+    gamma: f64,
+) -> f64 {
+    -gamma * current_potential
+        + reward.timeout_penalty
+        + reward.failure_distance_scale * remaining_distance
 }
 
 fn summary(collection: &RouteCollection) -> Summary {
@@ -838,6 +929,7 @@ fn summary(collection: &RouteCollection) -> Summary {
         sessions: collection.sessions,
         options,
         blocked_before_action,
+        dead_ends: collection.dead_ends,
         route_successes,
         route_success_rate: route_successes as f64 / options as f64,
         fully_routed_sessions: collection.fully_routed_sessions,
@@ -905,24 +997,35 @@ mod tests {
             "optimizer":{"adam_backend":"foreach","learning_rate":0.001,"beta1":0.9,"beta2":0.999,"epsilon":1e-8,"clip_epsilon":0.2,"entropy_coefficient":0.01,"imitation_coefficient":0.0,"gradient_clip":0.5},
             "domain":{"placement":{"minX":0,"minY":0,"maxX":31,"maxY":31},"extension_lengths":[1,2,4]},
             "native":{"max_turns":128,"max_extension":4},
-            "task":{"facility":"fixture","transport":"pipe","rate":{"numerator":1,"denominator":2},"rotation":0,"max_connections":4,"route_turns":16,"allow_abort":false,"facility_margin":2,"route_gap":4,"row_gap":2},
+            "task":{"facility":"fixture","transport":"pipe","rate":{"numerator":1,"denominator":2},"rotation":0,"max_connections":4,"aligned_warmup_updates":1,"route_turns":16,"allow_abort":false,"facility_margin":2,"route_gap":4,"row_gap":2},
             "reward":{"success_bonus":1.0,"abort_penalty":-1.0,"timeout_penalty":-0.25,"blocked_rollin_penalty":-1.0,"rejected_penalty":-0.05,"step_penalty":0.0,"potential_scale":1.0,"failure_distance_scale":-1.0},
-            "updates":4,"sessions_per_update":4,"ppo_epochs":1,"ppo_minibatch_size":16,"evaluation_sessions":8,"evaluation_interval":1,"evaluation_seed":7,"task_seed":9,"gamma":0.99,"gae_lambda":0.95,"advantage_normalization":"standardize","initialization_seed":11
+            "updates":8,"sessions_per_update":8,"ppo_epochs":1,"ppo_minibatch_size":16,"evaluation_sessions":8,"evaluation_interval":1,"evaluation_seed":7,"task_seed":9,"gamma":0.99,"gae_lambda":0.95,"advantage_normalization":"standardize","initialization_seed":11
         })).unwrap();
         assert_eq!(available_connections(&config, 1), 1);
-        assert_eq!(available_connections(&config, 2), 2);
-        assert_eq!(available_connections(&config, 3), 3);
-        assert_eq!(available_connections(&config, 4), 4);
-        let final_specs = training_specs(&config, 4);
+        assert_eq!(available_connections(&config, 3), 2);
+        assert_eq!(available_connections(&config, 5), 3);
+        assert_eq!(available_connections(&config, 7), 4);
+        assert!(
+            training_specs(&config, 1)
+                .iter()
+                .all(|spec| spec.connections == 1 && spec.rows == 1 && !spec.crossed)
+        );
+        let offset_specs = training_specs(&config, 2);
+        assert!(offset_specs.iter().any(|spec| {
+            spec.connections == 1 && spec.rows == config.task.max_connections && spec.crossed
+        }));
+        let final_specs = training_specs(&config, 7);
         assert_eq!(
             final_specs
                 .iter()
-                .map(|spec| spec.connections)
-                .collect::<Vec<_>>(),
-            vec![4, 1, 2, 3]
+                .map(|spec| (spec.connections, spec.crossed))
+                .collect::<std::collections::BTreeSet<_>>(),
+            (1..=4)
+                .flat_map(|connections| { [(connections, false), (connections, true)] })
+                .collect()
         );
         config.task.max_connections = 1;
-        assert_eq!(available_connections(&config, 4), 1);
+        assert_eq!(available_connections(&config, 7), 1);
     }
 
     #[test]
@@ -936,6 +1039,28 @@ mod tests {
         ];
         let discounted = rewards[0] + gamma * rewards[1] + gamma * gamma * rewards[2];
         assert!(discounted.abs() < 1e-12);
+    }
+
+    #[test]
+    fn active_dead_end_closes_shaping_and_keeps_failure_penalty() {
+        let gamma = 0.99;
+        let reward = RewardConfig {
+            success_bonus: 1.,
+            abort_penalty: -1.,
+            timeout_penalty: -0.25,
+            blocked_rollin_penalty: -1.,
+            rejected_penalty: -0.05,
+            step_penalty: 0.,
+            potential_scale: 1.,
+            failure_distance_scale: -1.,
+        };
+        let potentials = [0., -0.5, -0.25];
+        let first = shaping(potentials[0], potentials[1], false, gamma);
+        let mut second = shaping(potentials[1], potentials[2], false, gamma);
+        second += dead_end_adjustment(potentials[2], 0.25, &reward, gamma);
+        let discounted = first + gamma * second;
+        let expected_penalty = gamma * (reward.timeout_penalty - 0.25);
+        assert!((discounted - expected_penalty).abs() < 1e-12);
     }
 
     #[test]

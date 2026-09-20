@@ -269,6 +269,7 @@ pub fn run(
         for _ in 0..config.ppo_epochs {
             epochs.push(learner.update_epoch(
                 &samples,
+                &[],
                 &config.advantage_normalization,
                 config.ppo_minibatch_size,
             )?);
@@ -696,7 +697,8 @@ fn validate_config(config: &Config) -> Result<()> {
             && matches!(
                 config.advantage_normalization.as_str(),
                 "center" | "standardize"
-            ),
+            )
+            && config.optimizer.imitation_coefficient == 0.,
         "aic-learning.constructive-config: invalid pilot configuration"
     );
     config.model.validate()?;

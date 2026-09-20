@@ -81,6 +81,12 @@ pub struct Episode {
     pub rollin_depth: usize,
     /// Whether the route task reverses source and target row order.
     pub route_crossed: bool,
+    /// Deepest completed-route count later observed in the same native session.
+    pub route_observed_depth: usize,
+    /// Whether the same native session eventually completed every route.
+    pub route_full_session: bool,
+    /// Whether this route left the immediately following option with no action.
+    pub route_blocked_after: bool,
     pub completed_connections: usize,
     pub total_connections: usize,
 }
