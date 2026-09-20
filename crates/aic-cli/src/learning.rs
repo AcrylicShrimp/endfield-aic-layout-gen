@@ -137,6 +137,19 @@ pub enum LearningCommand {
         #[arg(long, default_value = "auto")]
         device: String,
     },
+    /// Train one-connection route options with policy-generated partial occupancy.
+    #[cfg(feature = "learning")]
+    TrainConstructiveRoutes {
+        #[arg(long)]
+        config: PathBuf,
+        /// Directory containing normalized facilities, transports and logistics components.
+        #[arg(long)]
+        catalog_root: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long, default_value = "auto")]
+        device: String,
+    },
     /// Render greedy held-out layouts produced by a constructive checkpoint.
     #[cfg(feature = "learning")]
     EvaluateConstructive {
@@ -174,6 +187,8 @@ pub fn run(command: LearningCommand) -> Result<()> {
         LearningCommand::PreparePanel { config, .. } => config,
         #[cfg(feature = "learning")]
         LearningCommand::TrainConstructive { config, .. } => config,
+        #[cfg(feature = "learning")]
+        LearningCommand::TrainConstructiveRoutes { config, .. } => config,
         #[cfg(feature = "learning")]
         LearningCommand::EvaluateConstructive {
             training_output: config,
@@ -311,6 +326,18 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
         } => aic_learning::constructive::run::run(
             &config,
             &sampling,
+            &catalog_root,
+            &output,
+            update::parse_device(&device)?,
+        ),
+        #[cfg(feature = "learning")]
+        LearningCommand::TrainConstructiveRoutes {
+            config,
+            catalog_root,
+            output,
+            device,
+        } => aic_learning::constructive::route::run(
+            &config,
             &catalog_root,
             &output,
             update::parse_device(&device)?,

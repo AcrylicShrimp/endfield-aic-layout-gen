@@ -1172,6 +1172,50 @@ mod tests {
     }
 
     #[test]
+    fn route_learning_domain_exposes_only_the_selected_connection() {
+        let mut session = session();
+        place_pair(&mut session);
+        let observation = session
+            .route_learning_observation(&learning_config(), 0)
+            .unwrap();
+        let command_choices = observation.domain.choices(&learning::Cursor::Command);
+        assert_eq!(command_choices.len(), 1);
+        assert_eq!(
+            command_choices[0].features[learning::CommandKind::BeginRoute as usize],
+            1.0
+        );
+
+        let learning::Advance::Continue(learning::Cursor::RouteConnection) = observation
+            .domain
+            .advance(&learning::Cursor::Command, 0)
+            .unwrap()
+        else {
+            panic!("route option did not begin with connection selection");
+        };
+        let connections = observation
+            .domain
+            .choices(&learning::Cursor::RouteConnection);
+        assert_eq!(connections.len(), 1);
+        assert_eq!(connections[0].references[0], 2);
+
+        assert!(begin(&mut session).accepted);
+        let active = session
+            .route_learning_observation_with_abort(&learning_config(), 0, false)
+            .unwrap();
+        let active_choices = active.domain.choices(&learning::Cursor::Command);
+        assert!(
+            active_choices
+                .iter()
+                .any(|choice| choice.features[learning::CommandKind::Extend as usize] == 1.0)
+        );
+        assert!(
+            active_choices
+                .iter()
+                .all(|choice| choice.features[learning::CommandKind::AbortRoute as usize] == 0.0)
+        );
+    }
+
+    #[test]
     fn authored_commands_complete_without_a_router_and_finish_construction_progress() {
         let mut session = session();
         place_pair(&mut session);

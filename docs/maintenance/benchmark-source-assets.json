@@ -37,6 +37,7 @@
     "direct-constructive-recipe-diverse/config.json",
     "direct-constructive-replication/config.json",
     "direct-constructive-replication/problems.json",
+    "direct-constructive-route-options/config.json",
     "fixtures/banks.json",
     "fixtures/gap6-layout.json",
     "fixtures/graph.json",

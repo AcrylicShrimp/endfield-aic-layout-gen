@@ -1,0 +1,69 @@
+{
+  "schema": "aic-constructive-route-training-v1",
+  "model": {
+    "schema": "aic-constructive-attention-model-v2",
+    "width": 128,
+    "message_rounds": 4
+  },
+  "optimizer": {
+    "adam_backend": "foreach",
+    "learning_rate": 0.003,
+    "beta1": 0.9,
+    "beta2": 0.999,
+    "epsilon": 1e-08,
+    "clip_epsilon": 0.2,
+    "entropy_coefficient": 0.01,
+    "imitation_coefficient": 0.0,
+    "gradient_clip": 0.5
+  },
+  "domain": {
+    "placement": {
+      "minX": 0,
+      "minY": 0,
+      "maxX": 31,
+      "maxY": 31
+    },
+    "extension_lengths": [1, 4, 5, 10, 15]
+  },
+  "native": {
+    "max_turns": 256,
+    "max_extension": 15
+  },
+  "task": {
+    "facility": "furnance-1-mode-liquid",
+    "transport": "pipe",
+    "rate": {
+      "numerator": 1,
+      "denominator": 2
+    },
+    "rotation": 0,
+    "max_connections": 4,
+    "route_turns": 24,
+    "allow_abort": false,
+    "facility_margin": 2,
+    "route_gap": 5,
+    "row_gap": 2
+  },
+  "reward": {
+    "success_bonus": 1.0,
+    "abort_penalty": -1.0,
+    "timeout_penalty": -0.25,
+    "blocked_rollin_penalty": -1.0,
+    "rejected_penalty": -0.05,
+    "step_penalty": 0.0,
+    "potential_scale": 1.0,
+    "failure_distance_scale": -1.0
+  },
+  "updates": 32,
+  "sessions_per_update": 64,
+  "ppo_epochs": 4,
+  "ppo_minibatch_size": 128,
+  "evaluation_sessions": 64,
+  "evaluation_interval": 4,
+  "evaluation_seed": 710101,
+  "task_seed": 110101,
+  "gamma": 0.99,
+  "gae_lambda": 0.95,
+  "advantage_normalization": "standardize",
+  "initialization_seed": 101
+}

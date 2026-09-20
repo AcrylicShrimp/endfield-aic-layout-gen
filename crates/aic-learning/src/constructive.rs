@@ -22,6 +22,7 @@ use crate::{
 pub mod policy;
 pub mod ppo;
 pub mod rollout;
+pub mod route;
 pub mod run;
 #[cfg(test)]
 mod test_support;

@@ -242,6 +242,52 @@ impl Session {
             domain,
         })
     }
+
+    /// Builds the policy domain for one learned route option. The problem-order
+    /// connection index is stable for the lifetime of the session. Facility and
+    /// terminal placement, other unresolved connections and committed routes
+    /// are deliberately unavailable to this option.
+    pub fn route_learning_observation(
+        &self,
+        config: &Config,
+        connection: usize,
+    ) -> Result<Observation, Diagnostic> {
+        self.route_learning_observation_with_abort(config, connection, true)
+    }
+
+    pub fn route_learning_observation_with_abort(
+        &self,
+        config: &Config,
+        connection: usize,
+        allow_abort: bool,
+    ) -> Result<Observation, Diagnostic> {
+        config.validate(self)?;
+        if connection >= self.problem.connections.len()
+            || self.routes[connection].is_some()
+            || self
+                .active
+                .as_ref()
+                .is_some_and(|active| active.connection != connection)
+        {
+            return Err(error(
+                "route-learning-target",
+                "learning-domain",
+                "route option target is missing, completed or differs from the active route",
+            ));
+        }
+        let domain = Arc::new(Domain::new_route(self, config, connection, allow_abort));
+        if domain.choices(&Cursor::Command).is_empty() {
+            return Err(error(
+                "empty-route-learning-domain",
+                &self.problem.connections[connection].id,
+                "the route option has no locally legal command",
+            ));
+        }
+        Ok(Observation {
+            input: Arc::new(Input::new(self, config)),
+            domain,
+        })
+    }
 }
 
 impl Domain {
@@ -503,6 +549,16 @@ impl Domain {
             connect,
             abort: session.active.is_some(),
         }
+    }
+
+    fn new_route(session: &Session, config: &Config, connection: usize, allow_abort: bool) -> Self {
+        let mut domain = Self::new(session, config);
+        domain.placements.clear();
+        domain.terminals.clear();
+        domain.terminal_positions.clear();
+        domain.routes.retain(|route| route.connection == connection);
+        domain.abort &= allow_abort;
+        domain
     }
 
     fn placement_poses(&self, domain: &PlacementDomain) -> Vec<(Point, i64)> {

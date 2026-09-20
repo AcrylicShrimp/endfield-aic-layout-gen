@@ -73,6 +73,14 @@ pub struct Episode {
     pub transitions: Vec<Transition>,
     pub fully_validated: bool,
     pub dead_end: bool,
+    /// Set by the route-option collector when this trajectory committed its
+    /// selected connection. Full-construction collection leaves it false.
+    pub route_succeeded: bool,
+    /// Number of routes already committed by the same policy in this native
+    /// session before the option began.
+    pub rollin_depth: usize,
+    /// Whether the route task reverses source and target row order.
+    pub route_crossed: bool,
     pub completed_connections: usize,
     pub total_connections: usize,
 }
