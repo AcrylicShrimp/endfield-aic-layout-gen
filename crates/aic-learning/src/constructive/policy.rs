@@ -1,11 +1,16 @@
 //! Batched conditional sampling with one joint likelihood per native command.
 
-use aic_pilot_native::constructive::learning::{Advance, Cursor, Observation, SelectedCommand};
+use std::collections::{BTreeMap, BTreeSet};
+
+use aic_pilot_native::constructive::learning::{
+    Advance, Cursor, FactoredCommand, Observation, SelectedCommand,
+};
 use aic_torch::{
     Generator,
     tch::{Device, Kind, Tensor, no_grad},
 };
 use anyhow::{Result, ensure};
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use super::{ChoiceBatch, FactorDecision, InputBatch, Model, Prediction};
@@ -24,6 +29,15 @@ pub struct Choice {
     pub old_logp: f64,
     pub old_value: f64,
     pub entropy: f64,
+}
+
+/// Policy scores for a caller-selected set of native-valid commands. Command
+/// membership and ordering are preserved exactly.
+pub struct ScoredCommands {
+    pub choices: Vec<Choice>,
+    pub value: f64,
+    pub scoring_batches: usize,
+    pub scored_choices: usize,
 }
 
 pub fn sample(
@@ -72,6 +86,134 @@ pub fn sample_temperature(
 pub fn greedy(model: &Model, rows: &[&Observation], device: Device) -> Result<Vec<Choice>> {
     sample_with(model, rows, device, 1., |batch, prediction| {
         greedy_selections(batch, prediction)
+    })
+}
+
+/// Score native-valid complete commands selected by the caller. The input is
+/// encoded once and every distinct conditional factor bank is packed into one
+/// actor call. This keeps the policy responsible only for priors and value;
+/// the native domain remains the source of action membership.
+pub fn score_factored_commands(
+    model: &Model,
+    observation: &Observation,
+    commands: &[FactoredCommand],
+    device: Device,
+) -> Result<ScoredCommands> {
+    ensure!(
+        !commands.is_empty(),
+        "aic-learning.constructive-score: empty command batch"
+    );
+    let mut selections = BTreeMap::<Cursor, BTreeSet<usize>>::new();
+    for command in commands {
+        for factor in &command.factors {
+            selections
+                .entry(factor.cursor.clone())
+                .or_default()
+                .insert(factor.selected);
+        }
+    }
+    let mut decoded = BTreeMap::<Cursor, BTreeMap<usize, Advance>>::new();
+    for (cursor, selected) in selections {
+        let selected = selected.into_iter().collect::<Vec<_>>();
+        let advances = observation.domain.advance_many(&cursor, &selected)?;
+        decoded.insert(cursor, selected.into_iter().zip(advances).collect());
+    }
+    for command in commands {
+        ensure!(
+            !command.factors.is_empty(),
+            "aic-learning.constructive-score: command has no factors"
+        );
+        let mut expected = Cursor::Command;
+        let mut completed = None;
+        for factor in &command.factors {
+            ensure!(
+                factor.cursor == expected && completed.is_none(),
+                "aic-learning.constructive-score: discontinuous factor trace"
+            );
+            match decoded[&factor.cursor][&factor.selected].clone() {
+                Advance::Continue(cursor) => expected = cursor,
+                Advance::Command(selected) => completed = Some(selected),
+            }
+        }
+        ensure!(
+            completed.as_ref() == Some(&command.command),
+            "aic-learning.constructive-score: factor trace does not decode to command"
+        );
+    }
+
+    no_grad(|| {
+        let inputs = InputBatch::from_inputs(&[observation.input.as_ref()], device)?;
+        let encoded = model.encode(&inputs)?;
+        let value = f64::try_from(encoded.values.get(0).to_device(Device::Cpu))?;
+        let mut cursors = commands
+            .iter()
+            .flat_map(|command| command.factors.iter().map(|factor| factor.cursor.clone()))
+            .collect::<Vec<_>>();
+        cursors.sort();
+        cursors.dedup();
+        let cursor_factors = cursors
+            .iter()
+            .cloned()
+            .enumerate()
+            .map(|(factor, cursor)| (cursor, factor))
+            .collect::<BTreeMap<_, _>>();
+        let banks = cursors
+            .par_iter()
+            .map(|cursor| observation.domain.choices(cursor))
+            .collect::<Vec<_>>();
+        ensure!(
+            banks.iter().all(|bank| !bank.is_empty()),
+            "aic-learning.constructive-score: empty conditional factor"
+        );
+        let scored_choices = banks.iter().map(Vec::len).sum();
+        let decisions = banks
+            .iter()
+            .map(|choices| FactorDecision {
+                observation: 0,
+                choices,
+            })
+            .collect::<Vec<_>>();
+        let batch = inputs.choices(&decisions, device)?;
+        let prediction = model.score(&encoded, &batch)?;
+        let logp = Vec::<f32>::try_from(prediction.logp.to_device(Device::Cpu))?;
+        let entropy = Vec::<f32>::try_from(prediction.entropy.to_device(Device::Cpu))?;
+        let choices = commands
+            .iter()
+            .map(|command| {
+                let mut joint_logp = 0.;
+                let mut joint_entropy = 0.;
+                let mut factors = Vec::with_capacity(command.factors.len());
+                for factor in &command.factors {
+                    let bank = cursor_factors[&factor.cursor];
+                    let range = batch.choice_range(bank);
+                    let selected = usize::try_from(range.start)? + factor.selected;
+                    ensure!(
+                        selected < usize::try_from(range.end)?,
+                        "aic-learning.constructive-score: selected factor is outside packed bank"
+                    );
+                    joint_logp += f64::from(logp[selected]);
+                    joint_entropy += f64::from(entropy[bank]);
+                    factors.push(Factor {
+                        cursor: factor.cursor.clone(),
+                        selected: factor.selected,
+                    });
+                }
+                Ok(Choice {
+                    factors,
+                    command: command.command.clone(),
+                    temperature: 1.,
+                    old_logp: joint_logp,
+                    old_value: value,
+                    entropy: joint_entropy,
+                })
+            })
+            .collect::<Result<Vec<_>>>()?;
+        Ok(ScoredCommands {
+            choices,
+            value,
+            scoring_batches: 1,
+            scored_choices,
+        })
     })
 }
 

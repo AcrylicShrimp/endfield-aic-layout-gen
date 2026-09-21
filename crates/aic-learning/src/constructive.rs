@@ -24,6 +24,7 @@ pub mod ppo;
 pub mod rollout;
 pub mod route;
 pub mod run;
+pub mod search;
 #[cfg(test)]
 mod test_support;
 

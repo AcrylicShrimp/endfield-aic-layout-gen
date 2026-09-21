@@ -182,6 +182,52 @@ pub enum LearningCommand {
         #[arg(long, default_value = "auto")]
         device: String,
     },
+    /// Search one explicit production graph inside a fixed W x H bound with policy/value MCTS.
+    #[cfg(feature = "learning")]
+    SearchConstructive {
+        /// Completed train-constructive output directory.
+        #[arg(long)]
+        training_output: PathBuf,
+        /// Explicit recipe source plan compiled through the training problem pipeline.
+        #[arg(long)]
+        source_plan: PathBuf,
+        /// Directory containing normalized recipes, items and physical catalogs.
+        #[arg(long)]
+        catalog_root: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long)]
+        width: i64,
+        #[arg(long)]
+        height: i64,
+        #[arg(long, default_value_t = 32)]
+        simulations_per_move: usize,
+        /// Maximum simulations used when no branch has yet demonstrated physical progress.
+        #[arg(long, default_value_t = 256)]
+        proof_simulations_per_move: usize,
+        #[arg(long, default_value_t = 16)]
+        horizon: usize,
+        #[arg(long, default_value_t = 32)]
+        max_actions_per_widening: usize,
+        #[arg(long, default_value_t = 4)]
+        initial_children: usize,
+        #[arg(long, default_value_t = 1.0)]
+        widening: f64,
+        #[arg(long, default_value_t = 1.25)]
+        exploration: f64,
+        /// Potential-based route guidance; zero disables Manhattan shaping.
+        #[arg(long, default_value_t = 1.0)]
+        route_potential_scale: f64,
+        #[arg(long, default_value_t = 8192)]
+        max_policy_evaluations: usize,
+        #[arg(long, default_value_t = 910_021)]
+        baseline_seed: u64,
+        /// CPU workers for native action-bank construction and policy scoring.
+        #[arg(long, default_value_t = 8)]
+        cpu_threads: usize,
+        #[arg(long, default_value = "auto")]
+        device: String,
+    },
 }
 pub fn run(command: LearningCommand) -> Result<()> {
     let config = match &command {
@@ -212,6 +258,8 @@ pub fn run(command: LearningCommand) -> Result<()> {
             training_output: config,
             ..
         } => config,
+        #[cfg(feature = "learning")]
+        LearningCommand::SearchConstructive { source_plan, .. } => source_plan,
     };
     let entity = config.display().to_string();
     let report = execute(command).map_err(|error| {
@@ -386,6 +434,48 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             &catalog_root,
             &output,
             cases,
+            update::parse_device(&device)?,
+        ),
+        #[cfg(feature = "learning")]
+        LearningCommand::SearchConstructive {
+            training_output,
+            source_plan,
+            catalog_root,
+            output,
+            width,
+            height,
+            simulations_per_move,
+            proof_simulations_per_move,
+            horizon,
+            max_actions_per_widening,
+            initial_children,
+            widening,
+            exploration,
+            route_potential_scale,
+            max_policy_evaluations,
+            baseline_seed,
+            cpu_threads,
+            device,
+        } => aic_learning::constructive::search::run(
+            &training_output,
+            &catalog_root,
+            &source_plan,
+            &output,
+            aic_learning::constructive::search::Config {
+                width,
+                height,
+                simulations_per_move,
+                proof_simulations_per_move,
+                horizon,
+                max_actions_per_widening,
+                initial_children,
+                widening,
+                exploration,
+                route_potential_scale,
+                max_policy_evaluations,
+                baseline_seed,
+                cpu_threads,
+            },
             update::parse_device(&device)?,
         ),
     }

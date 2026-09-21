@@ -170,6 +170,12 @@ fn error(code: &str, entity: impl Into<String>, message: impl Into<String>) -> D
 }
 
 /// Router-free construction state. All indices are stable problem order.
+///
+/// Search forks this state at a decision boundary and then advances the fork
+/// through a deterministic command path. Catalog data remains shared through
+/// its `Arc`; mutable geometry is copied so simulations cannot affect the
+/// committed session.
+#[derive(Clone)]
 pub struct Session {
     problem: Problem,
     catalogs: Arc<Catalogs>,
@@ -374,6 +380,19 @@ impl Session {
 
     pub fn problem(&self) -> &Problem {
         &self.problem
+    }
+
+    /// Manhattan distance from the open end of the provisional route to its
+    /// fixed target. Search uses this lightweight signal without cloning the
+    /// full public observation.
+    pub fn active_route_manhattan_distance(&self) -> Option<u64> {
+        self.active.as_ref().map(|active| {
+            let endpoint = active
+                .cells
+                .last()
+                .expect("active route always contains its source cell");
+            endpoint.x.abs_diff(active.target.x) + endpoint.y.abs_diff(active.target.y)
+        })
     }
 
     pub fn layout(&self) -> Option<Layout> {
@@ -1213,6 +1232,52 @@ mod tests {
                 .iter()
                 .all(|choice| choice.features[learning::CommandKind::AbortRoute as usize] == 0.0)
         );
+    }
+
+    #[test]
+    fn learning_command_pages_preserve_native_factor_traces() {
+        let session = session();
+        let observation = session.learning_observation(&learning_config()).unwrap();
+        assert_eq!(
+            observation.domain.available_command_kinds(),
+            vec![learning::CommandKind::Place]
+        );
+        let first = observation
+            .domain
+            .command_page(learning::CommandKind::Place, 0, 3);
+        let second =
+            observation
+                .domain
+                .command_page(learning::CommandKind::Place, first.next_offset, 3);
+        assert_eq!(first.commands.len(), 3);
+        assert_eq!(second.commands.len(), 3);
+        assert_eq!(first.next_offset, 3);
+        assert_eq!(second.next_offset, 6);
+        assert!(first.commands.iter().all(|left| {
+            second
+                .commands
+                .iter()
+                .all(|right| left.command.command != right.command.command)
+        }));
+
+        for factored in first.commands.into_iter().chain(second.commands) {
+            let mut expected = learning::Cursor::Command;
+            let mut completed = None;
+            for factor in factored.factors {
+                assert_eq!(factor.cursor, expected);
+                match observation
+                    .domain
+                    .advance(&factor.cursor, factor.selected)
+                    .unwrap()
+                {
+                    learning::Advance::Continue(cursor) => expected = cursor,
+                    learning::Advance::Command(command) => completed = Some(command),
+                }
+            }
+            assert_eq!(completed, Some(factored.command.clone()));
+            let mut fork = session.clone();
+            assert!(fork.step_selected(factored.command).accepted);
+        }
     }
 
     #[test]

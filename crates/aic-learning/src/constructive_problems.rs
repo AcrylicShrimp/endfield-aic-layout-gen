@@ -174,6 +174,58 @@ impl ProblemGenerator {
         self.catalogs.clone()
     }
 
+    /// Compile one explicit source plan through the same throughput, facility,
+    /// wiring and lane-splitting path used by online training. This keeps a
+    /// named production graph independent from the random sampling policy while
+    /// preserving the checkpoint's physical problem contract.
+    pub fn prepare_source_plan(
+        &self,
+        source_plan_path: &Path,
+        id: impl Into<String>,
+    ) -> Result<PreparedProblem> {
+        let source_plan: RecipeSourcePlanRequest = read_json(source_plan_path)?;
+        let target_item = source_plan.target.item.clone();
+        let throughput = self.recipes.calculate_contextual_throughput(&source_plan);
+        ensure!(
+            throughput.success,
+            "aic-learning.constructive-source-plan: throughput calculation failed"
+        );
+        let requirements = calculate_contextual_facility_requirements(&throughput);
+        ensure!(
+            requirements.success,
+            "aic-learning.constructive-source-plan: facility requirement calculation failed"
+        );
+        let wiring = build_contextual_facility_instance_wiring(&throughput, &requirements);
+        ensure!(
+            wiring.success,
+            "aic-learning.constructive-source-plan: facility wiring failed"
+        );
+        let facility_count = wiring
+            .nodes
+            .iter()
+            .filter(|node| matches!(node, FacilityInstanceWiringNode::Facility { .. }))
+            .count();
+        ensure!(
+            facility_count > 0 && facility_count <= self.policy.max_facilities,
+            "aic-learning.constructive-source-plan: facility count {facility_count} is outside the configured guard"
+        );
+        let target_rate = throughput
+            .target
+            .as_ref()
+            .expect("successful throughput has target")
+            .rate;
+        compile_problem(
+            id.into(),
+            "explicit",
+            &target_item,
+            target_rate,
+            source_plan,
+            wiring,
+            &self.items,
+            &self.catalogs.transports,
+        )
+    }
+
     pub fn sample(
         &self,
         partition: &str,

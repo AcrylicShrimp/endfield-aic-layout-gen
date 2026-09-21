@@ -49,7 +49,7 @@ pub struct Observation {
     pub domain: Arc<Domain>,
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "kebab-case")]
 pub enum CommandKind {
     Place,
@@ -60,7 +60,7 @@ pub enum CommandKind {
     AbortRoute,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(tag = "stage", rename_all = "kebab-case")]
 pub enum Cursor {
     Command,
@@ -91,6 +91,25 @@ pub enum Advance {
 pub struct SelectedCommand {
     pub revision: u64,
     pub command: Command,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SelectedFactor {
+    pub cursor: Cursor,
+    pub selected: usize,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FactoredCommand {
+    pub factors: Vec<SelectedFactor>,
+    pub command: SelectedCommand,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CommandPage {
+    pub commands: Vec<FactoredCommand>,
+    pub next_offset: usize,
+    pub exhausted: bool,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
@@ -411,70 +430,114 @@ impl Domain {
     }
 
     pub fn advance(&self, cursor: &Cursor, selected: usize) -> Result<Advance, Diagnostic> {
-        if selected >= self.choices(cursor).len() {
+        self.advance_many(cursor, &[selected])
+            .map(|mut advances| advances.pop().expect("one selection produces one advance"))
+    }
+
+    /// Decode several choices from the same conditional factor while
+    /// materializing large placement banks only once. Policy search uses this
+    /// for its bounded beam; ordinary one-choice decoding keeps the same
+    /// contract through `advance`.
+    pub fn advance_many(
+        &self,
+        cursor: &Cursor,
+        selected: &[usize],
+    ) -> Result<Vec<Advance>, Diagnostic> {
+        let command_kinds =
+            matches!(cursor, Cursor::Command).then(|| self.available_command_kinds());
+        let placement_poses = if let Cursor::PlacePose { block } = *cursor {
+            Some(self.placement_poses(&self.placements[block]))
+        } else {
+            None
+        };
+        let choice_count = match *cursor {
+            Cursor::Command => command_kinds.as_ref().unwrap().len(),
+            Cursor::PlaceBlock => self.placements.len(),
+            Cursor::PlacePose { .. } => placement_poses.as_ref().unwrap().len(),
+            Cursor::PlaceTerminal => self.terminals.len(),
+            Cursor::TerminalPosition { .. } => self.terminal_positions.len(),
+            Cursor::RouteConnection => self.routes.len(),
+            Cursor::RouteSource { connection } => self
+                .routes
+                .get(connection)
+                .map_or(0, |route| route.sources.len()),
+            Cursor::RouteTarget { connection, source } => self
+                .routes
+                .get(connection)
+                .and_then(|route| route.sources.get(source))
+                .map_or(0, |ports| ports.targets.len()),
+            Cursor::ExtendDirection => self.extensions.len(),
+            Cursor::ExtendLength { direction } => self
+                .extensions
+                .get(direction)
+                .map_or(0, |extension| extension.lengths.len()),
+        };
+        if selected.iter().any(|&index| index >= choice_count) {
             return Err(error(
                 "learning-choice",
                 "learning-domain",
                 "choice index is outside the current conditional domain",
             ));
         }
-        let next = match *cursor {
-            Cursor::Command => match self.command_kinds()[selected] {
-                CommandKind::Place => Advance::Continue(Cursor::PlaceBlock),
-                CommandKind::PlaceTerminal => Advance::Continue(Cursor::PlaceTerminal),
-                CommandKind::BeginRoute => Advance::Continue(Cursor::RouteConnection),
-                CommandKind::Extend => Advance::Continue(Cursor::ExtendDirection),
-                CommandKind::Connect => Advance::Command(self.selected(Command::Connect)),
-                CommandKind::AbortRoute => Advance::Command(self.selected(Command::AbortRoute)),
-            },
-            Cursor::PlaceBlock => Advance::Continue(Cursor::PlacePose { block: selected }),
-            Cursor::PlacePose { block } => {
-                let domain = &self.placements[block];
-                let (position, rotation) = self.placement_poses(domain)[selected];
-                Advance::Command(self.selected(Command::Place {
-                    block: domain.id.clone(),
-                    position,
-                    rotation,
-                }))
-            }
-            Cursor::PlaceTerminal => {
-                Advance::Continue(Cursor::TerminalPosition { terminal: selected })
-            }
-            Cursor::TerminalPosition { terminal } => {
-                let domain = &self.terminals[terminal];
-                Advance::Command(self.selected(Command::PlaceTerminal {
-                    terminal: domain.id.clone(),
-                    position: self.terminal_positions[selected],
-                }))
-            }
-            Cursor::RouteConnection => Advance::Continue(Cursor::RouteSource {
-                connection: selected,
-            }),
-            Cursor::RouteSource { connection } => Advance::Continue(Cursor::RouteTarget {
-                connection,
-                source: selected,
-            }),
-            Cursor::RouteTarget { connection, source } => {
-                let route = &self.routes[connection];
-                let source = &route.sources[source];
-                Advance::Command(self.selected(Command::BeginRoute {
-                    connection: route.id.clone(),
-                    source_port: source.id.clone(),
-                    target_port: source.targets[selected].clone(),
-                }))
-            }
-            Cursor::ExtendDirection => Advance::Continue(Cursor::ExtendLength {
-                direction: selected,
-            }),
-            Cursor::ExtendLength { direction } => {
-                let extension = &self.extensions[direction];
-                Advance::Command(self.selected(Command::Extend {
-                    direction: extension.direction,
-                    length: extension.lengths[selected],
-                }))
-            }
-        };
-        Ok(next)
+        Ok(selected
+            .iter()
+            .map(|&selected| match *cursor {
+                Cursor::Command => match command_kinds.as_ref().unwrap()[selected] {
+                    CommandKind::Place => Advance::Continue(Cursor::PlaceBlock),
+                    CommandKind::PlaceTerminal => Advance::Continue(Cursor::PlaceTerminal),
+                    CommandKind::BeginRoute => Advance::Continue(Cursor::RouteConnection),
+                    CommandKind::Extend => Advance::Continue(Cursor::ExtendDirection),
+                    CommandKind::Connect => Advance::Command(self.selected(Command::Connect)),
+                    CommandKind::AbortRoute => Advance::Command(self.selected(Command::AbortRoute)),
+                },
+                Cursor::PlaceBlock => Advance::Continue(Cursor::PlacePose { block: selected }),
+                Cursor::PlacePose { block } => {
+                    let domain = &self.placements[block];
+                    let (position, rotation) = placement_poses.as_ref().unwrap()[selected];
+                    Advance::Command(self.selected(Command::Place {
+                        block: domain.id.clone(),
+                        position,
+                        rotation,
+                    }))
+                }
+                Cursor::PlaceTerminal => {
+                    Advance::Continue(Cursor::TerminalPosition { terminal: selected })
+                }
+                Cursor::TerminalPosition { terminal } => {
+                    let domain = &self.terminals[terminal];
+                    Advance::Command(self.selected(Command::PlaceTerminal {
+                        terminal: domain.id.clone(),
+                        position: self.terminal_positions[selected],
+                    }))
+                }
+                Cursor::RouteConnection => Advance::Continue(Cursor::RouteSource {
+                    connection: selected,
+                }),
+                Cursor::RouteSource { connection } => Advance::Continue(Cursor::RouteTarget {
+                    connection,
+                    source: selected,
+                }),
+                Cursor::RouteTarget { connection, source } => {
+                    let route = &self.routes[connection];
+                    let source = &route.sources[source];
+                    Advance::Command(self.selected(Command::BeginRoute {
+                        connection: route.id.clone(),
+                        source_port: source.id.clone(),
+                        target_port: source.targets[selected].clone(),
+                    }))
+                }
+                Cursor::ExtendDirection => Advance::Continue(Cursor::ExtendLength {
+                    direction: selected,
+                }),
+                Cursor::ExtendLength { direction } => {
+                    let extension = &self.extensions[direction];
+                    Advance::Command(self.selected(Command::Extend {
+                        direction: extension.direction,
+                        length: extension.lengths[selected],
+                    }))
+                }
+            })
+            .collect())
     }
 
     fn selected(&self, command: Command) -> SelectedCommand {
@@ -484,7 +547,7 @@ impl Domain {
         }
     }
 
-    fn command_kinds(&self) -> Vec<CommandKind> {
+    pub fn available_command_kinds(&self) -> Vec<CommandKind> {
         let mut kinds = Vec::with_capacity(6);
         if !self.placements.is_empty() {
             kinds.push(CommandKind::Place);
@@ -507,8 +570,236 @@ impl Domain {
         kinds
     }
 
+    /// Return a deterministic slice of every locally legal complete command in
+    /// one command family. The factor trace uses the exact local indices that
+    /// `choices` and `advance` expose, so a policy can score these commands
+    /// without deciding whether they are eligible for search.
+    pub fn command_page(&self, kind: CommandKind, offset: usize, limit: usize) -> CommandPage {
+        let kinds = self.available_command_kinds();
+        let Some(root_selected) = kinds.iter().position(|candidate| *candidate == kind) else {
+            return CommandPage {
+                commands: vec![],
+                next_offset: offset,
+                exhausted: true,
+            };
+        };
+        let root = SelectedFactor {
+            cursor: Cursor::Command,
+            selected: root_selected,
+        };
+        if kind == CommandKind::Place {
+            let mut commands = Vec::with_capacity(limit);
+            let mut base = 0usize;
+            let goal = offset.saturating_add(limit);
+            for (block, placement) in self.placements.iter().enumerate() {
+                let poses = self.placement_poses(placement);
+                let next = base + poses.len();
+                let from = offset.max(base);
+                let to = goal.min(next);
+                for flat in from..to {
+                    let pose_rank = flat - base;
+                    let pose = stratified_index(pose_rank, poses.len(), block);
+                    let (position, rotation) = poses[pose];
+                    commands.push(FactoredCommand {
+                        factors: vec![
+                            root.clone(),
+                            SelectedFactor {
+                                cursor: Cursor::PlaceBlock,
+                                selected: block,
+                            },
+                            SelectedFactor {
+                                cursor: Cursor::PlacePose { block },
+                                selected: pose,
+                            },
+                        ],
+                        command: self.selected(Command::Place {
+                            block: placement.id.clone(),
+                            position,
+                            rotation,
+                        }),
+                    });
+                }
+                base = next;
+                if commands.len() == limit {
+                    return CommandPage {
+                        commands,
+                        next_offset: goal,
+                        exhausted: block + 1 == self.placements.len() && goal >= next,
+                    };
+                }
+            }
+            return CommandPage {
+                next_offset: base,
+                exhausted: true,
+                commands,
+            };
+        }
+        let total = match kind {
+            CommandKind::Place => unreachable!("place pages return above"),
+            CommandKind::PlaceTerminal => self
+                .terminals
+                .len()
+                .saturating_mul(self.terminal_positions.len()),
+            CommandKind::BeginRoute => self
+                .routes
+                .iter()
+                .flat_map(|route| &route.sources)
+                .map(|source| source.targets.len())
+                .sum(),
+            CommandKind::Extend => self
+                .extensions
+                .iter()
+                .map(|extension| extension.lengths.len())
+                .sum(),
+            CommandKind::Connect | CommandKind::AbortRoute => 1,
+        };
+        let start = offset.min(total);
+        let end = start.saturating_add(limit).min(total);
+        let mut commands = Vec::with_capacity(end - start);
+        match kind {
+            CommandKind::Place => unreachable!("place pages return above"),
+            CommandKind::PlaceTerminal => {
+                let positions = self.terminal_positions.len();
+                for flat in start..end {
+                    let terminal = flat / positions;
+                    let position = stratified_index(flat % positions, positions, terminal);
+                    commands.push(FactoredCommand {
+                        factors: vec![
+                            root.clone(),
+                            SelectedFactor {
+                                cursor: Cursor::PlaceTerminal,
+                                selected: terminal,
+                            },
+                            SelectedFactor {
+                                cursor: Cursor::TerminalPosition { terminal },
+                                selected: position,
+                            },
+                        ],
+                        command: self.selected(Command::PlaceTerminal {
+                            terminal: self.terminals[terminal].id.clone(),
+                            position: self.terminal_positions[position],
+                        }),
+                    });
+                }
+            }
+            CommandKind::BeginRoute => {
+                let route_pairs = self
+                    .routes
+                    .iter()
+                    .map(|route| {
+                        route
+                            .sources
+                            .iter()
+                            .enumerate()
+                            .flat_map(|(source, ports)| {
+                                (0..ports.targets.len()).map(move |target| (source, target))
+                            })
+                            .collect::<Vec<_>>()
+                    })
+                    .collect::<Vec<_>>();
+                let maximum = route_pairs.iter().map(Vec::len).max().unwrap_or(0);
+                let ordered = (0..maximum)
+                    .flat_map(|pair| {
+                        route_pairs
+                            .iter()
+                            .enumerate()
+                            .filter_map(move |(connection, pairs)| {
+                                pairs
+                                    .get(pair)
+                                    .map(|&(source, target)| (connection, source, target))
+                            })
+                    })
+                    .collect::<Vec<_>>();
+                for &(connection, source, target) in &ordered[start..end] {
+                    let route = &self.routes[connection];
+                    let ports = &route.sources[source];
+                    commands.push(FactoredCommand {
+                        factors: vec![
+                            root.clone(),
+                            SelectedFactor {
+                                cursor: Cursor::RouteConnection,
+                                selected: connection,
+                            },
+                            SelectedFactor {
+                                cursor: Cursor::RouteSource { connection },
+                                selected: source,
+                            },
+                            SelectedFactor {
+                                cursor: Cursor::RouteTarget { connection, source },
+                                selected: target,
+                            },
+                        ],
+                        command: self.selected(Command::BeginRoute {
+                            connection: route.id.clone(),
+                            source_port: ports.id.clone(),
+                            target_port: ports.targets[target].clone(),
+                        }),
+                    });
+                }
+            }
+            CommandKind::Extend => {
+                let maximum = self
+                    .extensions
+                    .iter()
+                    .map(|extension| extension.lengths.len())
+                    .max()
+                    .unwrap_or(0);
+                let ordered = (0..maximum)
+                    .flat_map(|length| {
+                        self.extensions.iter().enumerate().filter_map(
+                            move |(direction, extension)| {
+                                (length < extension.lengths.len()).then_some((direction, length))
+                            },
+                        )
+                    })
+                    .collect::<Vec<_>>();
+                for &(direction, length) in &ordered[start..end] {
+                    let extension = &self.extensions[direction];
+                    commands.push(FactoredCommand {
+                        factors: vec![
+                            root.clone(),
+                            SelectedFactor {
+                                cursor: Cursor::ExtendDirection,
+                                selected: direction,
+                            },
+                            SelectedFactor {
+                                cursor: Cursor::ExtendLength { direction },
+                                selected: length,
+                            },
+                        ],
+                        command: self.selected(Command::Extend {
+                            direction: extension.direction,
+                            length: extension.lengths[length],
+                        }),
+                    });
+                }
+            }
+            CommandKind::Connect => {
+                if start == 0 && end == 1 {
+                    commands.push(FactoredCommand {
+                        factors: vec![root],
+                        command: self.selected(Command::Connect),
+                    });
+                }
+            }
+            CommandKind::AbortRoute => {
+                if start == 0 && end == 1 {
+                    commands.push(FactoredCommand {
+                        factors: vec![root],
+                        command: self.selected(Command::AbortRoute),
+                    });
+                }
+            }
+        }
+        CommandPage {
+            commands,
+            next_offset: end,
+            exhausted: end >= total,
+        }
+    }
+
     fn command_choices(&self) -> Vec<Choice> {
-        self.command_kinds()
+        self.available_command_kinds()
             .into_iter()
             .map(|kind| choice(kind as usize, 0, 0., [-1, -1]))
             .collect()
@@ -521,9 +812,8 @@ impl Domain {
             .max(config.placement.height())
             .max(1) as f32;
         let blocked = blocked_cells(session);
-        let placement = config.placement;
-        let placements = placement_domains(session, placement, &blocked);
-        let terminal_positions = terminal_positions(session, placement, &blocked);
+        let placements = placement_domains(session, config.placement, &blocked);
+        let terminal_positions = terminal_positions(session, config.placement, &blocked);
         let terminals = terminal_domains(session, !terminal_positions.is_empty());
         let routes = route_domains(session);
         let extensions = extension_domains(session, config);
@@ -538,7 +828,7 @@ impl Domain {
         Self {
             revision: session.revision,
             scale,
-            placement,
+            placement: config.placement,
             blocked,
             placements,
             terminals,
@@ -575,6 +865,32 @@ fn choice(kind: usize, value: i64, scalar: f32, references: [i64; 2]) -> Choice 
         features,
         references,
     }
+}
+
+/// A deterministic full-cycle permutation used to make early pages cover a
+/// large conditional bank instead of one adjacent row. Because the stride is
+/// coprime to `count`, every original factor index appears exactly once.
+fn stratified_index(rank: usize, count: usize, salt: usize) -> usize {
+    if count <= 1 {
+        return 0;
+    }
+    let mut stride = ((count as u128 * 618_033_989u128) / 1_000_000_000u128) as usize;
+    stride = stride.max(1) % count;
+    while greatest_common_divisor(stride, count) != 1 {
+        stride += 1;
+        if stride == count {
+            stride = 1;
+        }
+    }
+    let start = (count / 8 + salt.wrapping_mul(104_729)) % count;
+    (start + ((rank as u128 * stride as u128) % count as u128) as usize) % count
+}
+
+fn greatest_common_divisor(mut left: usize, mut right: usize) -> usize {
+    while right != 0 {
+        (left, right) = (right, left % right);
+    }
+    left
 }
 
 fn blocked_cells(session: &Session) -> BTreeSet<Point> {

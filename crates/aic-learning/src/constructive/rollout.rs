@@ -38,7 +38,7 @@ impl RewardConfig {
         Ok(())
     }
 
-    fn reward(&self, step: &Step) -> f64 {
+    pub(super) fn reward(&self, step: &Step) -> f64 {
         self.progress_scale * step.progress_delta
             + if step.fully_validated {
                 self.full_validation_bonus

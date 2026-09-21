@@ -683,7 +683,7 @@ fn escape_html(value: &str) -> String {
         .replace('\'', "&#39;")
 }
 
-fn validate_config(config: &Config) -> Result<()> {
+pub(super) fn validate_config(config: &Config) -> Result<()> {
     ensure!(
         config.schema == "aic-constructive-training-v4"
             && (1..=1024).contains(&config.updates)
