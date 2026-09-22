@@ -12,6 +12,8 @@ pub mod pretraining;
 pub mod route_candidates;
 #[cfg(feature = "libtorch")]
 pub mod route_guidance;
+#[cfg(feature = "libtorch")]
+pub mod route_guidance_training;
 pub mod schema;
 #[cfg(feature = "libtorch")]
 pub mod update;

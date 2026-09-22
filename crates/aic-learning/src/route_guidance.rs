@@ -105,6 +105,10 @@ impl Batch {
     pub fn len(&self) -> usize {
         self.graph.graphs() as usize
     }
+
+    pub fn dimensions(&self) -> (i64, i64) {
+        (self.width, self.height)
+    }
 }
 
 impl Model {
@@ -336,6 +340,27 @@ impl Model {
                     .collect(),
             })
             .collect())
+    }
+
+    pub fn snapshot(&self) -> Tensors {
+        let mut values = self
+            .encoder
+            .parameters
+            .iter()
+            .map(|(name, value)| {
+                (
+                    format!("constructive.model.{name}"),
+                    value.detach().to_device(Device::Cpu).copy(),
+                )
+            })
+            .collect::<Tensors>();
+        values.extend(self.weights.iter().map(|(name, value)| {
+            (
+                format!("route-guidance.model.{name}"),
+                value.detach().to_device(Device::Cpu).copy(),
+            )
+        }));
+        values
     }
 }
 

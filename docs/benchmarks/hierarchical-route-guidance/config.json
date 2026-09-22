@@ -1,0 +1,39 @@
+{
+  "schema": "aic-route-guidance-training-v1",
+  "model": {
+    "schema": "aic-route-guidance-model-v1",
+    "encoder": {
+      "schema": "aic-constructive-attention-model-v2",
+      "width": 32,
+      "message_rounds": 2
+    },
+    "raster_width": 32,
+    "heads": 3,
+    "maximum_edge_cost": 32
+  },
+  "learning_domain": {
+    "placement": {
+      "minX": 0,
+      "minY": 0,
+      "maxX": 20,
+      "maxY": 20
+    },
+    "extension_lengths": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32
+    ]
+  },
+  "epochs": 400,
+  "batch_cases": 9,
+  "learning_rate": 0.001,
+  "gradient_clip": 1.0,
+  "policy_temperature": 4.0,
+  "target_temperature": 0.25,
+  "regret_edge_cost": 16.0,
+  "seed": 20260922,
+  "cpu_threads": 8
+}

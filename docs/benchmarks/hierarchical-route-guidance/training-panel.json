@@ -1,0 +1,1643 @@
+{
+  "schema": "aic-route-guidance-panel-v1",
+  "partition": "training",
+  "limits": {
+    "max_turns": 10000,
+    "max_extension": 32
+  },
+  "candidate": {
+    "bounds": {
+      "minX": 0,
+      "minY": 0,
+      "maxX": 20,
+      "maxY": 20
+    },
+    "max_candidates": 6,
+    "max_searches": 48,
+    "work_per_search": 20000,
+    "max_expanded": 400000,
+    "overlap_penalty": 8
+  },
+  "cases": [
+    {
+      "id": "train-forward-y7-x5",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 0,
+            "y": 7
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 17,
+            "y": 7
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 5,
+            "y": 10
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 5,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    },
+    {
+      "id": "train-forward-y7-x8",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 0,
+            "y": 7
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 17,
+            "y": 7
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 8,
+            "y": 10
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 8,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    },
+    {
+      "id": "train-forward-y7-x11",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 0,
+            "y": 7
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 17,
+            "y": 7
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 11,
+            "y": 10
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 11,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    },
+    {
+      "id": "train-forward-y9-x5",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 0,
+            "y": 9
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 17,
+            "y": 9
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 5,
+            "y": 12
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 5,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    },
+    {
+      "id": "train-forward-y9-x8",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 0,
+            "y": 9
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 17,
+            "y": 9
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 8,
+            "y": 12
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 8,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    },
+    {
+      "id": "train-forward-y9-x11",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 0,
+            "y": 9
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 17,
+            "y": 9
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 11,
+            "y": 12
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 11,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    },
+    {
+      "id": "train-forward-y11-x5",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 0,
+            "y": 11
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 17,
+            "y": 11
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 5,
+            "y": 14
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 5,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    },
+    {
+      "id": "train-forward-y11-x8",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 0,
+            "y": 11
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 17,
+            "y": 11
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 8,
+            "y": 14
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 8,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    },
+    {
+      "id": "train-forward-y11-x11",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 0,
+            "y": 11
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 17,
+            "y": 11
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 11,
+            "y": 14
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 11,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    },
+    {
+      "id": "train-reverse-y7-x5",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 17,
+            "y": 7
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 0,
+            "y": 7
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 5,
+            "y": 10
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 5,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    },
+    {
+      "id": "train-reverse-y7-x8",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 17,
+            "y": 7
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 0,
+            "y": 7
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 8,
+            "y": 10
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 8,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    },
+    {
+      "id": "train-reverse-y7-x11",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 17,
+            "y": 7
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 0,
+            "y": 7
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 11,
+            "y": 10
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 11,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    },
+    {
+      "id": "train-reverse-y9-x5",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 17,
+            "y": 9
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 0,
+            "y": 9
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 5,
+            "y": 12
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 5,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    },
+    {
+      "id": "train-reverse-y9-x8",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 17,
+            "y": 9
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 0,
+            "y": 9
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 8,
+            "y": 12
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 8,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    },
+    {
+      "id": "train-reverse-y9-x11",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 17,
+            "y": 9
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 0,
+            "y": 9
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 11,
+            "y": 12
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 11,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    },
+    {
+      "id": "train-reverse-y11-x5",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 17,
+            "y": 11
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 0,
+            "y": 11
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 5,
+            "y": 14
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 5,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    },
+    {
+      "id": "train-reverse-y11-x8",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 17,
+            "y": 11
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 0,
+            "y": 11
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 8,
+            "y": 14
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 8,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    },
+    {
+      "id": "train-reverse-y11-x11",
+      "problem": {
+        "blocks": [
+          {
+            "id": "root-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "root-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "later-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "root",
+            "source": "root-source",
+            "target": "root-target",
+            "commodity": "root-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "later",
+            "source": "later-source",
+            "target": "later-target",
+            "commodity": "later-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "root-source",
+          "position": {
+            "x": 17,
+            "y": 11
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "root-target",
+          "position": {
+            "x": 0,
+            "y": 11
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "later-source",
+          "position": {
+            "x": 11,
+            "y": 14
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "later-target",
+          "position": {
+            "x": 11,
+            "y": 1
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "root",
+      "later_connections": [
+        "later"
+      ]
+    }
+  ]
+}

@@ -17,6 +17,23 @@ pub enum LearningCommand {
         #[arg(long)]
         output: PathBuf,
     },
+    /// Warm-start dense exact-search guidance from frozen continuation outcomes.
+    #[cfg(feature = "learning")]
+    TrainRouteGuidance {
+        #[arg(long)]
+        config: PathBuf,
+        #[arg(long)]
+        training_panel: PathBuf,
+        #[arg(long)]
+        evaluation_panel: PathBuf,
+        /// Directory containing normalized facilities, transports and logistics components.
+        #[arg(long)]
+        catalog_root: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long, default_value = "cuda:0")]
+        device: String,
+    },
     /// Collect the fixed bounded procedural physical-action outcome dataset.
     CollectOutcomes {
         #[arg(long)]
@@ -242,6 +259,8 @@ pub enum LearningCommand {
 pub fn run(command: LearningCommand) -> Result<()> {
     let config = match &command {
         LearningCommand::RouteCandidateHarness { panel, .. } => panel,
+        #[cfg(feature = "learning")]
+        LearningCommand::TrainRouteGuidance { config, .. } => config,
         LearningCommand::CollectOutcomes { config, .. } => config,
         LearningCommand::ValidateOutcomes { dataset } => dataset,
         #[cfg(feature = "learning")]
@@ -299,6 +318,22 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             catalog_root,
             output,
         } => aic_learning::route_candidates::run(&panel, &catalog_root, &output),
+        #[cfg(feature = "learning")]
+        LearningCommand::TrainRouteGuidance {
+            config,
+            training_panel,
+            evaluation_panel,
+            catalog_root,
+            output,
+            device,
+        } => aic_learning::route_guidance_training::run(
+            &config,
+            &training_panel,
+            &evaluation_panel,
+            &catalog_root,
+            &output,
+            update::parse_device(&device)?,
+        ),
         LearningCommand::CollectOutcomes {
             config,
             catalog_root,

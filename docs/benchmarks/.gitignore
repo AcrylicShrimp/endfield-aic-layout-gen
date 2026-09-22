@@ -56,6 +56,9 @@
 !/fixtures/order-certificate.json
 !/heavy-xiranite-bottom-up-rotation-root/case.json
 !/hierarchical-route-candidates/panel.json
+!/hierarchical-route-guidance/config.json
+!/hierarchical-route-guidance/evaluation-panel.json
+!/hierarchical-route-guidance/training-panel.json
 !/layout-direct/audit-smoke.json
 !/layout-direct/breadth.json
 !/layout-direct/budget-curve.json
