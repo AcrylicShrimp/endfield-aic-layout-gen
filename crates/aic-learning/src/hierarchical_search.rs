@@ -39,9 +39,9 @@ use crate::{
     route_guidance_training::Config as GuidanceTrainingConfig,
 };
 
-const CONFIG_SCHEMA: &str = "aic-hierarchical-search-config-v1";
+const CONFIG_SCHEMA: &str = "aic-hierarchical-search-config-v2";
 const PANEL_SCHEMA: &str = "aic-hierarchical-search-panel-v1";
-pub const REPORT_SCHEMA: &str = "aic-hierarchical-search-report-v6";
+pub const REPORT_SCHEMA: &str = "aic-hierarchical-search-report-v7";
 const MAX_INPUT_BYTES: u64 = 16 * 1024 * 1024;
 const ROUTE_ATTEMPT_SAMPLE_LIMIT: usize = 32;
 
@@ -55,6 +55,20 @@ fn default_compiled_inference() -> bool {
 
 fn default_run_beam() -> bool {
     true
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "algorithm", rename_all = "kebab-case", deny_unknown_fields)]
+pub enum RootSelection {
+    Puct,
+    GumbelSequentialHalving {
+        candidates: usize,
+        anchor_candidates: usize,
+        anchor_policy_mass: f64,
+        seed: u64,
+        value_scale: f64,
+        max_visit_init: f64,
+    },
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -73,6 +87,7 @@ pub struct Config {
     pub horizon: usize,
     pub max_moves: usize,
     pub exploration: f64,
+    pub root_selection: RootSelection,
     #[serde(default = "default_anchor_prior_mass")]
     pub anchor_prior_mass: f64,
     #[serde(default = "default_compiled_inference")]
@@ -137,8 +152,11 @@ struct ActionSummary {
 pub(crate) struct RootActionRecord {
     pub action: MacroAction,
     pub prior: f64,
+    pub anchor_prior: f64,
     pub visits: u32,
     pub q: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub policy_target: Option<f64>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -306,6 +324,12 @@ struct ActionBatch {
     placement_pages: PlacementPages,
 }
 
+struct ActionScores {
+    priors: Vec<f64>,
+    anchor_priors: Vec<f64>,
+    model_value: f64,
+}
+
 impl Factory<'_> {
     pub(crate) fn new<'a>(
         guidance: &'a GuidanceModel,
@@ -345,7 +369,12 @@ impl Factory<'_> {
         })
     }
 
-    fn action_batch(&self, session: &Session, counters: &mut Counters) -> Result<ActionBatch> {
+    fn action_batch(
+        &self,
+        session: &Session,
+        counters: &mut Counters,
+        exhaust_placements: bool,
+    ) -> Result<ActionBatch> {
         ensure!(
             session.observe().active.is_none(),
             "aic-learning.hierarchical-state: macro state contains an active partial route"
@@ -361,16 +390,24 @@ impl Factory<'_> {
                 .into_iter()
                 .enumerate()
             {
-                let page = observation
-                    .domain
-                    .command_page(kind, 0, self.placement_page);
-                placement_pages.offsets[index] = page.next_offset;
-                placement_pages.exhausted[index] = page.exhausted;
-                actions.extend(
-                    page.commands
-                        .into_iter()
-                        .map(|factored| MacroAction::Command(factored.command.command)),
-                );
+                loop {
+                    let page = observation.domain.command_page(
+                        kind,
+                        placement_pages.offsets[index],
+                        self.placement_page,
+                    );
+                    placement_pages.offsets[index] = page.next_offset;
+                    placement_pages.exhausted[index] = page.exhausted;
+                    actions.extend(
+                        page.commands
+                            .into_iter()
+                            .map(|factored| MacroAction::Command(factored.command.command)),
+                    );
+                    if !exhaust_placements || page.exhausted {
+                        break;
+                    }
+                    placement_pages.loaded_pages += 1;
+                }
             }
         }
 
@@ -479,7 +516,7 @@ impl Factory<'_> {
         session: &Session,
         counters: &mut Counters,
     ) -> Result<Vec<MacroAction>> {
-        Ok(self.action_batch(session, counters)?.actions)
+        Ok(self.action_batch(session, counters, false)?.actions)
     }
 
     fn next_placement_page(
@@ -650,7 +687,7 @@ impl Factory<'_> {
         session: &Session,
         actions: &[MacroAction],
         children: &[Session],
-    ) -> Result<(Vec<f64>, f64)> {
+    ) -> Result<ActionScores> {
         let Some(model) = self.outer.as_ref() else {
             let scores = actions
                 .iter()
@@ -663,13 +700,15 @@ impl Factory<'_> {
                 .map(|score| (score - maximum).exp())
                 .collect::<Vec<_>>();
             let denominator = weights.iter().sum::<f64>();
-            return Ok((
-                weights
-                    .into_iter()
-                    .map(|weight| weight / denominator.max(f64::MIN_POSITIVE))
-                    .collect(),
-                state_value(session, self.domain.placement),
-            ));
+            let anchor_priors = weights
+                .into_iter()
+                .map(|weight| weight / denominator.max(f64::MIN_POSITIVE))
+                .collect::<Vec<_>>();
+            return Ok(ActionScores {
+                priors: anchor_priors.clone(),
+                anchor_priors,
+                model_value: state_value(session, self.domain.placement),
+            });
         };
         let input = session
             .macro_learning_input(&self.domain)
@@ -708,12 +747,15 @@ impl Factory<'_> {
             .map(|score| (score - maximum).exp())
             .collect::<Vec<_>>();
         let denominator = anchor_weights.iter().sum::<f64>();
+        let anchor_priors = anchor_weights
+            .into_iter()
+            .map(|anchor| anchor / denominator.max(f64::MIN_POSITIVE))
+            .collect::<Vec<_>>();
         let priors = learned
             .into_iter()
-            .zip(anchor_weights)
+            .zip(&anchor_priors)
             .map(|(learned, anchor)| {
-                learned * (1.0 - self.anchor_prior_mass())
-                    + anchor / denominator.max(f64::MIN_POSITIVE) * self.anchor_prior_mass()
+                learned * (1.0 - self.anchor_prior_mass()) + anchor * self.anchor_prior_mass()
             })
             .collect();
         let completion = prediction.values.double_value(&[0, COMPLETION_HEAD]);
@@ -724,7 +766,11 @@ impl Factory<'_> {
             self.domain.placement,
             session.problem().connections.len(),
         );
-        Ok((priors, completion * predicted_quality_value(penalty)))
+        Ok(ActionScores {
+            priors,
+            anchor_priors,
+            model_value: completion * predicted_quality_value(penalty),
+        })
     }
 
     fn anchor_prior_mass(&self) -> f64 {
@@ -1206,7 +1252,7 @@ fn run_with_record_policy(
             .run_beam
             .then(|| beam_search(root.clone(), &factory, &config))
             .transpose()?;
-        let mut mcts = mcts_search(root, &factory, &config)?;
+        let mut mcts = mcts_search(root, &factory, &config, &case.id)?;
         if !retain_root_records {
             mcts.root_records.clear();
         }
@@ -1412,6 +1458,7 @@ fn beam_search(root: Session, factory: &Factory<'_>, config: &Config) -> Result<
 struct Edge {
     action: MacroAction,
     prior: f64,
+    anchor_prior: f64,
     visits: u32,
     value_sum: f64,
     child: Option<usize>,
@@ -1429,6 +1476,7 @@ fn mcts_search(
     mut working: Session,
     factory: &Factory<'_>,
     config: &Config,
+    case_id: &str,
 ) -> Result<SearchResult> {
     let started = Instant::now();
     let mut counters = Counters::default();
@@ -1448,37 +1496,83 @@ fn mcts_search(
             actions: None,
             placement_pages: None,
         }];
-        for _ in 0..config.simulations_per_move {
-            simulate(&mut nodes, 0, factory, config, &mut counters)?;
-            simulations += 1;
-        }
-        ensure_node_expanded(&mut nodes, 0, factory, &mut counters)?;
-        let actions = nodes[0].actions.as_ref().expect("expanded root");
-        let Some((selected, _)) = actions.iter().enumerate().max_by(|left, right| {
-            left.1
-                .visits
-                .cmp(&right.1.visits)
-                .then_with(|| left.1.prior.total_cmp(&right.1.prior))
-        }) else {
+        let state_identity = state_sha256(&working)?;
+        let (selected, policy_targets) = match &config.root_selection {
+            RootSelection::Puct => {
+                for _ in 0..config.simulations_per_move {
+                    simulate(&mut nodes, 0, None, factory, config, &mut counters)?;
+                    simulations += 1;
+                }
+                ensure_node_expanded(&mut nodes, 0, factory, &mut counters, false)?;
+                let selected = nodes[0]
+                    .actions
+                    .as_ref()
+                    .expect("expanded root")
+                    .iter()
+                    .enumerate()
+                    .max_by(|left, right| {
+                        left.1
+                            .visits
+                            .cmp(&right.1.visits)
+                            .then_with(|| left.1.prior.total_cmp(&right.1.prior))
+                    })
+                    .map(|(index, _)| index);
+                (selected, None)
+            }
+            RootSelection::GumbelSequentialHalving {
+                candidates,
+                anchor_candidates,
+                anchor_policy_mass,
+                seed,
+                value_scale,
+                max_visit_init,
+            } => {
+                ensure_node_expanded(&mut nodes, 0, factory, &mut counters, true)?;
+                let decision = gumbel_sequential_halving(
+                    &mut nodes,
+                    0,
+                    factory,
+                    config,
+                    &mut counters,
+                    GumbelControls {
+                        candidates: *candidates,
+                        anchor_candidates: *anchor_candidates,
+                        anchor_policy_mass: *anchor_policy_mass,
+                        seed: *seed,
+                        value_scale: *value_scale,
+                        max_visit_init: *max_visit_init,
+                    },
+                    case_id,
+                    &state_identity,
+                )?;
+                simulations += decision.simulations;
+                (decision.selected, decision.policy_targets)
+            }
+        };
+        let Some(selected) = selected else {
             termination = SearchTermination::NoMacroActions;
             break;
         };
+        let actions = nodes[0].actions.as_ref().expect("expanded root");
         let action = actions[selected].action.clone();
         let revision = working.observe().revision;
         root_records.push(RootRecord {
-            state_sha256: state_sha256(&working)?,
+            state_sha256: state_identity,
             state_revision: revision,
             actions: actions
                 .iter()
-                .map(|edge| RootActionRecord {
+                .enumerate()
+                .map(|(index, edge)| RootActionRecord {
                     action: edge.action.clone(),
                     prior: edge.prior,
+                    anchor_prior: edge.anchor_prior,
                     visits: edge.visits,
                     q: if edge.visits == 0 {
                         0.0
                     } else {
                         edge.value_sum / f64::from(edge.visits)
                     },
+                    policy_target: policy_targets.as_ref().map(|targets| targets[index]),
                 })
                 .collect(),
             selected_action: selected,
@@ -1509,7 +1603,10 @@ fn mcts_search(
         record.later_termination = termination;
     }
     Ok(finish_result(
-        "mcts",
+        match &config.root_selection {
+            RootSelection::Puct => "mcts",
+            RootSelection::GumbelSequentialHalving { .. } => "gumbel-mcts",
+        },
         working,
         trace,
         root_records,
@@ -1520,9 +1617,252 @@ fn mcts_search(
     ))
 }
 
+#[derive(Clone, Copy)]
+struct GumbelControls {
+    candidates: usize,
+    anchor_candidates: usize,
+    anchor_policy_mass: f64,
+    seed: u64,
+    value_scale: f64,
+    max_visit_init: f64,
+}
+
+struct RootDecision {
+    selected: Option<usize>,
+    policy_targets: Option<Vec<f64>>,
+    simulations: usize,
+}
+
+#[allow(clippy::too_many_arguments)]
+fn gumbel_sequential_halving(
+    nodes: &mut Vec<Node>,
+    root: usize,
+    factory: &Factory<'_>,
+    config: &Config,
+    counters: &mut Counters,
+    controls: GumbelControls,
+    case_id: &str,
+    state_identity: &str,
+) -> Result<RootDecision> {
+    let actions = nodes[root].actions.as_ref().expect("expanded root");
+    if actions.is_empty() {
+        return Ok(RootDecision {
+            selected: None,
+            policy_targets: None,
+            simulations: 0,
+        });
+    }
+    let gumbels = deterministic_gumbels(controls.seed, case_id, state_identity, actions.len());
+    let mut remaining = considered_root_actions(
+        actions,
+        &gumbels,
+        controls.candidates,
+        controls.anchor_candidates,
+        controls.anchor_policy_mass,
+    );
+    let mut simulations = 0usize;
+    while remaining.len() > 1 {
+        let rounds_left =
+            remaining.len().ilog2() as usize + usize::from(!remaining.len().is_power_of_two());
+        let available = config.simulations_per_move - simulations;
+        let visits_each = (available / (remaining.len() * rounds_left)).max(1);
+        for edge in remaining.iter().copied() {
+            for _ in 0..visits_each {
+                simulate(nodes, root, Some(edge), factory, config, counters)?;
+                simulations += 1;
+            }
+        }
+        let transformed =
+            completed_q_transform(nodes, root, controls.value_scale, controls.max_visit_init);
+        remaining.sort_by(|left, right| {
+            root_rank_score(
+                &nodes[root].actions.as_ref().unwrap()[*right],
+                gumbels[*right],
+                transformed[*right],
+                controls.anchor_policy_mass,
+            )
+            .total_cmp(&root_rank_score(
+                &nodes[root].actions.as_ref().unwrap()[*left],
+                gumbels[*left],
+                transformed[*left],
+                controls.anchor_policy_mass,
+            ))
+            .then_with(|| left.cmp(right))
+        });
+        remaining.truncate(remaining.len().div_ceil(2));
+    }
+    let selected = remaining[0];
+    while simulations < config.simulations_per_move {
+        simulate(nodes, root, Some(selected), factory, config, counters)?;
+        simulations += 1;
+    }
+    let transformed =
+        completed_q_transform(nodes, root, controls.value_scale, controls.max_visit_init);
+    let policy_targets = improved_policy(
+        nodes[root].actions.as_ref().unwrap(),
+        &transformed,
+        controls.anchor_policy_mass,
+    );
+    Ok(RootDecision {
+        selected: Some(selected),
+        policy_targets: Some(policy_targets),
+        simulations,
+    })
+}
+
+fn considered_root_actions(
+    actions: &[Edge],
+    gumbels: &[f64],
+    requested: usize,
+    requested_anchors: usize,
+    anchor_policy_mass: f64,
+) -> Vec<usize> {
+    let count = requested.min(actions.len());
+    let anchor_count = requested_anchors.min(count);
+    let mut by_anchor = (0..actions.len()).collect::<Vec<_>>();
+    by_anchor.sort_by(|left, right| {
+        actions[*right]
+            .anchor_prior
+            .total_cmp(&actions[*left].anchor_prior)
+            .then_with(|| left.cmp(right))
+    });
+    let mut selected = by_anchor.into_iter().take(anchor_count).collect::<Vec<_>>();
+    let anchor_indices = selected.iter().copied().collect::<HashSet<_>>();
+    let mut by_gumbel = (0..actions.len())
+        .filter(|index| !anchor_indices.contains(index))
+        .collect::<Vec<_>>();
+    by_gumbel.sort_by(|left, right| {
+        root_prior_score(&actions[*right], gumbels[*right], anchor_policy_mass)
+            .total_cmp(&root_prior_score(
+                &actions[*left],
+                gumbels[*left],
+                anchor_policy_mass,
+            ))
+            .then_with(|| left.cmp(right))
+    });
+    selected.extend(by_gumbel.into_iter().take(count - selected.len()));
+    selected.sort_unstable();
+    selected
+}
+
+fn root_policy_prior(edge: &Edge, anchor_policy_mass: f64) -> f64 {
+    edge.prior * (1.0 - anchor_policy_mass) + edge.anchor_prior * anchor_policy_mass
+}
+
+fn root_prior_score(edge: &Edge, gumbel: f64, anchor_policy_mass: f64) -> f64 {
+    gumbel
+        + root_policy_prior(edge, anchor_policy_mass)
+            .max(f64::MIN_POSITIVE)
+            .ln()
+}
+
+fn root_rank_score(edge: &Edge, gumbel: f64, transformed_q: f64, anchor_policy_mass: f64) -> f64 {
+    root_prior_score(edge, gumbel, anchor_policy_mass) + transformed_q
+}
+
+fn completed_q_transform(
+    nodes: &[Node],
+    root: usize,
+    value_scale: f64,
+    max_visit_init: f64,
+) -> Vec<f64> {
+    let actions = nodes[root].actions.as_ref().expect("expanded root");
+    let root_value = nodes[root].value.unwrap_or_default();
+    let total_visits = actions
+        .iter()
+        .map(|edge| u64::from(edge.visits))
+        .sum::<u64>();
+    let total_value = actions.iter().map(|edge| edge.value_sum).sum::<f64>();
+    let mixed_value = (root_value + total_value) / (1.0 + total_visits as f64);
+    let completed = actions
+        .iter()
+        .map(|edge| {
+            if edge.visits == 0 {
+                mixed_value
+            } else {
+                edge.value_sum / f64::from(edge.visits)
+            }
+        })
+        .collect::<Vec<_>>();
+    let minimum = completed.iter().copied().fold(root_value, f64::min);
+    let maximum = completed.iter().copied().fold(root_value, f64::max);
+    let denominator = maximum - minimum;
+    let max_visits = actions.iter().map(|edge| edge.visits).max().unwrap_or(0);
+    let scale = (max_visit_init + f64::from(max_visits)) * value_scale;
+    completed
+        .into_iter()
+        .map(|q| {
+            if denominator <= 1e-8 {
+                0.0
+            } else {
+                (q - minimum) / denominator * scale
+            }
+        })
+        .collect()
+}
+
+fn improved_policy(actions: &[Edge], transformed_q: &[f64], anchor_policy_mass: f64) -> Vec<f64> {
+    let logits = actions
+        .iter()
+        .zip(transformed_q)
+        .map(|(edge, q)| {
+            root_policy_prior(edge, anchor_policy_mass)
+                .max(f64::MIN_POSITIVE)
+                .ln()
+                + q
+        })
+        .collect::<Vec<_>>();
+    let maximum = logits.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    let weights = logits
+        .into_iter()
+        .map(|logit| (logit - maximum).exp())
+        .collect::<Vec<_>>();
+    let denominator = weights.iter().sum::<f64>();
+    weights
+        .into_iter()
+        .map(|weight| weight / denominator.max(f64::MIN_POSITIVE))
+        .collect()
+}
+
+fn deterministic_gumbels(seed: u64, case_id: &str, state_identity: &str, count: usize) -> Vec<f64> {
+    let mut digest = Sha256::new();
+    digest.update(seed.to_le_bytes());
+    digest.update([0]);
+    digest.update(case_id.as_bytes());
+    digest.update([0]);
+    digest.update(state_identity.as_bytes());
+    let bytes = digest.finalize();
+    let mut state = u64::from_le_bytes(bytes[..8].try_into().expect("SHA-256 prefix"));
+    (0..count)
+        .map(|_| {
+            let bits = splitmix64(&mut state) >> 11;
+            let uniform = (bits as f64 + 0.5) / ((1u64 << 53) as f64);
+            -(-uniform.ln()).ln()
+        })
+        .collect()
+}
+
+fn splitmix64(state: &mut u64) -> u64 {
+    *state = state.wrapping_add(0x9e37_79b9_7f4a_7c15);
+    let mut value = *state;
+    value = (value ^ (value >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    value = (value ^ (value >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+    value ^ (value >> 31)
+}
+
+fn minimum_sequential_halving_simulations(mut candidates: usize) -> usize {
+    let mut simulations = 0usize;
+    while candidates > 1 {
+        simulations += candidates;
+        candidates = candidates.div_ceil(2);
+    }
+    simulations
+}
+
 fn simulate(
     nodes: &mut Vec<Node>,
     root: usize,
+    forced_root_edge: Option<usize>,
     factory: &Factory<'_>,
     config: &Config,
     counters: &mut Counters,
@@ -1534,7 +1874,7 @@ fn simulate(
             break value;
         }
         if nodes[current].actions.is_none() {
-            break ensure_node_expanded(nodes, current, factory, counters)?;
+            break ensure_node_expanded(nodes, current, factory, counters, false)?;
         }
         maybe_widen_placements(nodes, current, factory, counters)?;
         let Some(actions) = nodes[current]
@@ -1544,28 +1884,11 @@ fn simulate(
         else {
             break state_value(&nodes[current].session, config.bounds);
         };
-        let parent_visits = nodes[current].visits.max(1) as f64;
-        // Actions are stored in descending prior order. Progressive widening
-        // keeps a large placement page from consuming every simulation at the
-        // root before any promising branch reaches routing.
-        let widened = (parent_visits.sqrt().ceil() as usize).clamp(1, actions.len());
-        let edge = actions[..widened]
-            .iter()
-            .enumerate()
-            .max_by(|left, right| {
-                let score = |edge: &Edge| {
-                    let q = if edge.visits == 0 {
-                        nodes[current].value.unwrap_or_default()
-                    } else {
-                        edge.value_sum / f64::from(edge.visits)
-                    };
-                    q + config.exploration * edge.prior * parent_visits.sqrt()
-                        / (1.0 + f64::from(edge.visits))
-                };
-                score(left.1).total_cmp(&score(right.1))
-            })
-            .map(|(index, _)| index)
-            .expect("nonempty actions");
+        let edge = if current == root && path.is_empty() {
+            forced_root_edge.unwrap_or_else(|| select_puct_edge(nodes, current, actions, config))
+        } else {
+            select_puct_edge(nodes, current, actions, config)
+        };
         path.push((current, edge));
         if let Some(child) = nodes[current].actions.as_ref().unwrap()[edge].child {
             current = child;
@@ -1584,7 +1907,7 @@ fn simulate(
         });
         nodes[current].actions.as_mut().unwrap()[edge].child = Some(child);
         current = child;
-        break ensure_node_expanded(nodes, current, factory, counters)?;
+        break ensure_node_expanded(nodes, current, factory, counters, false)?;
     };
     nodes[current].visits += 1;
     for (node, edge) in path.into_iter().rev() {
@@ -1594,6 +1917,30 @@ fn simulate(
         edge.value_sum += value;
     }
     Ok(())
+}
+
+fn select_puct_edge(nodes: &[Node], node: usize, actions: &[Edge], config: &Config) -> usize {
+    let parent_visits = nodes[node].visits.max(1) as f64;
+    // Actions are stored in descending prior order. Progressive widening keeps
+    // large placement pages from consuming all internal-tree simulations.
+    let widened = (parent_visits.sqrt().ceil() as usize).clamp(1, actions.len());
+    actions[..widened]
+        .iter()
+        .enumerate()
+        .max_by(|left, right| {
+            let score = |edge: &Edge| {
+                let q = if edge.visits == 0 {
+                    nodes[node].value.unwrap_or_default()
+                } else {
+                    edge.value_sum / f64::from(edge.visits)
+                };
+                q + config.exploration * edge.prior * parent_visits.sqrt()
+                    / (1.0 + f64::from(edge.visits))
+            };
+            score(left.1).total_cmp(&score(right.1))
+        })
+        .map(|(index, _)| index)
+        .expect("nonempty actions")
 }
 
 fn simulation_leaf_value(session: &Session, depth: usize, config: &Config) -> Option<f64> {
@@ -1606,13 +1953,14 @@ fn ensure_node_expanded(
     node: usize,
     factory: &Factory<'_>,
     counters: &mut Counters,
+    exhaust_placements: bool,
 ) -> Result<f64> {
     if nodes[node].actions.is_some() {
         return Ok(nodes[node]
             .value
             .unwrap_or_else(|| state_value(&nodes[node].session, factory.domain.placement)));
     }
-    let batch = factory.action_batch(&nodes[node].session, counters)?;
+    let batch = factory.action_batch(&nodes[node].session, counters, exhaust_placements)?;
     let actions = batch.actions;
     nodes[node].placement_pages = Some(batch.placement_pages);
     if actions.is_empty() {
@@ -1625,7 +1973,7 @@ fn ensure_node_expanded(
         .iter()
         .map(|action| action.apply(&nodes[node].session))
         .collect::<Result<Vec<_>>>()?;
-    let (priors, model_value) = factory.score_actions(&nodes[node].session, &actions, &children)?;
+    let scores = factory.score_actions(&nodes[node].session, &actions, &children)?;
     // Expansion already paid for and natively applied every exposed macro.
     // Preserve that exact one-step evidence. The current outer checkpoint was
     // trained on fully placed routing states, so its completion head is not a
@@ -1641,16 +1989,18 @@ fn ensure_node_expanded(
     let all_entities_placed = observation.poses.iter().all(Option::is_some)
         && observation.terminal_poses.iter().all(Option::is_some);
     let value = if all_entities_placed {
-        model_value.max(exact_value)
+        scores.model_value.max(exact_value)
     } else {
         exact_value
     };
     let mut edges = actions
         .into_iter()
-        .zip(priors)
-        .map(|(action, prior)| Edge {
+        .zip(scores.priors)
+        .zip(scores.anchor_priors)
+        .map(|((action, prior), anchor_prior)| Edge {
             action,
             prior,
+            anchor_prior,
             visits: 0,
             value_sum: 0.0,
             child: None,
@@ -1692,19 +2042,26 @@ fn maybe_widen_placements(
         .iter()
         .map(|action| action.apply(&session))
         .collect::<Result<Vec<_>>>()?;
-    let (priors, model_value) = factory.score_actions(&session, &actions, &children)?;
+    let scores = factory.score_actions(&session, &actions, &children)?;
     let existing_count = existing.len();
     let edges = nodes[node].actions.as_mut().expect("expanded node");
-    for (edge, prior) in edges.iter_mut().zip(&priors) {
+    for ((edge, prior), anchor_prior) in edges
+        .iter_mut()
+        .zip(&scores.priors)
+        .zip(&scores.anchor_priors)
+    {
         edge.prior = *prior;
+        edge.anchor_prior = *anchor_prior;
     }
     edges.extend(
         additional
             .into_iter()
-            .zip(priors.into_iter().skip(existing_count))
-            .map(|(action, prior)| Edge {
+            .zip(scores.priors.into_iter().skip(existing_count))
+            .zip(scores.anchor_priors.into_iter().skip(existing_count))
+            .map(|((action, prior), anchor_prior)| Edge {
                 action,
                 prior,
+                anchor_prior,
                 visits: 0,
                 value_sum: 0.0,
                 child: None,
@@ -1719,7 +2076,7 @@ fn maybe_widen_placements(
     let all_entities_placed = observation.poses.iter().all(Option::is_some)
         && observation.terminal_poses.iter().all(Option::is_some);
     let widened_value = if all_entities_placed {
-        model_value.max(exact_value)
+        scores.model_value.max(exact_value)
     } else {
         exact_value
     };
@@ -1896,6 +2253,29 @@ fn validate_config(config: &Config) -> Result<()> {
             && (0.0..=1.0).contains(&config.anchor_prior_mass),
         "aic-learning.hierarchical-config: invalid schema or bounded search controls"
     );
+    if let RootSelection::GumbelSequentialHalving {
+        candidates,
+        anchor_candidates,
+        anchor_policy_mass,
+        value_scale,
+        max_visit_init,
+        ..
+    } = &config.root_selection
+    {
+        ensure!(
+            (2..=256).contains(candidates)
+                && *anchor_candidates <= *candidates
+                && anchor_policy_mass.is_finite()
+                && (0.0..=1.0).contains(anchor_policy_mass)
+                && value_scale.is_finite()
+                && *value_scale > 0.0
+                && max_visit_init.is_finite()
+                && *max_visit_init >= 0.0
+                && config.simulations_per_move
+                    >= minimum_sequential_halving_simulations(*candidates),
+            "aic-learning.hierarchical-config: invalid Gumbel root controls"
+        );
+    }
     Ok(())
 }
 
@@ -1991,6 +2371,54 @@ mod tests {
         assert!(value(441, 3_528, 3_528) > 1.0);
     }
 
+    fn edge(prior: f64, anchor_prior: f64) -> Edge {
+        Edge {
+            action: MacroAction::Command(Command::Connect),
+            prior,
+            anchor_prior,
+            visits: 0,
+            value_sum: 0.0,
+            child: None,
+        }
+    }
+
+    #[test]
+    fn adapted_gumbel_candidates_always_include_anchor_quota() {
+        let actions = vec![
+            edge(0.70, 0.01),
+            edge(0.20, 0.02),
+            edge(0.05, 0.50),
+            edge(0.03, 0.30),
+            edge(0.01, 0.10),
+            edge(0.01, 0.07),
+        ];
+        let gumbels = vec![4.0, 3.0, -4.0, -3.0, 2.0, 1.0];
+        let considered = considered_root_actions(&actions, &gumbels, 4, 2, 0.5);
+        assert_eq!(considered.len(), 4);
+        assert!(considered.contains(&2));
+        assert!(considered.contains(&3));
+    }
+
+    #[test]
+    fn gumbels_and_improved_policy_are_deterministic_and_normalized() {
+        let first = deterministic_gumbels(7, "case-a", "state-a", 8);
+        assert_eq!(first, deterministic_gumbels(7, "case-a", "state-a", 8));
+        assert_ne!(first, deterministic_gumbels(7, "case-b", "state-a", 8));
+        assert!(first.iter().all(|value| value.is_finite()));
+
+        let actions = vec![edge(0.8, 0.5), edge(0.2, 0.5)];
+        let policy = improved_policy(&actions, &[0.0, 5.0], 0.5);
+        assert!((policy.iter().sum::<f64>() - 1.0).abs() < 1e-12);
+        assert!(policy[1] > policy[0]);
+    }
+
+    #[test]
+    fn sequential_halving_minimum_covers_non_power_of_two_rounds() {
+        assert_eq!(minimum_sequential_halving_simulations(2), 2);
+        assert_eq!(minimum_sequential_halving_simulations(9), 19);
+        assert_eq!(minimum_sequential_halving_simulations(16), 30);
+    }
+
     #[test]
     fn simulation_revisits_retain_completed_layout_quality() {
         let bounds = Bounds {
@@ -2020,6 +2448,7 @@ mod tests {
             horizon: 4,
             max_moves: 4,
             exploration: 1.0,
+            root_selection: RootSelection::Puct,
             anchor_prior_mass: 0.0,
             compiled_inference: false,
         };

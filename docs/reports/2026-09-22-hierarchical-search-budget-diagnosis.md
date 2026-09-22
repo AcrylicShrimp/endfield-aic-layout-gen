@@ -100,6 +100,12 @@ should be compared at 64, 128 and, only if still informative, 256 simulations;
 its purpose is to obtain the coverage currently requiring 1,024 simulations
 without paying that budget at every move.
 
+That comparison is complete. The
+[`adapted Gumbel root search`](2026-09-22-adapted-gumbel-root-search.md)
+combines guaranteed anchor candidates with a conservative root proposal prior
+and completes 27/32 cases at 128 simulations in 39.71 seconds. It replaces the
+64-simulation PUCT curriculum setting.
+
 ## Retention state
 
 The server retains exact commands, six search configurations, compact evidence

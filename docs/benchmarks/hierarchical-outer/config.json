@@ -10,7 +10,7 @@
     "width": 32
   },
   "search": {
-    "schema": "aic-hierarchical-search-config-v1",
+    "schema": "aic-hierarchical-search-config-v2",
     "bounds": {
       "minX": 0,
       "minY": 0,
@@ -45,6 +45,9 @@
     "horizon": 4,
     "max_moves": 4,
     "exploration": 1.25,
+    "root_selection": {
+      "algorithm": "puct"
+    },
     "anchor_prior_mass": 0.25,
     "compiled_inference": true
   },

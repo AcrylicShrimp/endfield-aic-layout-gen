@@ -857,6 +857,22 @@ fn direction(from: Point, to: Point) -> i64 {
 }
 
 fn visit_target(record: &RootRecord, temperature: f64) -> Vec<f32> {
+    if record
+        .actions
+        .iter()
+        .all(|action| action.policy_target.is_some())
+    {
+        let targets = record
+            .actions
+            .iter()
+            .map(|action| action.policy_target.unwrap())
+            .collect::<Vec<_>>();
+        let denominator = targets.iter().sum::<f64>();
+        return targets
+            .into_iter()
+            .map(|target| (target / denominator.max(f64::MIN_POSITIVE)) as f32)
+            .collect();
+    }
     let weights = record
         .actions
         .iter()
@@ -1324,6 +1340,7 @@ fn semantic_sha256(value: &impl Serialize) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::hierarchical_search::{RootActionRecord, SearchTermination};
 
     #[test]
     fn distilled_edge_directions_match_native_channel_order() {
@@ -1332,6 +1349,35 @@ mod tests {
         assert_eq!(direction(origin, Point { x: 4, y: 8 }), 1);
         assert_eq!(direction(origin, Point { x: 3, y: 7 }), 2);
         assert_eq!(direction(origin, Point { x: 4, y: 6 }), 3);
+    }
+
+    #[test]
+    fn gumbel_policy_target_replaces_allocator_visit_counts() {
+        let actions = [(100, 0.2), (1, 0.8)]
+            .into_iter()
+            .map(|(visits, policy_target)| RootActionRecord {
+                action: MacroAction::Command(Command::Connect),
+                prior: 0.5,
+                anchor_prior: 0.5,
+                visits,
+                q: 0.0,
+                policy_target: Some(policy_target),
+            })
+            .collect();
+        let record = RootRecord {
+            state_sha256: "state".into(),
+            state_revision: 0,
+            actions,
+            selected_action: 1,
+            later_completed_connections: 0,
+            later_total_connections: 1,
+            later_footprint_area: 0,
+            later_transport_cells: 0,
+            later_turns: 0,
+            later_fully_validated: false,
+            later_termination: SearchTermination::MoveBudgetExhausted,
+        };
+        assert_eq!(visit_target(&record, 0.25), vec![0.2, 0.8]);
     }
 
     #[test]

@@ -179,6 +179,12 @@ at 2,048. Budget scaling alone is therefore rejected; the next comparison must
 change candidate allocation while keeping the fixed panel and checkpoint
 weights constant.
 
+The subsequent
+[`adapted Gumbel root search`](2026-09-22-adapted-gumbel-root-search.md)
+implements that allocator. Its selected 128-simulation treatment completes
+27/32 fixed cases, including 4/7 early hard failures, while the unchanged PUCT
+search completes 19/32 at 1,024 simulations and none of the seven failures.
+
 ## Retention state
 
 The original stopped run remains recoverable at generation 11 and retains the

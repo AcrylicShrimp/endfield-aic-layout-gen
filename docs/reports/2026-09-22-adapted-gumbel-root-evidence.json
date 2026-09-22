@@ -1,0 +1,381 @@
+{
+  "schema": "aic-adapted-gumbel-root-evidence-v1",
+  "identity": {
+    "source_base_commit": "3d3cbd7",
+    "adoption_matrix_source_file_sha256": {
+      "hierarchical_search.rs": "f8b1af06c4d22886f78afa7d27d121c06d74a6abb883756f63e391a43f2d0fad",
+      "hierarchical_generation.rs": "b9ab6d3cdb48f3675ebc1e374ca9c0494b1f6bd703483f05b06de2e5f7983aa2"
+    },
+    "adoption_matrix_binary_sha256": "6790fd70f132faa0bbd8e741c6b0855d879da0c1c8f10942fbada33d503057e6",
+    "final_source_file_sha256": {
+      "hierarchical_search.rs": "9c8694f5879acae7b47118541112f3f8fb65a5148a207fb5a11e261084068194",
+      "hierarchical_generation.rs": "ec8ad2a0cfe073ada16e1c4ca0d9244bedba26f3c35d31f6f6cf675134ddb23f"
+    },
+    "final_binary_sha256": "6b0c7fad7869f63da3859c35fa077500887a2fd1835067fbcc8871823bb5c747",
+    "panel_sha256": "976bceeb93bf935578e862ce6d715184f6f3be939c3d736854ba74a56071d873",
+    "lower_checkpoint_state_sha256": "bc68bbb1e819d2958e9388f4e07fc35dab059a14056c936dfce7743ef013ad77",
+    "outer_checkpoint_state_sha256": "5e11cf22c7924581aeb43de21361953d38e0022bf8d085bfda8ada827ea6a030"
+  },
+  "question": "Can a problem-adapted Gumbel root allocator recover at least 27 of 32 fixed regression cases below the PUCT-1024 wall time?",
+  "qualification_completed": 27,
+  "anchor_control_completed": 30,
+  "reference_puct": [
+    {
+      "budget": 64,
+      "completed": 9,
+      "cases": 32,
+      "wall_seconds": 13.236198745013098,
+      "groups": {
+        "easy-control": {
+          "completed": 6,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 3,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "report_sha256": "092ce0bd6185488e00d3a0fc265e0ab40e77faab306b450d6a3d0ed778fa6e2d"
+    },
+    {
+      "budget": 128,
+      "completed": 9,
+      "cases": 32,
+      "wall_seconds": 21.579686163007864,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 1,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "report_sha256": "510d65df6deb4d8ff85f489d1f31dec65fb45c1a401b079fcab54566008be901"
+    },
+    {
+      "budget": 256,
+      "completed": 9,
+      "cases": 32,
+      "wall_seconds": 30.72883989100228,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 1,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "report_sha256": "06354b0a26d64fe9eb7e149a2a7f0b06eef3a9b7d7010b8cf79cc772fbd11c9f"
+    },
+    {
+      "budget": 512,
+      "completed": 12,
+      "cases": 32,
+      "wall_seconds": 42.67235137200623,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 4,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "report_sha256": "a3f7bac8b9454d52d3721104648ad8858af10c2adadb9f0292aa064fd80bda55"
+    },
+    {
+      "budget": 1024,
+      "completed": 19,
+      "cases": 32,
+      "wall_seconds": 67.55727977700008,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 11,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "report_sha256": "d9440d4a6a06f10f7df8b7cac63497b7bde4c497a2c0cd99dab04215bad9ecca"
+    },
+    {
+      "budget": 2048,
+      "completed": 19,
+      "cases": 32,
+      "wall_seconds": 91.13207794100163,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 11,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "report_sha256": "4ae37b25a8069953f55f99880a09d0bffe5d075b45f5cb59b20526dcb9234b44"
+    }
+  ],
+  "treatments": [
+    {
+      "name": "unmixed-gumbel",
+      "description": "Full root action materialization, eight guaranteed anchor candidates, original mixed prior for Gumbel ranking and completed-Q target.",
+      "source_file_sha256": "50d451a47875bb3e4819cb6324842d84ee177807e6fe6b72a31dac43d311c648",
+      "binary_sha256": "6fc9f80d74cc2f248b4954830422dc39bfeab95e9de4adb4ca6ec000d3d67203",
+      "cells": [
+        {
+          "budget": 64,
+          "completed": 19,
+          "cases": 32,
+          "wall_seconds": 23.356646229003672,
+          "report_sha256": "7bbdc2e88803cc3f3a6767e69894be893d2827175358a831edc8b68da6c08d63",
+          "report_bytes": 41083643
+        },
+        {
+          "budget": 128,
+          "completed": 23,
+          "cases": 32,
+          "wall_seconds": 37.02374413800135,
+          "report_sha256": "1d4de3c00080a7c50d19bc2b388d6969e69078881953d2aa28cbade45c68f8d3",
+          "report_bytes": 42051793
+        },
+        {
+          "budget": 256,
+          "completed": 25,
+          "cases": 32,
+          "wall_seconds": 55.52611336701375,
+          "report_sha256": "4eed1de64be7a33df1bc04d287a8fa9a35a711498bcaf2ec9e0044009807395d",
+          "report_bytes": 43270000
+        }
+      ]
+    },
+    {
+      "name": "rejected-stratified-anchor-survival",
+      "description": "Preserve separate anchor and learned lanes until the final comparison. Rejected because reserved visits reduced completion at every budget.",
+      "source_file_sha256": "494e6837fd161a0003c5cc6ec954a59fb2588ddbded4a6c7ed65153db49329a5",
+      "binary_sha256": "a267e00be79c81d005ecf9e61919439d5c891ee6413e7b24412e8b2fa5c6c2b6",
+      "cells": [
+        {
+          "budget": 64,
+          "completed": 17,
+          "cases": 32,
+          "wall_seconds": 23.561129707013606,
+          "report_sha256": "fa04f6a33529db7f6b3825141504f37afef2b3a48786d7b3c504f68224ef2a17",
+          "report_bytes": 41148138
+        },
+        {
+          "budget": 128,
+          "completed": 20,
+          "cases": 32,
+          "wall_seconds": 37.45814499199332,
+          "report_sha256": "d5643268614867ce9b50398bd774b6bbf9a7e3ef088d751d848ee5b73a9c600c",
+          "report_bytes": 40896244
+        },
+        {
+          "budget": 256,
+          "completed": 23,
+          "cases": 32,
+          "wall_seconds": 55.374072511986014,
+          "report_sha256": "f13b0d199a39f167feb9752b360b6f67d9dc76b94eeb47263ed2250a9254ad5f",
+          "report_bytes": 42027547
+        }
+      ]
+    },
+    {
+      "name": "rejected-eight-placement-pages",
+      "description": "Limit the root proposal pool to eight placement pages. Rejected because it reduced completion and made 256 slower.",
+      "source_file_sha256": "51303be6c20fc7dbad146f47913c18356eb45e2d9acc6d80cf3d39da8626e619",
+      "binary_sha256": "9a5b9cc8359a7e315d09c380eedba79f16bc4ac36bba83e2114782dd4817ded1",
+      "cells": [
+        {
+          "budget": 64,
+          "completed": 18,
+          "cases": 32,
+          "wall_seconds": 23.530956385002355,
+          "report_sha256": "64d27480a1ae740c48f667870d936afa2f9a0401e3d217d5cb3caf483016146d",
+          "report_bytes": 15902146
+        },
+        {
+          "budget": 128,
+          "completed": 18,
+          "cases": 32,
+          "wall_seconds": 39.923059602006106,
+          "report_sha256": "1b7597ed1d264356b895b3dd7d56abea15009e04dbebea2d376c29f1d0f25a63",
+          "report_bytes": 19015563
+        },
+        {
+          "budget": 256,
+          "completed": 19,
+          "cases": 32,
+          "wall_seconds": 66.3591243490082,
+          "report_sha256": "f3ef05ba0383a0e725507efec68c6ad06166745b06fdbd8f4234ab5a7ac4e551",
+          "report_bytes": 22007016
+        }
+      ]
+    },
+    {
+      "name": "conservative-prior-gumbel",
+      "description": "Full action pool with eight guaranteed anchors and a 0.5 root-only mixture of the normal search prior and independent anchor prior. The same proposal prior drives Gumbel sampling, sequential-halving ranks, and completed-Q policy targets.",
+      "controls": {
+        "algorithm": "gumbel-sequential-halving",
+        "candidates": 16,
+        "anchor_candidates": 8,
+        "anchor_policy_mass": 0.5,
+        "seed": 20260922,
+        "value_scale": 0.1,
+        "max_visit_init": 50.0
+      },
+      "source_file_sha256": "f8b1af06c4d22886f78afa7d27d121c06d74a6abb883756f63e391a43f2d0fad",
+      "binary_sha256": "6790fd70f132faa0bbd8e741c6b0855d879da0c1c8f10942fbada33d503057e6",
+      "cells": [
+        {
+          "budget": 64,
+          "completed": 25,
+          "cases": 32,
+          "wall_seconds": 24.982884520999505,
+          "report_sha256": "ebfa973da85cb42dd3bb6295cd6a823911c54814c0615eff8c17762c0de2c3d3",
+          "report_bytes": 43941487,
+          "groups": {
+            "easy-control": {
+              "cases": 8,
+              "completed": 8
+            },
+            "early-hard-success": {
+              "cases": 17,
+              "completed": 14
+            },
+            "early-hard-failure": {
+              "cases": 7,
+              "completed": 3
+            }
+          },
+          "failed_cases": [
+            "train-hierarchical-curriculum-v1-g000000-3109",
+            "train-hierarchical-curriculum-v1-g000000-2342",
+            "train-hierarchical-curriculum-v1-g000001-2540",
+            "train-hierarchical-curriculum-v1-g000000-2733",
+            "train-hierarchical-curriculum-v1-g000000-3428",
+            "train-hierarchical-curriculum-v1-g000000-3619",
+            "train-hierarchical-curriculum-v1-g000000-631"
+          ]
+        },
+        {
+          "budget": 128,
+          "completed": 27,
+          "cases": 32,
+          "wall_seconds": 39.709742032006034,
+          "report_sha256": "c350653001e8a790a25844fafeb4efb6dc41df120ad61d9e3faaac01b52d9da0",
+          "report_bytes": 45493490,
+          "groups": {
+            "easy-control": {
+              "cases": 8,
+              "completed": 8
+            },
+            "early-hard-success": {
+              "cases": 17,
+              "completed": 15
+            },
+            "early-hard-failure": {
+              "cases": 7,
+              "completed": 4
+            }
+          },
+          "failed_cases": [
+            "train-hierarchical-curriculum-v1-g000000-2342",
+            "train-hierarchical-curriculum-v1-g000001-2540",
+            "train-hierarchical-curriculum-v1-g000000-2733",
+            "train-hierarchical-curriculum-v1-g000000-3428",
+            "train-hierarchical-curriculum-v1-g000000-631"
+          ]
+        },
+        {
+          "budget": 256,
+          "completed": 28,
+          "cases": 32,
+          "wall_seconds": 58.80479289199866,
+          "report_sha256": "bca0185269e7ae78e77edca7f07620df47b5c052c4d9975740a137e68047e8d4",
+          "report_bytes": 45417250,
+          "groups": {
+            "easy-control": {
+              "cases": 8,
+              "completed": 8
+            },
+            "early-hard-success": {
+              "cases": 17,
+              "completed": 15
+            },
+            "early-hard-failure": {
+              "cases": 7,
+              "completed": 5
+            }
+          },
+          "failed_cases": [
+            "train-hierarchical-curriculum-v1-g000000-2342",
+            "train-hierarchical-curriculum-v1-g000001-2540",
+            "train-hierarchical-curriculum-v1-g000000-2733",
+            "train-hierarchical-curriculum-v1-g000000-3428"
+          ]
+        }
+      ]
+    }
+  ],
+  "final_source_verification": {
+    "change_since_adoption_matrix": "Exact minimum-budget validation for non-power-of-two candidate counts plus rustfmt-only formatting; the selected 16-candidate, 128-simulation path is unchanged.",
+    "canonical_config_semantically_equal": true,
+    "config_sha256": "da37311443cc6aef9633863173bf45a56c55a4436af2ffe095740dc8e2464a08",
+    "budget": 128,
+    "completed": 27,
+    "cases": 32,
+    "wall_seconds": 38.331118611007696,
+    "report_sha256": "7c77ac4737fd7a214d5aa43bc3210769656fc635b28e1bf34e11ae6e19a8d0f1",
+    "report_bytes": 45493817
+  },
+  "decision": {
+    "selected_budget": 128,
+    "selected_completed": 27,
+    "selected_wall_seconds": 39.709742032006034,
+    "best_tested_budget": 256,
+    "best_tested_completed": 28,
+    "best_tested_wall_seconds": 58.80479289199866,
+    "puct_64_completed": 9,
+    "puct_1024_completed": 19,
+    "puct_1024_wall_seconds": 67.55727977700008,
+    "reason": "128 is the smallest qualifying budget, is within one completion of 256, and avoids 19.10 additional seconds for one completion."
+  },
+  "scope": {
+    "panel_partition": "training-only diagnostic panel; no held-out cases",
+    "checkpoint_policy": "frozen generation-nine lower and outer checkpoints; no training",
+    "claim": "Search recovery and budget selection only. Curriculum stability requires a new training run with the improved policy targets."
+  }
+}

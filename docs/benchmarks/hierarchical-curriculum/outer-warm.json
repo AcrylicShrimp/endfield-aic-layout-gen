@@ -10,7 +10,7 @@
     "width": 32
   },
   "search": {
-    "schema": "aic-hierarchical-search-config-v1",
+    "schema": "aic-hierarchical-search-config-v2",
     "bounds": {
       "minX": 0,
       "minY": 0,
@@ -42,10 +42,19 @@
     "placement_page": 16,
     "beam_width": 8,
     "run_beam": false,
-    "simulations_per_move": 64,
+    "simulations_per_move": 128,
     "horizon": 6,
     "max_moves": 24,
     "exploration": 1.25,
+    "root_selection": {
+      "algorithm": "gumbel-sequential-halving",
+      "candidates": 16,
+      "anchor_candidates": 8,
+      "anchor_policy_mass": 0.5,
+      "seed": 20260922,
+      "value_scale": 0.1,
+      "max_visit_init": 50.0
+    },
     "anchor_prior_mass": 0.25,
     "compiled_inference": true
   },
