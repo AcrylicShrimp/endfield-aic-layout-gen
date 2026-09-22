@@ -1,0 +1,60 @@
+{
+  "schema": "aic-hierarchical-search-panel-v1",
+  "partition": "held-out",
+  "limits": {
+    "max_turns": 10000,
+    "max_extension": 16
+  },
+  "cases": [
+    {
+      "id": "unplaced-machine-and-boundaries",
+      "problem": {
+        "blocks": [
+          {
+            "id": "machine",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "supply",
+            "direction": "input",
+            "commodity": "factory-item",
+            "transport": "belt"
+          },
+          {
+            "id": "sink",
+            "direction": "output",
+            "commodity": "factory-item",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "supply-flow",
+            "source": "supply",
+            "target": "machine",
+            "commodity": "factory-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "sink-flow",
+            "source": "machine",
+            "target": "sink",
+            "commodity": "factory-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": []
+    }
+  ]
+}

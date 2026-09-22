@@ -33,5 +33,6 @@
   "simulations_per_move": 64,
   "horizon": 4,
   "max_moves": 4,
-  "exploration": 1.25
+  "exploration": 1.25,
+  "anchor_prior_mass": 0.25
 }

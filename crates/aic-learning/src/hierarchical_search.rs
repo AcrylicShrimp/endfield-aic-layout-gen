@@ -39,6 +39,10 @@ const PANEL_SCHEMA: &str = "aic-hierarchical-search-panel-v1";
 pub const REPORT_SCHEMA: &str = "aic-hierarchical-search-report-v2";
 const MAX_INPUT_BYTES: u64 = 16 * 1024 * 1024;
 
+fn default_anchor_prior_mass() -> f64 {
+    0.25
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
@@ -53,6 +57,8 @@ pub struct Config {
     pub horizon: usize,
     pub max_moves: usize,
     pub exploration: f64,
+    #[serde(default = "default_anchor_prior_mass")]
+    pub anchor_prior_mass: f64,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -174,6 +180,7 @@ pub(crate) struct Factory<'a> {
     domain: DomainConfig,
     candidate: &'a CandidateConfig,
     placement_page: usize,
+    anchor_prior_mass: f64,
     pool: rayon::ThreadPool,
     outer: Option<&'a OuterModel>,
 }
@@ -187,6 +194,7 @@ impl Factory<'_> {
         candidate: &'a CandidateConfig,
         placement_page: usize,
         cpu_threads: usize,
+        anchor_prior_mass: f64,
         outer: Option<&'a OuterModel>,
     ) -> Result<Factory<'a>> {
         Ok(Factory {
@@ -196,6 +204,7 @@ impl Factory<'_> {
             domain,
             candidate,
             placement_page,
+            anchor_prior_mass,
             pool: rayon::ThreadPoolBuilder::new()
                 .num_threads(cpu_threads)
                 .thread_name(|index| format!("hierarchical-route-{index}"))
@@ -228,45 +237,43 @@ impl Factory<'_> {
         }
 
         let observation = session.observe();
-        let ready = session
-            .problem()
-            .connections
-            .iter()
-            .enumerate()
-            .filter(|(index, _)| observation.routes[*index].is_none())
-            .filter_map(|(_, connection)| {
-                let request = Request {
-                    state_revision: observation.revision,
-                    connection: connection.id.clone(),
-                };
-                session
-                    .route_guidance_input(&request, self.candidate, &self.domain)
-                    .ok()
-                    .map(|input| (request, input))
-            })
-            .collect::<Vec<_>>();
-        let mut groups = BTreeMap::new();
-        for (index, (request, _)) in ready.iter().enumerate() {
-            let connection = session
-                .problem()
-                .connections
-                .iter()
-                .find(|connection| connection.id == request.connection)
-                .expect("ready request belongs to problem");
-            groups
+        let mut unfinished = BTreeMap::new();
+        for (index, connection) in session.problem().connections.iter().enumerate() {
+            if observation.routes[index].is_some() {
+                continue;
+            }
+            unfinished
                 .entry((connection.commodity.clone(), connection.transport))
                 .or_insert_with(Vec::new)
-                .push(index);
+                .push(Request {
+                    state_revision: observation.revision,
+                    connection: connection.id.clone(),
+                });
         }
-        let singleton_indices = groups
-            .values()
-            .filter(|indices| indices.len() == 1)
-            .map(|indices| indices[0])
+        // A logical network becomes a macro only when every unfinished member
+        // has placed endpoints. Do not silently route one temporarily-ready
+        // edge as a singleton and thereby consume the future network's ports.
+        let ready = unfinished
+            .into_values()
+            .filter_map(|requests| {
+                let inputs = requests
+                    .iter()
+                    .map(|request| {
+                        session.route_guidance_input(request, self.candidate, &self.domain)
+                    })
+                    .collect::<Result<Vec<_>, _>>()
+                    .ok()?;
+                Some((requests, inputs))
+            })
             .collect::<Vec<_>>();
-        if !singleton_indices.is_empty() {
-            let inputs = singleton_indices
+        let singletons = ready
+            .iter()
+            .filter(|(requests, _)| requests.len() == 1)
+            .collect::<Vec<_>>();
+        if !singletons.is_empty() {
+            let inputs = singletons
                 .iter()
-                .map(|&index| &ready[index].1)
+                .map(|(_, inputs)| &inputs[0])
                 .collect::<Vec<_>>();
             let guidance =
                 self.guidance
@@ -274,12 +281,15 @@ impl Factory<'_> {
             counters.guidance_batches += 1;
             counters.guidance_inputs += inputs.len();
             let reports = self.pool.install(|| {
-                singleton_indices
+                singletons
                     .par_iter()
-                    .map(|&index| &ready[index].0)
                     .zip(guidance.par_iter())
-                    .map(|(request, guidance)| {
-                        session.route_candidates_with_guidance(request, self.candidate, guidance)
+                    .map(|((requests, _), guidance)| {
+                        session.route_candidates_with_guidance(
+                            &requests[0],
+                            self.candidate,
+                            guidance,
+                        )
                     })
                     .collect::<Vec<_>>()
             });
@@ -292,10 +302,10 @@ impl Factory<'_> {
                 actions.extend(report.candidates.into_iter().map(MacroAction::Route));
             }
         }
-        for indices in groups.values().filter(|indices| indices.len() > 1) {
-            let connections = indices
+        for (requests, _) in ready.iter().filter(|(requests, _)| requests.len() > 1) {
+            let connections = requests
                 .iter()
-                .map(|&index| ready[index].0.connection.clone())
+                .map(|request| request.connection.clone())
                 .collect::<Vec<_>>();
             actions.extend(
                 self.network_actions(session, &connections, counters)?
@@ -469,7 +479,7 @@ impl Factory<'_> {
             let scores = actions
                 .iter()
                 .zip(children)
-                .map(|(action, child)| action.prior_score(session, child))
+                .map(|(action, child)| action.prior_score(session, child, self.domain.placement))
                 .collect::<Vec<_>>();
             let maximum = scores.iter().copied().fold(f64::NEG_INFINITY, f64::max);
             let weights = scores
@@ -495,12 +505,40 @@ impl Factory<'_> {
             .collect::<Vec<_>>();
         let batch = OuterBatch::from_rows(&[input.as_ref()], &[features.as_slice()], self.device)?;
         let prediction = tch::no_grad(|| model.forward(&batch))?;
-        let priors = Vec::<f32>::try_from(prediction.logp.exp().to_device(Device::Cpu))?
+        let learned = Vec::<f32>::try_from(prediction.logp.exp().to_device(Device::Cpu))?
             .into_iter()
             .map(f64::from)
+            .collect::<Vec<_>>();
+        let anchor_scores = actions
+            .iter()
+            .zip(children)
+            .map(|(action, child)| action.prior_score(session, child, self.domain.placement))
+            .collect::<Vec<_>>();
+        let maximum = anchor_scores
+            .iter()
+            .copied()
+            .fold(f64::NEG_INFINITY, f64::max);
+        let anchor_weights = anchor_scores
+            .iter()
+            .map(|score| (score - maximum).exp())
+            .collect::<Vec<_>>();
+        let denominator = anchor_weights.iter().sum::<f64>();
+        let priors = learned
+            .into_iter()
+            .zip(anchor_weights)
+            .map(|(learned, anchor)| {
+                learned * (1.0 - self.anchor_prior_mass())
+                    + anchor / denominator.max(f64::MIN_POSITIVE) * self.anchor_prior_mass()
+            })
             .collect();
         let completion = prediction.values.double_value(&[0, 0]);
         Ok((priors, completion))
+    }
+
+    fn anchor_prior_mass(&self) -> f64 {
+        // Config validation owns the range. Keeping this accessor local makes
+        // it explicit that the anchor participates only in action ordering.
+        self.anchor_prior_mass
     }
 }
 
@@ -566,12 +604,12 @@ impl MacroAction {
         }
     }
 
-    fn prior_score(&self, before: &Session, after: &Session) -> f64 {
+    fn prior_score(&self, before: &Session, after: &Session, bounds: Bounds) -> f64 {
         let before = construction_progress(before);
         let after_progress = construction_progress(after);
         let progress = (after_progress - before) * 8.0;
         match self {
-            Self::Command(_) => progress,
+            Self::Command(command) => progress + placement_anchor_score(command, after, bounds),
             Self::Route(candidate) => {
                 progress + f64::from(candidate.predicted_success.unwrap_or(0.5))
                     - candidate.steps as f64 * 0.002
@@ -719,6 +757,50 @@ impl MacroAction {
     }
 }
 
+fn placement_anchor_score(command: &Command, session: &Session, bounds: Bounds) -> f64 {
+    let span = bounds.width().max(bounds.height()).max(1) as f64;
+    let position = match command {
+        Command::Place { position, .. } | Command::PlaceTerminal { position, .. } => *position,
+        _ => return 0.0,
+    };
+    let center_x = (bounds.min_x + bounds.max_x) as f64 * 0.5;
+    let center_y = (bounds.min_y + bounds.max_y) as f64 * 0.5;
+    let center_distance =
+        ((position.x as f64 - center_x).abs() + (position.y as f64 - center_y).abs()) / span;
+    let observation = session.observe();
+    let endpoint = |id: &str| {
+        session
+            .problem()
+            .blocks
+            .iter()
+            .position(|block| block.id == id)
+            .and_then(|index| observation.poses[index].as_ref().map(|pose| pose.position))
+            .or_else(|| {
+                session
+                    .problem()
+                    .terminals
+                    .iter()
+                    .position(|terminal| terminal.id == id)
+                    .and_then(|index| {
+                        observation.terminal_poses[index]
+                            .as_ref()
+                            .map(|pose| pose.position)
+                    })
+            })
+    };
+    let connected_distance = session
+        .problem()
+        .connections
+        .iter()
+        .filter_map(|connection| {
+            endpoint(&connection.source)
+                .zip(endpoint(&connection.target))
+                .map(|(source, target)| source.distance(target) as f64 / span)
+        })
+        .sum::<f64>();
+    -center_distance * 0.08 - connected_distance * 0.12
+}
+
 fn session_network_identity(
     session: &Session,
     connections: &[String],
@@ -797,6 +879,7 @@ pub fn run(
         &config.candidate,
         config.placement_page,
         config.cpu_threads,
+        config.anchor_prior_mass,
         Some(&outer),
     )?;
     // Warm the complete lower-tool path once outside both measurements. This
@@ -1015,13 +1098,17 @@ fn simulate(
             break state_value(&nodes[current].session);
         };
         let parent_visits = nodes[current].visits.max(1) as f64;
-        let edge = actions
+        // Actions are stored in descending prior order. Progressive widening
+        // keeps a large placement page from consuming every simulation at the
+        // root before any promising branch reaches routing.
+        let widened = (parent_visits.sqrt().ceil() as usize).clamp(1, actions.len());
+        let edge = actions[..widened]
             .iter()
             .enumerate()
             .max_by(|left, right| {
                 let score = |edge: &Edge| {
                     let q = if edge.visits == 0 {
-                        0.0
+                        nodes[current].value.unwrap_or_default()
                     } else {
                         edge.value_sum / f64::from(edge.visits)
                     };
@@ -1083,20 +1170,36 @@ fn ensure_node_expanded(
         .iter()
         .map(|action| action.apply(&nodes[node].session))
         .collect::<Result<Vec<_>>>()?;
-    let (priors, value) = factory.score_actions(&nodes[node].session, &actions, &children)?;
-    nodes[node].actions = Some(
-        actions
-            .into_iter()
-            .zip(priors)
-            .map(|(action, prior)| Edge {
-                action,
-                prior,
-                visits: 0,
-                value_sum: 0.0,
-                child: None,
-            })
-            .collect(),
-    );
+    let (priors, model_value) = factory.score_actions(&nodes[node].session, &actions, &children)?;
+    // Expansion already paid for and natively applied every exposed macro.
+    // Preserve that exact one-step evidence. The current outer checkpoint was
+    // trained on fully placed routing states, so its completion head is not a
+    // valid value estimate while any facility or terminal remains unplaced.
+    let exact_value = children
+        .iter()
+        .map(state_value)
+        .fold(state_value(&nodes[node].session), f64::max);
+    let observation = nodes[node].session.observe();
+    let all_entities_placed = observation.poses.iter().all(Option::is_some)
+        && observation.terminal_poses.iter().all(Option::is_some);
+    let value = if all_entities_placed {
+        model_value.max(exact_value)
+    } else {
+        exact_value
+    };
+    let mut edges = actions
+        .into_iter()
+        .zip(priors)
+        .map(|(action, prior)| Edge {
+            action,
+            prior,
+            visits: 0,
+            value_sum: 0.0,
+            child: None,
+        })
+        .collect::<Vec<_>>();
+    edges.sort_by(|left, right| right.prior.total_cmp(&left.prior));
+    nodes[node].actions = Some(edges);
     nodes[node].value = Some(value);
     Ok(value)
 }
@@ -1226,7 +1329,9 @@ fn validate_config(config: &Config) -> Result<()> {
             && (1..=4096).contains(&config.horizon)
             && (1..=4096).contains(&config.max_moves)
             && config.exploration.is_finite()
-            && config.exploration > 0.0,
+            && config.exploration > 0.0
+            && config.anchor_prior_mass.is_finite()
+            && (0.0..=1.0).contains(&config.anchor_prior_mass),
         "aic-learning.hierarchical-config: invalid schema or bounded search controls"
     );
     Ok(())

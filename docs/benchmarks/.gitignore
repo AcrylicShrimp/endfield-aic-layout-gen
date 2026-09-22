@@ -55,6 +55,8 @@
 !/fixtures/manifest.json
 !/fixtures/order-certificate.json
 !/heavy-xiranite-bottom-up-rotation-root/case.json
+!/hierarchical-full-factory/config.json
+!/hierarchical-full-factory/panel.json
 !/hierarchical-generation/config.json
 !/hierarchical-network/panel.json
 !/hierarchical-outer/config.json
