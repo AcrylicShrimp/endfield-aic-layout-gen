@@ -1,0 +1,385 @@
+{
+  "schema": "aic-route-candidate-panel-v1",
+  "partition": "held-out",
+  "cpu_threads": 4,
+  "repetitions": 500,
+  "limits": {
+    "max_turns": 10000,
+    "max_extension": 32
+  },
+  "candidate": {
+    "bounds": {
+      "minX": 0,
+      "minY": 0,
+      "maxX": 20,
+      "maxY": 20
+    },
+    "max_candidates": 6,
+    "max_searches": 48,
+    "work_per_search": 20000,
+    "max_expanded": 400000,
+    "overlap_penalty": 8
+  },
+  "cases": [
+    {
+      "id": "open-single",
+      "problem": {
+        "blocks": [
+          {
+            "id": "source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "route",
+            "source": "source",
+            "target": "target",
+            "commodity": "test-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "source",
+          "position": {
+            "x": 5,
+            "y": 14
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "target",
+          "position": {
+            "x": 5,
+            "y": 2
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "route",
+      "later_connections": []
+    },
+    {
+      "id": "crossed-followup",
+      "problem": {
+        "blocks": [
+          {
+            "id": "vertical-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "vertical-target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "horizontal-source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "horizontal-target",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "horizontal",
+            "source": "horizontal-source",
+            "target": "horizontal-target",
+            "commodity": "horizontal-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "vertical",
+            "source": "vertical-source",
+            "target": "vertical-target",
+            "commodity": "vertical-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "vertical-source",
+          "position": {
+            "x": 8,
+            "y": 15
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "vertical-target",
+          "position": {
+            "x": 8,
+            "y": 1
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "horizontal-source",
+          "position": {
+            "x": 1,
+            "y": 8
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "horizontal-target",
+          "position": {
+            "x": 14,
+            "y": 8
+          },
+          "rotation": 90
+        }
+      ],
+      "request": "horizontal",
+      "later_connections": [
+        "vertical"
+      ]
+    },
+    {
+      "id": "shared-capacity-followup",
+      "problem": {
+        "blocks": [
+          {
+            "id": "source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "target-a",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "target-b",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "branch-a",
+            "source": "source",
+            "target": "target-a",
+            "commodity": "shared-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "branch-b",
+            "source": "source",
+            "target": "target-b",
+            "commodity": "shared-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "source",
+          "position": {
+            "x": 8,
+            "y": 16
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "target-a",
+          "position": {
+            "x": 3,
+            "y": 2
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "target-b",
+          "position": {
+            "x": 13,
+            "y": 2
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "branch-a",
+      "later_connections": [
+        "branch-b"
+      ]
+    },
+    {
+      "id": "sealed-frontier",
+      "problem": {
+        "blocks": [
+          {
+            "id": "source",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "target",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "wall-0",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "wall-1",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "wall-2",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "wall-3",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "wall-4",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "wall-5",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "wall-6",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "sealed",
+            "source": "source",
+            "target": "target",
+            "commodity": "test-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "source",
+          "position": {
+            "x": 8,
+            "y": 15
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "target",
+          "position": {
+            "x": 8,
+            "y": 1
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "wall-0",
+          "position": {
+            "x": 0,
+            "y": 8
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "wall-1",
+          "position": {
+            "x": 3,
+            "y": 8
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "wall-2",
+          "position": {
+            "x": 6,
+            "y": 8
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "wall-3",
+          "position": {
+            "x": 9,
+            "y": 8
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "wall-4",
+          "position": {
+            "x": 12,
+            "y": 8
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "wall-5",
+          "position": {
+            "x": 15,
+            "y": 8
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "wall-6",
+          "position": {
+            "x": 18,
+            "y": 8
+          },
+          "rotation": 0
+        }
+      ],
+      "request": "sealed",
+      "later_connections": []
+    }
+  ]
+}

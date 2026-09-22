@@ -7,6 +7,16 @@ use std::path::PathBuf;
 
 #[derive(Debug, Subcommand)]
 pub enum LearningCommand {
+    /// Evaluate diverse native-valid routes on frozen held-out construction states.
+    RouteCandidateHarness {
+        #[arg(long)]
+        panel: PathBuf,
+        /// Directory containing normalized facilities, transports and logistics components.
+        #[arg(long)]
+        catalog_root: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+    },
     /// Collect the fixed bounded procedural physical-action outcome dataset.
     CollectOutcomes {
         #[arg(long)]
@@ -231,6 +241,7 @@ pub enum LearningCommand {
 }
 pub fn run(command: LearningCommand) -> Result<()> {
     let config = match &command {
+        LearningCommand::RouteCandidateHarness { panel, .. } => panel,
         LearningCommand::CollectOutcomes { config, .. } => config,
         LearningCommand::ValidateOutcomes { dataset } => dataset,
         #[cfg(feature = "learning")]
@@ -283,6 +294,11 @@ pub fn run(command: LearningCommand) -> Result<()> {
 }
 fn execute(command: LearningCommand) -> Result<serde_json::Value> {
     match command {
+        LearningCommand::RouteCandidateHarness {
+            panel,
+            catalog_root,
+            output,
+        } => aic_learning::route_candidates::run(&panel, &catalog_root, &output),
         LearningCommand::CollectOutcomes {
             config,
             catalog_root,

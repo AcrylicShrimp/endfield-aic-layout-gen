@@ -8,6 +8,8 @@ pub mod model;
 pub mod outcomes;
 #[cfg(feature = "libtorch")]
 pub mod pretraining;
+#[cfg(feature = "outcomes")]
+pub mod route_candidates;
 pub mod schema;
 #[cfg(feature = "libtorch")]
 pub mod update;
