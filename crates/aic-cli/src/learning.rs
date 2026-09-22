@@ -34,6 +34,24 @@ pub enum LearningCommand {
         #[arg(long, default_value = "cuda:0")]
         device: String,
     },
+    /// Compare beam search and stable-state MCTS over complete macro actions.
+    #[cfg(feature = "learning")]
+    HierarchicalSearchHarness {
+        #[arg(long)]
+        config: PathBuf,
+        #[arg(long)]
+        panel: PathBuf,
+        /// Completed train-route-guidance output directory.
+        #[arg(long)]
+        lower_training_output: PathBuf,
+        /// Directory containing normalized facilities, transports and logistics components.
+        #[arg(long)]
+        catalog_root: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long, default_value = "cuda:0")]
+        device: String,
+    },
     /// Collect the fixed bounded procedural physical-action outcome dataset.
     CollectOutcomes {
         #[arg(long)]
@@ -261,6 +279,8 @@ pub fn run(command: LearningCommand) -> Result<()> {
         LearningCommand::RouteCandidateHarness { panel, .. } => panel,
         #[cfg(feature = "learning")]
         LearningCommand::TrainRouteGuidance { config, .. } => config,
+        #[cfg(feature = "learning")]
+        LearningCommand::HierarchicalSearchHarness { config, .. } => config,
         LearningCommand::CollectOutcomes { config, .. } => config,
         LearningCommand::ValidateOutcomes { dataset } => dataset,
         #[cfg(feature = "learning")]
@@ -330,6 +350,22 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             &config,
             &training_panel,
             &evaluation_panel,
+            &catalog_root,
+            &output,
+            update::parse_device(&device)?,
+        ),
+        #[cfg(feature = "learning")]
+        LearningCommand::HierarchicalSearchHarness {
+            config,
+            panel,
+            lower_training_output,
+            catalog_root,
+            output,
+            device,
+        } => aic_learning::hierarchical_search::run(
+            &config,
+            &panel,
+            &lower_training_output,
             &catalog_root,
             &output,
             update::parse_device(&device)?,

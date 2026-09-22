@@ -53,6 +53,8 @@
     "hierarchical-route-guidance/config.json",
     "hierarchical-route-guidance/evaluation-panel.json",
     "hierarchical-route-guidance/training-panel.json",
+    "hierarchical-search/config.json",
+    "hierarchical-search/panel.json",
     "layout-direct/audit-smoke.json",
     "layout-direct/breadth.json",
     "layout-direct/budget-curve.json",
