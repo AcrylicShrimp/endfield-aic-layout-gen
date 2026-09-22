@@ -3,6 +3,7 @@
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     fs,
+    io::{BufReader, BufWriter, Read, Write},
     path::Path,
     sync::Arc,
     time::Instant,
@@ -40,7 +41,7 @@ use crate::{
 };
 
 const CONFIG_SCHEMA: &str = "aic-hierarchical-search-config-v2";
-const PANEL_SCHEMA: &str = "aic-hierarchical-search-panel-v1";
+pub(crate) const PANEL_SCHEMA: &str = "aic-hierarchical-search-panel-v1";
 pub const REPORT_SCHEMA: &str = "aic-hierarchical-search-report-v7";
 const MAX_INPUT_BYTES: u64 = 16 * 1024 * 1024;
 const ROUTE_ATTEMPT_SAMPLE_LIMIT: usize = 32;
@@ -96,13 +97,13 @@ pub struct Config {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-struct Panel {
-    schema: String,
-    partition: String,
-    limits: Limits,
+pub(crate) struct Panel {
+    pub(crate) schema: String,
+    pub(crate) partition: String,
+    pub(crate) limits: Limits,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     preparation: Option<PanelPreparation>,
-    cases: Vec<Case>,
+    pub(crate) cases: Vec<Case>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -121,10 +122,10 @@ struct PanelPreparation {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-struct Case {
-    id: String,
-    problem: Problem,
-    prefix: Vec<Command>,
+pub(crate) struct Case {
+    pub(crate) id: String,
+    pub(crate) problem: Problem,
+    pub(crate) prefix: Vec<Command>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -135,9 +136,9 @@ pub(crate) enum MacroAction {
     Network(NetworkCandidate),
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 struct ActionSummary {
-    kind: &'static str,
+    kind: String,
     entity: String,
     state_revision: u64,
     steps: Option<i64>,
@@ -183,10 +184,10 @@ pub(crate) enum SearchTermination {
     MoveBudgetExhausted,
 }
 
-#[derive(Default, Clone, Debug, Serialize)]
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct Counters {
     expansions: usize,
-    generated_macro_samples: usize,
+    pub(crate) generated_macro_samples: usize,
     placement_samples: usize,
     route_samples: usize,
     route_searches: usize,
@@ -203,7 +204,7 @@ pub(crate) struct Counters {
     route_work_budget: usize,
     route_frontier_exhausted: usize,
     route_no_compatible_endpoints: usize,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_deserializing, skip_serializing_if = "Vec::is_empty")]
     route_attempt_samples: Vec<RouteAttemptRecord>,
     route_attempt_samples_dropped: usize,
 }
@@ -218,53 +219,59 @@ struct RouteAttemptRecord {
     candidates: usize,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct SearchResult {
-    algorithm: &'static str,
-    status: &'static str,
-    fully_validated: bool,
+    algorithm: String,
+    status: String,
+    pub(crate) fully_validated: bool,
     termination: SearchTermination,
     completed_connections: usize,
     total_connections: usize,
-    footprint_area: Option<u64>,
-    transport_cells: Option<u64>,
-    turns: Option<u64>,
+    pub(crate) footprint_area: Option<u64>,
+    pub(crate) transport_cells: Option<u64>,
+    pub(crate) turns: Option<u64>,
     moves: usize,
     simulations: usize,
-    elapsed_seconds: f64,
+    pub(crate) elapsed_seconds: f64,
     samples_per_minute: f64,
-    counters: Counters,
+    pub(crate) counters: Counters,
     trace: Vec<ActionSummary>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    root_records: Vec<RootRecord>,
+    pub(crate) root_records: Vec<RootRecord>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct CaseReport {
-    id: String,
+    pub(crate) id: String,
     prefix_commands: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
-    beam: Option<SearchResult>,
-    mcts: SearchResult,
+    pub(crate) beam: Option<SearchResult>,
+    pub(crate) mcts: SearchResult,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct Report {
-    schema: &'static str,
-    status: &'static str,
-    partition: String,
+    pub(crate) schema: String,
+    status: String,
+    pub(crate) partition: String,
     device: String,
-    search_config_sha256: String,
-    panel_sha256: String,
-    catalog_sha256: String,
-    lower_config_sha256: String,
-    lower_parameter_order_sha256: String,
-    lower_checkpoint_sha256: String,
-    outer_config_sha256: String,
-    outer_parameter_order_sha256: String,
-    outer_checkpoint_sha256: String,
-    root_records_retained: bool,
-    cases: Vec<CaseReport>,
+    pub(crate) search_config_sha256: String,
+    pub(crate) panel_sha256: String,
+    pub(crate) catalog_sha256: String,
+    pub(crate) lower_config_sha256: String,
+    pub(crate) lower_parameter_order_sha256: String,
+    pub(crate) lower_checkpoint_sha256: String,
+    pub(crate) outer_config_sha256: String,
+    pub(crate) outer_parameter_order_sha256: String,
+    pub(crate) outer_checkpoint_sha256: String,
+    pub(crate) root_records_retained: bool,
+    pub(crate) cases: Vec<CaseReport>,
+}
+
+pub(crate) struct Published<T> {
+    pub(crate) value: T,
+    pub(crate) sha256: String,
+    pub(crate) encoded_bytes: u64,
 }
 
 enum GuidanceRunner<'a> {
@@ -874,14 +881,14 @@ impl MacroAction {
     fn summary(&self, revision: u64) -> ActionSummary {
         match self {
             Self::Command(Command::Place { block, .. }) => ActionSummary {
-                kind: "place",
+                kind: "place".into(),
                 entity: block.clone(),
                 state_revision: revision,
                 steps: None,
                 provenance: None,
             },
             Self::Command(Command::PlaceTerminal { terminal, .. }) => ActionSummary {
-                kind: "place-terminal",
+                kind: "place-terminal".into(),
                 entity: terminal.clone(),
                 state_revision: revision,
                 steps: None,
@@ -889,14 +896,14 @@ impl MacroAction {
             },
             Self::Command(_) => unreachable!("macro command generator exposes only placements"),
             Self::Route(candidate) => ActionSummary {
-                kind: "route",
+                kind: "route".into(),
                 entity: candidate.connection.clone(),
                 state_revision: candidate.state_revision,
                 steps: Some(candidate.steps),
                 provenance: Some(candidate.provenance.clone()),
             },
             Self::Network(candidate) => ActionSummary {
-                kind: "network",
+                kind: "network".into(),
                 entity: candidate.commodity.clone(),
                 state_revision: candidate.state_revision,
                 steps: Some(candidate.steps),
@@ -1143,9 +1150,32 @@ pub fn run(
     output: &Path,
     device: Device,
 ) -> Result<Value> {
-    run_with_record_policy(
+    let panel = load_published_panel(panel_path)?;
+    let report = collect_and_publish(
         config_path,
-        panel_path,
+        &panel,
+        lower_training_output,
+        outer_training_output,
+        catalog_root,
+        output,
+        device,
+        true,
+    )?;
+    Ok(report_summary(output, &report.value))
+}
+
+pub(crate) fn run_training_published(
+    config_path: &Path,
+    panel: &Published<Panel>,
+    lower_training_output: &Path,
+    outer_training_output: &Path,
+    catalog_root: &Path,
+    output: &Path,
+    device: Device,
+) -> Result<Published<Report>> {
+    collect_and_publish(
+        config_path,
+        panel,
         lower_training_output,
         outer_training_output,
         catalog_root,
@@ -1155,18 +1185,18 @@ pub fn run(
     )
 }
 
-pub(crate) fn run_evaluation(
+pub(crate) fn run_evaluation_published(
     config_path: &Path,
-    panel_path: &Path,
+    panel: &Published<Panel>,
     lower_training_output: &Path,
     outer_training_output: &Path,
     catalog_root: &Path,
     output: &Path,
     device: Device,
-) -> Result<Value> {
-    run_with_record_policy(
+) -> Result<Published<Report>> {
+    collect_and_publish(
         config_path,
-        panel_path,
+        panel,
         lower_training_output,
         outer_training_output,
         catalog_root,
@@ -1177,27 +1207,25 @@ pub(crate) fn run_evaluation(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn run_with_record_policy(
+fn collect_and_publish(
     config_path: &Path,
-    panel_path: &Path,
+    panel: &Published<Panel>,
     lower_training_output: &Path,
     outer_training_output: &Path,
     catalog_root: &Path,
     output: &Path,
     device: Device,
     retain_root_records: bool,
-) -> Result<Value> {
+) -> Result<Published<Report>> {
     ensure!(
         !output.exists(),
         "aic-learning.hierarchical-output: {} already exists",
         output.display()
     );
     let config_bytes = bounded_read(config_path)?;
-    let panel_bytes = bounded_read(panel_path)?;
     let config: Config = serde_json::from_slice(&config_bytes)?;
-    let panel: Panel = serde_json::from_slice(&panel_bytes)?;
     validate_config(&config)?;
-    validate_panel(&panel)?;
+    validate_panel(&panel.value)?;
     let lower_config_bytes = bounded_read(&lower_training_output.join("config.json"))?;
     let lower_order_bytes = bounded_read(&lower_training_output.join("parameter-order.json"))?;
     let lower_config: GuidanceTrainingConfig = serde_json::from_slice(&lower_config_bytes)?;
@@ -1245,9 +1273,9 @@ fn run_with_record_policy(
         config.compiled_inference,
         Some(&outer),
     )?;
-    let mut cases = Vec::with_capacity(panel.cases.len());
-    for case in &panel.cases {
-        let root = prefix_session(case, &panel, catalogs.clone())?;
+    let mut cases = Vec::with_capacity(panel.value.cases.len());
+    for case in &panel.value.cases {
+        let root = prefix_session(case, &panel.value, catalogs.clone())?;
         let beam = config
             .run_beam
             .then(|| beam_search(root.clone(), &factory, &config))
@@ -1264,12 +1292,12 @@ fn run_with_record_policy(
         });
     }
     let report = Report {
-        schema: REPORT_SCHEMA,
-        status: "complete",
-        partition: panel.partition,
+        schema: REPORT_SCHEMA.into(),
+        status: "complete".into(),
+        partition: panel.value.partition.clone(),
         device: format!("{device:?}"),
         search_config_sha256: semantic_sha256(&config)?,
-        panel_sha256: bytes_sha256(&panel_bytes),
+        panel_sha256: panel.sha256.clone(),
         catalog_sha256: catalogs.identity.clone(),
         lower_config_sha256: bytes_sha256(&lower_config_bytes),
         lower_parameter_order_sha256: bytes_sha256(&lower_order_bytes),
@@ -1280,21 +1308,25 @@ fn run_with_record_policy(
         root_records_retained: retain_root_records,
         cases,
     };
-    write_report(output, &report)?;
-    Ok(json!({
+    publish_json(output, report)
+}
+
+fn report_summary(output: &Path, report: &Report) -> Value {
+    let run_beam = report.cases.iter().any(|case| case.beam.is_some());
+    json!({
         "schema": REPORT_SCHEMA,
         "status": "complete",
         "output": output,
         "cases": report.cases.len(),
-        "beam_completed": config.run_beam.then(|| report.cases.iter().filter(|case| {
+        "beam_completed": run_beam.then(|| report.cases.iter().filter(|case| {
             case.beam.as_ref().is_some_and(|result| result.fully_validated)
         }).count()),
         "mcts_completed": report.cases.iter().filter(|case| case.mcts.fully_validated).count(),
-        "beam_samples_per_minute": config.run_beam.then(|| aggregate_throughput(
+        "beam_samples_per_minute": run_beam.then(|| aggregate_throughput(
             report.cases.iter().filter_map(|case| case.beam.as_ref())
         )),
         "mcts_samples_per_minute": aggregate_throughput(report.cases.iter().map(|case| &case.mcts)),
-    }))
+    })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1313,6 +1345,56 @@ pub fn prepare_panel(
     max_turns: u64,
     max_extension: i64,
 ) -> Result<Value> {
+    let published = prepare_panel_published(
+        sampling_path,
+        catalog_root,
+        output,
+        partition,
+        cases,
+        seed,
+        namespace,
+        min_facilities,
+        max_facilities,
+        max_terminals,
+        max_connections,
+        max_turns,
+        max_extension,
+    )?;
+    let sampling_stats = published
+        .value
+        .preparation
+        .as_ref()
+        .map(|preparation| preparation.sampling_stats.clone());
+    Ok(json!({
+        "schema": PANEL_SCHEMA,
+        "status": "complete",
+        "output": output,
+        "partition": partition,
+        "cases": published.value.cases.len(),
+        "min_facilities": min_facilities,
+        "max_facilities": max_facilities,
+        "max_terminals": max_terminals,
+        "max_connections": max_connections,
+        "sampling_stats": sampling_stats,
+    }))
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn prepare_panel_published(
+    sampling_path: &Path,
+    catalog_root: &Path,
+    output: &Path,
+    partition: &str,
+    cases: usize,
+    seed: u64,
+    namespace: &str,
+    min_facilities: usize,
+    max_facilities: usize,
+    max_terminals: usize,
+    max_connections: usize,
+    max_turns: u64,
+    max_extension: i64,
+) -> Result<Published<Panel>> {
     ensure!(
         !output.exists(),
         "aic-learning.hierarchical-panel-output: {} already exists",
@@ -1374,19 +1456,7 @@ pub fn prepare_panel(
             .collect(),
     };
     validate_panel(&panel)?;
-    write_json_atomic(output, &panel)?;
-    Ok(json!({
-        "schema": PANEL_SCHEMA,
-        "status": "complete",
-        "output": output,
-        "partition": partition,
-        "cases": panel.cases.len(),
-        "min_facilities": min_facilities,
-        "max_facilities": max_facilities,
-        "max_terminals": max_terminals,
-        "max_connections": max_connections,
-        "sampling_stats": sampling_stats,
-    }))
+    publish_json(output, panel)
 }
 
 fn beam_search(root: Session, factory: &Factory<'_>, config: &Config) -> Result<SearchResult> {
@@ -2182,12 +2252,13 @@ fn finish_result(
     let observation = session.observe();
     let metrics = session.metrics();
     SearchResult {
-        algorithm,
+        algorithm: algorithm.into(),
         status: if observation.fully_validated {
             "complete"
         } else {
             "incomplete"
-        },
+        }
+        .into(),
         fully_validated: observation.fully_validated,
         termination,
         completed_connections: observation.completed,
@@ -2320,11 +2391,16 @@ fn semantic_sha256(value: &impl Serialize) -> Result<String> {
     Ok(bytes_sha256(&serde_json::to_vec(value)?))
 }
 
-fn write_report(output: &Path, report: &Report) -> Result<()> {
-    write_json_atomic(output, report)
+fn publish_json<T: Serialize>(output: &Path, value: T) -> Result<Published<T>> {
+    let (sha256, encoded_bytes) = publish_json_identity(output, &value)?;
+    Ok(Published {
+        value,
+        sha256,
+        encoded_bytes,
+    })
 }
 
-fn write_json_atomic(output: &Path, value: &impl Serialize) -> Result<()> {
+fn publish_json_identity(output: &Path, value: &impl Serialize) -> Result<(String, u64)> {
     if let Some(parent) = output
         .parent()
         .filter(|parent| !parent.as_os_str().is_empty())
@@ -2336,15 +2412,148 @@ fn write_json_atomic(output: &Path, value: &impl Serialize) -> Result<()> {
         .and_then(|name| name.to_str())
         .context("aic-learning.hierarchical-output: output needs a UTF-8 name")?;
     let temporary = output.with_file_name(format!(".{name}.tmp"));
-    fs::write(&temporary, serde_json::to_vec_pretty(value)?)?;
+    let file = fs::File::create(&temporary)?;
+    let mut writer = BufWriter::new(DigestWriter::new(file));
+    if let Err(error) = serde_json::to_writer_pretty(&mut writer, value) {
+        drop(writer);
+        let _ = fs::remove_file(&temporary);
+        return Err(error.into());
+    }
+    writer.flush()?;
+    let digested = writer.into_inner().map_err(|error| error.into_error())?;
+    digested.inner.sync_all()?;
+    let identity = digested.finish();
     fs::rename(temporary, output)?;
-    Ok(())
+    Ok(identity)
+}
+
+pub(crate) fn load_published_panel(path: &Path) -> Result<Published<Panel>> {
+    let metadata = fs::metadata(path).with_context(|| format!("stat {}", path.display()))?;
+    ensure!(
+        metadata.len() <= MAX_INPUT_BYTES,
+        "aic-learning.hierarchical-input: {} exceeds {} bytes",
+        path.display(),
+        MAX_INPUT_BYTES
+    );
+    load_published_json(path)
+}
+
+pub(crate) fn load_published_report(path: &Path) -> Result<Published<Report>> {
+    load_published_json(path)
+}
+
+fn load_published_json<T: for<'de> Deserialize<'de>>(path: &Path) -> Result<Published<T>> {
+    let file = fs::File::open(path).with_context(|| format!("open {}", path.display()))?;
+    let mut reader = DigestReader::new(BufReader::new(file));
+    let mut deserializer = serde_json::Deserializer::from_reader(&mut reader);
+    let value =
+        T::deserialize(&mut deserializer).with_context(|| format!("parse {}", path.display()))?;
+    deserializer
+        .end()
+        .with_context(|| format!("finish parsing {}", path.display()))?;
+    let (sha256, encoded_bytes) = reader.finish();
+    Ok(Published {
+        value,
+        sha256,
+        encoded_bytes,
+    })
+}
+
+struct DigestWriter<W> {
+    inner: W,
+    digest: Sha256,
+    bytes: u64,
+}
+
+impl<W> DigestWriter<W> {
+    fn new(inner: W) -> Self {
+        Self {
+            inner,
+            digest: Sha256::new(),
+            bytes: 0,
+        }
+    }
+
+    fn finish(self) -> (String, u64) {
+        (digest_hex(self.digest), self.bytes)
+    }
+}
+
+impl<W: Write> Write for DigestWriter<W> {
+    fn write(&mut self, buffer: &[u8]) -> std::io::Result<usize> {
+        let written = self.inner.write(buffer)?;
+        self.digest.update(&buffer[..written]);
+        self.bytes += written as u64;
+        Ok(written)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.inner.flush()
+    }
+}
+
+struct DigestReader<R> {
+    inner: R,
+    digest: Sha256,
+    bytes: u64,
+}
+
+impl<R> DigestReader<R> {
+    fn new(inner: R) -> Self {
+        Self {
+            inner,
+            digest: Sha256::new(),
+            bytes: 0,
+        }
+    }
+
+    fn finish(self) -> (String, u64) {
+        (digest_hex(self.digest), self.bytes)
+    }
+}
+
+impl<R: Read> Read for DigestReader<R> {
+    fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+        let read = self.inner.read(buffer)?;
+        self.digest.update(&buffer[..read]);
+        self.bytes += read as u64;
+        Ok(read)
+    }
+}
+
+fn digest_hex(digest: Sha256) -> String {
+    digest
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use aic_layout::geometry::Point;
+
+    #[test]
+    fn published_json_round_trips_with_exact_file_identity() {
+        let path = std::env::temp_dir().join(format!(
+            "aic-hierarchical-published-json-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        let value = json!({"schema":"test-v1","values":[1,2,3]});
+        let published = publish_json(&path, value.clone()).unwrap();
+        let encoded = fs::read(&path).unwrap();
+        assert_eq!(encoded, serde_json::to_vec_pretty(&value).unwrap());
+        assert_eq!(published.sha256, bytes_sha256(&encoded));
+        assert_eq!(published.encoded_bytes, encoded.len() as u64);
+
+        let recovered: Published<Value> = load_published_json(&path).unwrap();
+        assert_eq!(recovered.value, value);
+        assert_eq!(recovered.sha256, published.sha256);
+        assert_eq!(recovered.encoded_bytes, published.encoded_bytes);
+        fs::remove_file(path).unwrap();
+    }
 
     fn value(area: u64, transport: u64, turns: u64) -> f64 {
         let bounds = Bounds {

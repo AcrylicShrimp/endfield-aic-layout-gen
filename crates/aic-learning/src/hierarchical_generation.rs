@@ -8,9 +8,11 @@ use std::{
     time::Instant,
 };
 
-use aic_layout::{geometry::Point, physical::Problem, validation::Catalogs};
+use aic_layout::{geometry::Point, validation::Catalogs};
+#[cfg(test)]
+use aic_pilot_native::constructive::Command;
 use aic_pilot_native::constructive::{
-    Command, Limits, Session,
+    Limits, Session,
     learning::{Config as DomainConfig, Input},
     routing_candidates::{Candidate, GuidanceInput, Provenance},
 };
@@ -24,7 +26,10 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    hierarchical_search::{MacroAction, REPORT_SCHEMA as SEARCH_REPORT_SCHEMA, RootRecord},
+    hierarchical_search::{
+        Case, MacroAction, PANEL_SCHEMA, Panel, Published, REPORT_SCHEMA as SEARCH_REPORT_SCHEMA,
+        Report as CollectionReport, RootRecord, load_published_panel, load_published_report,
+    },
     input::Tensors,
     outer_model::{
         ACTION_FEATURES, Batch as OuterBatch, Model as OuterModel, ValueTarget,
@@ -39,7 +44,6 @@ use crate::{
 };
 
 const CONFIG_SCHEMA: &str = "aic-hierarchical-generation-training-v1";
-const PANEL_SCHEMA: &str = "aic-hierarchical-search-panel-v1";
 const REPORT_SCHEMA: &str = "aic-hierarchical-generation-training-report-v3";
 const MAX_INPUT_BYTES: u64 = 64 * 1024 * 1024;
 
@@ -61,50 +65,6 @@ pub struct Config {
     pub outer_learning_rate: f64,
     pub gradient_clip: f64,
     pub seed: u64,
-}
-
-#[derive(Debug, Deserialize)]
-struct Panel {
-    schema: String,
-    partition: String,
-    limits: Limits,
-    #[serde(default, rename = "preparation")]
-    _preparation: Option<Value>,
-    cases: Vec<Case>,
-}
-
-#[derive(Debug, Deserialize)]
-struct Case {
-    id: String,
-    problem: Problem,
-    prefix: Vec<Command>,
-}
-
-#[derive(Debug, Deserialize)]
-struct CollectionReport {
-    schema: String,
-    partition: String,
-    search_config_sha256: String,
-    panel_sha256: String,
-    catalog_sha256: String,
-    lower_config_sha256: String,
-    lower_parameter_order_sha256: String,
-    lower_checkpoint_sha256: String,
-    outer_config_sha256: String,
-    outer_parameter_order_sha256: String,
-    outer_checkpoint_sha256: String,
-    cases: Vec<CollectionCase>,
-}
-
-#[derive(Debug, Deserialize)]
-struct CollectionCase {
-    id: String,
-    mcts: CollectionSearch,
-}
-
-#[derive(Debug, Deserialize)]
-struct CollectionSearch {
-    root_records: Vec<RootRecord>,
 }
 
 struct OuterExample {
@@ -215,27 +175,56 @@ pub fn run(
     device: Device,
     resume: bool,
 ) -> Result<Value> {
-    ensure!(
-        !output.exists(),
-        "aic-learning.hierarchical-generation-output: {} already exists",
-        output.display()
-    );
+    validate_output_state(output, resume)?;
+    let panel = load_published_panel(panel_path)?;
+    let collection = load_published_report(collection_path)?;
+    run_published(
+        config_path,
+        panel,
+        collection,
+        lower_training_output,
+        outer_training_output,
+        catalog_root,
+        output,
+        device,
+        resume,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn run_published(
+    config_path: &Path,
+    panel: Published<Panel>,
+    collection: Published<CollectionReport>,
+    lower_training_output: &Path,
+    outer_training_output: &Path,
+    catalog_root: &Path,
+    output: &Path,
+    device: Device,
+    resume: bool,
+) -> Result<Value> {
+    validate_output_state(output, resume)?;
     let pending = pending_path(output)?;
-    ensure!(
-        resume == pending.exists(),
-        "aic-learning.hierarchical-generation-output: fresh training requires no pending output; --resume requires {}",
-        pending.display()
-    );
     let config_bytes = bounded_read(config_path)?;
-    let panel_bytes = bounded_read(panel_path)?;
-    let collection_bytes = bounded_read(collection_path)?;
     let config: Config = serde_json::from_slice(&config_bytes)?;
-    let panel: Panel = serde_json::from_slice(&panel_bytes)?;
-    let collection: CollectionReport = serde_json::from_slice(&collection_bytes)?;
+    let Published {
+        value: panel,
+        sha256: panel_sha256,
+        encoded_bytes: panel_encoded_bytes,
+    } = panel;
+    let Published {
+        value: collection,
+        sha256: collection_sha256,
+        encoded_bytes: collection_encoded_bytes,
+    } = collection;
+    ensure!(
+        panel_encoded_bytes > 0 && collection_encoded_bytes > 0,
+        "aic-learning.hierarchical-generation-input: empty published panel or collection"
+    );
     validate_config(&config)?;
     validate_inputs(&panel, &collection)?;
     ensure!(
-        bytes_sha256(&panel_bytes) == collection.panel_sha256,
+        panel_sha256 == collection.panel_sha256,
         "aic-learning.hierarchical-generation-lineage: collection panel differs"
     );
 
@@ -280,6 +269,7 @@ pub fn run(
         semantic_sha256(&outer_config.search)? == collection.search_config_sha256,
         "aic-learning.hierarchical-generation-lineage: collection search config differs"
     );
+    validate_collection_structure(&collection, &outer_config.search)?;
     let outer_source = outer_training_output.join("state.safetensors");
     let outer_source_sha256 = crate::input::sha256(&outer_source)?;
     ensure!(
@@ -301,8 +291,8 @@ pub fn run(
         extension_lengths: outer_config.search.extension_lengths.clone(),
     };
     let (outer_examples, lower_examples) = collect_examples(
-        &panel,
-        &collection,
+        panel,
+        collection,
         &domain,
         &outer_config,
         &lower_config,
@@ -317,8 +307,8 @@ pub fn run(
     let binding = RecoveryBinding {
         schema: RECOVERY_BINDING_SCHEMA.into(),
         config_sha256: bytes_sha256(&config_bytes),
-        panel_sha256: bytes_sha256(&panel_bytes),
-        collection_sha256: bytes_sha256(&collection_bytes),
+        panel_sha256: panel_sha256.clone(),
+        collection_sha256: collection_sha256.clone(),
         catalog_sha256: catalogs.identity.clone(),
         source_lower_config_sha256: bytes_sha256(&lower_config_bytes),
         source_lower_parameter_order_sha256: bytes_sha256(&lower_order_bytes),
@@ -528,8 +518,8 @@ pub fn run(
         catalog_sha256: catalogs.identity.clone(),
         source_lower_checkpoint_sha256: lower_source_sha256,
         source_outer_checkpoint_sha256: outer_source_sha256,
-        collection_sha256: bytes_sha256(&collection_bytes),
-        panel_sha256: bytes_sha256(&panel_bytes),
+        collection_sha256,
+        panel_sha256,
         root_states: outer_examples.len(),
         outer_action_samples: outer_examples
             .iter()
@@ -574,25 +564,29 @@ pub fn run(
 }
 
 fn collect_examples(
-    panel: &Panel,
-    collection: &CollectionReport,
+    panel: Panel,
+    collection: CollectionReport,
     domain: &DomainConfig,
     outer_config: &OuterTrainingConfig,
     lower_config: &LowerTrainingConfig,
     catalogs: Arc<Catalogs>,
     config: &Config,
 ) -> Result<(Vec<OuterExample>, Vec<LowerExample>)> {
-    let cases = panel
+    let limits = panel.limits;
+    let mut cases = panel
         .cases
-        .iter()
-        .map(|case| (case.id.as_str(), case))
+        .into_iter()
+        .map(|case| (case.id.clone(), case))
         .collect::<BTreeMap<_, _>>();
+    let source_lower_checkpoint_sha256 = collection.lower_checkpoint_sha256;
     let mut outer_examples = Vec::new();
     let mut lower_examples = Vec::new();
-    for collected in &collection.cases {
-        let case = cases[collected.id.as_str()];
-        let mut session = prefix_session(case, panel, catalogs.clone())?;
-        for record in &collected.mcts.root_records {
+    for collected in collection.cases {
+        let case = cases.remove(&collected.id).context(
+            "aic-learning.hierarchical-generation-case: collection case missing from panel",
+        )?;
+        let mut session = prefix_session(&case, limits, catalogs.clone())?;
+        for record in collected.mcts.root_records {
             ensure!(
                 state_sha256(&session)? == record.state_sha256
                     && session.observe().revision == record.state_revision,
@@ -624,7 +618,7 @@ fn collect_examples(
                 .iter()
                 .map(|action| action.action.entity_index(session.problem()))
                 .collect::<Result<Vec<_>>>()?;
-            let target = visit_target(record, config.search_temperature);
+            let target = visit_target(&record, config.search_temperature);
             let observation = session.observe();
             let completed = record.later_completed_connections;
             let total = record.later_total_connections.max(1);
@@ -660,10 +654,10 @@ fn collect_examples(
             });
             collect_lower_examples(
                 &session,
-                record,
+                &record,
                 domain,
                 lower_config,
-                &collection.lower_checkpoint_sha256,
+                &source_lower_checkpoint_sha256,
                 &outer_config.search.candidate,
                 config.search_temperature,
                 &mut lower_examples,
@@ -999,9 +993,9 @@ fn lower_prediction_loss(
     Ok(policy + regression * 0.05 + outcome + uncertainty * 0.1)
 }
 
-fn prefix_session(case: &Case, panel: &Panel, catalogs: Arc<Catalogs>) -> Result<Session> {
+fn prefix_session(case: &Case, limits: Limits, catalogs: Arc<Catalogs>) -> Result<Session> {
     let mut session =
-        Session::new(case.problem.clone(), catalogs, panel.limits).map_err(anyhow::Error::new)?;
+        Session::new(case.problem.clone(), catalogs, limits).map_err(anyhow::Error::new)?;
     for (index, command) in case.prefix.iter().enumerate() {
         let step = session.step(command.clone());
         ensure!(
@@ -1052,6 +1046,7 @@ fn validate_inputs(panel: &Panel, collection: &CollectionReport) -> Result<()> {
             && panel.partition == "training"
             && panel.partition == collection.partition
             && collection.schema == SEARCH_REPORT_SCHEMA
+            && collection.root_records_retained
             && !panel.cases.is_empty()
             && panel.cases.len() == panel_ids.len()
             && panel_ids == collection_ids
@@ -1060,6 +1055,22 @@ fn validate_inputs(panel: &Panel, collection: &CollectionReport) -> Result<()> {
                 .iter()
                 .all(|case| !case.mcts.root_records.is_empty()),
         "aic-learning.hierarchical-generation-input: panel and collection differ or contain no roots"
+    );
+    Ok(())
+}
+
+fn validate_collection_structure(
+    collection: &CollectionReport,
+    search: &crate::hierarchical_search::Config,
+) -> Result<()> {
+    ensure!(
+        collection.cases.iter().all(|case| {
+            case.mcts.root_records.len() <= search.max_moves
+                && case.mcts.root_records.iter().all(|record| {
+                    !record.actions.is_empty() && record.selected_action < record.actions.len()
+                })
+        }),
+        "aic-learning.hierarchical-generation-collection: roots or actions exceed the search contract"
     );
     Ok(())
 }
@@ -1316,6 +1327,21 @@ fn bounded_read(path: &Path) -> Result<Vec<u8>> {
 fn read_json<T: for<'de> Deserialize<'de>>(path: &Path) -> Result<T> {
     serde_json::from_slice(&bounded_read(path)?)
         .with_context(|| format!("parse {}", path.display()))
+}
+
+fn validate_output_state(output: &Path, resume: bool) -> Result<()> {
+    ensure!(
+        !output.exists(),
+        "aic-learning.hierarchical-generation-output: {} already exists",
+        output.display()
+    );
+    let pending = pending_path(output)?;
+    ensure!(
+        resume == pending.exists(),
+        "aic-learning.hierarchical-generation-output: fresh training requires no pending output; --resume requires {}",
+        pending.display()
+    );
+    Ok(())
 }
 
 fn pending_path(output: &Path) -> Result<PathBuf> {

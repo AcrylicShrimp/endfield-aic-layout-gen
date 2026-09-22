@@ -6,14 +6,17 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use aic_layout::physical::Problem;
 use aic_torch::tch::Device;
 use anyhow::{Context, Result, ensure};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
-use crate::{hierarchical_generation, hierarchical_search, input};
+use crate::{
+    hierarchical_generation,
+    hierarchical_search::{self, Panel, Report as SearchReport, SearchResult},
+    input,
+};
 
 const CONFIG_SCHEMA: &str = "aic-hierarchical-curriculum-v1";
 const BINDING_SCHEMA: &str = "aic-hierarchical-curriculum-binding-v1";
@@ -106,45 +109,6 @@ struct GenerationSummary {
     training_problem_identities: BTreeSet<String>,
 }
 
-#[derive(Debug, Deserialize)]
-struct SearchReport {
-    schema: String,
-    partition: String,
-    root_records_retained: bool,
-    cases: Vec<SearchCase>,
-}
-
-#[derive(Debug, Deserialize)]
-struct SearchCase {
-    mcts: SearchResult,
-}
-
-#[derive(Debug, Deserialize)]
-struct SearchResult {
-    fully_validated: bool,
-    footprint_area: Option<u64>,
-    transport_cells: Option<u64>,
-    turns: Option<u64>,
-    elapsed_seconds: f64,
-    counters: SearchCounters,
-}
-
-#[derive(Debug, Deserialize)]
-struct SearchCounters {
-    generated_macro_samples: usize,
-}
-
-#[derive(Debug, Deserialize)]
-struct AuditPanel {
-    partition: String,
-    cases: Vec<AuditCase>,
-}
-
-#[derive(Debug, Deserialize)]
-struct AuditCase {
-    problem: Problem,
-}
-
 pub fn run(
     config_path: &Path,
     search_config_path: &Path,
@@ -161,7 +125,6 @@ pub fn run(
     let config_bytes = bounded_read(config_path)?;
     let search_config_bytes = bounded_read(search_config_path)?;
     let generation_config_bytes = bounded_read(generation_config_path)?;
-    let heldout_bytes = bounded_read(heldout_panel_path)?;
     let config: Config = serde_json::from_slice(&config_bytes)?;
     let search_config: hierarchical_search::Config = serde_json::from_slice(&search_config_bytes)?;
     let generation_template: hierarchical_generation::Config =
@@ -175,12 +138,12 @@ pub fn run(
         generation_template.seed <= i64::MAX as u64,
         "aic-learning.hierarchical-curriculum-generation-config: invalid seed"
     );
-    let heldout: AuditPanel = serde_json::from_slice(&heldout_bytes)?;
+    let heldout = hierarchical_search::load_published_panel(heldout_panel_path)?;
     ensure!(
-        heldout.partition == "held-out" && !heldout.cases.is_empty(),
+        heldout.value.partition == "held-out" && !heldout.value.cases.is_empty(),
         "aic-learning.hierarchical-curriculum-heldout: expected a nonempty held-out panel"
     );
-    let heldout_identities = problem_identities(&heldout)?;
+    let heldout_identities = problem_identities(&heldout.value)?;
 
     let loaded = aic_layout_gen::io::load_catalogs(catalog_root)?;
     let binding = Binding {
@@ -189,7 +152,7 @@ pub fn run(
         search_config_sha256: bytes_sha256(&search_config_bytes),
         generation_config_sha256: bytes_sha256(&generation_config_bytes),
         sampling_sha256: input::sha256(sampling_path)?,
-        heldout_panel_sha256: bytes_sha256(&heldout_bytes),
+        heldout_panel_sha256: heldout.sha256.clone(),
         catalog_sha256: loaded.catalogs.identity,
         initial_lower_config_sha256: input::sha256(&initial_lower_output.join("config.json"))?,
         initial_lower_order_sha256: input::sha256(
@@ -273,8 +236,10 @@ pub fn run(
 
         let level = config.levels[state.level];
         let panel_path = directory.join("training-panel.json");
-        if !panel_path.exists() {
-            hierarchical_search::prepare_panel(
+        let training_panel = if panel_path.exists() {
+            hierarchical_search::load_published_panel(&panel_path)?
+        } else {
+            hierarchical_search::prepare_panel_published(
                 sampling_path,
                 catalog_root,
                 &panel_path,
@@ -291,12 +256,11 @@ pub fn run(
                 level.max_connections,
                 config.max_turns,
                 config.max_extension,
-            )?;
-        }
-        let training_panel: AuditPanel = read_json(&panel_path)?;
-        let training_identities = problem_identities(&training_panel)?;
+            )?
+        };
+        let training_identities = problem_identities(&training_panel.value)?;
         ensure!(
-            training_panel.partition == "training"
+            training_panel.value.partition == "training"
                 && training_identities.is_disjoint(&heldout_identities),
             "aic-learning.hierarchical-curriculum-separation: training problems overlap held-out"
         );
@@ -308,30 +272,39 @@ pub fn run(
             initial_outer_output,
         );
         let collection_path = directory.join("collection.json");
-        if !collection_path.exists() {
-            hierarchical_search::run(
+        let training_report = if collection_path.exists() {
+            hierarchical_search::load_published_report(&collection_path)?
+        } else {
+            hierarchical_search::run_training_published(
                 search_config_path,
-                &panel_path,
+                &training_panel,
                 &source_lower,
                 &source_outer,
                 catalog_root,
                 &collection_path,
                 device,
-            )?;
-        }
-        let training_report: SearchReport = read_json(&collection_path)?;
+            )?
+        };
         ensure!(
-            training_report.schema == hierarchical_search::REPORT_SCHEMA
-                && training_report.partition == "training"
-                && training_report.root_records_retained
-                && training_report.cases.len() == config.training_cases,
+            training_report.value.schema == hierarchical_search::REPORT_SCHEMA
+                && training_report.value.partition == "training"
+                && training_report.value.root_records_retained
+                && training_report.value.cases.len() == config.training_cases,
             "aic-learning.hierarchical-curriculum-collection: invalid training report"
         );
         let training_success = training_report
+            .value
             .cases
             .iter()
             .map(|case| case.mcts.fully_validated)
             .collect::<Vec<_>>();
+        let training_mean_footprint_area =
+            mean_completed_metric(&training_report.value, |result| result.footprint_area);
+        let training_mean_transport_cells =
+            mean_completed_metric(&training_report.value, |result| result.transport_cells);
+        let training_mean_turns =
+            mean_completed_metric(&training_report.value, |result| result.turns);
+        let training_mcts_samples_per_minute = aggregate_throughput(&training_report.value);
 
         let mut generation_config = generation_template.clone();
         generation_config.seed = generation_template
@@ -352,10 +325,10 @@ pub fn run(
         let training_output = directory.join("training");
         if !training_output.exists() {
             let pending = pending_path(&training_output)?;
-            hierarchical_generation::run(
+            hierarchical_generation::run_published(
                 &current_generation_config,
-                &panel_path,
-                &collection_path,
+                training_panel,
+                training_report,
                 &source_lower,
                 &source_outer,
                 catalog_root,
@@ -368,25 +341,28 @@ pub fn run(
         let evaluate = (generation + 1) % config.evaluation_interval == 0
             || generation + 1 == config.generations;
         let heldout_path = directory.join("heldout.json");
-        if evaluate && !heldout_path.exists() {
-            hierarchical_search::run_evaluation(
-                search_config_path,
-                heldout_panel_path,
-                &training_output.join("lower"),
-                &training_output.join("outer"),
-                catalog_root,
-                &heldout_path,
-                device,
-            )?;
-        }
-        let heldout_report = evaluate
-            .then(|| read_json::<SearchReport>(&heldout_path))
-            .transpose()?;
+        let heldout_report = if evaluate {
+            Some(if heldout_path.exists() {
+                hierarchical_search::load_published_report(&heldout_path)?
+            } else {
+                hierarchical_search::run_evaluation_published(
+                    search_config_path,
+                    &heldout,
+                    &training_output.join("lower"),
+                    &training_output.join("outer"),
+                    catalog_root,
+                    &heldout_path,
+                    device,
+                )?
+            })
+        } else {
+            None
+        };
         ensure!(
             heldout_report.as_ref().is_none_or(|report| {
-                report.schema == hierarchical_search::REPORT_SCHEMA
-                    && report.partition == "held-out"
-                    && !report.root_records_retained
+                report.value.schema == hierarchical_search::REPORT_SCHEMA
+                    && report.value.partition == "held-out"
+                    && !report.value.root_records_retained
             }),
             "aic-learning.hierarchical-curriculum-heldout: invalid evaluation report"
         );
@@ -414,6 +390,7 @@ pub fn run(
         let training_completed = training_success.iter().filter(|success| **success).count();
         let heldout_completed = heldout_report.as_ref().map(|report| {
             report
+                .value
                 .cases
                 .iter()
                 .filter(|case| case.mcts.fully_validated)
@@ -427,33 +404,39 @@ pub fn run(
             training_completed,
             training_cases: training_success.len(),
             training_completion_rate: completion_rate(training_success.iter().copied()),
-            training_mean_footprint_area: mean_completed_metric(&training_report, |result| {
-                result.footprint_area
-            }),
-            training_mean_transport_cells: mean_completed_metric(&training_report, |result| {
-                result.transport_cells
-            }),
-            training_mean_turns: mean_completed_metric(&training_report, |result| result.turns),
-            training_mcts_samples_per_minute: aggregate_throughput(&training_report),
+            training_mean_footprint_area,
+            training_mean_transport_cells,
+            training_mean_turns,
+            training_mcts_samples_per_minute,
             recent_training_cases: recent_cases,
             recent_training_completion_rate: recent_rate,
             advanced,
             next_level,
             heldout_completed,
-            heldout_cases: heldout_report.as_ref().map(|report| report.cases.len()),
+            heldout_cases: heldout_report
+                .as_ref()
+                .map(|report| report.value.cases.len()),
             heldout_completion_rate: heldout_report.as_ref().map(|report| {
-                completion_rate(report.cases.iter().map(|case| case.mcts.fully_validated))
+                completion_rate(
+                    report
+                        .value
+                        .cases
+                        .iter()
+                        .map(|case| case.mcts.fully_validated),
+                )
             }),
-            heldout_mean_footprint_area: heldout_report
-                .as_ref()
-                .and_then(|report| mean_completed_metric(report, |result| result.footprint_area)),
-            heldout_mean_transport_cells: heldout_report
-                .as_ref()
-                .and_then(|report| mean_completed_metric(report, |result| result.transport_cells)),
+            heldout_mean_footprint_area: heldout_report.as_ref().and_then(|report| {
+                mean_completed_metric(&report.value, |result| result.footprint_area)
+            }),
+            heldout_mean_transport_cells: heldout_report.as_ref().and_then(|report| {
+                mean_completed_metric(&report.value, |result| result.transport_cells)
+            }),
             heldout_mean_turns: heldout_report
                 .as_ref()
-                .and_then(|report| mean_completed_metric(report, |result| result.turns)),
-            heldout_mcts_samples_per_minute: heldout_report.as_ref().map(aggregate_throughput),
+                .and_then(|report| mean_completed_metric(&report.value, |result| result.turns)),
+            heldout_mcts_samples_per_minute: heldout_report
+                .as_ref()
+                .map(|report| aggregate_throughput(&report.value)),
             lower_checkpoint_sha256: input::sha256(
                 &training_output.join("lower/state.safetensors"),
             )?,
@@ -539,7 +522,7 @@ fn source_outputs(
     }
 }
 
-fn problem_identities(panel: &AuditPanel) -> Result<BTreeSet<String>> {
+fn problem_identities(panel: &Panel) -> Result<BTreeSet<String>> {
     panel
         .cases
         .iter()
