@@ -136,6 +136,9 @@ pub struct PathOptions<'a> {
     pub crossings: &'a Crossings,
     pub crossing_limit: usize,
     pub allow_zero_length: bool,
+    /// Optional nonnegative additive step costs. These affect path ordering
+    /// only; blocked cells and crossing legality remain exact graph rules.
+    pub cell_penalties: Option<&'a IndexMap<Point, u32>>,
 }
 #[derive(Debug, Serialize)]
 pub struct PathResult {
@@ -212,6 +215,7 @@ pub fn shortest_path(
         crossings,
         crossing_limit,
         allow_zero_length,
+        cell_penalties,
     } = options;
     let width = bounds.width();
     let height = bounds.height();
@@ -223,6 +227,11 @@ pub fn shortest_path(
         || first.is_some_and(|d| d > 3)
         || last.is_some_and(|d| d > 3)
         || crossing_limit > 8
+        || cell_penalties.is_some_and(|penalties| {
+            penalties
+                .iter()
+                .any(|(point, &penalty)| !bounds.contains(*point) || penalty > 1_000_000)
+        })
     {
         let mut d = Diagnostic::new(
             "path-invalid-input",
@@ -260,6 +269,7 @@ pub fn shortest_path(
             crossings,
             crossing_limit,
             allow_zero_length,
+            cell_penalties: None,
         },
         256.min(work_budget / 4),
     );
@@ -330,8 +340,8 @@ pub fn shortest_path(
             if cells.iter().collect::<IndexSet<_>>().len() != cells.len() {
                 return Ok(stopped("repeated-cell", expanded, frontier));
             }
-            let mut result =
-                PathResult::found(cells, crossings, p.g / weight, p.g % weight, expanded);
+            let steps = i64::try_from(cells.len() - 1).expect("bounded path length fits i64");
+            let mut result = PathResult::found(cells, crossings, steps, p.g % weight, expanded);
             result.preflight_expanded = probe.expanded;
             result.preflight_status = probe.status;
             return Ok(result);
@@ -378,7 +388,13 @@ pub fn shortest_path(
                 continue;
             }
             let used = p.used + usize::from(via.is_some());
-            let g = p.g + weight + i64::from(p.direction != 4 && p.direction != d);
+            let penalty = cell_penalties
+                .and_then(|penalties| penalties.get(&q))
+                .copied()
+                .unwrap_or(0);
+            let g = p.g
+                + (i64::from(penalty) + 1) * weight
+                + i64::from(p.direction != 4 && p.direction != d);
             let qid = id(q, d, used);
             if best.get(&qid).is_some_and(|&old| old <= g) {
                 continue;

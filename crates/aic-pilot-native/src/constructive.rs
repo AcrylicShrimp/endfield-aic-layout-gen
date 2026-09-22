@@ -23,6 +23,7 @@ use aic_layout::{
 use serde::{Deserialize, Serialize};
 
 pub mod learning;
+pub mod routing_candidates;
 
 const COORDINATE_MAX: i64 = 1_000_000;
 
@@ -1188,6 +1189,77 @@ mod tests {
             source_port: Some("output-belt-1".into()),
             target_port: Some("input-belt-1".into()),
         })
+    }
+
+    fn route_candidate_config() -> routing_candidates::Config {
+        routing_candidates::Config {
+            bounds: aic_layout::geometry::Bounds {
+                min_x: 0,
+                min_y: 0,
+                max_x: 15,
+                max_y: 15,
+            },
+            max_candidates: 3,
+            max_searches: 12,
+            work_per_search: 10_000,
+            max_expanded: 100_000,
+            overlap_penalty: 8,
+        }
+    }
+
+    #[test]
+    fn route_candidates_are_diverse_native_valid_and_revision_atomic() {
+        let mut session = session();
+        for command in [
+            Command::Place {
+                block: "source".into(),
+                position: Point { x: 5, y: 12 },
+                rotation: 0,
+            },
+            Command::Place {
+                block: "target".into(),
+                position: Point { x: 5, y: 2 },
+                rotation: 0,
+            },
+        ] {
+            assert!(session.step(command).accepted);
+        }
+        let revision = session.observe().revision;
+        let report = session
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: revision,
+                    connection: "connection-0".into(),
+                },
+                &route_candidate_config(),
+            )
+            .unwrap();
+
+        assert_eq!(session.observe().revision, revision);
+        assert!(session.observe().active.is_none());
+        assert!(report.candidates.len() >= 2, "{report:#?}");
+        assert!(report.native_rejections.is_empty());
+        assert!(report.minimum_pairwise_dissimilarity.unwrap() > 0.0);
+        assert_ne!(report.candidates[0].cells, report.candidates[1].cells);
+        assert!(matches!(
+            report.candidates[0].commands.first(),
+            Some(Command::BeginRoute { .. })
+        ));
+        assert_eq!(
+            report.candidates[0].commands.last(),
+            Some(&Command::Connect)
+        );
+
+        let mut committed = session.clone();
+        let steps = committed
+            .apply_route_candidate(&report.candidates[0])
+            .unwrap();
+        assert!(steps.iter().all(|step| step.accepted));
+        assert!(committed.layout().is_some());
+        let stale = committed
+            .apply_route_candidate(&report.candidates[1])
+            .unwrap_err();
+        assert_eq!(stale.code, "constructive.stale-route-candidate");
     }
 
     #[test]

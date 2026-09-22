@@ -393,6 +393,7 @@ impl<'a> Generator<'a> {
                         crossings: &sites,
                         crossing_limit: c.max_bridges_per_route,
                         allow_zero_length: true,
+                        cell_penalties: None,
                     },
                 );
                 blocked[tr].insert(a.connection);

@@ -40,6 +40,7 @@ fn route_kernel_timing() {
                 crossings: &crossings,
                 crossing_limit: 0,
                 allow_zero_length: false,
+                cell_penalties: None,
             },
         )
         .unwrap();
@@ -150,6 +151,7 @@ fn reverse_negative_preserves_every_forward_reachable_crossing_walk() {
                         crossings: &crossings,
                         crossing_limit,
                         allow_zero_length: false,
+                        cell_penalties: None,
                     };
                     let reachable = forward_reachable(start, end, &blocked, bounds, &options);
                     for cap in [0, 1, 2, 5, 256] {
@@ -196,6 +198,7 @@ fn sealed_goal_fails_locally_and_charges_reverse_work() {
             crossings: &crossings,
             crossing_limit: 8,
             allow_zero_length: false,
+            cell_penalties: None,
         },
     )
     .unwrap();
@@ -229,6 +232,7 @@ fn reverse_cutoff_still_runs_astar_and_preserves_directed_route_quality() {
             crossings: &crossings,
             crossing_limit: 0,
             allow_zero_length: false,
+            cell_penalties: None,
         },
     )
     .unwrap();
@@ -236,4 +240,52 @@ fn reverse_cutoff_still_runs_astar_and_preserves_directed_route_quality() {
     assert_eq!((result.steps, result.turns), (Some(16), Some(1)));
     assert!(result.preflight_expanded > 0 && result.preflight_expanded < result.expanded);
     assert!(result.expanded <= 1200);
+}
+
+#[test]
+fn cell_penalties_select_a_distinct_equal_length_corridor() {
+    let start = Point { x: 0, y: 1 };
+    let end = Point { x: 4, y: 1 };
+    let bounds = Bounds {
+        min_x: 0,
+        min_y: 0,
+        max_x: 4,
+        max_y: 2,
+    };
+    let blocked = IndexSet::from([Point { x: 2, y: 1 }]);
+    let crossings = Crossings::new();
+    let route = |penalties| {
+        shortest_path(
+            start,
+            end,
+            &blocked,
+            bounds,
+            PathOptions {
+                first: None,
+                last: None,
+                work_budget: 1_000,
+                crossings: &crossings,
+                crossing_limit: 0,
+                allow_zero_length: false,
+                cell_penalties: penalties,
+            },
+        )
+        .unwrap()
+        .cells
+        .unwrap()
+    };
+    let anchor = route(None);
+    let penalties = anchor
+        .iter()
+        .copied()
+        .skip(1)
+        .take(anchor.len() - 2)
+        .map(|point| (point, 10))
+        .collect::<IndexMap<_, _>>();
+    let diverse = route(Some(&penalties));
+
+    assert_eq!(anchor.len(), diverse.len());
+    assert_ne!(anchor, diverse);
+    assert_eq!(diverse.first(), Some(&start));
+    assert_eq!(diverse.last(), Some(&end));
 }
