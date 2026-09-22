@@ -26,7 +26,7 @@ pub mod route;
 pub mod run;
 pub mod search;
 #[cfg(test)]
-mod test_support;
+pub(crate) mod test_support;
 
 pub const CHECKPOINT_SCHEMA: &str = "aic-constructive-attention-checkpoint-v2";
 pub(crate) const INPUT_TENSOR_COUNT: usize = 12;
@@ -659,6 +659,10 @@ pub struct Encoded {
 impl Encoded {
     pub(crate) fn context(&self) -> &Tensor {
         &self.context
+    }
+
+    pub(crate) fn entities(&self) -> &Tensor {
+        &self.entities
     }
 }
 

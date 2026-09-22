@@ -41,7 +41,7 @@ fn catalogs() -> Arc<Catalogs> {
     })
 }
 
-pub(super) fn session(max_turns: u64) -> Session {
+pub(crate) fn session(max_turns: u64) -> Session {
     let problem = Problem {
         blocks: ["source", "target"]
             .into_iter()
@@ -74,7 +74,7 @@ pub(super) fn session(max_turns: u64) -> Session {
     .unwrap()
 }
 
-pub(super) fn domain() -> DomainConfig {
+pub(crate) fn domain() -> DomainConfig {
     DomainConfig {
         placement: Bounds {
             min_x: 0,
@@ -86,6 +86,6 @@ pub(super) fn domain() -> DomainConfig {
     }
 }
 
-pub(super) fn observation() -> Observation {
+pub(crate) fn observation() -> Observation {
     session(32).learning_observation(&domain()).unwrap()
 }

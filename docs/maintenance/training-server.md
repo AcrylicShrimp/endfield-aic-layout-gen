@@ -63,3 +63,19 @@ The later Nsight profile retained its 90 MiB `.nsys-rep` and compact summaries.
 Removing its regenerable SQLite export and two temporary training outputs
 recovered 269,254,656 bytes; the record is
 `~/Srv/aic-direct-constructive-20260920/artifacts/server-cleanup-20260920/profile-cache-cleanup.json`.
+
+On 2026-09-22, the experiment-retention policy changed from preserving runnable
+server state to preserving compact closeout packages. An inventory found
+194,147,897,344 bytes under `~/Srv` while only 7,176,454,144 filesystem bytes
+were available. Completed experiment directories were reduced to descriptions,
+configurations, results, verdicts, interpretations, provenance and exact code
+reconstruction material. The verified package is
+`~/Srv/experiment-conclusions-20260922.tar.zst` (194,693,355 bytes, SHA-256
+`b6eed8c6e7e86205fb383d6a36b529d0212653ed4234b576a5c4457c78807aa9`).
+Raw replay, training input, intermediate checkpoint, profile, build-cache and
+superseded environment state was removed. The explicitly unused root-owned Qwen
+model cache was also removed by the server owner. After cleanup, installing the
+W&B client and rebuilding the active release binary, `~/Srv` used 6,248,804,352
+bytes and the filesystem had 195,065,237,504 bytes available. The detailed
+manifest is retained under the active hierarchical experiment's
+`artifacts/server-cleanup-20260922/` directory.

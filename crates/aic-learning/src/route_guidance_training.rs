@@ -34,7 +34,7 @@ use crate::{
 
 const CONFIG_SCHEMA: &str = "aic-route-guidance-training-v1";
 const PANEL_SCHEMA: &str = "aic-route-guidance-panel-v1";
-const REPORT_SCHEMA: &str = "aic-route-guidance-training-report-v1";
+const REPORT_SCHEMA: &str = "aic-route-guidance-training-report-v2";
 const MAX_INPUT_BYTES: u64 = 16 * 1024 * 1024;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -168,6 +168,7 @@ pub fn run(
     validate_config(&config)?;
     validate_panel(&training_panel, "training")?;
     validate_panel(&evaluation_panel, "held-out")?;
+    validate_panel_separation(&training_panel, &evaluation_panel)?;
     ensure!(
         training_panel.candidate.bounds == config.learning_domain.placement
             && evaluation_panel.candidate.bounds == config.learning_domain.placement,
@@ -377,6 +378,28 @@ fn validate_panel(panel: &Panel, partition: &str) -> Result<()> {
     Ok(())
 }
 
+fn validate_panel_separation(training: &Panel, evaluation: &Panel) -> Result<()> {
+    let training_ids = training
+        .cases
+        .iter()
+        .map(|case| case.id.as_str())
+        .collect::<BTreeSet<_>>();
+    let training_problems = training
+        .cases
+        .iter()
+        .map(|case| serde_json::to_vec(&case.problem))
+        .collect::<Result<BTreeSet<_>, _>>()?;
+    ensure!(
+        evaluation.cases.iter().all(|case| {
+            !training_ids.contains(case.id.as_str())
+                && serde_json::to_vec(&case.problem)
+                    .is_ok_and(|identity| !training_problems.contains(&identity))
+        }),
+        "aic-learning.route-guidance-panels: training and held-out problem identities overlap"
+    );
+    Ok(())
+}
+
 fn collect_panel(
     pool: &rayon::ThreadPool,
     panel: &Panel,
@@ -528,7 +551,7 @@ fn loss(
                     .collect::<Vec<_>>(),
             )
             .to_device(device);
-            let energy = flat.index_select(0, &indices).mean(Kind::Float);
+            let energy = flat.index_select(0, &indices).sum(Kind::Float);
             let target = (best - candidate.later_completed) as f64 * config.regret_edge_cost;
             regression_losses.push((&energy - target).square());
             energies.push(energy);
@@ -602,7 +625,6 @@ fn evaluate(
                     .iter()
                     .map(|offset| flat.double_value(&[base + offset]))
                     .sum::<f64>()
-                    / candidate.edge_offsets.len() as f64
             })
             .collect::<Vec<_>>();
         let selected_index = energies

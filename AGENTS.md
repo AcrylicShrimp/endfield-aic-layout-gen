@@ -48,6 +48,10 @@
   the server is available. Check server disk capacity and active GPU processes
   before building or launching training. Remove only regenerable caches without
   explicit evidence-retention review.
+- Attach every long-running training experiment to the configured W&B project
+  before leaving it unattended. Keep local committed state authoritative, use a
+  nonblocking resumable observer so tracking cannot stall training, and verify
+  that W&B acknowledged a real readiness record before the long launch.
 
 ## Implementation And Contracts
 
@@ -72,6 +76,20 @@
 - Register benchmark source assets in `docs/maintenance/benchmark-source-assets.json` and the matching `docs/benchmarks/.gitignore` exceptions.
 - Keep each `docs/` file at most 100 KiB, other source files at most 512 KiB, and unmodified upstream game-source tables at most 4 MiB. Reduce or externalize oversized content; do not evade limits by compression, minification, or arbitrary splitting.
 - Clean up regenerable intermediate outputs after retaining the summary and necessary results and inputs. Preserve non-replayable checkpoints and irreplaceable evidence; a seed alone may not reproduce an interrupted run.
+- Close out every completed, stopped, or superseded experiment before starting
+  another substantial run. The closeout package must retain the experiment's
+  question and method, exact code identity plus any uncommitted patch, reviewed
+  configuration, reproduction command, compact result metrics, verdict,
+  interpretation, and provenance needed to reconstruct the test. Commit the
+  durable report and source configurations under `docs/`; a server artifact is
+  not the only copy of a conclusion.
+- After verifying that the closeout package is readable and the code and
+  configuration are reconstructible, remove the experiment's replay buffers,
+  generated training inputs, intermediate checkpoints, raw profiles, temporary
+  panels, build caches, and other executable state. Retain a checkpoint only
+  while an explicit continuation or recovery requirement remains active; package
+  and remove it when that requirement ends. Record the removed paths and disk
+  space before and after cleanup in a compact cleanup manifest.
 
 ## Verification And Git
 

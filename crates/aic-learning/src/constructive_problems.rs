@@ -115,6 +115,8 @@ pub struct SamplingStats {
     pub source_failures: usize,
     pub flow_failures: usize,
     pub facility_guard_rejections: usize,
+    pub facility_range_rejections: usize,
+    pub graph_range_rejections: usize,
     pub duplicate_graphs: usize,
     pub accepted_candidates: usize,
 }
@@ -248,6 +250,50 @@ impl ProblemGenerator {
             &self.items,
             &self.catalogs.transports,
             &self.producers,
+            None,
+            None,
+            &mut stats,
+        )?;
+        Ok(SampledProblems { problems, stats })
+    }
+
+    /// Sample production graphs whose compiled facility count lies in one
+    /// inclusive range. This is the same seeded generator used by online
+    /// training; the filter only controls curriculum difficulty.
+    pub fn sample_facility_range(
+        &self,
+        partition: &str,
+        count: usize,
+        seed: u64,
+        namespace: &str,
+        min_facilities: usize,
+        max_facilities: usize,
+        max_terminals: usize,
+        max_connections: usize,
+    ) -> Result<SampledProblems> {
+        ensure!(
+            count > 0
+                && matches!(partition, "train" | "validation" | "test")
+                && min_facilities > 0
+                && min_facilities <= max_facilities
+                && max_facilities <= self.policy.max_facilities
+                && max_terminals > 0
+                && max_connections > 0,
+            "aic-learning.constructive-problems: invalid facility-range sample request"
+        );
+        let mut stats = SamplingStats::default();
+        let problems = prepare_partition(
+            partition,
+            count,
+            seed,
+            namespace,
+            &self.policy,
+            &self.recipes,
+            &self.items,
+            &self.catalogs.transports,
+            &self.producers,
+            Some((min_facilities, max_facilities)),
+            Some((max_terminals, max_connections)),
             &mut stats,
         )?;
         Ok(SampledProblems { problems, stats })
@@ -343,6 +389,8 @@ fn prepare_partition(
     items: &ValidatedItemCatalog,
     transports: &aic_layout::logistics::ValidatedTransportCatalog,
     producers: &BTreeMap<String, Vec<usize>>,
+    facility_range: Option<(usize, usize)>,
+    graph_range: Option<(usize, usize)>,
     stats: &mut SamplingStats,
 ) -> Result<Vec<PreparedProblem>> {
     let targets = producers
@@ -404,6 +452,12 @@ fn prepare_partition(
             stats.facility_guard_rejections += 1;
             continue;
         }
+        if facility_range
+            .is_some_and(|(minimum, maximum)| facility_count < minimum || facility_count > maximum)
+        {
+            stats.facility_range_rejections += 1;
+            continue;
+        }
         let target_rate = throughput
             .target
             .as_ref()
@@ -420,6 +474,13 @@ fn prepare_partition(
             items,
             transports,
         )?;
+        if graph_range.is_some_and(|(max_terminals, max_connections)| {
+            prepared.problem.terminals.len() > max_terminals
+                || prepared.problem.connections.len() > max_connections
+        }) {
+            stats.graph_range_rejections += 1;
+            continue;
+        }
         let signature = problem_signature(&prepared.problem)?;
         if !seen.insert(signature.clone()) {
             stats.duplicate_graphs += 1;

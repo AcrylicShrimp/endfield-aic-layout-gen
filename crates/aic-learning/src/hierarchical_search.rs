@@ -13,8 +13,8 @@ use aic_pilot_native::constructive::{
     Command, Limits, Session,
     learning::{CommandKind, Config as DomainConfig},
     routing_candidates::{
-        Candidate, Config as CandidateConfig, NetworkCandidate, Provenance, Request,
-        network_shared_cells,
+        Candidate, Config as CandidateConfig, NetworkCandidate, Provenance, Report as RouteReport,
+        Request, Termination as RouteTermination, network_shared_cells,
     },
 };
 use aic_torch::tch::{self, Device, Tensor};
@@ -25,10 +25,12 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 use crate::{
+    constructive_problems::ProblemGenerator,
     input::Tensors,
     outer_model::{
-        ACTION_FEATURES, Batch as OuterBatch, CompiledModel as CompiledOuterModel,
-        Model as OuterModel, ParameterOrder as OuterOrder,
+        ACTION_FEATURES, AREA_HEAD, Batch as OuterBatch, COMPLETION_HEAD,
+        CompiledModel as CompiledOuterModel, Model as OuterModel, ParameterOrder as OuterOrder,
+        TRANSPORT_HEAD, TURNS_HEAD, normalized_layout_quality,
     },
     outer_training::Config as OuterTrainingConfig,
     route_guidance::{
@@ -39,14 +41,19 @@ use crate::{
 
 const CONFIG_SCHEMA: &str = "aic-hierarchical-search-config-v1";
 const PANEL_SCHEMA: &str = "aic-hierarchical-search-panel-v1";
-pub const REPORT_SCHEMA: &str = "aic-hierarchical-search-report-v2";
+pub const REPORT_SCHEMA: &str = "aic-hierarchical-search-report-v6";
 const MAX_INPUT_BYTES: u64 = 16 * 1024 * 1024;
+const ROUTE_ATTEMPT_SAMPLE_LIMIT: usize = 32;
 
 fn default_anchor_prior_mass() -> f64 {
     0.25
 }
 
 fn default_compiled_inference() -> bool {
+    true
+}
+
+fn default_run_beam() -> bool {
     true
 }
 
@@ -60,6 +67,8 @@ pub struct Config {
     pub cpu_threads: usize,
     pub placement_page: usize,
     pub beam_width: usize,
+    #[serde(default = "default_run_beam")]
+    pub run_beam: bool,
     pub simulations_per_move: usize,
     pub horizon: usize,
     pub max_moves: usize,
@@ -70,16 +79,32 @@ pub struct Config {
     pub compiled_inference: bool,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct Panel {
     schema: String,
     partition: String,
     limits: Limits,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    preparation: Option<PanelPreparation>,
     cases: Vec<Case>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct PanelPreparation {
+    sampling_sha256: String,
+    seed: u64,
+    namespace: String,
+    source_partition: String,
+    min_facilities: usize,
+    max_facilities: usize,
+    max_terminals: usize,
+    max_connections: usize,
+    sampling_stats: Value,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct Case {
     id: String,
@@ -125,7 +150,19 @@ pub(crate) struct RootRecord {
     pub selected_action: usize,
     pub later_completed_connections: usize,
     pub later_total_connections: usize,
+    pub later_footprint_area: u64,
+    pub later_transport_cells: u64,
+    pub later_turns: u64,
     pub later_fully_validated: bool,
+    pub later_termination: SearchTermination,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum SearchTermination {
+    FullyValidated,
+    NoMacroActions,
+    MoveBudgetExhausted,
 }
 
 #[derive(Default, Clone, Debug, Serialize)]
@@ -143,6 +180,24 @@ pub(crate) struct Counters {
     network_tasks: usize,
     network_samples: usize,
     shared_network_samples: usize,
+    route_candidate_limit: usize,
+    route_search_limit: usize,
+    route_work_budget: usize,
+    route_frontier_exhausted: usize,
+    route_no_compatible_endpoints: usize,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    route_attempt_samples: Vec<RouteAttemptRecord>,
+    route_attempt_samples_dropped: usize,
+}
+
+#[derive(Clone, Debug, Serialize)]
+struct RouteAttemptRecord {
+    state_sha256: String,
+    state_revision: u64,
+    connection: String,
+    termination: RouteTermination,
+    fixed_request_proven_infeasible: bool,
+    candidates: usize,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -150,8 +205,12 @@ pub(crate) struct SearchResult {
     algorithm: &'static str,
     status: &'static str,
     fully_validated: bool,
+    termination: SearchTermination,
     completed_connections: usize,
     total_connections: usize,
+    footprint_area: Option<u64>,
+    transport_cells: Option<u64>,
+    turns: Option<u64>,
     moves: usize,
     simulations: usize,
     elapsed_seconds: f64,
@@ -166,7 +225,8 @@ pub(crate) struct SearchResult {
 pub(crate) struct CaseReport {
     id: String,
     prefix_commands: usize,
-    beam: SearchResult,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    beam: Option<SearchResult>,
     mcts: SearchResult,
 }
 
@@ -176,9 +236,16 @@ pub(crate) struct Report {
     status: &'static str,
     partition: String,
     device: String,
+    search_config_sha256: String,
+    panel_sha256: String,
     catalog_sha256: String,
+    lower_config_sha256: String,
+    lower_parameter_order_sha256: String,
     lower_checkpoint_sha256: String,
+    outer_config_sha256: String,
+    outer_parameter_order_sha256: String,
     outer_checkpoint_sha256: String,
+    root_records_retained: bool,
     cases: Vec<CaseReport>,
 }
 
@@ -227,6 +294,18 @@ pub(crate) struct Factory<'a> {
     outer: Option<OuterRunner<'a>>,
 }
 
+#[derive(Clone, Copy)]
+struct PlacementPages {
+    offsets: [usize; 2],
+    exhausted: [bool; 2],
+    loaded_pages: usize,
+}
+
+struct ActionBatch {
+    actions: Vec<MacroAction>,
+    placement_pages: PlacementPages,
+}
+
 impl Factory<'_> {
     pub(crate) fn new<'a>(
         guidance: &'a GuidanceModel,
@@ -266,21 +345,27 @@ impl Factory<'_> {
         })
     }
 
-    pub(crate) fn actions(
-        &self,
-        session: &Session,
-        counters: &mut Counters,
-    ) -> Result<Vec<MacroAction>> {
+    fn action_batch(&self, session: &Session, counters: &mut Counters) -> Result<ActionBatch> {
         ensure!(
             session.observe().active.is_none(),
             "aic-learning.hierarchical-state: macro state contains an active partial route"
         );
         let mut actions = Vec::new();
+        let mut placement_pages = PlacementPages {
+            offsets: [0; 2],
+            exhausted: [true; 2],
+            loaded_pages: 1,
+        };
         if let Ok(observation) = session.learning_observation(&self.domain) {
-            for kind in [CommandKind::Place, CommandKind::PlaceTerminal] {
+            for (index, kind) in [CommandKind::Place, CommandKind::PlaceTerminal]
+                .into_iter()
+                .enumerate()
+            {
                 let page = observation
                     .domain
                     .command_page(kind, 0, self.placement_page);
+                placement_pages.offsets[index] = page.next_offset;
+                placement_pages.exhausted[index] = page.exhausted;
                 actions.extend(
                     page.commands
                         .into_iter()
@@ -348,10 +433,7 @@ impl Factory<'_> {
             });
             for report in reports {
                 let report = report.map_err(anyhow::Error::new)?;
-                counters.route_searches += report.searches;
-                counters.route_expanded += report.expanded;
-                counters.route_preflight_expanded += report.preflight_expanded;
-                counters.native_rejections += report.native_rejections.len();
+                record_route_report(counters, session, &report)?;
                 actions.extend(report.candidates.into_iter().map(MacroAction::Route));
             }
         }
@@ -386,6 +468,50 @@ impl Factory<'_> {
                 matches!(action, MacroAction::Network(candidate) if candidate.shared_cells > 0)
             })
             .count();
+        Ok(ActionBatch {
+            actions,
+            placement_pages,
+        })
+    }
+
+    pub(crate) fn actions(
+        &self,
+        session: &Session,
+        counters: &mut Counters,
+    ) -> Result<Vec<MacroAction>> {
+        Ok(self.action_batch(session, counters)?.actions)
+    }
+
+    fn next_placement_page(
+        &self,
+        session: &Session,
+        pages: &mut PlacementPages,
+        counters: &mut Counters,
+    ) -> Result<Vec<MacroAction>> {
+        let observation = session.learning_observation(&self.domain)?;
+        let mut actions = Vec::new();
+        for (index, kind) in [CommandKind::Place, CommandKind::PlaceTerminal]
+            .into_iter()
+            .enumerate()
+        {
+            if pages.exhausted[index] {
+                continue;
+            }
+            let page =
+                observation
+                    .domain
+                    .command_page(kind, pages.offsets[index], self.placement_page);
+            pages.offsets[index] = page.next_offset;
+            pages.exhausted[index] = page.exhausted;
+            actions.extend(
+                page.commands
+                    .into_iter()
+                    .map(|factored| MacroAction::Command(factored.command.command)),
+            );
+        }
+        pages.loaded_pages += 1;
+        counters.generated_macro_samples += actions.len();
+        counters.placement_samples += actions.len();
         Ok(actions)
     }
 
@@ -459,10 +585,7 @@ impl Factory<'_> {
             let mut next = Vec::with_capacity(partials.len());
             for (mut partial, report) in partials.into_iter().zip(reports) {
                 let report = report.map_err(anyhow::Error::new)?;
-                counters.route_searches += report.searches;
-                counters.route_expanded += report.expanded;
-                counters.route_preflight_expanded += report.preflight_expanded;
-                counters.native_rejections += report.native_rejections.len();
+                record_route_report(counters, &partial.session, &report)?;
                 if report.candidates.is_empty() {
                     continue;
                 }
@@ -545,7 +668,7 @@ impl Factory<'_> {
                     .into_iter()
                     .map(|weight| weight / denominator.max(f64::MIN_POSITIVE))
                     .collect(),
-                state_value(session),
+                state_value(session, self.domain.placement),
             ));
         };
         let input = session
@@ -556,7 +679,16 @@ impl Factory<'_> {
             .zip(children)
             .map(|(action, child)| action.features(session, child, self.domain.placement))
             .collect::<Vec<_>>();
-        let batch = OuterBatch::from_rows(&[input.as_ref()], &[features.as_slice()], self.device)?;
+        let entity_references = actions
+            .iter()
+            .map(|action| action.entity_index(session.problem()))
+            .collect::<Result<Vec<_>>>()?;
+        let batch = OuterBatch::from_rows(
+            &[input.as_ref()],
+            &[features.as_slice()],
+            &[entity_references.as_slice()],
+            self.device,
+        )?;
         let prediction = tch::no_grad(|| model.forward(&batch))?;
         let learned = Vec::<f32>::try_from(prediction.logp.exp().to_device(Device::Cpu))?
             .into_iter()
@@ -584,8 +716,15 @@ impl Factory<'_> {
                     + anchor / denominator.max(f64::MIN_POSITIVE) * self.anchor_prior_mass()
             })
             .collect();
-        let completion = prediction.values.double_value(&[0, 0]);
-        Ok((priors, completion))
+        let completion = prediction.values.double_value(&[0, COMPLETION_HEAD]);
+        let penalty = lexicographic_quality_penalty(
+            prediction.values.double_value(&[0, AREA_HEAD]),
+            prediction.values.double_value(&[0, TRANSPORT_HEAD]),
+            prediction.values.double_value(&[0, TURNS_HEAD]),
+            self.domain.placement,
+            session.problem().connections.len(),
+        );
+        Ok((priors, completion * predicted_quality_value(penalty)))
     }
 
     fn anchor_prior_mass(&self) -> f64 {
@@ -595,7 +734,70 @@ impl Factory<'_> {
     }
 }
 
+fn record_route_report(
+    counters: &mut Counters,
+    session: &Session,
+    report: &RouteReport,
+) -> Result<()> {
+    counters.route_searches += report.searches;
+    counters.route_expanded += report.expanded;
+    counters.route_preflight_expanded += report.preflight_expanded;
+    counters.native_rejections += report.native_rejections.len();
+    match report.termination {
+        RouteTermination::CandidateLimit => counters.route_candidate_limit += 1,
+        RouteTermination::SearchLimit => counters.route_search_limit += 1,
+        RouteTermination::WorkBudget => counters.route_work_budget += 1,
+        RouteTermination::FrontierExhausted => counters.route_frontier_exhausted += 1,
+        RouteTermination::NoCompatibleEndpoints => {
+            counters.route_no_compatible_endpoints += 1;
+        }
+    }
+    if counters.route_attempt_samples.len() < ROUTE_ATTEMPT_SAMPLE_LIMIT {
+        counters.route_attempt_samples.push(RouteAttemptRecord {
+            state_sha256: state_sha256(session)?,
+            state_revision: report.state_revision,
+            connection: report.connection.clone(),
+            termination: report.termination,
+            fixed_request_proven_infeasible: report.fixed_request_proven_infeasible,
+            candidates: report.candidates.len(),
+        });
+    } else {
+        counters.route_attempt_samples_dropped += 1;
+    }
+    Ok(())
+}
+
 impl MacroAction {
+    pub(crate) fn entity_index(&self, problem: &Problem) -> Result<i64> {
+        let index = match self {
+            Self::Command(Command::Place { block, .. }) => problem
+                .blocks
+                .iter()
+                .position(|candidate| candidate.id == *block),
+            Self::Command(Command::PlaceTerminal { terminal, .. }) => problem
+                .terminals
+                .iter()
+                .position(|candidate| candidate.id == *terminal)
+                .map(|index| problem.blocks.len() + index),
+            Self::Command(_) => None,
+            Self::Route(candidate) => problem
+                .connections
+                .iter()
+                .position(|connection| connection.id == candidate.connection)
+                .map(|index| problem.blocks.len() + problem.terminals.len() + index),
+            Self::Network(candidate) => candidate.routes.first().and_then(|route| {
+                problem
+                    .connections
+                    .iter()
+                    .position(|connection| connection.id == route.connection)
+                    .map(|index| problem.blocks.len() + problem.terminals.len() + index)
+            }),
+        };
+        index.map(|index| index as i64).context(
+            "aic-learning.hierarchical-action-entity: action entity is absent from problem",
+        )
+    }
+
     pub(crate) fn apply(&self, session: &Session) -> Result<Session> {
         let mut fork = session.clone();
         match self {
@@ -895,24 +1097,85 @@ pub fn run(
     output: &Path,
     device: Device,
 ) -> Result<Value> {
+    run_with_record_policy(
+        config_path,
+        panel_path,
+        lower_training_output,
+        outer_training_output,
+        catalog_root,
+        output,
+        device,
+        true,
+    )
+}
+
+pub(crate) fn run_evaluation(
+    config_path: &Path,
+    panel_path: &Path,
+    lower_training_output: &Path,
+    outer_training_output: &Path,
+    catalog_root: &Path,
+    output: &Path,
+    device: Device,
+) -> Result<Value> {
+    run_with_record_policy(
+        config_path,
+        panel_path,
+        lower_training_output,
+        outer_training_output,
+        catalog_root,
+        output,
+        device,
+        false,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_with_record_policy(
+    config_path: &Path,
+    panel_path: &Path,
+    lower_training_output: &Path,
+    outer_training_output: &Path,
+    catalog_root: &Path,
+    output: &Path,
+    device: Device,
+    retain_root_records: bool,
+) -> Result<Value> {
     ensure!(
         !output.exists(),
         "aic-learning.hierarchical-output: {} already exists",
         output.display()
     );
-    let config: Config = read_json(config_path)?;
-    let panel: Panel = read_json(panel_path)?;
+    let config_bytes = bounded_read(config_path)?;
+    let panel_bytes = bounded_read(panel_path)?;
+    let config: Config = serde_json::from_slice(&config_bytes)?;
+    let panel: Panel = serde_json::from_slice(&panel_bytes)?;
     validate_config(&config)?;
     validate_panel(&panel)?;
-    let lower_config: GuidanceTrainingConfig =
-        read_json(&lower_training_output.join("config.json"))?;
-    let order: ParameterOrder = read_json(&lower_training_output.join("parameter-order.json"))?;
+    let lower_config_bytes = bounded_read(&lower_training_output.join("config.json"))?;
+    let lower_order_bytes = bounded_read(&lower_training_output.join("parameter-order.json"))?;
+    let lower_config: GuidanceTrainingConfig = serde_json::from_slice(&lower_config_bytes)?;
+    ensure!(
+        lower_config.learning_domain
+            == (DomainConfig {
+                placement: config.bounds,
+                extension_lengths: config.extension_lengths.clone(),
+            }),
+        "aic-learning.hierarchical-lower-domain: search and lower model domains differ"
+    );
+    let order: ParameterOrder = serde_json::from_slice(&lower_order_bytes)?;
     let checkpoint = lower_training_output.join("state.safetensors");
     let values: Tensors = Tensor::read_safetensors(&checkpoint)?.into_iter().collect();
     let guidance = GuidanceModel::load(&lower_config.model, &order, &values, device)?;
     let checkpoint_sha256 = crate::input::sha256(&checkpoint)?;
-    let outer_config: OuterTrainingConfig = read_json(&outer_training_output.join("config.json"))?;
-    let outer_order: OuterOrder = read_json(&outer_training_output.join("parameter-order.json"))?;
+    let outer_config_bytes = bounded_read(&outer_training_output.join("config.json"))?;
+    let outer_order_bytes = bounded_read(&outer_training_output.join("parameter-order.json"))?;
+    let outer_config: OuterTrainingConfig = serde_json::from_slice(&outer_config_bytes)?;
+    let outer_order: OuterOrder = serde_json::from_slice(&outer_order_bytes)?;
+    ensure!(
+        semantic_sha256(&config)? == semantic_sha256(&outer_config.search)?,
+        "aic-learning.hierarchical-search-config: collection config differs from the outer model search contract"
+    );
     let outer_checkpoint = outer_training_output.join("state.safetensors");
     let outer_checkpoint_sha256 = crate::input::sha256(&outer_checkpoint)?;
     let outer_values: Tensors = Tensor::read_safetensors(&outer_checkpoint)?
@@ -936,16 +1199,17 @@ pub fn run(
         config.compiled_inference,
         Some(&outer),
     )?;
-    // Warm the complete integrated path once outside both measurements. This
-    // builds every compiled trace needed by the panel and includes graph/raster
-    // inference, exact route search and native replay.
-    let warmup = prefix_session(&panel.cases[0], &panel, catalogs.clone())?;
-    let _ = beam_search(warmup, &factory, &config)?;
     let mut cases = Vec::with_capacity(panel.cases.len());
     for case in &panel.cases {
         let root = prefix_session(case, &panel, catalogs.clone())?;
-        let beam = beam_search(root.clone(), &factory, &config)?;
-        let mcts = mcts_search(root, &factory, &config)?;
+        let beam = config
+            .run_beam
+            .then(|| beam_search(root.clone(), &factory, &config))
+            .transpose()?;
+        let mut mcts = mcts_search(root, &factory, &config)?;
+        if !retain_root_records {
+            mcts.root_records.clear();
+        }
         cases.push(CaseReport {
             id: case.id.clone(),
             prefix_commands: case.prefix.len(),
@@ -958,9 +1222,16 @@ pub fn run(
         status: "complete",
         partition: panel.partition,
         device: format!("{device:?}"),
+        search_config_sha256: semantic_sha256(&config)?,
+        panel_sha256: bytes_sha256(&panel_bytes),
         catalog_sha256: catalogs.identity.clone(),
+        lower_config_sha256: bytes_sha256(&lower_config_bytes),
+        lower_parameter_order_sha256: bytes_sha256(&lower_order_bytes),
         lower_checkpoint_sha256: checkpoint_sha256,
+        outer_config_sha256: bytes_sha256(&outer_config_bytes),
+        outer_parameter_order_sha256: bytes_sha256(&outer_order_bytes),
         outer_checkpoint_sha256,
+        root_records_retained: retain_root_records,
         cases,
     };
     write_report(output, &report)?;
@@ -969,10 +1240,106 @@ pub fn run(
         "status": "complete",
         "output": output,
         "cases": report.cases.len(),
-        "beam_completed": report.cases.iter().filter(|case| case.beam.fully_validated).count(),
+        "beam_completed": config.run_beam.then(|| report.cases.iter().filter(|case| {
+            case.beam.as_ref().is_some_and(|result| result.fully_validated)
+        }).count()),
         "mcts_completed": report.cases.iter().filter(|case| case.mcts.fully_validated).count(),
-        "beam_samples_per_minute": aggregate_throughput(report.cases.iter().map(|case| &case.beam)),
+        "beam_samples_per_minute": config.run_beam.then(|| aggregate_throughput(
+            report.cases.iter().filter_map(|case| case.beam.as_ref())
+        )),
         "mcts_samples_per_minute": aggregate_throughput(report.cases.iter().map(|case| &case.mcts)),
+    }))
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn prepare_panel(
+    sampling_path: &Path,
+    catalog_root: &Path,
+    output: &Path,
+    partition: &str,
+    cases: usize,
+    seed: u64,
+    namespace: &str,
+    min_facilities: usize,
+    max_facilities: usize,
+    max_terminals: usize,
+    max_connections: usize,
+    max_turns: u64,
+    max_extension: i64,
+) -> Result<Value> {
+    ensure!(
+        !output.exists(),
+        "aic-learning.hierarchical-panel-output: {} already exists",
+        output.display()
+    );
+    ensure!(
+        matches!(partition, "training" | "held-out")
+            && (1..=4096).contains(&cases)
+            && !namespace.is_empty()
+            && max_terminals > 0
+            && max_connections > 0
+            && max_turns > 0
+            && max_extension > 0,
+        "aic-learning.hierarchical-panel-request: invalid partition, count, namespace or limits"
+    );
+    let source_partition = if partition == "training" {
+        "train"
+    } else {
+        "validation"
+    };
+    let generator = ProblemGenerator::load(sampling_path, catalog_root)?;
+    let sampled = generator.sample_facility_range(
+        source_partition,
+        cases,
+        seed,
+        namespace,
+        min_facilities,
+        max_facilities,
+        max_terminals,
+        max_connections,
+    )?;
+    let sampling_stats = serde_json::to_value(&sampled.stats)?;
+    let panel = Panel {
+        schema: PANEL_SCHEMA.into(),
+        partition: partition.into(),
+        limits: Limits {
+            max_turns,
+            max_extension,
+        },
+        preparation: Some(PanelPreparation {
+            sampling_sha256: generator.sampling_sha256.clone(),
+            seed,
+            namespace: namespace.into(),
+            source_partition: source_partition.into(),
+            min_facilities,
+            max_facilities,
+            max_terminals,
+            max_connections,
+            sampling_stats: sampling_stats.clone(),
+        }),
+        cases: sampled
+            .problems
+            .into_iter()
+            .map(|prepared| Case {
+                id: prepared.id,
+                problem: prepared.problem,
+                prefix: Vec::new(),
+            })
+            .collect(),
+    };
+    validate_panel(&panel)?;
+    write_json_atomic(output, &panel)?;
+    Ok(json!({
+        "schema": PANEL_SCHEMA,
+        "status": "complete",
+        "output": output,
+        "partition": partition,
+        "cases": panel.cases.len(),
+        "min_facilities": min_facilities,
+        "max_facilities": max_facilities,
+        "max_terminals": max_terminals,
+        "max_connections": max_connections,
+        "sampling_stats": sampling_stats,
     }))
 }
 
@@ -981,10 +1348,12 @@ fn beam_search(root: Session, factory: &Factory<'_>, config: &Config) -> Result<
     let mut counters = Counters::default();
     let mut beam = vec![(root, Vec::<ActionSummary>::new())];
     let mut best = beam[0].clone();
+    let mut termination = SearchTermination::MoveBudgetExhausted;
     for _ in 0..config.max_moves {
         let mut next = Vec::new();
         for (session, trace) in &beam {
             if session.layout().is_some() {
+                termination = SearchTermination::FullyValidated;
                 best = (session.clone(), trace.clone());
                 beam = vec![best.clone()];
                 break;
@@ -993,7 +1362,7 @@ fn beam_search(root: Session, factory: &Factory<'_>, config: &Config) -> Result<
                 let child = action.apply(session)?;
                 let mut child_trace = trace.clone();
                 child_trace.push(action.summary(session.observe().revision));
-                if state_value(&child) > state_value(&best.0) {
+                if state_value(&child, config.bounds) > state_value(&best.0, config.bounds) {
                     best = (child.clone(), child_trace.clone());
                 }
                 next.push((child, child_trace));
@@ -1006,9 +1375,12 @@ fn beam_search(root: Session, factory: &Factory<'_>, config: &Config) -> Result<
             break;
         }
         if next.is_empty() {
+            termination = SearchTermination::NoMacroActions;
             break;
         }
-        next.sort_by(|left, right| state_value(&right.0).total_cmp(&state_value(&left.0)));
+        next.sort_by(|left, right| {
+            state_value(&right.0, config.bounds).total_cmp(&state_value(&left.0, config.bounds))
+        });
         let mut identities = HashSet::new();
         next.retain(|(session, _)| {
             identities.insert(serde_json::to_string(&session.observe()).unwrap())
@@ -1017,11 +1389,13 @@ fn beam_search(root: Session, factory: &Factory<'_>, config: &Config) -> Result<
         beam = next;
         if let Some(completed) = beam.iter().find(|(session, _)| session.layout().is_some()) {
             best = completed.clone();
+            termination = SearchTermination::FullyValidated;
             break;
         }
     }
     if let Some(completed) = beam.iter().find(|(session, _)| session.layout().is_some()) {
         best = completed.clone();
+        termination = SearchTermination::FullyValidated;
     }
     Ok(finish_result(
         "beam",
@@ -1030,6 +1404,7 @@ fn beam_search(root: Session, factory: &Factory<'_>, config: &Config) -> Result<
         Vec::new(),
         0,
         counters,
+        termination,
         started,
     ))
 }
@@ -1047,6 +1422,7 @@ struct Node {
     visits: u32,
     value: Option<f64>,
     actions: Option<Vec<Edge>>,
+    placement_pages: Option<PlacementPages>,
 }
 
 fn mcts_search(
@@ -1059,8 +1435,10 @@ fn mcts_search(
     let mut trace = Vec::new();
     let mut root_records = Vec::new();
     let mut simulations = 0usize;
+    let mut termination = SearchTermination::MoveBudgetExhausted;
     for _ in 0..config.max_moves {
         if working.layout().is_some() {
+            termination = SearchTermination::FullyValidated;
             break;
         }
         let mut nodes = vec![Node {
@@ -1068,6 +1446,7 @@ fn mcts_search(
             visits: 0,
             value: None,
             actions: None,
+            placement_pages: None,
         }];
         for _ in 0..config.simulations_per_move {
             simulate(&mut nodes, 0, factory, config, &mut counters)?;
@@ -1081,6 +1460,7 @@ fn mcts_search(
                 .cmp(&right.1.visits)
                 .then_with(|| left.1.prior.total_cmp(&right.1.prior))
         }) else {
+            termination = SearchTermination::NoMacroActions;
             break;
         };
         let action = actions[selected].action.clone();
@@ -1104,16 +1484,29 @@ fn mcts_search(
             selected_action: selected,
             later_completed_connections: 0,
             later_total_connections: 0,
+            later_footprint_area: 0,
+            later_transport_cells: 0,
+            later_turns: 0,
             later_fully_validated: false,
+            later_termination: SearchTermination::MoveBudgetExhausted,
         });
         working = action.apply(&working)?;
         trace.push(action.summary(revision));
     }
     let final_observation = working.observe();
+    if final_observation.fully_validated {
+        termination = SearchTermination::FullyValidated;
+    }
     for record in &mut root_records {
         record.later_completed_connections = final_observation.completed;
         record.later_total_connections = final_observation.total;
+        record.later_footprint_area = working.metrics().map_or(0, |metrics| metrics.area);
+        record.later_transport_cells = working
+            .metrics()
+            .map_or(0, |metrics| metrics.transport_cells);
+        record.later_turns = working.metrics().map_or(0, |metrics| metrics.turns);
         record.later_fully_validated = final_observation.fully_validated;
+        record.later_termination = termination;
     }
     Ok(finish_result(
         "mcts",
@@ -1122,6 +1515,7 @@ fn mcts_search(
         root_records,
         simulations,
         counters,
+        termination,
         started,
     ))
 }
@@ -1136,21 +1530,19 @@ fn simulate(
     let mut current = root;
     let mut path = Vec::<(usize, usize)>::new();
     let value = loop {
-        if nodes[current].session.layout().is_some() {
-            break 1.0;
-        }
-        if path.len() == config.horizon {
-            break state_value(&nodes[current].session);
+        if let Some(value) = simulation_leaf_value(&nodes[current].session, path.len(), config) {
+            break value;
         }
         if nodes[current].actions.is_none() {
             break ensure_node_expanded(nodes, current, factory, counters)?;
         }
+        maybe_widen_placements(nodes, current, factory, counters)?;
         let Some(actions) = nodes[current]
             .actions
             .as_ref()
             .filter(|actions| !actions.is_empty())
         else {
-            break state_value(&nodes[current].session);
+            break state_value(&nodes[current].session, config.bounds);
         };
         let parent_visits = nodes[current].visits.max(1) as f64;
         // Actions are stored in descending prior order. Progressive widening
@@ -1188,6 +1580,7 @@ fn simulate(
             visits: 0,
             value: None,
             actions: None,
+            placement_pages: None,
         });
         nodes[current].actions.as_mut().unwrap()[edge].child = Some(child);
         current = child;
@@ -1203,6 +1596,11 @@ fn simulate(
     Ok(())
 }
 
+fn simulation_leaf_value(session: &Session, depth: usize, config: &Config) -> Option<f64> {
+    (session.layout().is_some() || depth == config.horizon)
+        .then(|| state_value(session, config.bounds))
+}
+
 fn ensure_node_expanded(
     nodes: &mut [Node],
     node: usize,
@@ -1212,11 +1610,13 @@ fn ensure_node_expanded(
     if nodes[node].actions.is_some() {
         return Ok(nodes[node]
             .value
-            .unwrap_or_else(|| state_value(&nodes[node].session)));
+            .unwrap_or_else(|| state_value(&nodes[node].session, factory.domain.placement)));
     }
-    let actions = factory.actions(&nodes[node].session, counters)?;
+    let batch = factory.action_batch(&nodes[node].session, counters)?;
+    let actions = batch.actions;
+    nodes[node].placement_pages = Some(batch.placement_pages);
     if actions.is_empty() {
-        let value = state_value(&nodes[node].session);
+        let value = state_value(&nodes[node].session, factory.domain.placement);
         nodes[node].value = Some(value);
         nodes[node].actions = Some(vec![]);
         return Ok(value);
@@ -1232,8 +1632,11 @@ fn ensure_node_expanded(
     // valid value estimate while any facility or terminal remains unplaced.
     let exact_value = children
         .iter()
-        .map(state_value)
-        .fold(state_value(&nodes[node].session), f64::max);
+        .map(|session| state_value(session, factory.domain.placement))
+        .fold(
+            state_value(&nodes[node].session, factory.domain.placement),
+            f64::max,
+        );
     let observation = nodes[node].session.observe();
     let all_entities_placed = observation.poses.iter().all(Option::is_some)
         && observation.terminal_poses.iter().all(Option::is_some);
@@ -1257,6 +1660,71 @@ fn ensure_node_expanded(
     nodes[node].actions = Some(edges);
     nodes[node].value = Some(value);
     Ok(value)
+}
+
+fn maybe_widen_placements(
+    nodes: &mut [Node],
+    node: usize,
+    factory: &Factory<'_>,
+    counters: &mut Counters,
+) -> Result<()> {
+    let desired_pages = (f64::from(nodes[node].visits.max(1)).sqrt().floor() as usize).max(1);
+    let Some(mut pages) = nodes[node].placement_pages else {
+        return Ok(());
+    };
+    if desired_pages <= pages.loaded_pages || pages.exhausted.into_iter().all(|exhausted| exhausted)
+    {
+        return Ok(());
+    }
+    let session = nodes[node].session.clone();
+    let additional = factory.next_placement_page(&session, &mut pages, counters)?;
+    nodes[node].placement_pages = Some(pages);
+    if additional.is_empty() {
+        return Ok(());
+    }
+    let existing = nodes[node].actions.as_ref().expect("expanded node");
+    let mut actions = existing
+        .iter()
+        .map(|edge| edge.action.clone())
+        .collect::<Vec<_>>();
+    actions.extend(additional.iter().cloned());
+    let children = actions
+        .iter()
+        .map(|action| action.apply(&session))
+        .collect::<Result<Vec<_>>>()?;
+    let (priors, model_value) = factory.score_actions(&session, &actions, &children)?;
+    let existing_count = existing.len();
+    let edges = nodes[node].actions.as_mut().expect("expanded node");
+    for (edge, prior) in edges.iter_mut().zip(&priors) {
+        edge.prior = *prior;
+    }
+    edges.extend(
+        additional
+            .into_iter()
+            .zip(priors.into_iter().skip(existing_count))
+            .map(|(action, prior)| Edge {
+                action,
+                prior,
+                visits: 0,
+                value_sum: 0.0,
+                child: None,
+            }),
+    );
+    edges.sort_by(|left, right| right.prior.total_cmp(&left.prior));
+    let exact_value = children
+        .iter()
+        .map(|child| state_value(child, factory.domain.placement))
+        .fold(state_value(&session, factory.domain.placement), f64::max);
+    let observation = session.observe();
+    let all_entities_placed = observation.poses.iter().all(Option::is_some)
+        && observation.terminal_poses.iter().all(Option::is_some);
+    let widened_value = if all_entities_placed {
+        model_value.max(exact_value)
+    } else {
+        exact_value
+    };
+    nodes[node].value = Some(nodes[node].value.unwrap_or_default().max(widened_value));
+    Ok(())
 }
 
 fn prefix_session(case: &Case, panel: &Panel, catalogs: Arc<Catalogs>) -> Result<Session> {
@@ -1302,11 +1770,44 @@ fn construction_progress(session: &Session) -> f64 {
     complete as f64 / total.max(1) as f64
 }
 
-fn state_value(session: &Session) -> f64 {
-    if session.layout().is_some() {
-        1.0
+fn lexicographic_quality_penalty(
+    area: f64,
+    transport: f64,
+    turns: f64,
+    bounds: Bounds,
+    connections: usize,
+) -> f64 {
+    let canvas = (bounds.width() * bounds.height()).max(1) as f64;
+    let routed = canvas * connections.max(1) as f64;
+    (area + transport / (canvas + 1.0) + turns / ((canvas + 1.0) * (routed + 1.0))).clamp(0.0, 1.0)
+}
+
+fn predicted_quality_value(penalty: f64) -> f64 {
+    0.5 + 0.5 * (1.0 - penalty.clamp(0.0, 1.0))
+}
+
+fn completed_quality_value(penalty: f64) -> f64 {
+    1.0 + (1.0 - penalty.clamp(0.0, 1.0))
+}
+
+fn state_value(session: &Session, bounds: Bounds) -> f64 {
+    if let Some(metrics) = session.metrics() {
+        let quality = normalized_layout_quality(
+            metrics.area,
+            metrics.transport_cells,
+            metrics.turns,
+            bounds.width() * bounds.height(),
+            session.problem().connections.len(),
+        );
+        completed_quality_value(lexicographic_quality_penalty(
+            f64::from(quality[0]),
+            f64::from(quality[1]),
+            f64::from(quality[2]),
+            bounds,
+            session.problem().connections.len(),
+        ))
     } else {
-        construction_progress(session) * 0.9
+        construction_progress(session)
     }
 }
 
@@ -1317,10 +1818,12 @@ fn finish_result(
     root_records: Vec<RootRecord>,
     simulations: usize,
     counters: Counters,
+    termination: SearchTermination,
     started: Instant,
 ) -> SearchResult {
     let elapsed_seconds = started.elapsed().as_secs_f64();
     let observation = session.observe();
+    let metrics = session.metrics();
     SearchResult {
         algorithm,
         status: if observation.fully_validated {
@@ -1329,8 +1832,12 @@ fn finish_result(
             "incomplete"
         },
         fully_validated: observation.fully_validated,
+        termination,
         completed_connections: observation.completed,
         total_connections: observation.total,
+        footprint_area: metrics.map(|metrics| metrics.area),
+        transport_cells: metrics.map(|metrics| metrics.transport_cells),
+        turns: metrics.map(|metrics| metrics.turns),
         moves: trace.len(),
         simulations,
         elapsed_seconds,
@@ -1346,7 +1853,7 @@ fn finish_result(
 }
 
 fn state_sha256(session: &Session) -> Result<String> {
-    let bytes = serde_json::to_vec(&session.observe())?;
+    let bytes = serde_json::to_vec(&(session.problem(), session.observe()))?;
     Ok(Sha256::digest(bytes)
         .iter()
         .map(|byte| format!("{byte:02x}"))
@@ -1411,7 +1918,7 @@ fn validate_panel(panel: &Panel) -> Result<()> {
     Ok(())
 }
 
-fn read_json<T: for<'de> Deserialize<'de>>(path: &Path) -> Result<T> {
+fn bounded_read(path: &Path) -> Result<Vec<u8>> {
     let metadata = fs::metadata(path).with_context(|| format!("stat {}", path.display()))?;
     ensure!(
         metadata.len() <= MAX_INPUT_BYTES,
@@ -1419,11 +1926,25 @@ fn read_json<T: for<'de> Deserialize<'de>>(path: &Path) -> Result<T> {
         path.display(),
         MAX_INPUT_BYTES
     );
-    serde_json::from_slice(&fs::read(path)?)
-        .with_context(|| format!("parse hierarchical input {}", path.display()))
+    fs::read(path).with_context(|| format!("read hierarchical input {}", path.display()))
+}
+
+fn bytes_sha256(bytes: &[u8]) -> String {
+    Sha256::digest(bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+fn semantic_sha256(value: &impl Serialize) -> Result<String> {
+    Ok(bytes_sha256(&serde_json::to_vec(value)?))
 }
 
 fn write_report(output: &Path, report: &Report) -> Result<()> {
+    write_json_atomic(output, report)
+}
+
+fn write_json_atomic(output: &Path, value: &impl Serialize) -> Result<()> {
     if let Some(parent) = output
         .parent()
         .filter(|parent| !parent.as_os_str().is_empty())
@@ -1435,7 +1956,105 @@ fn write_report(output: &Path, report: &Report) -> Result<()> {
         .and_then(|name| name.to_str())
         .context("aic-learning.hierarchical-output: output needs a UTF-8 name")?;
     let temporary = output.with_file_name(format!(".{name}.tmp"));
-    fs::write(&temporary, serde_json::to_vec_pretty(report)?)?;
+    fs::write(&temporary, serde_json::to_vec_pretty(value)?)?;
     fs::rename(temporary, output)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use aic_layout::geometry::Point;
+
+    fn value(area: u64, transport: u64, turns: u64) -> f64 {
+        let bounds = Bounds {
+            min_x: 0,
+            min_y: 0,
+            max_x: 20,
+            max_y: 20,
+        };
+        let normalized = normalized_layout_quality(area, transport, turns, 441, 8);
+        completed_quality_value(lexicographic_quality_penalty(
+            f64::from(normalized[0]),
+            f64::from(normalized[1]),
+            f64::from(normalized[2]),
+            bounds,
+            8,
+        ))
+    }
+
+    #[test]
+    fn completed_quality_uses_area_transport_turn_order() {
+        assert!(value(40, 3_528, 3_528) > value(41, 0, 0));
+        assert!(value(40, 90, 3_528) > value(40, 91, 0));
+        assert!(value(40, 90, 8) > value(40, 90, 9));
+        assert!(value(441, 3_528, 3_528) > 1.0);
+    }
+
+    #[test]
+    fn simulation_revisits_retain_completed_layout_quality() {
+        let bounds = Bounds {
+            min_x: 0,
+            min_y: 0,
+            max_x: 15,
+            max_y: 15,
+        };
+        let candidate = CandidateConfig {
+            bounds,
+            max_candidates: 3,
+            max_searches: 12,
+            work_per_search: 10_000,
+            max_expanded: 100_000,
+            overlap_penalty: 8,
+        };
+        let config = Config {
+            schema: CONFIG_SCHEMA.into(),
+            bounds,
+            extension_lengths: vec![1, 2, 4],
+            candidate: candidate.clone(),
+            cpu_threads: 1,
+            placement_page: 4,
+            beam_width: 1,
+            run_beam: false,
+            simulations_per_move: 2,
+            horizon: 4,
+            max_moves: 4,
+            exploration: 1.0,
+            anchor_prior_mass: 0.0,
+            compiled_inference: false,
+        };
+        let mut session = crate::constructive::test_support::session(64);
+        for command in [
+            Command::Place {
+                block: "source".into(),
+                position: Point { x: 5, y: 12 },
+                rotation: 0,
+            },
+            Command::Place {
+                block: "target".into(),
+                position: Point { x: 5, y: 2 },
+                rotation: 0,
+            },
+        ] {
+            assert!(session.step(command).accepted);
+        }
+        let report = session
+            .route_candidates(
+                &Request {
+                    state_revision: session.observe().revision,
+                    connection: "connection-0".into(),
+                },
+                &candidate,
+            )
+            .unwrap();
+        session
+            .apply_route_candidate(&report.candidates[0])
+            .unwrap();
+
+        let first = simulation_leaf_value(&session, 0, &config).unwrap();
+        let revisit = simulation_leaf_value(&session, 3, &config).unwrap();
+        assert_eq!(first, state_value(&session, bounds));
+        assert_eq!(revisit, first);
+        assert!(first > 1.0);
+    }
 }

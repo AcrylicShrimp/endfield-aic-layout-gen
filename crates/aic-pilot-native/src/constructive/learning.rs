@@ -624,49 +624,41 @@ impl Domain {
             selected: root_selected,
         };
         if kind == CommandKind::Place {
-            let mut commands = Vec::with_capacity(limit);
-            let mut base = 0usize;
-            let goal = offset.saturating_add(limit);
-            for (block, placement) in self.placements.iter().enumerate() {
-                let poses = self.placement_poses(placement);
-                let next = base + poses.len();
-                let from = offset.max(base);
-                let to = goal.min(next);
-                for flat in from..to {
-                    let pose_rank = flat - base;
-                    let pose = stratified_index(pose_rank, poses.len(), block);
-                    let (position, rotation) = poses[pose];
-                    commands.push(FactoredCommand {
-                        factors: vec![
-                            root.clone(),
-                            SelectedFactor {
-                                cursor: Cursor::PlaceBlock,
-                                selected: block,
-                            },
-                            SelectedFactor {
-                                cursor: Cursor::PlacePose { block },
-                                selected: pose,
-                            },
-                        ],
-                        command: self.selected(Command::Place {
-                            block: placement.id.clone(),
-                            position,
-                            rotation,
-                        }),
-                    });
-                }
-                base = next;
-                if commands.len() == limit {
-                    return CommandPage {
-                        commands,
-                        next_offset: goal,
-                        exhausted: block + 1 == self.placements.len() && goal >= next,
-                    };
-                }
+            let poses = self
+                .placements
+                .iter()
+                .map(|placement| self.placement_poses(placement))
+                .collect::<Vec<_>>();
+            let lengths = poses.iter().map(Vec::len).collect::<Vec<_>>();
+            let total = lengths.iter().sum::<usize>();
+            let page = interleaved_page(&lengths, offset, limit);
+            let mut commands = Vec::with_capacity(page.len());
+            for (block, pose_rank) in page {
+                let pose = stratified_index(pose_rank, poses[block].len(), block);
+                let (position, rotation) = poses[block][pose];
+                commands.push(FactoredCommand {
+                    factors: vec![
+                        root.clone(),
+                        SelectedFactor {
+                            cursor: Cursor::PlaceBlock,
+                            selected: block,
+                        },
+                        SelectedFactor {
+                            cursor: Cursor::PlacePose { block },
+                            selected: pose,
+                        },
+                    ],
+                    command: self.selected(Command::Place {
+                        block: self.placements[block].id.clone(),
+                        position,
+                        rotation,
+                    }),
+                });
             }
+            let next_offset = offset.saturating_add(commands.len()).min(total);
             return CommandPage {
-                next_offset: base,
-                exhausted: true,
+                next_offset,
+                exhausted: next_offset == total,
                 commands,
             };
         }
@@ -697,8 +689,9 @@ impl Domain {
             CommandKind::PlaceTerminal => {
                 let positions = self.terminal_positions.len();
                 for flat in start..end {
-                    let terminal = flat / positions;
-                    let position = stratified_index(flat % positions, positions, terminal);
+                    let terminal = flat % self.terminals.len();
+                    let pose_rank = flat / self.terminals.len();
+                    let position = stratified_index(pose_rank, positions, terminal);
                     commands.push(FactoredCommand {
                         factors: vec![
                             root.clone(),
@@ -901,6 +894,27 @@ fn choice(kind: usize, value: i64, scalar: f32, references: [i64; 2]) -> Choice 
         features,
         references,
     }
+}
+
+fn interleaved_page(lengths: &[usize], offset: usize, limit: usize) -> Vec<(usize, usize)> {
+    let mut seen = 0usize;
+    let mut page = Vec::with_capacity(limit);
+    let maximum = lengths.iter().copied().max().unwrap_or(0);
+    'ranks: for rank in 0..maximum {
+        for (entity, &length) in lengths.iter().enumerate() {
+            if rank >= length {
+                continue;
+            }
+            if seen >= offset {
+                page.push((entity, rank));
+                if page.len() == limit {
+                    break 'ranks;
+                }
+            }
+            seen += 1;
+        }
+    }
+    page
 }
 
 /// A deterministic full-cycle permutation used to make early pages cover a

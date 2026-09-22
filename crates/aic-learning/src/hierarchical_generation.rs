@@ -12,7 +12,7 @@ use aic_layout::{geometry::Point, physical::Problem, validation::Catalogs};
 use aic_pilot_native::constructive::{
     Command, Limits, Session,
     learning::{Config as DomainConfig, Input},
-    routing_candidates::{Candidate, GuidanceInput},
+    routing_candidates::{Candidate, GuidanceInput, Provenance},
 };
 use aic_torch::{
     Adam, AdamBackend, AdamState,
@@ -26,7 +26,10 @@ use sha2::{Digest, Sha256};
 use crate::{
     hierarchical_search::{MacroAction, REPORT_SCHEMA as SEARCH_REPORT_SCHEMA, RootRecord},
     input::Tensors,
-    outer_model::{ACTION_FEATURES, Batch as OuterBatch, Model as OuterModel, VALUE_HEADS},
+    outer_model::{
+        ACTION_FEATURES, Batch as OuterBatch, Model as OuterModel, ValueTarget,
+        normalized_layout_quality, value_loss,
+    },
     outer_training::Config as OuterTrainingConfig,
     route_guidance::{
         Batch as LowerBatch, Model as LowerModel, ParameterOrder as LowerOrder,
@@ -37,7 +40,7 @@ use crate::{
 
 const CONFIG_SCHEMA: &str = "aic-hierarchical-generation-training-v1";
 const PANEL_SCHEMA: &str = "aic-hierarchical-search-panel-v1";
-const REPORT_SCHEMA: &str = "aic-hierarchical-generation-training-report-v2";
+const REPORT_SCHEMA: &str = "aic-hierarchical-generation-training-report-v3";
 const MAX_INPUT_BYTES: u64 = 64 * 1024 * 1024;
 
 fn default_checkpoint_interval_epochs() -> usize {
@@ -65,6 +68,8 @@ struct Panel {
     schema: String,
     partition: String,
     limits: Limits,
+    #[serde(default, rename = "preparation")]
+    _preparation: Option<Value>,
     cases: Vec<Case>,
 }
 
@@ -79,8 +84,14 @@ struct Case {
 struct CollectionReport {
     schema: String,
     partition: String,
+    search_config_sha256: String,
+    panel_sha256: String,
     catalog_sha256: String,
+    lower_config_sha256: String,
+    lower_parameter_order_sha256: String,
     lower_checkpoint_sha256: String,
+    outer_config_sha256: String,
+    outer_parameter_order_sha256: String,
     outer_checkpoint_sha256: String,
     cases: Vec<CollectionCase>,
 }
@@ -99,8 +110,9 @@ struct CollectionSearch {
 struct OuterExample {
     input: Arc<Input>,
     features: Vec<[f32; ACTION_FEATURES]>,
+    entity_references: Vec<i64>,
     target: Vec<f32>,
-    values: [f32; VALUE_HEADS],
+    values: ValueTarget,
 }
 
 struct LowerCandidate {
@@ -114,6 +126,11 @@ struct LowerExample {
     candidates: Vec<LowerCandidate>,
     target: Vec<f32>,
     success: f32,
+}
+
+struct LowerGroup {
+    session: Session,
+    candidates: Vec<(usize, Candidate, i64)>,
 }
 
 #[derive(Debug, Serialize)]
@@ -151,7 +168,11 @@ struct RecoveryBinding {
     panel_sha256: String,
     collection_sha256: String,
     catalog_sha256: String,
+    source_lower_config_sha256: String,
+    source_lower_parameter_order_sha256: String,
     source_lower_checkpoint_sha256: String,
+    source_outer_config_sha256: String,
+    source_outer_parameter_order_sha256: String,
     source_outer_checkpoint_sha256: String,
 }
 
@@ -213,9 +234,20 @@ pub fn run(
     let collection: CollectionReport = serde_json::from_slice(&collection_bytes)?;
     validate_config(&config)?;
     validate_inputs(&panel, &collection)?;
+    ensure!(
+        bytes_sha256(&panel_bytes) == collection.panel_sha256,
+        "aic-learning.hierarchical-generation-lineage: collection panel differs"
+    );
 
-    let lower_config: LowerTrainingConfig = read_json(&lower_training_output.join("config.json"))?;
-    let lower_order: LowerOrder = read_json(&lower_training_output.join("parameter-order.json"))?;
+    let lower_config_bytes = bounded_read(&lower_training_output.join("config.json"))?;
+    let lower_order_bytes = bounded_read(&lower_training_output.join("parameter-order.json"))?;
+    ensure!(
+        bytes_sha256(&lower_config_bytes) == collection.lower_config_sha256
+            && bytes_sha256(&lower_order_bytes) == collection.lower_parameter_order_sha256,
+        "aic-learning.hierarchical-generation-lineage: lower model definition differs"
+    );
+    let lower_config: LowerTrainingConfig = serde_json::from_slice(&lower_config_bytes)?;
+    let lower_order: LowerOrder = serde_json::from_slice(&lower_order_bytes)?;
     let lower_source = lower_training_output.join("state.safetensors");
     let lower_source_sha256 = crate::input::sha256(&lower_source)?;
     ensure!(
@@ -226,9 +258,28 @@ pub fn run(
         .into_iter()
         .collect();
 
-    let outer_config: OuterTrainingConfig = read_json(&outer_training_output.join("config.json"))?;
+    let outer_config_bytes = bounded_read(&outer_training_output.join("config.json"))?;
+    let outer_order_bytes = bounded_read(&outer_training_output.join("parameter-order.json"))?;
+    ensure!(
+        bytes_sha256(&outer_config_bytes) == collection.outer_config_sha256
+            && bytes_sha256(&outer_order_bytes) == collection.outer_parameter_order_sha256,
+        "aic-learning.hierarchical-generation-lineage: outer model definition differs"
+    );
+    let outer_config: OuterTrainingConfig = serde_json::from_slice(&outer_config_bytes)?;
+    ensure!(
+        lower_config.learning_domain
+            == (DomainConfig {
+                placement: outer_config.search.bounds,
+                extension_lengths: outer_config.search.extension_lengths.clone(),
+            }),
+        "aic-learning.hierarchical-generation-domain: search and lower model domains differ"
+    );
     let outer_order: crate::outer_model::ParameterOrder =
-        read_json(&outer_training_output.join("parameter-order.json"))?;
+        serde_json::from_slice(&outer_order_bytes)?;
+    ensure!(
+        semantic_sha256(&outer_config.search)? == collection.search_config_sha256,
+        "aic-learning.hierarchical-generation-lineage: collection search config differs"
+    );
     let outer_source = outer_training_output.join("state.safetensors");
     let outer_source_sha256 = crate::input::sha256(&outer_source)?;
     ensure!(
@@ -269,17 +320,34 @@ pub fn run(
         panel_sha256: bytes_sha256(&panel_bytes),
         collection_sha256: bytes_sha256(&collection_bytes),
         catalog_sha256: catalogs.identity.clone(),
+        source_lower_config_sha256: bytes_sha256(&lower_config_bytes),
+        source_lower_parameter_order_sha256: bytes_sha256(&lower_order_bytes),
         source_lower_checkpoint_sha256: lower_source_sha256.clone(),
+        source_outer_config_sha256: bytes_sha256(&outer_config_bytes),
+        source_outer_parameter_order_sha256: bytes_sha256(&outer_order_bytes),
         source_outer_checkpoint_sha256: outer_source_sha256.clone(),
     };
     let binding_bytes = serde_json::to_vec_pretty(&binding)?;
     let binding_sha256 = bytes_sha256(&binding_bytes);
-    let mut recovery = if resume {
+    let resume = if resume {
         let retained: RecoveryBinding = read_json(&pending.join("recovery-binding.json"))?;
         ensure!(
             retained == binding,
             "aic-learning.hierarchical-generation-resume: inputs or source checkpoints changed"
         );
+        if ensure_recovery_pointer(&pending)? {
+            true
+        } else {
+            // No atomically published epoch exists. The pending files contain
+            // no reusable learner state, so restart this generation from its
+            // already-validated immutable inputs.
+            fs::remove_dir_all(&pending)?;
+            false
+        }
+    } else {
+        false
+    };
+    let mut recovery = if resume {
         let (state, recovered_lower, recovered_outer) = load_recovery(&pending, &binding_sha256)?;
         lower_values = recovered_lower;
         outer_values = recovered_outer;
@@ -551,28 +619,42 @@ fn collect_examples(
                         .features(&session, child, outer_config.search.bounds)
                 })
                 .collect::<Vec<_>>();
+            let entity_references = record
+                .actions
+                .iter()
+                .map(|action| action.action.entity_index(session.problem()))
+                .collect::<Result<Vec<_>>>()?;
             let target = visit_target(record, config.search_temperature);
             let observation = session.observe();
             let completed = record.later_completed_connections;
             let total = record.later_total_connections.max(1);
             let additional = completed.saturating_sub(observation.completed);
-            let values = [
-                record.later_fully_validated as u8 as f32,
-                completed as f32 / total as f32,
-                (additional > 0) as u8 as f32,
-                1.0 - completed as f32 / total as f32,
-                1.0 / (1.0 + record.actions.len() as f32),
-                if record.later_fully_validated {
-                    0.0
-                } else {
-                    1.0
-                },
-            ];
+            let remaining = total.saturating_sub(observation.completed).max(1);
+            let area = outer_config.search.bounds.width() * outer_config.search.bounds.height();
+            let quality = record.later_fully_validated.then(|| {
+                normalized_layout_quality(
+                    record.later_footprint_area,
+                    record.later_transport_cells,
+                    record.later_turns,
+                    area,
+                    total,
+                )
+            });
+            let values = ValueTarget {
+                completion: record.later_fully_validated as u8 as f32,
+                additional_fraction: additional as f32 / remaining as f32,
+                next_progress: (additional > 0) as u8 as f32,
+                blocked_fraction: total.saturating_sub(completed) as f32 / total as f32,
+                area: quality.map(|quality| quality[0]),
+                transport: quality.map(|quality| quality[1]),
+                turns: quality.map(|quality| quality[2]),
+            };
             outer_examples.push(OuterExample {
                 input: session
                     .macro_learning_input(domain)
                     .map_err(anyhow::Error::new)?,
                 features,
+                entity_references,
                 target,
                 values,
             });
@@ -581,6 +663,8 @@ fn collect_examples(
                 record,
                 domain,
                 lower_config,
+                &collection.lower_checkpoint_sha256,
+                &outer_config.search.candidate,
                 config.search_temperature,
                 &mut lower_examples,
             )?;
@@ -595,67 +679,95 @@ fn collect_lower_examples(
     record: &RootRecord,
     domain: &DomainConfig,
     lower_config: &LowerTrainingConfig,
+    source_lower_checkpoint_sha256: &str,
+    candidate_config: &aic_pilot_native::constructive::routing_candidates::Config,
     temperature: f64,
     output: &mut Vec<LowerExample>,
 ) -> Result<()> {
-    let mut groups = BTreeMap::<&str, Vec<(usize, &Candidate)>>::new();
+    let mut groups = BTreeMap::<(String, String), LowerGroup>::new();
     for (index, action) in record.actions.iter().enumerate() {
         match &action.action {
-            MacroAction::Route(candidate) => groups
-                .entry(candidate.connection.as_str())
-                .or_default()
-                .push((index, candidate)),
+            MacroAction::Route(candidate) => {
+                add_lower_candidate(
+                    session,
+                    index,
+                    candidate,
+                    lower_config.model.heads,
+                    source_lower_checkpoint_sha256,
+                    &mut groups,
+                )?;
+            }
             MacroAction::Network(candidate) => {
+                let mut intermediate = session.clone();
                 for route in &candidate.routes {
-                    groups
-                        .entry(route.connection.as_str())
-                        .or_default()
-                        .push((index, route));
+                    add_lower_candidate(
+                        &intermediate,
+                        index,
+                        route,
+                        lower_config.model.heads,
+                        source_lower_checkpoint_sha256,
+                        &mut groups,
+                    )?;
+                    intermediate
+                        .apply_route_candidate(route)
+                        .map_err(anyhow::Error::new)?;
                 }
             }
             MacroAction::Command(_) => {}
         }
     }
-    for (connection, indices) in groups {
-        if indices.len() < 2 {
-            continue;
-        }
+    for ((_, connection), group) in groups {
         let request = aic_pilot_native::constructive::routing_candidates::Request {
-            state_revision: session.observe().revision,
+            state_revision: group.session.observe().revision,
             connection: connection.to_owned(),
         };
-        let input = session
-            .route_guidance_input(&request, &lower_candidate_config(lower_config), domain)
+        let input = group
+            .session
+            .route_guidance_input(&request, candidate_config, domain)
             .map_err(anyhow::Error::new)?;
-        let q_max = indices
+        let q_max = group
+            .candidates
             .iter()
-            .map(|&(index, _)| record.actions[index].q)
+            .map(|(index, _, _)| record.actions[*index].q)
             .fold(f64::NEG_INFINITY, f64::max);
-        let candidates = indices
+        // Search values reserve [0, 1) for incomplete progress and [1, 2]
+        // for validated completion plus layout quality. Keep the lower-model
+        // regret target in its historical [0, 1] range.
+        let q_scale = 2.0;
+        let candidates = group
+            .candidates
             .iter()
-            .map(|&(index, candidate)| {
+            .map(|(index, candidate, head)| {
                 Ok(LowerCandidate {
                     edge_offsets: edge_offsets(candidate, input.bounds),
-                    head: (candidate.id % lower_config.model.heads) as i64,
-                    q: (q_max - record.actions[index].q).max(0.0) as f32,
+                    head: *head,
+                    q: ((q_max - record.actions[*index].q).max(0.0) / q_scale).min(1.0) as f32,
                 })
             })
             .collect::<Result<Vec<_>>>()?;
-        let weights = indices
+        let weights = group
+            .candidates
             .iter()
-            .map(|&(index, _)| {
+            .map(|(index, _, _)| {
                 search_weight(
-                    record.actions[index].visits,
-                    record.actions[index].prior,
+                    record.actions[*index].visits,
+                    record.actions[*index].prior,
                     temperature,
                 )
             })
             .collect::<Vec<_>>();
         let denominator = weights.iter().sum::<f64>();
-        let target = weights
-            .into_iter()
-            .map(|weight| (weight / denominator.max(f64::MIN_POSITIVE)) as f32)
-            .collect();
+        if denominator == 0.0 && group.candidates.len() > 1 {
+            continue;
+        }
+        let target = if denominator == 0.0 {
+            vec![1.0]
+        } else {
+            weights
+                .into_iter()
+                .map(|weight| (weight / denominator) as f32)
+                .collect()
+        };
         output.push(LowerExample {
             input,
             candidates,
@@ -666,20 +778,59 @@ fn collect_lower_examples(
     Ok(())
 }
 
-fn lower_candidate_config(
-    config: &LowerTrainingConfig,
-) -> aic_pilot_native::constructive::routing_candidates::Config {
-    // Collection candidates already passed this exact boundary. Only bounds are
-    // needed to reconstruct the model input; conservative valid limits avoid a
-    // second search during distillation.
-    aic_pilot_native::constructive::routing_candidates::Config {
-        bounds: config.learning_domain.placement,
-        max_candidates: 1,
-        max_searches: 1,
-        work_per_search: 1,
-        max_expanded: 1,
-        overlap_penalty: 1,
-    }
+fn add_lower_candidate(
+    session: &Session,
+    action: usize,
+    candidate: &Candidate,
+    heads: usize,
+    source_lower_checkpoint_sha256: &str,
+    groups: &mut BTreeMap<(String, String), LowerGroup>,
+) -> Result<()> {
+    let head = match &candidate.provenance {
+        Provenance::Guided {
+            model_version,
+            head,
+        }
+        | Provenance::Diversified {
+            model_version: Some(model_version),
+            head: Some(head),
+            ..
+        } => {
+            ensure!(
+                model_version == source_lower_checkpoint_sha256,
+                "aic-learning.hierarchical-generation-model-version: route provenance differs from collection checkpoint"
+            );
+            let head = head
+                .strip_prefix("head-")
+                .and_then(|head| head.parse::<usize>().ok())
+                .context("aic-learning.hierarchical-generation-head: malformed guidance head")?;
+            ensure!(
+                head < heads,
+                "aic-learning.hierarchical-generation-head: guidance head is outside the model"
+            );
+            head as i64
+        }
+        Provenance::Anchor
+        | Provenance::Diversified {
+            model_version: None,
+            ..
+        }
+        | Provenance::Diversified { head: None, .. } => return Ok(()),
+    };
+    ensure!(
+        candidate.state_revision == session.observe().revision,
+        "aic-learning.hierarchical-generation-route-state: candidate belongs to a different intermediate state"
+    );
+    let key = (state_sha256(session)?, candidate.connection.clone());
+    groups
+        .entry(key)
+        .or_insert_with(|| LowerGroup {
+            session: session.clone(),
+            candidates: Vec::new(),
+        })
+        .candidates
+        .push((action, candidate.clone(), head));
+    Ok(())
 }
 
 fn edge_offsets(candidate: &Candidate, bounds: aic_layout::geometry::Bounds) -> Vec<i64> {
@@ -698,8 +849,8 @@ fn edge_offsets(candidate: &Candidate, bounds: aic_layout::geometry::Bounds) -> 
 fn direction(from: Point, to: Point) -> i64 {
     match (to.x - from.x, to.y - from.y) {
         (1, 0) => 0,
-        (-1, 0) => 1,
-        (0, 1) => 2,
+        (0, 1) => 1,
+        (-1, 0) => 2,
         (0, -1) => 3,
         _ => unreachable!("candidate cells are cardinal neighbors"),
     }
@@ -718,9 +869,9 @@ fn visit_target(record: &RootRecord, temperature: f64) -> Vec<f32> {
         .collect()
 }
 
-fn search_weight(visits: u32, prior: f64, temperature: f64) -> f64 {
+fn search_weight(visits: u32, _prior: f64, temperature: f64) -> f64 {
     if visits == 0 {
-        prior.max(1e-12) * 1e-3
+        0.0
     } else {
         f64::from(visits).powf(1.0 / temperature)
     }
@@ -735,7 +886,11 @@ fn outer_loss(model: &OuterModel, examples: &[&OuterExample], device: Device) ->
         .iter()
         .map(|example| example.features.as_slice())
         .collect::<Vec<_>>();
-    let batch = OuterBatch::from_rows(&inputs, &features, device)?;
+    let entity_references = examples
+        .iter()
+        .map(|example| example.entity_references.as_slice())
+        .collect::<Vec<_>>();
+    let batch = OuterBatch::from_rows(&inputs, &features, &entity_references, device)?;
     let prediction = model.forward(&batch)?;
     let mut policies = Vec::with_capacity(examples.len());
     for (state, example) in examples.iter().enumerate() {
@@ -749,16 +904,12 @@ fn outer_loss(model: &OuterModel, examples: &[&OuterExample], device: Device) ->
             .sum(Kind::Float),
         );
     }
-    let target = Tensor::from_slice(
-        &examples
-            .iter()
-            .flat_map(|example| example.values)
-            .collect::<Vec<_>>(),
-    )
-    .view([examples.len() as i64, VALUE_HEADS as i64])
-    .to_device(device);
+    let targets = examples
+        .iter()
+        .map(|example| example.values)
+        .collect::<Vec<_>>();
     Ok(Tensor::stack(&policies, 0).mean(Kind::Float)
-        + (&prediction.values - target).square().mean(Kind::Float))
+        + value_loss(&prediction.values, &targets, device)?)
 }
 
 fn lower_loss(
@@ -802,7 +953,7 @@ fn lower_prediction_loss(
                         .collect::<Vec<_>>(),
                 )
                 .to_device(device);
-                let energy = flat.index_select(0, &indices).mean(Kind::Float);
+                let energy = flat.index_select(0, &indices).sum(Kind::Float);
                 regression.push((&energy - f64::from(candidate.q) * 4.0).square());
                 energy
             })
@@ -882,6 +1033,7 @@ fn validate_inputs(panel: &Panel, collection: &CollectionReport) -> Result<()> {
         .collect::<BTreeSet<_>>();
     ensure!(
         panel.schema == PANEL_SCHEMA
+            && panel.partition == "training"
             && panel.partition == collection.partition
             && collection.schema == SEARCH_REPORT_SCHEMA
             && !panel.cases.is_empty()
@@ -1082,6 +1234,45 @@ fn load_recovery(
     Ok((state, lower, outer))
 }
 
+fn ensure_recovery_pointer(pending: &Path) -> Result<bool> {
+    if pending.join("latest.json").is_file() {
+        return Ok(true);
+    }
+    let checkpoints = pending.join("checkpoints");
+    if !checkpoints.is_dir() {
+        return Ok(false);
+    }
+    let latest = fs::read_dir(&checkpoints)?
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_dir()))
+        .filter_map(|entry| {
+            let complete = entry.path().join("state.json").is_file()
+                && entry.path().join("lower.safetensors").is_file()
+                && entry.path().join("outer.safetensors").is_file();
+            complete
+                .then(|| {
+                    entry
+                        .file_name()
+                        .to_str()
+                        .and_then(|name| name.parse::<usize>().ok())
+                })
+                .flatten()
+                .filter(|epoch| *epoch > 0)
+        })
+        .max();
+    let Some(completed_epochs) = latest else {
+        return Ok(false);
+    };
+    let pointer = RecoveryPointer {
+        schema: RECOVERY_STATE_SCHEMA.into(),
+        completed_epochs,
+    };
+    let stage = pending.join("latest.pending");
+    fs::write(&stage, serde_json::to_vec_pretty(&pointer)?)?;
+    fs::rename(stage, pending.join("latest.json"))?;
+    Ok(true)
+}
+
 fn synchronize(device: Device) {
     if let Device::Cuda(index) = device {
         tch::Cuda::synchronize(index as i64);
@@ -1089,7 +1280,10 @@ fn synchronize(device: Device) {
 }
 
 fn state_sha256(session: &Session) -> Result<String> {
-    Ok(bytes_sha256(&serde_json::to_vec(&session.observe())?))
+    Ok(bytes_sha256(&serde_json::to_vec(&(
+        session.problem(),
+        session.observe(),
+    ))?))
 }
 
 fn bounded_read(path: &Path) -> Result<Vec<u8>> {
@@ -1123,9 +1317,22 @@ fn bytes_sha256(bytes: &[u8]) -> String {
         .collect()
 }
 
+fn semantic_sha256(value: &impl Serialize) -> Result<String> {
+    Ok(bytes_sha256(&serde_json::to_vec(value)?))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn distilled_edge_directions_match_native_channel_order() {
+        let origin = Point { x: 4, y: 7 };
+        assert_eq!(direction(origin, Point { x: 5, y: 7 }), 0);
+        assert_eq!(direction(origin, Point { x: 4, y: 8 }), 1);
+        assert_eq!(direction(origin, Point { x: 3, y: 7 }), 2);
+        assert_eq!(direction(origin, Point { x: 4, y: 6 }), 3);
+    }
 
     #[test]
     fn prior_generation_config_gets_a_bounded_checkpoint_default() -> Result<()> {
@@ -1142,5 +1349,27 @@ mod tests {
         }))?;
         assert_eq!(config.checkpoint_interval_epochs, 50);
         validate_config(&config)
+    }
+
+    #[test]
+    fn recovery_pointer_distinguishes_precheckpoint_and_published_state() {
+        let root = std::env::temp_dir().join(format!(
+            "aic-hierarchical-recovery-pointer-{}",
+            std::process::id()
+        ));
+        if root.exists() {
+            fs::remove_dir_all(&root).unwrap();
+        }
+        fs::create_dir_all(root.join("checkpoints")).unwrap();
+        assert!(!ensure_recovery_pointer(&root).unwrap());
+        let checkpoint = root.join("checkpoints/00000020");
+        fs::create_dir(&checkpoint).unwrap();
+        for name in ["state.json", "lower.safetensors", "outer.safetensors"] {
+            fs::write(checkpoint.join(name), []).unwrap();
+        }
+        assert!(ensure_recovery_pointer(&root).unwrap());
+        let pointer: RecoveryPointer = read_json(&root.join("latest.json")).unwrap();
+        assert_eq!(pointer.completed_epochs, 20);
+        fs::remove_dir_all(root).unwrap();
     }
 }

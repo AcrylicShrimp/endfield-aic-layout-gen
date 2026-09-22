@@ -17,8 +17,42 @@ use crate::{
 };
 
 pub const ACTION_FEATURES: usize = 24;
-pub const VALUE_HEADS: usize = 6;
-pub const CHECKPOINT_SCHEMA: &str = "aic-hierarchical-outer-checkpoint-v1";
+pub const VALUE_HEADS: usize = 8;
+pub const CHECKPOINT_SCHEMA: &str = "aic-hierarchical-outer-checkpoint-v3";
+pub const COMPLETION_HEAD: i64 = 0;
+pub const AREA_HEAD: i64 = 4;
+pub const TRANSPORT_HEAD: i64 = 5;
+pub const TURNS_HEAD: i64 = 6;
+pub const UNCERTAINTY_HEAD: i64 = 7;
+
+/// Stable observable targets for the outer critic. Layout quality is conditional
+/// on completion; uncertainty is trained from the detached completion error.
+#[derive(Clone, Copy, Debug)]
+pub struct ValueTarget {
+    pub completion: f32,
+    pub additional_fraction: f32,
+    pub next_progress: f32,
+    pub blocked_fraction: f32,
+    pub area: Option<f32>,
+    pub transport: Option<f32>,
+    pub turns: Option<f32>,
+}
+
+pub fn normalized_layout_quality(
+    footprint_area: u64,
+    transport_cells: u64,
+    turns: u64,
+    canvas_area: i64,
+    connections: usize,
+) -> [f32; 3] {
+    let canvas = canvas_area.max(1) as f64;
+    let routed = canvas * connections.max(1) as f64;
+    [
+        (footprint_area as f64 / (canvas + 1.0)).min(1.0) as f32,
+        (transport_cells as f64 / (routed + 1.0)).min(1.0) as f32,
+        (turns as f64 / (routed + 1.0)).min(1.0) as f32,
+    ]
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -32,6 +66,7 @@ pub struct Batch {
     graph: InputBatch,
     action_features: Tensor,
     action_graph: Tensor,
+    action_entity: Tensor,
     offsets: Vec<i64>,
 }
 
@@ -61,33 +96,54 @@ impl Batch {
     pub fn from_rows(
         inputs: &[&Input],
         actions: &[&[[f32; ACTION_FEATURES]]],
+        entity_references: &[&[i64]],
         device: Device,
     ) -> Result<Self> {
         ensure!(
             !inputs.is_empty()
                 && inputs.len() == actions.len()
+                && inputs.len() == entity_references.len()
                 && inputs.len() <= 262_144
-                && actions.iter().all(|rows| !rows.is_empty()),
+                && actions
+                    .iter()
+                    .zip(entity_references)
+                    .all(|(rows, references)| !rows.is_empty() && rows.len() == references.len()),
             "aic-learning.outer-batch: invalid state or action count"
         );
         let graph = InputBatch::from_inputs(inputs, device)?;
         let mut flat = Vec::new();
         let mut action_graph = Vec::new();
+        let mut action_entity = Vec::new();
         let mut offsets = Vec::with_capacity(actions.len() + 1);
+        let mut entity_offset = 0i64;
         offsets.push(0);
-        for (state, rows) in actions.iter().enumerate() {
+        for (state, ((input, rows), references)) in inputs
+            .iter()
+            .zip(actions)
+            .zip(entity_references)
+            .enumerate()
+        {
+            ensure!(
+                references.iter().all(|reference| *reference >= 0
+                    && (*reference as usize) < input.entity_features.len()),
+                "aic-learning.outer-batch: action entity reference is outside its state"
+            );
             flat.extend(rows.iter().flatten().copied());
             action_graph.extend(std::iter::repeat_n(state as i64, rows.len()));
+            action_entity.extend(references.iter().map(|reference| entity_offset + reference));
             offsets.push(action_graph.len() as i64);
+            entity_offset += input.entity_features.len() as i64;
         }
         let action_features = Tensor::from_slice(&flat)
             .view([-1, ACTION_FEATURES as i64])
             .to_device(device);
         let action_graph = Tensor::from_slice(&action_graph).to_device(device);
+        let action_entity = Tensor::from_slice(&action_entity).to_device(device);
         Ok(Self {
             graph,
             action_features,
             action_graph,
+            action_entity,
             offsets,
         })
     }
@@ -104,12 +160,13 @@ impl Batch {
         let mut values = self.graph.trace_tensors();
         values.push(self.action_features.shallow_clone());
         values.push(self.action_graph.shallow_clone());
+        values.push(self.action_entity.shallow_clone());
         values
     }
 
     fn from_trace_tensors(values: &[Tensor], graphs: i64) -> Result<Self> {
         ensure!(
-            values.len() == crate::constructive::INPUT_TENSOR_COUNT + 2,
+            values.len() == crate::constructive::INPUT_TENSOR_COUNT + 3,
             "aic-learning.outer-trace-input: invalid tensor count"
         );
         Ok(Self {
@@ -119,6 +176,7 @@ impl Batch {
             )?,
             action_features: values[crate::constructive::INPUT_TENSOR_COUNT].shallow_clone(),
             action_graph: values[crate::constructive::INPUT_TENSOR_COUNT + 1].shallow_clone(),
+            action_entity: values[crate::constructive::INPUT_TENSOR_COUNT + 2].shallow_clone(),
             offsets: Vec::new(),
         })
     }
@@ -220,10 +278,18 @@ impl Model {
     fn forward_unchecked(&self, batch: &Batch) -> Prediction {
         let encoded = self.encoder.encode_unchecked(&batch.graph);
         let action_context = encoded.context().index_select(0, &batch.action_graph);
+        let action_entity = encoded.entities().index_select(0, &batch.action_entity);
         let hidden = self
             .linear(
                 "policy.0",
-                &Tensor::cat(&[action_context, batch.action_features.shallow_clone()], -1),
+                &Tensor::cat(
+                    &[
+                        action_context,
+                        action_entity,
+                        batch.action_features.shallow_clone(),
+                    ],
+                    -1,
+                ),
             )
             .tanh();
         let logits = self.linear("policy.2", &hidden).squeeze_dim(-1);
@@ -274,6 +340,65 @@ impl Model {
         }));
         values
     }
+}
+
+pub fn value_loss(prediction: &Tensor, targets: &[ValueTarget], device: Device) -> Result<Tensor> {
+    ensure!(
+        !targets.is_empty()
+            && prediction.kind() == Kind::Float
+            && prediction.size() == [targets.len() as i64, VALUE_HEADS as i64],
+        "aic-learning.outer-value-loss: incompatible prediction or targets"
+    );
+    let values = targets
+        .iter()
+        .flat_map(|target| {
+            [
+                target.completion,
+                target.additional_fraction,
+                target.next_progress,
+                target.blocked_fraction,
+                target.area.unwrap_or(0.0),
+                target.transport.unwrap_or(0.0),
+                target.turns.unwrap_or(0.0),
+            ]
+        })
+        .collect::<Vec<_>>();
+    ensure!(
+        values
+            .iter()
+            .all(|value| value.is_finite() && (0.0..=1.0).contains(value)),
+        "aic-learning.outer-value-loss: target is outside [0, 1]"
+    );
+    let target = Tensor::from_slice(&values)
+        .view([targets.len() as i64, 7])
+        .to_device(device);
+    let mask = Tensor::from_slice(
+        &targets
+            .iter()
+            .flat_map(|target| {
+                [
+                    1.0f32,
+                    1.0,
+                    1.0,
+                    1.0,
+                    target.area.is_some() as u8 as f32,
+                    target.transport.is_some() as u8 as f32,
+                    target.turns.is_some() as u8 as f32,
+                ]
+            })
+            .collect::<Vec<_>>(),
+    )
+    .view([targets.len() as i64, 7])
+    .to_device(device);
+    let predicted = prediction.narrow(1, 0, 7);
+    let observed = ((&predicted - &target).square() * &mask).sum(Kind::Float)
+        / mask.sum(Kind::Float).clamp_min(1.0);
+    let uncertainty_target =
+        (prediction.select(1, COMPLETION_HEAD).detach() - target.select(1, 0)).abs();
+    let uncertainty = (prediction.select(1, UNCERTAINTY_HEAD) - uncertainty_target)
+        .square()
+        .mean(Kind::Float);
+    Ok(observed + uncertainty * 0.1)
 }
 
 impl<'a> CompiledModel<'a> {
@@ -377,7 +502,7 @@ fn layers(config: &OuterModelConfig) -> Vec<(String, i64, i64)> {
     vec![
         (
             "policy.0".into(),
-            config.encoder.width + ACTION_FEATURES as i64,
+            2 * config.encoder.width + ACTION_FEATURES as i64,
             config.width,
         ),
         ("policy.2".into(), config.width, 1),
@@ -441,7 +566,18 @@ mod tests {
         let second = input();
         let a = vec![[0.; ACTION_FEATURES], [1.; ACTION_FEATURES]];
         let b = vec![[0.5; ACTION_FEATURES]; 3];
-        let batch = Batch::from_rows(&[&first, &second], &[&a, &b], Device::Cpu)?;
+        let a_entities = [0, 1];
+        let b_entities = [0, 1, 0];
+        let batch = Batch::from_rows(
+            &[&first, &second],
+            &[&a, &b],
+            &[&a_entities, &b_entities],
+            Device::Cpu,
+        )?;
+        assert_eq!(
+            Vec::<i64>::try_from(batch.action_entity.to_device(Device::Cpu))?,
+            vec![0, 1, 2, 3, 2]
+        );
         let prediction = model.forward(&batch)?;
         for state in 0..batch.states() {
             let range = batch.action_range(state);

@@ -1,0 +1,32 @@
+{
+  "schema": "aic-hierarchical-curriculum-v1",
+  "generations": 100,
+  "training_cases": 32,
+  "evaluation_interval": 5,
+  "success_window_cases": 128,
+  "advance_completion_rate": 0.75,
+  "seed": 20260926,
+  "namespace": "hierarchical-curriculum-v1",
+  "max_turns": 10000,
+  "max_extension": 32,
+  "levels": [
+    {
+      "min_facilities": 1,
+      "max_facilities": 1,
+      "max_terminals": 4,
+      "max_connections": 4
+    },
+    {
+      "min_facilities": 2,
+      "max_facilities": 2,
+      "max_terminals": 6,
+      "max_connections": 6
+    },
+    {
+      "min_facilities": 3,
+      "max_facilities": 3,
+      "max_terminals": 8,
+      "max_connections": 8
+    }
+  ]
+}

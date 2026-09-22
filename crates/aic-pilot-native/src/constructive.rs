@@ -1411,6 +1411,19 @@ mod tests {
         assert_eq!(second.commands.len(), 3);
         assert_eq!(first.next_offset, 3);
         assert_eq!(second.next_offset, 6);
+        let placement_ids = first
+            .commands
+            .iter()
+            .chain(&second.commands)
+            .map(|factored| match &factored.command.command {
+                Command::Place { block, .. } => block.as_str(),
+                command => panic!("unexpected placement page command: {command:?}"),
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            placement_ids,
+            vec!["source", "target", "source", "target", "source", "target"]
+        );
         assert!(first.commands.iter().all(|left| {
             second
                 .commands

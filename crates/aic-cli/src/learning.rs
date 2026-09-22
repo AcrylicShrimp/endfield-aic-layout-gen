@@ -98,6 +98,65 @@ pub enum LearningCommand {
         #[arg(long)]
         resume: bool,
     },
+    /// Run fresh-graph hierarchical generations with training-success curriculum promotion.
+    #[cfg(feature = "learning")]
+    TrainHierarchicalCurriculum {
+        #[arg(long)]
+        config: PathBuf,
+        #[arg(long)]
+        search_config: PathBuf,
+        #[arg(long)]
+        generation_config: PathBuf,
+        #[arg(long)]
+        sampling: PathBuf,
+        /// Fixed held-out panel; its outcomes never affect curriculum promotion.
+        #[arg(long)]
+        heldout_panel: PathBuf,
+        #[arg(long)]
+        initial_lower_output: PathBuf,
+        #[arg(long)]
+        initial_outer_output: PathBuf,
+        #[arg(long)]
+        catalog_root: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long, default_value = "cuda:0")]
+        device: String,
+        #[arg(long)]
+        resume: bool,
+    },
+    /// Prepare empty-prefix hierarchical cases from real production graphs.
+    #[cfg(feature = "learning")]
+    PrepareHierarchicalPanel {
+        #[arg(long)]
+        sampling: PathBuf,
+        /// Directory containing normalized recipes, items and physical catalogs.
+        #[arg(long)]
+        catalog_root: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        /// Panel partition: training or held-out.
+        #[arg(long)]
+        partition: String,
+        #[arg(long)]
+        cases: usize,
+        #[arg(long)]
+        seed: u64,
+        #[arg(long)]
+        namespace: String,
+        #[arg(long, default_value_t = 1)]
+        min_facilities: usize,
+        #[arg(long, default_value_t = 2)]
+        max_facilities: usize,
+        #[arg(long, default_value_t = 6)]
+        max_terminals: usize,
+        #[arg(long, default_value_t = 8)]
+        max_connections: usize,
+        #[arg(long, default_value_t = 10_000)]
+        max_turns: u64,
+        #[arg(long, default_value_t = 32)]
+        max_extension: i64,
+    },
     /// Collect the fixed bounded procedural physical-action outcome dataset.
     CollectOutcomes {
         #[arg(long)]
@@ -331,6 +390,10 @@ pub fn run(command: LearningCommand) -> Result<()> {
         LearningCommand::TrainHierarchicalOuter { config, .. } => config,
         #[cfg(feature = "learning")]
         LearningCommand::TrainHierarchicalGeneration { config, .. } => config,
+        #[cfg(feature = "learning")]
+        LearningCommand::TrainHierarchicalCurriculum { config, .. } => config,
+        #[cfg(feature = "learning")]
+        LearningCommand::PrepareHierarchicalPanel { sampling, .. } => sampling,
         LearningCommand::CollectOutcomes { config, .. } => config,
         LearningCommand::ValidateOutcomes { dataset } => dataset,
         #[cfg(feature = "learning")]
@@ -461,6 +524,62 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             &output,
             update::parse_device(&device)?,
             resume,
+        ),
+        #[cfg(feature = "learning")]
+        LearningCommand::TrainHierarchicalCurriculum {
+            config,
+            search_config,
+            generation_config,
+            sampling,
+            heldout_panel,
+            initial_lower_output,
+            initial_outer_output,
+            catalog_root,
+            output,
+            device,
+            resume,
+        } => aic_learning::hierarchical_curriculum::run(
+            &config,
+            &search_config,
+            &generation_config,
+            &sampling,
+            &heldout_panel,
+            &initial_lower_output,
+            &initial_outer_output,
+            &catalog_root,
+            &output,
+            update::parse_device(&device)?,
+            resume,
+        ),
+        #[cfg(feature = "learning")]
+        LearningCommand::PrepareHierarchicalPanel {
+            sampling,
+            catalog_root,
+            output,
+            partition,
+            cases,
+            seed,
+            namespace,
+            min_facilities,
+            max_facilities,
+            max_terminals,
+            max_connections,
+            max_turns,
+            max_extension,
+        } => aic_learning::hierarchical_search::prepare_panel(
+            &sampling,
+            &catalog_root,
+            &output,
+            &partition,
+            cases,
+            seed,
+            &namespace,
+            min_facilities,
+            max_facilities,
+            max_terminals,
+            max_connections,
+            max_turns,
+            max_extension,
         ),
         LearningCommand::CollectOutcomes {
             config,

@@ -8,7 +8,7 @@ use std::{
     time::Instant,
 };
 
-use aic_layout::{physical::Problem, validation::Catalogs};
+use aic_layout::{geometry::Bounds, physical::Problem, validation::Catalogs};
 use aic_pilot_native::constructive::{Command, Limits, Session, learning::Input};
 use aic_torch::{
     Adam, AdamBackend,
@@ -22,7 +22,9 @@ use sha2::{Digest, Sha256};
 use crate::{
     hierarchical_search::{Config as SearchConfig, Counters, Factory},
     input::Tensors,
-    outer_model::{ACTION_FEATURES, Batch, Model, VALUE_HEADS},
+    outer_model::{
+        ACTION_FEATURES, Batch, Model, ValueTarget, normalized_layout_quality, value_loss,
+    },
     route_guidance::{Model as GuidanceModel, ParameterOrder as GuidanceOrder},
     route_guidance_training::Config as GuidanceTrainingConfig,
     schema::OuterModelConfig,
@@ -30,7 +32,7 @@ use crate::{
 
 const CONFIG_SCHEMA: &str = "aic-hierarchical-outer-training-v1";
 const PANEL_SCHEMA: &str = "aic-hierarchical-search-panel-v1";
-const REPORT_SCHEMA: &str = "aic-hierarchical-outer-training-report-v1";
+const REPORT_SCHEMA: &str = "aic-hierarchical-outer-training-report-v3";
 const MAX_INPUT_BYTES: u64 = 16 * 1024 * 1024;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -54,6 +56,8 @@ struct Panel {
     schema: String,
     partition: String,
     limits: Limits,
+    #[serde(default, rename = "preparation")]
+    _preparation: Option<serde_json::Value>,
     cases: Vec<Case>,
 }
 
@@ -68,9 +72,11 @@ struct Case {
 struct Example {
     input: Arc<Input>,
     features: Vec<[f32; ACTION_FEATURES]>,
+    entity_references: Vec<i64>,
     policy_target: Vec<f32>,
     completion_labels: Vec<f32>,
-    value_target: [f32; VALUE_HEADS],
+    utility_labels: Vec<f32>,
+    value_target: ValueTarget,
 }
 
 #[derive(Clone, Copy)]
@@ -79,6 +85,9 @@ struct Outcome {
     completed: usize,
     total: usize,
     moves: usize,
+    footprint_area: u64,
+    transport_cells: u64,
+    turns: u64,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -90,6 +99,8 @@ struct Evaluation {
     exact_best_actions: usize,
     mean_selected_completion: f64,
     mean_oracle_completion: f64,
+    mean_selected_utility: f64,
+    mean_oracle_utility: f64,
 }
 
 #[derive(Debug, Serialize)]
@@ -147,6 +158,7 @@ pub fn run(
     validate_config(&config)?;
     validate_panel(&training_panel, "training")?;
     validate_panel(&evaluation_panel, "held-out")?;
+    validate_panel_separation(&training_panel, &evaluation_panel)?;
 
     let lower_config: GuidanceTrainingConfig =
         read_json(&lower_training_output.join("config.json"))?;
@@ -164,6 +176,10 @@ pub fn run(
         placement: config.search.bounds,
         extension_lengths: config.search.extension_lengths.clone(),
     };
+    ensure!(
+        lower_config.learning_domain == domain,
+        "aic-learning.outer-training-domain: search and lower model domains differ"
+    );
     let factory = Factory::new(
         &guidance,
         &lower_checkpoint_sha256,
@@ -245,7 +261,11 @@ pub fn run(
                 .iter()
                 .map(|example| example.features.as_slice())
                 .collect::<Vec<_>>();
-            let batch = Batch::from_rows(&inputs, &features, device)?;
+            let entity_references = examples
+                .iter()
+                .map(|example| example.entity_references.as_slice())
+                .collect::<Vec<_>>();
+            let batch = Batch::from_rows(&inputs, &features, &entity_references, device)?;
             optimizer.zero_grad()?;
             let prediction = model.forward(&batch)?;
             let loss = training_loss(&prediction, &batch, &examples, device)?;
@@ -345,19 +365,24 @@ fn collect_panel(
             );
             let mut outcomes = Vec::with_capacity(actions.len());
             let mut features = Vec::with_capacity(actions.len());
+            let entity_references = actions
+                .iter()
+                .map(|action| action.entity_index(session.problem()))
+                .collect::<Result<Vec<_>>>()?;
             for action in &actions {
                 let child = action.apply(&session)?;
                 features.push(action.features(&session, &child, config.search.bounds));
                 outcomes.push(best_outcome(
                     &child,
                     factory,
+                    config.search.bounds,
                     config.label_horizon.saturating_sub(1),
                     1,
                 )?);
             }
             let utilities = outcomes
                 .iter()
-                .map(|outcome| utility(*outcome))
+                .map(|outcome| utility(*outcome, config.search.bounds))
                 .collect::<Vec<_>>();
             let maximum = utilities.iter().copied().fold(f32::NEG_INFINITY, f32::max);
             let weights = utilities
@@ -378,28 +403,41 @@ fn collect_panel(
             let best = outcomes
                 .iter()
                 .copied()
-                .max_by(|left, right| utility(*left).total_cmp(&utility(*right)))
+                .max_by(|left, right| {
+                    utility(*left, config.search.bounds)
+                        .total_cmp(&utility(*right, config.search.bounds))
+                })
                 .expect("actions are nonempty");
             let current_completed = session.observe().completed;
             let additional = best.completed.saturating_sub(current_completed);
             let remaining = best.total.saturating_sub(current_completed).max(1);
-            let value_target = [
-                best.full as u8 as f32,
-                best.completed as f32 / best.total.max(1) as f32,
-                (additional > 0) as u8 as f32,
-                1.0 - best.completed as f32 / best.total.max(1) as f32,
-                1.0 / (1.0 + best.moves as f32),
-                if best.full {
-                    0.0
-                } else {
-                    1.0 / remaining as f32
-                },
-            ];
+            let area = config.search.bounds.width() * config.search.bounds.height();
+            let quality = best.full.then(|| {
+                normalized_layout_quality(
+                    best.footprint_area,
+                    best.transport_cells,
+                    best.turns,
+                    area,
+                    best.total,
+                )
+            });
+            let value_target = ValueTarget {
+                completion: best.full as u8 as f32,
+                additional_fraction: additional as f32 / remaining as f32,
+                next_progress: (additional > 0) as u8 as f32,
+                blocked_fraction: best.total.saturating_sub(best.completed) as f32
+                    / best.total.max(1) as f32,
+                area: quality.map(|quality| quality[0]),
+                transport: quality.map(|quality| quality[1]),
+                turns: quality.map(|quality| quality[2]),
+            };
             Ok(Example {
                 input,
                 features,
+                entity_references,
                 policy_target,
                 completion_labels,
+                utility_labels: utilities,
                 value_target,
             })
         })
@@ -409,6 +447,7 @@ fn collect_panel(
 fn best_outcome(
     session: &Session,
     factory: &Factory<'_>,
+    bounds: Bounds,
     horizon: usize,
     moves: usize,
 ) -> Result<Outcome> {
@@ -419,6 +458,11 @@ fn best_outcome(
             completed: observation.completed,
             total: observation.total,
             moves,
+            footprint_area: session.metrics().map_or(0, |metrics| metrics.area),
+            transport_cells: session
+                .metrics()
+                .map_or(0, |metrics| metrics.transport_cells),
+            turns: session.metrics().map_or(0, |metrics| metrics.turns),
         });
     }
     let mut counters = Counters::default();
@@ -428,23 +472,39 @@ fn best_outcome(
         completed: observation.completed,
         total: observation.total,
         moves,
+        footprint_area: session.metrics().map_or(0, |metrics| metrics.area),
+        transport_cells: session
+            .metrics()
+            .map_or(0, |metrics| metrics.transport_cells),
+        turns: session.metrics().map_or(0, |metrics| metrics.turns),
     };
     for action in actions.into_iter().take(64) {
         let child = action.apply(session)?;
-        let outcome = best_outcome(&child, factory, horizon - 1, moves + 1)?;
-        if utility(outcome) > utility(best) {
+        let outcome = best_outcome(&child, factory, bounds, horizon - 1, moves + 1)?;
+        if utility(outcome, bounds) > utility(best, bounds) {
             best = outcome;
-        }
-        if best.full {
-            break;
         }
     }
     Ok(best)
 }
 
-fn utility(outcome: Outcome) -> f32 {
-    outcome.full as u8 as f32 * 4.0 + outcome.completed as f32 / outcome.total.max(1) as f32
-        - outcome.moves as f32 * 0.001
+fn utility(outcome: Outcome, bounds: Bounds) -> f32 {
+    if outcome.full {
+        let canvas = bounds.width() * bounds.height();
+        let [area, transport, turns] = normalized_layout_quality(
+            outcome.footprint_area,
+            outcome.transport_cells,
+            outcome.turns,
+            canvas,
+            outcome.total,
+        );
+        let canvas = canvas.max(1) as f32;
+        let routed = canvas * outcome.total.max(1) as f32;
+        let penalty = area + transport / (canvas + 1.0) + turns / ((canvas + 1.0) * (routed + 1.0));
+        4.0 + canvas * (1.0 - penalty)
+    } else {
+        outcome.completed as f32 / outcome.total.max(1) as f32 - outcome.moves as f32 * 0.001
+    }
 }
 
 fn training_loss(
@@ -463,15 +523,11 @@ fn training_loss(
         policy_losses.push(-(target * logp).sum(Kind::Float));
     }
     let policy = Tensor::stack(&policy_losses, 0).mean(Kind::Float);
-    let targets = Tensor::from_slice(
-        &examples
-            .iter()
-            .flat_map(|example| example.value_target)
-            .collect::<Vec<_>>(),
-    )
-    .view([examples.len() as i64, VALUE_HEADS as i64])
-    .to_device(device);
-    let value = (&prediction.values - targets).square().mean(Kind::Float);
+    let targets = examples
+        .iter()
+        .map(|example| example.value_target)
+        .collect::<Vec<_>>();
+    let value = value_loss(&prediction.values, &targets, device)?;
     Ok(policy + value)
 }
 
@@ -484,13 +540,19 @@ fn evaluate(model: &Model, examples: &[Example], device: Device) -> Result<Evalu
         .iter()
         .map(|example| example.features.as_slice())
         .collect::<Vec<_>>();
-    let batch = Batch::from_rows(&inputs, &features, device)?;
+    let entity_references = examples
+        .iter()
+        .map(|example| example.entity_references.as_slice())
+        .collect::<Vec<_>>();
+    let batch = Batch::from_rows(&inputs, &features, &entity_references, device)?;
     let prediction = tch::no_grad(|| model.forward(&batch))?;
     let logits = Vec::<f32>::try_from(prediction.logits.to_device(Device::Cpu))?;
     let mut selected_completing_actions = 0;
     let mut exact_best_actions = 0;
     let mut selected_quality = 0.0;
     let mut oracle_quality = 0.0;
+    let mut selected_utility = 0.0;
+    let mut oracle_utility = 0.0;
     for (state, example) in examples.iter().enumerate() {
         let range = batch.action_range(state);
         let start = range.start as usize;
@@ -506,11 +568,20 @@ fn evaluate(model: &Model, examples: &[Example], device: Device) -> Result<Evalu
             .iter()
             .copied()
             .fold(0.0f32, f32::max);
+        let exact_best = example
+            .utility_labels
+            .iter()
+            .enumerate()
+            .max_by(|left, right| left.1.total_cmp(right.1))
+            .map(|(index, _)| index)
+            .expect("nonempty policy target");
         let selected_label = example.completion_labels[selected];
         selected_completing_actions += usize::from(selected_label == 1.0);
-        exact_best_actions += usize::from(selected_label == best);
+        exact_best_actions += usize::from(selected == exact_best);
         selected_quality += f64::from(selected_label);
         oracle_quality += f64::from(best);
+        selected_utility += f64::from(example.utility_labels[selected]);
+        oracle_utility += f64::from(example.utility_labels[exact_best]);
     }
     Ok(Evaluation {
         states: examples.len(),
@@ -523,6 +594,8 @@ fn evaluate(model: &Model, examples: &[Example], device: Device) -> Result<Evalu
         exact_best_actions,
         mean_selected_completion: selected_quality / examples.len() as f64,
         mean_oracle_completion: oracle_quality / examples.len() as f64,
+        mean_selected_utility: selected_utility / examples.len() as f64,
+        mean_oracle_utility: oracle_utility / examples.len() as f64,
     })
 }
 
@@ -571,6 +644,28 @@ fn validate_panel(panel: &Panel, partition: &str) -> Result<()> {
                 .iter()
                 .all(|case| !case.id.is_empty() && ids.insert(case.id.as_str())),
         "aic-learning.outer-training-panel: invalid schema, partition or cases"
+    );
+    Ok(())
+}
+
+fn validate_panel_separation(training: &Panel, evaluation: &Panel) -> Result<()> {
+    let training_ids = training
+        .cases
+        .iter()
+        .map(|case| case.id.as_str())
+        .collect::<BTreeSet<_>>();
+    let training_problems = training
+        .cases
+        .iter()
+        .map(|case| serde_json::to_vec(&case.problem))
+        .collect::<Result<BTreeSet<_>, _>>()?;
+    ensure!(
+        evaluation.cases.iter().all(|case| {
+            !training_ids.contains(case.id.as_str())
+                && serde_json::to_vec(&case.problem)
+                    .is_ok_and(|identity| !training_problems.contains(&identity))
+        }),
+        "aic-learning.outer-training-panels: training and held-out problem identities overlap"
     );
     Ok(())
 }

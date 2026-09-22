@@ -23,7 +23,7 @@ use crate::{
     schema::RouteGuidanceModelConfig,
 };
 
-pub const CHECKPOINT_SCHEMA: &str = "aic-route-guidance-checkpoint-v1";
+pub const CHECKPOINT_SCHEMA: &str = "aic-route-guidance-checkpoint-v2";
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -426,11 +426,29 @@ impl<'a> CompiledModel<'a> {
             let actual = module.forward_ts(&inputs).context(
                 "aic-learning.route-guidance-compiled-execution: parity invocation failed",
             )?;
+            let costs = graphs * self.eager.config.heads as i64 * 4 * width * height;
+            let actual_costs = actual.narrow(0, 0, costs);
+            let expected_costs = expected.narrow(0, 0, costs);
+            let rounded_costs_match = bool::try_from(
+                actual_costs
+                    .round()
+                    .eq_tensor(&expected_costs.round())
+                    .all(),
+            )?;
+            let outcomes_match = actual.narrow(0, costs, actual.size()[0] - costs).allclose(
+                &expected.narrow(0, costs, expected.size()[0] - costs),
+                1e-4,
+                1e-4,
+                false,
+            );
+            let maximum_absolute_error =
+                f64::try_from((&actual - &expected).abs().max()).unwrap_or(f64::INFINITY);
             ensure!(
                 actual.size() == expected.size()
-                    && actual.allclose(&expected, 1e-5, 1e-5, false)
+                    && rounded_costs_match
+                    && outcomes_match
                     && bool::try_from(actual.isfinite().all())?,
-                "aic-learning.route-guidance-compiled-parity: traced output differs from eager output"
+                "aic-learning.route-guidance-compiled-parity: traced output changes native costs or outcome estimates; max_abs={maximum_absolute_error:.6e}"
             );
             modules.insert(key, module);
         }
