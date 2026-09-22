@@ -85,7 +85,7 @@ pub enum Termination {
     NoCompatibleEndpoints,
 }
 
-#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum Provenance {
     Anchor,
@@ -99,7 +99,8 @@ pub enum Provenance {
     },
 }
 
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct Candidate {
     pub id: usize,
     pub state_revision: u64,

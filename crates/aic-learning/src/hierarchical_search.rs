@@ -19,6 +19,7 @@ use anyhow::{Context, Result, ensure};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 
 use crate::{
     input::Tensors,
@@ -32,7 +33,7 @@ use crate::{
 
 const CONFIG_SCHEMA: &str = "aic-hierarchical-search-config-v1";
 const PANEL_SCHEMA: &str = "aic-hierarchical-search-panel-v1";
-const REPORT_SCHEMA: &str = "aic-hierarchical-search-report-v1";
+pub const REPORT_SCHEMA: &str = "aic-hierarchical-search-report-v2";
 const MAX_INPUT_BYTES: u64 = 16 * 1024 * 1024;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -68,7 +69,8 @@ struct Case {
     prefix: Vec<Command>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "kind", content = "value", rename_all = "kebab-case")]
 pub(crate) enum MacroAction {
     Command(Command),
     Route(Candidate),
@@ -81,6 +83,30 @@ struct ActionSummary {
     state_revision: u64,
     steps: Option<i64>,
     provenance: Option<Provenance>,
+}
+
+/// Compact next-generation target emitted once per committed MCTS root.
+/// The full candidate witnesses make the record independently replayable from
+/// the frozen panel prefix and previously selected root actions.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct RootActionRecord {
+    pub action: MacroAction,
+    pub prior: f64,
+    pub visits: u32,
+    pub q: f64,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct RootRecord {
+    pub state_sha256: String,
+    pub state_revision: u64,
+    pub actions: Vec<RootActionRecord>,
+    pub selected_action: usize,
+    pub later_completed_connections: usize,
+    pub later_total_connections: usize,
+    pub later_fully_validated: bool,
 }
 
 #[derive(Default, Clone, Debug, Serialize)]
@@ -98,7 +124,7 @@ pub(crate) struct Counters {
 }
 
 #[derive(Clone, Debug, Serialize)]
-struct SearchResult {
+pub(crate) struct SearchResult {
     algorithm: &'static str,
     status: &'static str,
     fully_validated: bool,
@@ -110,10 +136,12 @@ struct SearchResult {
     samples_per_minute: f64,
     counters: Counters,
     trace: Vec<ActionSummary>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    root_records: Vec<RootRecord>,
 }
 
 #[derive(Debug, Serialize)]
-struct CaseReport {
+pub(crate) struct CaseReport {
     id: String,
     prefix_commands: usize,
     beam: SearchResult,
@@ -121,7 +149,7 @@ struct CaseReport {
 }
 
 #[derive(Debug, Serialize)]
-struct Report {
+pub(crate) struct Report {
     schema: &'static str,
     status: &'static str,
     partition: String,
@@ -559,7 +587,15 @@ fn beam_search(root: Session, factory: &Factory<'_>, config: &Config) -> Result<
     if let Some(completed) = beam.iter().find(|(session, _)| session.layout().is_some()) {
         best = completed.clone();
     }
-    Ok(finish_result("beam", best.0, best.1, 0, counters, started))
+    Ok(finish_result(
+        "beam",
+        best.0,
+        best.1,
+        Vec::new(),
+        0,
+        counters,
+        started,
+    ))
 }
 
 struct Edge {
@@ -585,6 +621,7 @@ fn mcts_search(
     let started = Instant::now();
     let mut counters = Counters::default();
     let mut trace = Vec::new();
+    let mut root_records = Vec::new();
     let mut simulations = 0usize;
     for _ in 0..config.max_moves {
         if working.layout().is_some() {
@@ -612,13 +649,41 @@ fn mcts_search(
         };
         let action = actions[selected].action.clone();
         let revision = working.observe().revision;
+        root_records.push(RootRecord {
+            state_sha256: state_sha256(&working)?,
+            state_revision: revision,
+            actions: actions
+                .iter()
+                .map(|edge| RootActionRecord {
+                    action: edge.action.clone(),
+                    prior: edge.prior,
+                    visits: edge.visits,
+                    q: if edge.visits == 0 {
+                        0.0
+                    } else {
+                        edge.value_sum / f64::from(edge.visits)
+                    },
+                })
+                .collect(),
+            selected_action: selected,
+            later_completed_connections: 0,
+            later_total_connections: 0,
+            later_fully_validated: false,
+        });
         working = action.apply(&working)?;
         trace.push(action.summary(revision));
+    }
+    let final_observation = working.observe();
+    for record in &mut root_records {
+        record.later_completed_connections = final_observation.completed;
+        record.later_total_connections = final_observation.total;
+        record.later_fully_validated = final_observation.fully_validated;
     }
     Ok(finish_result(
         "mcts",
         working,
         trace,
+        root_records,
         simulations,
         counters,
         started,
@@ -793,6 +858,7 @@ fn finish_result(
     algorithm: &'static str,
     session: Session,
     trace: Vec<ActionSummary>,
+    root_records: Vec<RootRecord>,
     simulations: usize,
     counters: Counters,
     started: Instant,
@@ -819,7 +885,16 @@ fn finish_result(
         },
         counters,
         trace,
+        root_records,
     }
+}
+
+fn state_sha256(session: &Session) -> Result<String> {
+    let bytes = serde_json::to_vec(&session.observe())?;
+    Ok(Sha256::digest(bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect())
 }
 
 fn aggregate_throughput<'a>(results: impl Iterator<Item = &'a SearchResult>) -> f64 {

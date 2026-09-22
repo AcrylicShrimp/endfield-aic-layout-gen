@@ -74,6 +74,27 @@ pub enum LearningCommand {
         #[arg(long, default_value = "cuda:0")]
         device: String,
     },
+    /// Distill one frozen MCTS collection into the next lower and outer generation.
+    #[cfg(feature = "learning")]
+    TrainHierarchicalGeneration {
+        #[arg(long)]
+        config: PathBuf,
+        #[arg(long)]
+        panel: PathBuf,
+        /// Hierarchical search report containing frozen root visit records.
+        #[arg(long)]
+        collection: PathBuf,
+        #[arg(long)]
+        lower_training_output: PathBuf,
+        #[arg(long)]
+        outer_training_output: PathBuf,
+        #[arg(long)]
+        catalog_root: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long, default_value = "cuda:0")]
+        device: String,
+    },
     /// Collect the fixed bounded procedural physical-action outcome dataset.
     CollectOutcomes {
         #[arg(long)]
@@ -305,6 +326,8 @@ pub fn run(command: LearningCommand) -> Result<()> {
         LearningCommand::HierarchicalSearchHarness { config, .. } => config,
         #[cfg(feature = "learning")]
         LearningCommand::TrainHierarchicalOuter { config, .. } => config,
+        #[cfg(feature = "learning")]
+        LearningCommand::TrainHierarchicalGeneration { config, .. } => config,
         LearningCommand::CollectOutcomes { config, .. } => config,
         LearningCommand::ValidateOutcomes { dataset } => dataset,
         #[cfg(feature = "learning")]
@@ -410,6 +433,26 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             &training_panel,
             &evaluation_panel,
             &lower_training_output,
+            &catalog_root,
+            &output,
+            update::parse_device(&device)?,
+        ),
+        #[cfg(feature = "learning")]
+        LearningCommand::TrainHierarchicalGeneration {
+            config,
+            panel,
+            collection,
+            lower_training_output,
+            outer_training_output,
+            catalog_root,
+            output,
+            device,
+        } => aic_learning::hierarchical_generation::run(
+            &config,
+            &panel,
+            &collection,
+            &lower_training_output,
+            &outer_training_output,
             &catalog_root,
             &output,
             update::parse_device(&device)?,

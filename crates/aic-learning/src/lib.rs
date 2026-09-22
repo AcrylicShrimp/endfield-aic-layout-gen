@@ -1,6 +1,8 @@
 //! Native numerical learner. Domain logic and state live in explicit modules;
 //! CLI and diagnostic data export are separate from this crate.
 #[cfg(feature = "libtorch")]
+pub mod hierarchical_generation;
+#[cfg(feature = "libtorch")]
 pub mod hierarchical_search;
 #[cfg(feature = "libtorch")]
 pub mod input;
