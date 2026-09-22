@@ -1,7 +1,7 @@
 //! Stable-state macro search over placement commands and complete route witnesses.
 
 use std::{
-    collections::{BTreeSet, HashSet},
+    collections::{BTreeMap, BTreeSet, HashSet},
     fs,
     path::Path,
     sync::Arc,
@@ -12,7 +12,10 @@ use aic_layout::{geometry::Bounds, physical::Problem, validation::Catalogs};
 use aic_pilot_native::constructive::{
     Command, Limits, Session,
     learning::{CommandKind, Config as DomainConfig},
-    routing_candidates::{Candidate, Config as CandidateConfig, Provenance, Request},
+    routing_candidates::{
+        Candidate, Config as CandidateConfig, NetworkCandidate, Provenance, Request,
+        network_shared_cells,
+    },
 };
 use aic_torch::tch::{self, Device, Tensor};
 use anyhow::{Context, Result, ensure};
@@ -74,6 +77,7 @@ struct Case {
 pub(crate) enum MacroAction {
     Command(Command),
     Route(Candidate),
+    Network(NetworkCandidate),
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -121,6 +125,9 @@ pub(crate) struct Counters {
     native_rejections: usize,
     guidance_batches: usize,
     guidance_inputs: usize,
+    network_tasks: usize,
+    network_samples: usize,
+    shared_network_samples: usize,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -238,18 +245,40 @@ impl Factory<'_> {
                     .map(|input| (request, input))
             })
             .collect::<Vec<_>>();
-        if !ready.is_empty() {
-            let inputs = ready.iter().map(|(_, input)| input).collect::<Vec<_>>();
+        let mut groups = BTreeMap::new();
+        for (index, (request, _)) in ready.iter().enumerate() {
+            let connection = session
+                .problem()
+                .connections
+                .iter()
+                .find(|connection| connection.id == request.connection)
+                .expect("ready request belongs to problem");
+            groups
+                .entry((connection.commodity.clone(), connection.transport))
+                .or_insert_with(Vec::new)
+                .push(index);
+        }
+        let singleton_indices = groups
+            .values()
+            .filter(|indices| indices.len() == 1)
+            .map(|indices| indices[0])
+            .collect::<Vec<_>>();
+        if !singleton_indices.is_empty() {
+            let inputs = singleton_indices
+                .iter()
+                .map(|&index| &ready[index].1)
+                .collect::<Vec<_>>();
             let guidance =
                 self.guidance
                     .predict_native(&inputs, self.guidance_version, self.device)?;
             counters.guidance_batches += 1;
             counters.guidance_inputs += inputs.len();
             let reports = self.pool.install(|| {
-                ready
+                singleton_indices
                     .par_iter()
+                    .map(|&index| &ready[index].0)
                     .zip(guidance.par_iter())
-                    .map(|((request, _), guidance)| {
+                    .map(|(request, guidance)| {
                         session.route_candidates_with_guidance(request, self.candidate, guidance)
                     })
                     .collect::<Vec<_>>()
@@ -263,6 +292,17 @@ impl Factory<'_> {
                 actions.extend(report.candidates.into_iter().map(MacroAction::Route));
             }
         }
+        for indices in groups.values().filter(|indices| indices.len() > 1) {
+            let connections = indices
+                .iter()
+                .map(|&index| ready[index].0.connection.clone())
+                .collect::<Vec<_>>();
+            actions.extend(
+                self.network_actions(session, &connections, counters)?
+                    .into_iter()
+                    .map(MacroAction::Network),
+            );
+        }
         counters.expansions += 1;
         counters.generated_macro_samples += actions.len();
         counters.placement_samples += actions
@@ -273,7 +313,150 @@ impl Factory<'_> {
             .iter()
             .filter(|action| matches!(action, MacroAction::Route(_)))
             .count();
+        counters.network_samples += actions
+            .iter()
+            .filter(|action| matches!(action, MacroAction::Network(_)))
+            .count();
+        counters.shared_network_samples += actions
+            .iter()
+            .filter(|action| {
+                matches!(action, MacroAction::Network(candidate) if candidate.shared_cells > 0)
+            })
+            .count();
         Ok(actions)
+    }
+
+    fn network_actions(
+        &self,
+        root: &Session,
+        connections: &[String],
+        counters: &mut Counters,
+    ) -> Result<Vec<NetworkCandidate>> {
+        #[derive(Clone)]
+        struct Partial {
+            variant: usize,
+            order: Vec<String>,
+            session: Session,
+            routes: Vec<Candidate>,
+        }
+
+        counters.network_tasks += 1;
+        let count = self.candidate.max_candidates;
+        let mut partials = (0..count)
+            .map(|variant| {
+                let mut order = connections.to_vec();
+                let rotation = variant % order.len();
+                order.rotate_left(rotation);
+                if (variant / order.len()) % 2 == 1 {
+                    order.reverse();
+                }
+                Partial {
+                    variant,
+                    order,
+                    session: root.clone(),
+                    routes: Vec::with_capacity(connections.len()),
+                }
+            })
+            .collect::<Vec<_>>();
+        for depth in 0..connections.len() {
+            let prepared = partials
+                .iter()
+                .map(|partial| {
+                    let request = Request {
+                        state_revision: partial.session.observe().revision,
+                        connection: partial.order[depth].clone(),
+                    };
+                    let input = partial
+                        .session
+                        .route_guidance_input(&request, self.candidate, &self.domain)
+                        .map_err(anyhow::Error::new)?;
+                    Ok((request, input))
+                })
+                .collect::<Result<Vec<_>>>()?;
+            let inputs = prepared.iter().map(|(_, input)| input).collect::<Vec<_>>();
+            let guidance =
+                self.guidance
+                    .predict_native(&inputs, self.guidance_version, self.device)?;
+            counters.guidance_batches += 1;
+            counters.guidance_inputs += inputs.len();
+            let reports = self.pool.install(|| {
+                partials
+                    .par_iter()
+                    .zip(prepared.par_iter())
+                    .zip(guidance.par_iter())
+                    .map(|((partial, (request, _)), guidance)| {
+                        partial.session.route_candidates_with_guidance(
+                            request,
+                            self.candidate,
+                            guidance,
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            });
+            let mut next = Vec::with_capacity(partials.len());
+            for (mut partial, report) in partials.into_iter().zip(reports) {
+                let report = report.map_err(anyhow::Error::new)?;
+                counters.route_searches += report.searches;
+                counters.route_expanded += report.expanded;
+                counters.route_preflight_expanded += report.preflight_expanded;
+                counters.native_rejections += report.native_rejections.len();
+                if report.candidates.is_empty() {
+                    continue;
+                }
+                let choice = if partial.variant == 0 {
+                    0
+                } else {
+                    1 + (partial.variant + depth - 1)
+                        % report.candidates.len().saturating_sub(1).max(1)
+                }
+                .min(report.candidates.len() - 1);
+                let candidate = report.candidates[choice].clone();
+                partial
+                    .session
+                    .apply_route_candidate(&candidate)
+                    .map_err(anyhow::Error::new)?;
+                partial.routes.push(candidate);
+                next.push(partial);
+            }
+            partials = next;
+            if partials.is_empty() {
+                break;
+            }
+        }
+        let first = session_network_identity(root, connections)?;
+        let mut semantic = BTreeSet::new();
+        let mut candidates = Vec::new();
+        for partial in partials
+            .into_iter()
+            .filter(|partial| partial.routes.len() == connections.len())
+        {
+            let key = partial
+                .routes
+                .iter()
+                .map(|route| (route.connection.clone(), route.cells.clone()))
+                .collect::<Vec<_>>();
+            if !semantic.insert(key) {
+                continue;
+            }
+            let mut candidate = NetworkCandidate {
+                id: candidates.len(),
+                state_revision: root.observe().revision,
+                commodity: first.0.clone(),
+                transport: first.1,
+                steps: partial.routes.iter().map(|route| route.steps).sum(),
+                turns: partial.routes.iter().map(|route| route.turns).sum(),
+                expanded: partial.routes.iter().map(|route| route.expanded).sum(),
+                shared_cells: network_shared_cells(&partial.routes),
+                routes: partial.routes,
+            };
+            let mut replay = root.clone();
+            replay
+                .apply_network_candidate(&candidate)
+                .map_err(anyhow::Error::new)?;
+            candidate.id = candidates.len();
+            candidates.push(candidate);
+        }
+        Ok(candidates)
     }
 
     fn score_actions(
@@ -337,6 +520,10 @@ impl MacroAction {
                 fork.apply_route_candidate(candidate)
                     .map_err(anyhow::Error::new)?;
             }
+            Self::Network(candidate) => {
+                fork.apply_network_candidate(candidate)
+                    .map_err(anyhow::Error::new)?;
+            }
         }
         ensure!(
             fork.observe().active.is_none(),
@@ -369,6 +556,13 @@ impl MacroAction {
                 steps: Some(candidate.steps),
                 provenance: Some(candidate.provenance.clone()),
             },
+            Self::Network(candidate) => ActionSummary {
+                kind: "network",
+                entity: candidate.commodity.clone(),
+                state_revision: candidate.state_revision,
+                steps: Some(candidate.steps),
+                provenance: None,
+            },
         }
     }
 
@@ -382,6 +576,16 @@ impl MacroAction {
                 progress + f64::from(candidate.predicted_success.unwrap_or(0.5))
                     - candidate.steps as f64 * 0.002
                     - candidate.learned_cost as f64 * 0.0001
+            }
+            Self::Network(candidate) => {
+                let success = candidate
+                    .routes
+                    .iter()
+                    .map(|route| f64::from(route.predicted_success.unwrap_or(0.5)))
+                    .sum::<f64>()
+                    / candidate.routes.len() as f64;
+                progress + success + candidate.shared_cells as f64 * 0.002
+                    - candidate.steps as f64 * 0.001
             }
         }
     }
@@ -448,9 +652,103 @@ impl MacroAction {
                 }
                 row[22] = candidate.cells.len() as f32 / (bounds.width() * bounds.height()) as f32;
             }
+            Self::Network(candidate) => {
+                row[2] = 1.0;
+                let first = &candidate.routes[0];
+                let connection = before
+                    .problem()
+                    .connections
+                    .iter()
+                    .position(|connection| connection.id == first.connection)
+                    .unwrap_or(0);
+                row[6] = connection as f32 / before.problem().connections.len().max(1) as f32;
+                row[7] = candidate.steps as f32 / scale;
+                row[8] = candidate.turns as f32 / candidate.steps.max(1) as f32;
+                let cells = candidate
+                    .routes
+                    .iter()
+                    .flat_map(|route| route.cells.iter().copied())
+                    .collect::<BTreeSet<_>>();
+                row[9] = candidate.shared_cells as f32 / cells.len().max(1) as f32;
+                row[10] = (candidate
+                    .routes
+                    .iter()
+                    .map(|route| route.learned_cost)
+                    .sum::<u64>() as f32)
+                    .ln_1p()
+                    / 16.0;
+                row[11] = candidate
+                    .routes
+                    .iter()
+                    .map(|route| route.predicted_success.unwrap_or(0.5))
+                    .sum::<f32>()
+                    / candidate.routes.len() as f32;
+                row[12] = candidate
+                    .routes
+                    .iter()
+                    .map(|route| route.guidance_uncertainty.unwrap_or(1.0))
+                    .sum::<f32>()
+                    / candidate.routes.len() as f32;
+                for route in &candidate.routes {
+                    match route.provenance {
+                        Provenance::Anchor => row[13] = 1.0,
+                        Provenance::Guided { .. } => row[14] = 1.0,
+                        Provenance::Diversified { .. } => row[15] = 1.0,
+                    }
+                }
+                row[16] = candidate
+                    .routes
+                    .iter()
+                    .any(|route| route.source_port.is_some()) as u8
+                    as f32;
+                row[17] = candidate
+                    .routes
+                    .iter()
+                    .any(|route| route.target_port.is_some()) as u8
+                    as f32;
+                if let Some(min_x) = cells.iter().map(|point| point.x).min() {
+                    row[18] = min_x as f32 / scale;
+                    row[19] = cells.iter().map(|point| point.x).max().unwrap() as f32 / scale;
+                    row[20] = cells.iter().map(|point| point.y).min().unwrap() as f32 / scale;
+                    row[21] = cells.iter().map(|point| point.y).max().unwrap() as f32 / scale;
+                }
+                row[22] = cells.len() as f32 / (bounds.width() * bounds.height()) as f32;
+            }
         }
         row
     }
+}
+
+fn session_network_identity(
+    session: &Session,
+    connections: &[String],
+) -> Result<(String, aic_layout::logistics::TransportKind)> {
+    ensure!(
+        connections.len() > 1,
+        "aic-learning.hierarchical-network: network task needs multiple connections"
+    );
+    let mut unique = BTreeSet::new();
+    let first = session
+        .problem()
+        .connections
+        .iter()
+        .find(|connection| connection.id == connections[0])
+        .context("aic-learning.hierarchical-network: unknown first connection")?;
+    for id in connections {
+        let connection = session
+            .problem()
+            .connections
+            .iter()
+            .find(|connection| connection.id == *id)
+            .context("aic-learning.hierarchical-network: unknown connection")?;
+        ensure!(
+            unique.insert(id.as_str())
+                && connection.commodity == first.commodity
+                && connection.transport == first.transport,
+            "aic-learning.hierarchical-network: task mixes duplicate or incompatible connections"
+        );
+    }
+    Ok((first.commodity.clone(), first.transport))
 }
 
 pub fn run(

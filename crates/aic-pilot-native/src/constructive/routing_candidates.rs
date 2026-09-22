@@ -5,6 +5,7 @@ use std::collections::{BTreeSet, HashSet};
 use aic_layout::{
     facilities::{FacilityPortDirection, FacilityPortEdge},
     geometry::{Bounds, Point, layer},
+    logistics::TransportKind,
     projection::edge_index,
 };
 use aic_routing::{Crossings, PathOptions, shortest_path};
@@ -33,6 +34,13 @@ pub struct Config {
 pub struct Request {
     pub state_revision: u64,
     pub connection: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct NetworkRequest {
+    pub state_revision: u64,
+    pub connections: Vec<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -117,6 +125,22 @@ pub struct Candidate {
     pub predicted_success: Option<f32>,
     pub guidance_uncertainty: Option<f32>,
     pub provenance: Provenance,
+}
+
+/// One atomic same-commodity network witness. Its member routes were generated
+/// and replayed in order, so later routes see exact residual shared capacity.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct NetworkCandidate {
+    pub id: usize,
+    pub state_revision: u64,
+    pub commodity: String,
+    pub transport: TransportKind,
+    pub routes: Vec<Candidate>,
+    pub steps: i64,
+    pub turns: i64,
+    pub expanded: usize,
+    pub shared_cells: usize,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
@@ -676,6 +700,77 @@ impl Session {
         Ok(steps)
     }
 
+    /// Atomically applies a complete same-commodity network witness. Each
+    /// member route is replayed against the state produced by the preceding
+    /// member, which delegates cell and port capacity to the native session.
+    pub fn apply_network_candidate(
+        &mut self,
+        candidate: &NetworkCandidate,
+    ) -> Result<Vec<Step>, Diagnostic> {
+        if self.revision != candidate.state_revision
+            || candidate.routes.len() < 2
+            || candidate.commodity.is_empty()
+        {
+            return Err(error(
+                "network-candidate-identity",
+                &candidate.commodity,
+                "network candidate is stale, empty, or does not contain multiple routes",
+            ));
+        }
+        let mut connections = BTreeSet::new();
+        let mut fork = self.clone();
+        let mut steps = Vec::new();
+        for route in &candidate.routes {
+            let Some(&connection) = fork.connections.get(&route.connection) else {
+                return Err(error(
+                    "network-candidate-connection",
+                    &route.connection,
+                    "network candidate references an unknown connection",
+                ));
+            };
+            let obligation = &fork.problem.connections[connection];
+            if obligation.commodity != candidate.commodity
+                || obligation.transport != candidate.transport
+                || !connections.insert(route.connection.as_str())
+            {
+                return Err(error(
+                    "network-candidate-task",
+                    &route.connection,
+                    "network routes must be distinct and share commodity and transport",
+                ));
+            }
+            steps.extend(fork.apply_route_candidate(route)?);
+        }
+        let steps_total = candidate
+            .routes
+            .iter()
+            .map(|route| route.steps)
+            .sum::<i64>();
+        let turns_total = candidate
+            .routes
+            .iter()
+            .map(|route| route.turns)
+            .sum::<i64>();
+        let expanded_total = candidate
+            .routes
+            .iter()
+            .map(|route| route.expanded)
+            .sum::<usize>();
+        if candidate.steps != steps_total
+            || candidate.turns != turns_total
+            || candidate.expanded != expanded_total
+            || candidate.shared_cells != network_shared_cells(&candidate.routes)
+        {
+            return Err(error(
+                "network-candidate-metadata",
+                &candidate.commodity,
+                "network candidate aggregate work or sharing metadata differs from its routes",
+            ));
+        }
+        *self = fork;
+        Ok(steps)
+    }
+
     fn endpoint_pairs(
         &self,
         connection: usize,
@@ -931,6 +1026,16 @@ fn maximum_overlap(cells: &[Point], candidates: &[Candidate]) -> usize {
         })
         .max()
         .unwrap_or(0)
+}
+
+pub fn network_shared_cells(routes: &[Candidate]) -> usize {
+    let mut uses = IndexMap::<Point, usize>::new();
+    for route in routes {
+        for point in route.cells.iter().copied().collect::<BTreeSet<_>>() {
+            *uses.entry(point).or_default() += 1;
+        }
+    }
+    uses.values().filter(|&&count| count > 1).count()
 }
 
 fn diversity(candidates: &[Candidate]) -> (Option<f64>, Option<f64>) {

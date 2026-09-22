@@ -1,0 +1,125 @@
+{
+  "schema": "aic-hierarchical-search-panel-v1",
+  "partition": "held-out",
+  "limits": {
+    "max_turns": 10000,
+    "max_extension": 32
+  },
+  "cases": [
+    {
+      "id": "shared-output-trunk",
+      "problem": {
+        "blocks": [
+          {
+            "id": "machine",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "supply",
+            "direction": "input",
+            "commodity": "test-item",
+            "transport": "belt"
+          },
+          {
+            "id": "sink-a",
+            "direction": "output",
+            "commodity": "test-item",
+            "transport": "belt"
+          },
+          {
+            "id": "sink-b",
+            "direction": "output",
+            "commodity": "test-item",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "supply-flow",
+            "source": "supply",
+            "target": "machine",
+            "commodity": "test-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "output-a",
+            "source": "machine",
+            "target": "sink-a",
+            "commodity": "test-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "output-b",
+            "source": "machine",
+            "target": "sink-b",
+            "commodity": "test-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "machine",
+          "position": {
+            "x": 5,
+            "y": 8
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place-terminal",
+          "terminal": "supply",
+          "position": {
+            "x": 6,
+            "y": 15
+          }
+        },
+        {
+          "kind": "place-terminal",
+          "terminal": "sink-a",
+          "position": {
+            "x": 4,
+            "y": 0
+          }
+        },
+        {
+          "kind": "place-terminal",
+          "terminal": "sink-b",
+          "position": {
+            "x": 8,
+            "y": 0
+          }
+        },
+        {
+          "kind": "begin-route",
+          "connection": "supply-flow",
+          "source_port": null,
+          "target_port": "input-belt-1"
+        },
+        {
+          "kind": "extend",
+          "direction": "north",
+          "length": 4
+        },
+        {
+          "kind": "connect"
+        }
+      ]
+    }
+  ]
+}

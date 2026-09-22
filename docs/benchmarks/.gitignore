@@ -56,6 +56,7 @@
 !/fixtures/order-certificate.json
 !/heavy-xiranite-bottom-up-rotation-root/case.json
 !/hierarchical-generation/config.json
+!/hierarchical-network/panel.json
 !/hierarchical-outer/config.json
 !/hierarchical-outer/evaluation-panel.json
 !/hierarchical-outer/training-panel.json

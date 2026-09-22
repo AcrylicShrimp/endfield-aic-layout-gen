@@ -487,13 +487,22 @@ fn collect_lower_examples(
     temperature: f64,
     output: &mut Vec<LowerExample>,
 ) -> Result<()> {
-    let mut groups = BTreeMap::<&str, Vec<usize>>::new();
+    let mut groups = BTreeMap::<&str, Vec<(usize, &Candidate)>>::new();
     for (index, action) in record.actions.iter().enumerate() {
-        if let MacroAction::Route(candidate) = &action.action {
-            groups
+        match &action.action {
+            MacroAction::Route(candidate) => groups
                 .entry(candidate.connection.as_str())
                 .or_default()
-                .push(index);
+                .push((index, candidate)),
+            MacroAction::Network(candidate) => {
+                for route in &candidate.routes {
+                    groups
+                        .entry(route.connection.as_str())
+                        .or_default()
+                        .push((index, route));
+                }
+            }
+            MacroAction::Command(_) => {}
         }
     }
     for (connection, indices) in groups {
@@ -509,22 +518,21 @@ fn collect_lower_examples(
             .map_err(anyhow::Error::new)?;
         let q_max = indices
             .iter()
-            .map(|&index| record.actions[index].q)
+            .map(|&(index, _)| record.actions[index].q)
             .fold(f64::NEG_INFINITY, f64::max);
         let candidates = indices
             .iter()
-            .map(|&index| match &record.actions[index].action {
-                MacroAction::Route(candidate) => Ok(LowerCandidate {
+            .map(|&(index, candidate)| {
+                Ok(LowerCandidate {
                     edge_offsets: edge_offsets(candidate, input.bounds),
                     head: (candidate.id % lower_config.model.heads) as i64,
                     q: (q_max - record.actions[index].q).max(0.0) as f32,
-                }),
-                MacroAction::Command(_) => unreachable!(),
+                })
             })
             .collect::<Result<Vec<_>>>()?;
         let weights = indices
             .iter()
-            .map(|&index| {
+            .map(|&(index, _)| {
                 search_weight(
                     record.actions[index].visits,
                     record.actions[index].prior,

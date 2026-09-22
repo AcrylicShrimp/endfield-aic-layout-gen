@@ -1585,27 +1585,78 @@ mod tests {
                 .accepted
         );
         assert!(session.step(Command::Connect).accepted);
+        let network_revision = session.observe().revision;
+        let mut staged = session.clone();
+        let mut routes = Vec::new();
         for (connection, horizontal) in
             [("output-a", Direction::West), ("output-b", Direction::East)]
         {
-            assert!(
-                session
-                    .step(Command::BeginRoute {
-                        connection: connection.into(),
-                        source_port: Some("output-belt-1".into()),
-                        target_port: None,
-                    })
-                    .accepted
-            );
-            for (direction, length) in [
-                (Direction::North, 3),
-                (horizontal, 2),
-                (Direction::North, 4),
-            ] {
-                assert!(session.step(Command::Extend { direction, length }).accepted);
+            let state_revision = staged.observe().revision;
+            let commands = vec![
+                Command::BeginRoute {
+                    connection: connection.into(),
+                    source_port: Some("output-belt-1".into()),
+                    target_port: None,
+                },
+                Command::Extend {
+                    direction: Direction::North,
+                    length: 3,
+                },
+                Command::Extend {
+                    direction: horizontal,
+                    length: 2,
+                },
+                Command::Extend {
+                    direction: Direction::North,
+                    length: 4,
+                },
+                Command::Connect,
+            ];
+            for command in &commands {
+                assert!(staged.step(command.clone()).accepted);
             }
-            assert!(session.step(Command::Connect).accepted);
+            let route = staged
+                .observe()
+                .routes
+                .into_iter()
+                .flatten()
+                .find(|route| route.connection == connection)
+                .unwrap();
+            routes.push(routing_candidates::Candidate {
+                id: routes.len(),
+                state_revision,
+                connection: connection.into(),
+                source_port: Some("output-belt-1".into()),
+                target_port: None,
+                cells: route.cells,
+                commands,
+                steps: 9,
+                turns: 2,
+                expanded: 0,
+                overlap_with_previous: 0,
+                learned_cost: 0,
+                predicted_success: None,
+                guidance_uncertainty: None,
+                provenance: routing_candidates::Provenance::Anchor,
+            });
         }
+        let network = routing_candidates::NetworkCandidate {
+            id: 0,
+            state_revision: network_revision,
+            commodity: "test-item".into(),
+            transport: TransportKind::Belt,
+            steps: routes.iter().map(|route| route.steps).sum(),
+            turns: routes.iter().map(|route| route.turns).sum(),
+            expanded: 0,
+            shared_cells: routing_candidates::network_shared_cells(&routes),
+            routes,
+        };
+        assert_eq!(network.shared_cells, 4);
+        let mut tampered = network.clone();
+        tampered.shared_cells += 1;
+        assert!(session.apply_network_candidate(&tampered).is_err());
+        assert_eq!(session.observe().revision, network_revision);
+        session.apply_network_candidate(&network).unwrap();
         assert!(session.done());
         assert!(session.metrics().is_some());
         assert_eq!(session.observe().completed, 3);
