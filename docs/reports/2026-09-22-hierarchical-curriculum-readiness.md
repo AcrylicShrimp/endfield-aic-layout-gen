@@ -1,5 +1,9 @@
 # Hierarchical curriculum readiness
 
+Run outcome: the canonical run was stopped after 11 committed generations when
+same-level training and fixed held-out completion regressed. See
+[`2026-09-22-hierarchical-curriculum-early-regression.md`](2026-09-22-hierarchical-curriculum-early-regression.md).
+
 ## Question and decision
 
 This cycle asked whether the solver-augmented hierarchical learner was ready to
