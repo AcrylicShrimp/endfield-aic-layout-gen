@@ -1,0 +1,2147 @@
+{
+  "schema": "aic-hierarchical-search-budget-diagnosis-v1",
+  "identity": {
+    "source_commit": "5e8cbf4d6d45425ce916b597fc1961400868c292",
+    "binary_sha256": "065f2187dae0cc951daa8d7fb315e55aef6e9c080a510fd2afd5784d86f754e7",
+    "panel_sha256": "976bceeb93bf935578e862ce6d715184f6f3be939c3d736854ba74a56071d873",
+    "base_config_sha256": "a306f2baf065cd046c5cbc1b0b20d9400ee1aac672870fd635c3b014903cd47e",
+    "lower_checkpoint_state_sha256": "bc68bbb1e819d2958e9388f4e07fc35dab059a14056c936dfce7743ef013ad77",
+    "outer_checkpoint_state_sha256": "5e11cf22c7924581aeb43de21361953d38e0022bf8d085bfda8ada827ea6a030"
+  },
+  "question": "Can simulation budget alone recover at least 27 of 32 fixed regression cases efficiently?",
+  "qualification_completed": 27,
+  "anchor_control_completed": 30,
+  "recovery_action_learned_prior_ranks": [
+    12,
+    12,
+    12,
+    12,
+    12,
+    14,
+    14,
+    18,
+    18,
+    18,
+    18,
+    18,
+    18,
+    18,
+    18,
+    20,
+    20,
+    21,
+    21,
+    21,
+    29
+  ],
+  "cells": [
+    {
+      "budget": 64,
+      "completed": 9,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 6,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 3,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 9,
+        "no-macro-actions": 23
+      },
+      "wall_seconds": 13.236198745013098,
+      "wall_seconds_per_completion": 1.4706887494458998,
+      "total_simulations": 12480,
+      "simulations_per_completion": 1386.6666666666667,
+      "mcts_samples_per_minute": 296656.64852125116,
+      "root_widened_actions": 8,
+      "known_recovery_root_actions_eligible": 0,
+      "known_recovery_root_actions": 21,
+      "all_root_records": {
+        "records": 172,
+        "selected_prior_rank_median": 1.0,
+        "selected_prior_rank_mean": 1.0406976744186047,
+        "selected_is_prior_top_fraction": 0.9593023255813954,
+        "visited_actions_mean": 3.25,
+        "selected_visit_fraction_mean": 0.6944444444444444,
+        "visit_normalized_entropy_mean": 0.2622195206346926
+      },
+      "initial_root_records": {
+        "records": 32,
+        "selected_prior_rank_median": 1.0,
+        "selected_prior_rank_mean": 1.09375,
+        "selected_is_prior_top_fraction": 0.90625,
+        "visited_actions_mean": 2.59375,
+        "selected_visit_fraction_mean": 0.8521825396825397,
+        "visit_normalized_entropy_mean": 0.07057965868151403
+      },
+      "outcomes": [
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-66",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 320,
+          "elapsed_seconds": 0.479649473
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3004",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 320,
+          "elapsed_seconds": 0.122838246
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3302",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 320,
+          "elapsed_seconds": 0.108023917
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2406",
+          "group": "easy-control",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 4,
+          "simulations": 320,
+          "elapsed_seconds": 0.136944544
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-453",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 320,
+          "elapsed_seconds": 0.130080836
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2181",
+          "group": "easy-control",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 4,
+          "simulations": 320,
+          "elapsed_seconds": 0.131809596
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-1604",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 320,
+          "elapsed_seconds": 0.123028953
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-937",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 320,
+          "elapsed_seconds": 0.101032871
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-365",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 448,
+          "elapsed_seconds": 0.797519761
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3109",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 448,
+          "elapsed_seconds": 0.797323156
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3371",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 448,
+          "elapsed_seconds": 0.801665857
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2342",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 448,
+          "elapsed_seconds": 0.752104397
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2329",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 448,
+          "elapsed_seconds": 0.803236521
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000001-2540",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 448,
+          "elapsed_seconds": 0.554475209
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000001-1558",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 384,
+          "elapsed_seconds": 0.386095919
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-763",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 384,
+          "elapsed_seconds": 0.349039505
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-1541",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 384,
+          "elapsed_seconds": 0.376725293
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-589",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 7,
+          "simulations": 448,
+          "elapsed_seconds": 0.574319642
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-2665",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 7,
+          "simulations": 448,
+          "elapsed_seconds": 0.589855805
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-405",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 384,
+          "elapsed_seconds": 0.371785215
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-1405",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 384,
+          "elapsed_seconds": 0.360284034
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-1966",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 7,
+          "simulations": 448,
+          "elapsed_seconds": 0.565817695
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-443",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 384,
+          "elapsed_seconds": 0.365427958
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-275",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 384,
+          "elapsed_seconds": 0.365936151
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-3197",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 384,
+          "elapsed_seconds": 0.336809602
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2733",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 384,
+          "elapsed_seconds": 0.234088106
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3428",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 7,
+          "simulations": 512,
+          "elapsed_seconds": 0.770745533
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3619",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 384,
+          "elapsed_seconds": 0.237327486
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3790",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 384,
+          "elapsed_seconds": 0.258819627
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-631",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 384,
+          "elapsed_seconds": 0.23814187
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2627",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 384,
+          "elapsed_seconds": 0.237794434
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-584",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 384,
+          "elapsed_seconds": 0.236939936
+        }
+      ],
+      "config_sha256": "a306f2baf065cd046c5cbc1b0b20d9400ee1aac672870fd635c3b014903cd47e",
+      "outer_contract_sha256": "fb562213d6c82af07de3503a256c6841aa2ec3c5110f95b93d092e20da22842c",
+      "report_sha256": "092ce0bd6185488e00d3a0fc265e0ab40e77faab306b450d6a3d0ed778fa6e2d"
+    },
+    {
+      "budget": 128,
+      "completed": 9,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 1,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 9,
+        "no-macro-actions": 23
+      },
+      "wall_seconds": 21.579686163007864,
+      "wall_seconds_per_completion": 2.3977429070008736,
+      "total_simulations": 25216,
+      "simulations_per_completion": 2801.777777777778,
+      "mcts_samples_per_minute": 280605.29180637543,
+      "root_widened_actions": 12,
+      "known_recovery_root_actions_eligible": 5,
+      "known_recovery_root_actions": 21,
+      "all_root_records": {
+        "records": 174,
+        "selected_prior_rank_median": 1.0,
+        "selected_prior_rank_mean": 1.2816091954022988,
+        "selected_is_prior_top_fraction": 0.8218390804597702,
+        "visited_actions_mean": 4.235632183908046,
+        "selected_visit_fraction_mean": 0.6550819078649652,
+        "visit_normalized_entropy_mean": 0.2925427037703118
+      },
+      "initial_root_records": {
+        "records": 32,
+        "selected_prior_rank_median": 1.0,
+        "selected_prior_rank_mean": 1.90625,
+        "selected_is_prior_top_fraction": 0.53125,
+        "visited_actions_mean": 4.0625,
+        "selected_visit_fraction_mean": 0.7293307086614174,
+        "visit_normalized_entropy_mean": 0.11534131855657037
+      },
+      "outcomes": [
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-66",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 640,
+          "elapsed_seconds": 0.528092277
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3004",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 640,
+          "elapsed_seconds": 0.160434177
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3302",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 640,
+          "elapsed_seconds": 0.145536693
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2406",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 640,
+          "elapsed_seconds": 0.178519306
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-453",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 640,
+          "elapsed_seconds": 0.163068573
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2181",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 640,
+          "elapsed_seconds": 0.175530417
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-1604",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 640,
+          "elapsed_seconds": 0.161290194
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-937",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 640,
+          "elapsed_seconds": 0.146303482
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-365",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 896,
+          "elapsed_seconds": 1.311638574
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3109",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 896,
+          "elapsed_seconds": 1.3041973709999999
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3371",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 896,
+          "elapsed_seconds": 1.313840342
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2342",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 8,
+          "simulations": 1152,
+          "elapsed_seconds": 1.605214181
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2329",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 896,
+          "elapsed_seconds": 1.307667707
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000001-2540",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 7,
+          "simulations": 896,
+          "elapsed_seconds": 0.870181889
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000001-1558",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 768,
+          "elapsed_seconds": 0.705895602
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-763",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 768,
+          "elapsed_seconds": 0.70959115
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-1541",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 768,
+          "elapsed_seconds": 0.835510856
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-589",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 896,
+          "elapsed_seconds": 0.867248394
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-2665",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 896,
+          "elapsed_seconds": 0.882656839
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-405",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 768,
+          "elapsed_seconds": 0.686903018
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-1405",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 768,
+          "elapsed_seconds": 0.676756372
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-1966",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 896,
+          "elapsed_seconds": 0.863912174
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-443",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 768,
+          "elapsed_seconds": 0.706800198
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-275",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 768,
+          "elapsed_seconds": 0.707608768
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-3197",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 768,
+          "elapsed_seconds": 0.679071091
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2733",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 768,
+          "elapsed_seconds": 0.336320236
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3428",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 7,
+          "simulations": 1024,
+          "elapsed_seconds": 1.298803535
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3619",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 768,
+          "elapsed_seconds": 0.343273061
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3790",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 768,
+          "elapsed_seconds": 0.414956222
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-631",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 768,
+          "elapsed_seconds": 0.343408079
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2627",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 768,
+          "elapsed_seconds": 0.339046665
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-584",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 768,
+          "elapsed_seconds": 0.344080619
+        }
+      ],
+      "config_sha256": "5c37c131793eff18f50588d6088671ed3a4ec29e6637b69d7784df337d69308e",
+      "outer_contract_sha256": "8f3d97fb56f79c22c5290a075d4036e99c6a9af9c68aa22dc55bceb35fc33f1a",
+      "report_sha256": "510d65df6deb4d8ff85f489d1f31dec65fb45c1a401b079fcab54566008be901",
+      "marginal_completed": 0,
+      "marginal_wall_seconds": 8.343487417994766,
+      "added_successes": [
+        "train-hierarchical-curriculum-v1-g000000-2181",
+        "train-hierarchical-curriculum-v1-g000000-2406",
+        "train-hierarchical-curriculum-v1-g000001-2540"
+      ],
+      "lost_successes": [
+        "train-hierarchical-curriculum-v1-g000002-589",
+        "train-hierarchical-curriculum-v1-g000003-1966",
+        "train-hierarchical-curriculum-v1-g000003-2665"
+      ],
+      "marginal_wall_seconds_per_added_completion": null
+    },
+    {
+      "budget": 256,
+      "completed": 9,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 1,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 9,
+        "no-macro-actions": 23
+      },
+      "wall_seconds": 30.72883989100228,
+      "wall_seconds_per_completion": 3.414315543444698,
+      "total_simulations": 50176,
+      "simulations_per_completion": 5575.111111111111,
+      "mcts_samples_per_minute": 279834.49834787915,
+      "root_widened_actions": 16,
+      "known_recovery_root_actions_eligible": 7,
+      "known_recovery_root_actions": 21,
+      "all_root_records": {
+        "records": 173,
+        "selected_prior_rank_median": 1,
+        "selected_prior_rank_mean": 1.1907514450867052,
+        "selected_is_prior_top_fraction": 0.8497109826589595,
+        "visited_actions_mean": 4.6473988439306355,
+        "selected_visit_fraction_mean": 0.6352487815935624,
+        "visit_normalized_entropy_mean": 0.3019996347317836
+      },
+      "initial_root_records": {
+        "records": 32,
+        "selected_prior_rank_median": 1.0,
+        "selected_prior_rank_mean": 1.25,
+        "selected_is_prior_top_fraction": 0.875,
+        "visited_actions_mean": 4.84375,
+        "selected_visit_fraction_mean": 0.707843137254902,
+        "visit_normalized_entropy_mean": 0.11544528102446375
+      },
+      "outcomes": [
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-66",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 1280,
+          "elapsed_seconds": 0.544321609
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3004",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 1280,
+          "elapsed_seconds": 0.184680578
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3302",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 1280,
+          "elapsed_seconds": 0.163047129
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2406",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 1280,
+          "elapsed_seconds": 0.216734336
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-453",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 1280,
+          "elapsed_seconds": 0.190808799
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2181",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 1280,
+          "elapsed_seconds": 0.222667987
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-1604",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 1280,
+          "elapsed_seconds": 0.18681502
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-937",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 1280,
+          "elapsed_seconds": 0.170894648
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-365",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 1792,
+          "elapsed_seconds": 2.178926186
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3109",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 1792,
+          "elapsed_seconds": 2.157962112
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3371",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 1792,
+          "elapsed_seconds": 2.159413412
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2342",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 7,
+          "simulations": 2048,
+          "elapsed_seconds": 1.921242151
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2329",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 1792,
+          "elapsed_seconds": 2.148203504
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000001-2540",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 7,
+          "simulations": 1792,
+          "elapsed_seconds": 1.106942354
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000001-1558",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 1536,
+          "elapsed_seconds": 0.934211821
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-763",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 1536,
+          "elapsed_seconds": 0.858078243
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-1541",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 1536,
+          "elapsed_seconds": 1.108509344
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-589",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 1792,
+          "elapsed_seconds": 1.379277086
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-2665",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 1792,
+          "elapsed_seconds": 1.357769398
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-405",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 1536,
+          "elapsed_seconds": 0.875224232
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-1405",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 1536,
+          "elapsed_seconds": 0.905987111
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-1966",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 1792,
+          "elapsed_seconds": 1.3911077330000001
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-443",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 1536,
+          "elapsed_seconds": 0.880177963
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-275",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 1536,
+          "elapsed_seconds": 0.891405327
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-3197",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 1536,
+          "elapsed_seconds": 0.889487134
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2733",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 1536,
+          "elapsed_seconds": 0.500387893
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3428",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 7,
+          "simulations": 2048,
+          "elapsed_seconds": 2.119712705
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3619",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 1536,
+          "elapsed_seconds": 0.509913887
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3790",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 1536,
+          "elapsed_seconds": 0.60271386
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-631",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 1536,
+          "elapsed_seconds": 0.506913459
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2627",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 1536,
+          "elapsed_seconds": 0.505242435
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-584",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 1536,
+          "elapsed_seconds": 0.50454299
+        }
+      ],
+      "config_sha256": "e20f9180c2b65c07fdaec021d6ed9aa214a6e53bb46ba1f7e41869a8f2b2b92e",
+      "outer_contract_sha256": "b87d178ef99006d00e79f4e092db7df8ed8e1b6e6fc0e5677f3f8a16765300db",
+      "report_sha256": "06354b0a26d64fe9eb7e149a2a7f0b06eef3a9b7d7010b8cf79cc772fbd11c9f",
+      "marginal_completed": 0,
+      "marginal_wall_seconds": 9.149153727994417,
+      "added_successes": [],
+      "lost_successes": [],
+      "marginal_wall_seconds_per_added_completion": null
+    },
+    {
+      "budget": 512,
+      "completed": 12,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 4,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 12,
+        "no-macro-actions": 20
+      },
+      "wall_seconds": 42.67235137200623,
+      "wall_seconds_per_completion": 3.5560292810005194,
+      "total_simulations": 100352,
+      "simulations_per_completion": 8362.666666666666,
+      "mcts_samples_per_minute": 274000.32974331296,
+      "root_widened_actions": 23,
+      "known_recovery_root_actions_eligible": 20,
+      "known_recovery_root_actions": 21,
+      "all_root_records": {
+        "records": 176,
+        "selected_prior_rank_median": 1.0,
+        "selected_prior_rank_mean": 1.3863636363636365,
+        "selected_is_prior_top_fraction": 0.8068181818181818,
+        "visited_actions_mean": 5.056818181818182,
+        "selected_visit_fraction_mean": 0.6264788293897883,
+        "visit_normalized_entropy_mean": 0.30453270610614497
+      },
+      "initial_root_records": {
+        "records": 32,
+        "selected_prior_rank_median": 1.0,
+        "selected_prior_rank_mean": 2.28125,
+        "selected_is_prior_top_fraction": 0.5625,
+        "visited_actions_mean": 6.90625,
+        "selected_visit_fraction_mean": 0.5414628180039138,
+        "visit_normalized_entropy_mean": 0.1647221596918479
+      },
+      "outcomes": [
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-66",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 2560,
+          "elapsed_seconds": 0.601960716
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3004",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 2560,
+          "elapsed_seconds": 0.216193612
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3302",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 2560,
+          "elapsed_seconds": 0.223987979
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2406",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 2560,
+          "elapsed_seconds": 0.318638378
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-453",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 2560,
+          "elapsed_seconds": 0.219254175
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2181",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 2560,
+          "elapsed_seconds": 0.274983605
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-1604",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 2560,
+          "elapsed_seconds": 0.216753995
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-937",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 2560,
+          "elapsed_seconds": 0.22635614
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-365",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 3584,
+          "elapsed_seconds": 3.129206108
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3109",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 3584,
+          "elapsed_seconds": 3.09094565
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3371",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 3584,
+          "elapsed_seconds": 3.0901791259999998
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2342",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 7,
+          "simulations": 4096,
+          "elapsed_seconds": 2.862828765
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2329",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 3584,
+          "elapsed_seconds": 3.114531651
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000001-2540",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 7,
+          "simulations": 3584,
+          "elapsed_seconds": 1.670940869
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000001-1558",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 3072,
+          "elapsed_seconds": 1.221317815
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-763",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 3072,
+          "elapsed_seconds": 1.15273129
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-1541",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 3072,
+          "elapsed_seconds": 1.282508955
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-589",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 7,
+          "simulations": 3584,
+          "elapsed_seconds": 1.918492077
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-2665",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 7,
+          "simulations": 3584,
+          "elapsed_seconds": 1.916821675
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-405",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 3072,
+          "elapsed_seconds": 1.143656035
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-1405",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 3072,
+          "elapsed_seconds": 1.190608422
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-1966",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 7,
+          "simulations": 3584,
+          "elapsed_seconds": 1.641919416
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-443",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 3072,
+          "elapsed_seconds": 1.186036291
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-275",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 3072,
+          "elapsed_seconds": 1.173625647
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-3197",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 3072,
+          "elapsed_seconds": 1.159388237
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2733",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 3072,
+          "elapsed_seconds": 0.812822424
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3428",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 7,
+          "simulations": 4096,
+          "elapsed_seconds": 2.957192065
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3619",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 3072,
+          "elapsed_seconds": 0.877033298
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3790",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 3072,
+          "elapsed_seconds": 0.887111302
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-631",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 3072,
+          "elapsed_seconds": 0.806859257
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2627",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 3072,
+          "elapsed_seconds": 0.80809101
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-584",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 3072,
+          "elapsed_seconds": 0.820695841
+        }
+      ],
+      "config_sha256": "4cbe91e41fba953e8ce512b461c292b0dfb50e202e8cc4e7ec33df35f8ffd033",
+      "outer_contract_sha256": "9fa6800e5e3593f4539d3972591f25d10bf3dec663005be95b2b43f99f23effc",
+      "report_sha256": "a3f7bac8b9454d52d3721104648ad8858af10c2adadb9f0292aa064fd80bda55",
+      "marginal_completed": 3,
+      "marginal_wall_seconds": 11.943511481003952,
+      "added_successes": [
+        "train-hierarchical-curriculum-v1-g000002-589",
+        "train-hierarchical-curriculum-v1-g000003-1966",
+        "train-hierarchical-curriculum-v1-g000003-2665"
+      ],
+      "lost_successes": [],
+      "marginal_wall_seconds_per_added_completion": 3.981170493667984
+    },
+    {
+      "budget": 1024,
+      "completed": 19,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 11,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 19,
+        "no-macro-actions": 13
+      },
+      "wall_seconds": 67.55727977700008,
+      "wall_seconds_per_completion": 3.5556463040526354,
+      "total_simulations": 205824,
+      "simulations_per_completion": 10832.842105263158,
+      "mcts_samples_per_minute": 256052.14194469652,
+      "root_widened_actions": 32,
+      "known_recovery_root_actions_eligible": 21,
+      "known_recovery_root_actions": 21,
+      "all_root_records": {
+        "records": 188,
+        "selected_prior_rank_median": 1.0,
+        "selected_prior_rank_mean": 1.946808510638298,
+        "selected_is_prior_top_fraction": 0.6914893617021277,
+        "visited_actions_mean": 5.664893617021277,
+        "selected_visit_fraction_mean": 0.6434298371498097,
+        "visit_normalized_entropy_mean": 0.3044626299636414
+      },
+      "initial_root_records": {
+        "records": 32,
+        "selected_prior_rank_median": 2.0,
+        "selected_prior_rank_mean": 3.625,
+        "selected_is_prior_top_fraction": 0.25,
+        "visited_actions_mean": 9.25,
+        "selected_visit_fraction_mean": 0.5258431085043989,
+        "visit_normalized_entropy_mean": 0.19318100276599298
+      },
+      "outcomes": [
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-66",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 5120,
+          "elapsed_seconds": 0.685500123
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3004",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 5120,
+          "elapsed_seconds": 0.273057813
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3302",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 5120,
+          "elapsed_seconds": 0.297741776
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2406",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 5120,
+          "elapsed_seconds": 0.386183708
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-453",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 5120,
+          "elapsed_seconds": 0.278195957
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2181",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 5120,
+          "elapsed_seconds": 0.348442886
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-1604",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 5120,
+          "elapsed_seconds": 0.27453533
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-937",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 5120,
+          "elapsed_seconds": 0.310474797
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-365",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 7168,
+          "elapsed_seconds": 4.588544805
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3109",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 7168,
+          "elapsed_seconds": 4.51994322
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3371",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 7168,
+          "elapsed_seconds": 4.604355038
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2342",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 7,
+          "simulations": 8192,
+          "elapsed_seconds": 5.377695739
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2329",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 7168,
+          "elapsed_seconds": 4.563014818
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000001-2540",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 7,
+          "simulations": 7168,
+          "elapsed_seconds": 2.468053484
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000001-1558",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 6,
+          "simulations": 6144,
+          "elapsed_seconds": 2.189788673
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-763",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 6,
+          "simulations": 6144,
+          "elapsed_seconds": 2.052083305
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-1541",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 6144,
+          "elapsed_seconds": 1.7004918820000001
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-589",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 7,
+          "simulations": 7168,
+          "elapsed_seconds": 2.90128147
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-2665",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 7,
+          "simulations": 7168,
+          "elapsed_seconds": 2.865879924
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-405",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 6,
+          "simulations": 6144,
+          "elapsed_seconds": 2.084535073
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-1405",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 6,
+          "simulations": 6144,
+          "elapsed_seconds": 2.03025366
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-1966",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 7,
+          "simulations": 7168,
+          "elapsed_seconds": 2.493888457
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-443",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 6,
+          "simulations": 6144,
+          "elapsed_seconds": 2.150096287
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-275",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 6,
+          "simulations": 6144,
+          "elapsed_seconds": 2.105858762
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-3197",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 6,
+          "simulations": 6144,
+          "elapsed_seconds": 2.1448123629999998
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2733",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 7168,
+          "elapsed_seconds": 1.390038284
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3428",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 7,
+          "simulations": 8192,
+          "elapsed_seconds": 4.954552066
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3619",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 7168,
+          "elapsed_seconds": 1.408362355
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3790",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 6144,
+          "elapsed_seconds": 1.430435559
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-631",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 7168,
+          "elapsed_seconds": 1.42021855
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2627",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 7168,
+          "elapsed_seconds": 1.408547673
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-584",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 7168,
+          "elapsed_seconds": 1.390172999
+        }
+      ],
+      "config_sha256": "2600d07c4e92c2fd6c4cf7a45a1a7ddf9b13a574658b45f51f5330e2560b80bf",
+      "outer_contract_sha256": "542e7d3428cfb0e6c40b2a21c2223c19f5d9b86b08437b68eb3b89852696deea",
+      "report_sha256": "d9440d4a6a06f10f7df8b7cac63497b7bde4c497a2c0cd99dab04215bad9ecca",
+      "marginal_completed": 7,
+      "marginal_wall_seconds": 24.884928404993843,
+      "added_successes": [
+        "train-hierarchical-curriculum-v1-g000001-1558",
+        "train-hierarchical-curriculum-v1-g000002-763",
+        "train-hierarchical-curriculum-v1-g000003-1405",
+        "train-hierarchical-curriculum-v1-g000003-405",
+        "train-hierarchical-curriculum-v1-g000004-275",
+        "train-hierarchical-curriculum-v1-g000004-3197",
+        "train-hierarchical-curriculum-v1-g000004-443"
+      ],
+      "lost_successes": [],
+      "marginal_wall_seconds_per_added_completion": 3.5549897721419774
+    },
+    {
+      "budget": 2048,
+      "completed": 19,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 11,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 19,
+        "no-macro-actions": 13
+      },
+      "wall_seconds": 91.13207794100163,
+      "wall_seconds_per_completion": 4.796425154789559,
+      "total_simulations": 411648,
+      "simulations_per_completion": 21665.684210526317,
+      "mcts_samples_per_minute": 245018.7245236558,
+      "root_widened_actions": 46,
+      "known_recovery_root_actions_eligible": 21,
+      "known_recovery_root_actions": 21,
+      "all_root_records": {
+        "records": 188,
+        "selected_prior_rank_median": 1.0,
+        "selected_prior_rank_mean": 2.117021276595745,
+        "selected_is_prior_top_fraction": 0.723404255319149,
+        "visited_actions_mean": 7.888297872340425,
+        "selected_visit_fraction_mean": 0.6671932979243106,
+        "visit_normalized_entropy_mean": 0.3058120736870264
+      },
+      "initial_root_records": {
+        "records": 32,
+        "selected_prior_rank_median": 2.0,
+        "selected_prior_rank_mean": 4.4375,
+        "selected_is_prior_top_fraction": 0.4375,
+        "visited_actions_mean": 10.875,
+        "selected_visit_fraction_mean": 0.6672416951636542,
+        "visit_normalized_entropy_mean": 0.15309675302074394
+      },
+      "outcomes": [
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-66",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 10240,
+          "elapsed_seconds": 0.823832345
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3004",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 10240,
+          "elapsed_seconds": 0.429154995
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3302",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 10240,
+          "elapsed_seconds": 0.445323055
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2406",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 10240,
+          "elapsed_seconds": 0.533993705
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-453",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 10240,
+          "elapsed_seconds": 0.438291508
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2181",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 10240,
+          "elapsed_seconds": 0.597038464
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-1604",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 10240,
+          "elapsed_seconds": 0.428744695
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-937",
+          "group": "easy-control",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 5,
+          "simulations": 10240,
+          "elapsed_seconds": 0.449118026
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-365",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 14336,
+          "elapsed_seconds": 5.738460965
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3109",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 14336,
+          "elapsed_seconds": 5.725385208
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3371",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 14336,
+          "elapsed_seconds": 5.716694793
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2342",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 7,
+          "simulations": 16384,
+          "elapsed_seconds": 7.750681823
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2329",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 14336,
+          "elapsed_seconds": 5.717484559
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000001-2540",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 7,
+          "simulations": 14336,
+          "elapsed_seconds": 3.162037789
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000001-1558",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 6,
+          "simulations": 12288,
+          "elapsed_seconds": 2.246621369
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-763",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 6,
+          "simulations": 12288,
+          "elapsed_seconds": 2.110462597
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-1541",
+          "group": "early-hard-success",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 12288,
+          "elapsed_seconds": 2.151111524
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000002-589",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 7,
+          "simulations": 14336,
+          "elapsed_seconds": 4.569613244
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-2665",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 7,
+          "simulations": 14336,
+          "elapsed_seconds": 4.5590730619999995
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-405",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 6,
+          "simulations": 12288,
+          "elapsed_seconds": 2.213377435
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-1405",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 6,
+          "simulations": 12288,
+          "elapsed_seconds": 2.121863175
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000003-1966",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 7,
+          "simulations": 14336,
+          "elapsed_seconds": 3.697808484
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-443",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 6,
+          "simulations": 12288,
+          "elapsed_seconds": 2.2060496
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-275",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 6,
+          "simulations": 12288,
+          "elapsed_seconds": 2.151303493
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000004-3197",
+          "group": "early-hard-success",
+          "completed": true,
+          "termination": "fully-validated",
+          "moves": 6,
+          "simulations": 12288,
+          "elapsed_seconds": 2.102890897
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2733",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 14336,
+          "elapsed_seconds": 1.933317986
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3428",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 7,
+          "simulations": 16384,
+          "elapsed_seconds": 10.121666398
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3619",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 14336,
+          "elapsed_seconds": 2.08763036
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-3790",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 5,
+          "simulations": 12288,
+          "elapsed_seconds": 2.360232813
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-631",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 14336,
+          "elapsed_seconds": 2.011502688
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-2627",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 14336,
+          "elapsed_seconds": 2.023668009
+        },
+        {
+          "id": "train-hierarchical-curriculum-v1-g000000-584",
+          "group": "early-hard-failure",
+          "completed": false,
+          "termination": "no-macro-actions",
+          "moves": 6,
+          "simulations": 14336,
+          "elapsed_seconds": 2.038186918
+        }
+      ],
+      "config_sha256": "f44c17c46eb69869dda694396e55f186d500c62f4302cd990acc4f2de82f61c1",
+      "outer_contract_sha256": "56ec63b87f99f57f026a8f30f82aae873283dd7e8e2269c01bd0a5e181850b4c",
+      "report_sha256": "4ae37b25a8069953f55f99880a09d0bffe5d075b45f5cb59b20526dcb9234b44",
+      "marginal_completed": 0,
+      "marginal_wall_seconds": 23.57479816400155,
+      "added_successes": [],
+      "lost_successes": [],
+      "marginal_wall_seconds_per_added_completion": null
+    }
+  ],
+  "decision": {
+    "qualifying_budgets": [],
+    "maximum_completed": 19,
+    "maximum_budgets": [
+      1024,
+      2048
+    ],
+    "budget_only_treatment_accepted": false,
+    "diagnostic_knee_budget": 1024,
+    "reason": "No budget reached 27/32; 2048 doubled simulations over 1024 without an additional completion."
+  }
+}

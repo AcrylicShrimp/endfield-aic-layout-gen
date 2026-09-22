@@ -172,6 +172,13 @@ require that the fixed diagnostic panel retains its hard successes. Continue to
 exclude the original held-out panel from checkpoint selection; use it only for
 the final generalization measurement.
 
+The subsequent
+[`search-budget diagnosis`](2026-09-22-hierarchical-search-budget-diagnosis.md)
+found an unchanged-search knee at 1,024 simulations and no additional completion
+at 2,048. Budget scaling alone is therefore rejected; the next comparison must
+change candidate allocation while keeping the fixed panel and checkpoint
+weights constant.
+
 ## Retention state
 
 The original stopped run remains recoverable at generation 11 and retains the
