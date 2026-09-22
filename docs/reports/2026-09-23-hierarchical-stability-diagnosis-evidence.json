@@ -1,0 +1,1295 @@
+{
+  "ablations": {
+    "flat_value": "Zero outer.model.value.2.weight and outer.model.value.2.bias in generation-84 outer checkpoint; lower generation 49 and all policy weights unchanged.",
+    "uniform_policy": "Zero outer.model.policy.2.weight and outer.model.policy.2.bias in generation-84 outer checkpoint; lower generation 49 and all value weights unchanged."
+  },
+  "case_dimensions": {
+    "validation-hierarchical-curriculum-heldout-v1-1047": {
+      "connections": 8,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-10822": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-10869": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-11": {
+      "connections": 3,
+      "facilities": 1
+    },
+    "validation-hierarchical-curriculum-heldout-v1-11257": {
+      "connections": 8,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-11395": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-11445": {
+      "connections": 4,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-11453": {
+      "connections": 5,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-11595": {
+      "connections": 8,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-11602": {
+      "connections": 4,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-11985": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-1212": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-12332": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-1241": {
+      "connections": 5,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-12491": {
+      "connections": 3,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-1257": {
+      "connections": 2,
+      "facilities": 1
+    },
+    "validation-hierarchical-curriculum-heldout-v1-12705": {
+      "connections": 6,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-1272": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-12961": {
+      "connections": 5,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-13343": {
+      "connections": 6,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-13422": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-136": {
+      "connections": 2,
+      "facilities": 1
+    },
+    "validation-hierarchical-curriculum-heldout-v1-13694": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-1394": {
+      "connections": 3,
+      "facilities": 1
+    },
+    "validation-hierarchical-curriculum-heldout-v1-140": {
+      "connections": 8,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-14025": {
+      "connections": 6,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-14207": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-1447": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-14594": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-1462": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-14744": {
+      "connections": 4,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-14768": {
+      "connections": 5,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-14910": {
+      "connections": 5,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-14939": {
+      "connections": 8,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-15000": {
+      "connections": 6,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-15109": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-15618": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-15757": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-15826": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-15864": {
+      "connections": 6,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-15914": {
+      "connections": 4,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-16042": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-1835": {
+      "connections": 3,
+      "facilities": 1
+    },
+    "validation-hierarchical-curriculum-heldout-v1-189": {
+      "connections": 3,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-1904": {
+      "connections": 4,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-1914": {
+      "connections": 8,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-2038": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-2334": {
+      "connections": 8,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-242": {
+      "connections": 3,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-271": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-2839": {
+      "connections": 5,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-2939": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-2955": {
+      "connections": 6,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-2958": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-3124": {
+      "connections": 6,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-3144": {
+      "connections": 2,
+      "facilities": 1
+    },
+    "validation-hierarchical-curriculum-heldout-v1-3358": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-3405": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-3435": {
+      "connections": 6,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-3454": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-37": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-371": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-392": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-4010": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-4171": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-425": {
+      "connections": 6,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-436": {
+      "connections": 5,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-4472": {
+      "connections": 5,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-4476": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-4552": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-4571": {
+      "connections": 6,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-458": {
+      "connections": 2,
+      "facilities": 1
+    },
+    "validation-hierarchical-curriculum-heldout-v1-4739": {
+      "connections": 3,
+      "facilities": 1
+    },
+    "validation-hierarchical-curriculum-heldout-v1-4750": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-4786": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-4790": {
+      "connections": 5,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-4811": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-4841": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-4970": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-5018": {
+      "connections": 4,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-5149": {
+      "connections": 6,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-5166": {
+      "connections": 8,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-5302": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-5439": {
+      "connections": 5,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-5482": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-580": {
+      "connections": 2,
+      "facilities": 1
+    },
+    "validation-hierarchical-curriculum-heldout-v1-5889": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-60": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-6066": {
+      "connections": 5,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-6078": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-6113": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-6166": {
+      "connections": 6,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-6327": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-6330": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-638": {
+      "connections": 4,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-64": {
+      "connections": 6,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-6436": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-6670": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-6676": {
+      "connections": 6,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-679": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-6824": {
+      "connections": 4,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-6933": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-7": {
+      "connections": 2,
+      "facilities": 1
+    },
+    "validation-hierarchical-curriculum-heldout-v1-70": {
+      "connections": 3,
+      "facilities": 1
+    },
+    "validation-hierarchical-curriculum-heldout-v1-706": {
+      "connections": 6,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-7192": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-7310": {
+      "connections": 6,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-7311": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-7372": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-7515": {
+      "connections": 4,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-7686": {
+      "connections": 6,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-792": {
+      "connections": 4,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-7921": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-8037": {
+      "connections": 4,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-8172": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-834": {
+      "connections": 3,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-8365": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-844": {
+      "connections": 8,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-8747": {
+      "connections": 6,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-8799": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-8834": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-89": {
+      "connections": 3,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-9116": {
+      "connections": 6,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-9146": {
+      "connections": 5,
+      "facilities": 2
+    },
+    "validation-hierarchical-curriculum-heldout-v1-935": {
+      "connections": 3,
+      "facilities": 1
+    },
+    "validation-hierarchical-curriculum-heldout-v1-9360": {
+      "connections": 7,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-986": {
+      "connections": 6,
+      "facilities": 3
+    },
+    "validation-hierarchical-curriculum-heldout-v1-9970": {
+      "connections": 6,
+      "facilities": 3
+    }
+  },
+  "heldout_panel_sha256": "4358387a8a8fa211d480b620b2155a61b05d79e117b956e6cfc61182a934c0cc",
+  "question": "Which learned component drives fixed-panel completion churn after the corrected 88-generation curriculum?",
+  "regressed_22_panel_sha256": "0df726cc9003879111a8ebfae6be062940d71435ee9603b54353e1cf8c1369ab",
+  "retained_binary_sha256": "6b0c7fad7869f63da3859c35fa077500887a2fd1835067fbcc8871823bb5c747",
+  "retained_trajectory": {
+    "generations": [
+      4,
+      9,
+      14,
+      19,
+      24,
+      29,
+      34,
+      39,
+      44,
+      49,
+      54,
+      59,
+      64,
+      69,
+      74,
+      79,
+      84
+    ],
+    "success_bits_le_hex": {
+      "validation-hierarchical-curriculum-heldout-v1-1047": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-10822": "00400",
+      "validation-hierarchical-curriculum-heldout-v1-10869": "11102",
+      "validation-hierarchical-curriculum-heldout-v1-11": "1ffff",
+      "validation-hierarchical-curriculum-heldout-v1-11257": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-11395": "00ef3",
+      "validation-hierarchical-curriculum-heldout-v1-11445": "1252f",
+      "validation-hierarchical-curriculum-heldout-v1-11453": "02c40",
+      "validation-hierarchical-curriculum-heldout-v1-11595": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-11602": "0de0b",
+      "validation-hierarchical-curriculum-heldout-v1-11985": "00020",
+      "validation-hierarchical-curriculum-heldout-v1-1212": "1208e",
+      "validation-hierarchical-curriculum-heldout-v1-12332": "0421c",
+      "validation-hierarchical-curriculum-heldout-v1-1241": "1cd02",
+      "validation-hierarchical-curriculum-heldout-v1-12491": "17dbf",
+      "validation-hierarchical-curriculum-heldout-v1-1257": "1ffff",
+      "validation-hierarchical-curriculum-heldout-v1-12705": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-1272": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-12961": "0a226",
+      "validation-hierarchical-curriculum-heldout-v1-13343": "00011",
+      "validation-hierarchical-curriculum-heldout-v1-13422": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-136": "1ffff",
+      "validation-hierarchical-curriculum-heldout-v1-13694": "00004",
+      "validation-hierarchical-curriculum-heldout-v1-1394": "1ffff",
+      "validation-hierarchical-curriculum-heldout-v1-140": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-14025": "00204",
+      "validation-hierarchical-curriculum-heldout-v1-14207": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-1447": "00242",
+      "validation-hierarchical-curriculum-heldout-v1-14594": "00771",
+      "validation-hierarchical-curriculum-heldout-v1-1462": "00b06",
+      "validation-hierarchical-curriculum-heldout-v1-14744": "189d6",
+      "validation-hierarchical-curriculum-heldout-v1-14768": "04201",
+      "validation-hierarchical-curriculum-heldout-v1-14910": "09001",
+      "validation-hierarchical-curriculum-heldout-v1-14939": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-15000": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-15109": "03367",
+      "validation-hierarchical-curriculum-heldout-v1-15618": "14428",
+      "validation-hierarchical-curriculum-heldout-v1-15757": "0b8d8",
+      "validation-hierarchical-curriculum-heldout-v1-15826": "00010",
+      "validation-hierarchical-curriculum-heldout-v1-15864": "00004",
+      "validation-hierarchical-curriculum-heldout-v1-15914": "192f2",
+      "validation-hierarchical-curriculum-heldout-v1-16042": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-1835": "0f7ef",
+      "validation-hierarchical-curriculum-heldout-v1-189": "1ffff",
+      "validation-hierarchical-curriculum-heldout-v1-1904": "07ef4",
+      "validation-hierarchical-curriculum-heldout-v1-1914": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-2038": "13073",
+      "validation-hierarchical-curriculum-heldout-v1-2334": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-242": "1ffff",
+      "validation-hierarchical-curriculum-heldout-v1-271": "00100",
+      "validation-hierarchical-curriculum-heldout-v1-2839": "09da8",
+      "validation-hierarchical-curriculum-heldout-v1-2939": "00b0d",
+      "validation-hierarchical-curriculum-heldout-v1-2955": "00442",
+      "validation-hierarchical-curriculum-heldout-v1-2958": "10e00",
+      "validation-hierarchical-curriculum-heldout-v1-3124": "00402",
+      "validation-hierarchical-curriculum-heldout-v1-3144": "1ffff",
+      "validation-hierarchical-curriculum-heldout-v1-3358": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-3405": "04850",
+      "validation-hierarchical-curriculum-heldout-v1-3435": "05010",
+      "validation-hierarchical-curriculum-heldout-v1-3454": "18327",
+      "validation-hierarchical-curriculum-heldout-v1-37": "0b117",
+      "validation-hierarchical-curriculum-heldout-v1-371": "08008",
+      "validation-hierarchical-curriculum-heldout-v1-392": "1a412",
+      "validation-hierarchical-curriculum-heldout-v1-4010": "0a086",
+      "validation-hierarchical-curriculum-heldout-v1-4171": "00100",
+      "validation-hierarchical-curriculum-heldout-v1-425": "0405b",
+      "validation-hierarchical-curriculum-heldout-v1-436": "0400c",
+      "validation-hierarchical-curriculum-heldout-v1-4472": "09900",
+      "validation-hierarchical-curriculum-heldout-v1-4476": "00008",
+      "validation-hierarchical-curriculum-heldout-v1-4552": "05e21",
+      "validation-hierarchical-curriculum-heldout-v1-4571": "19911",
+      "validation-hierarchical-curriculum-heldout-v1-458": "1ffff",
+      "validation-hierarchical-curriculum-heldout-v1-4739": "1ffbc",
+      "validation-hierarchical-curriculum-heldout-v1-4750": "05018",
+      "validation-hierarchical-curriculum-heldout-v1-4786": "0e044",
+      "validation-hierarchical-curriculum-heldout-v1-4790": "0f01c",
+      "validation-hierarchical-curriculum-heldout-v1-4811": "14cda",
+      "validation-hierarchical-curriculum-heldout-v1-4841": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-4970": "04000",
+      "validation-hierarchical-curriculum-heldout-v1-5018": "1dd2a",
+      "validation-hierarchical-curriculum-heldout-v1-5149": "08400",
+      "validation-hierarchical-curriculum-heldout-v1-5166": "00010",
+      "validation-hierarchical-curriculum-heldout-v1-5302": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-5439": "00680",
+      "validation-hierarchical-curriculum-heldout-v1-5482": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-580": "1ffff",
+      "validation-hierarchical-curriculum-heldout-v1-5889": "00200",
+      "validation-hierarchical-curriculum-heldout-v1-60": "0c30e",
+      "validation-hierarchical-curriculum-heldout-v1-6066": "040a8",
+      "validation-hierarchical-curriculum-heldout-v1-6078": "083a0",
+      "validation-hierarchical-curriculum-heldout-v1-6113": "00a12",
+      "validation-hierarchical-curriculum-heldout-v1-6166": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-6327": "00010",
+      "validation-hierarchical-curriculum-heldout-v1-6330": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-638": "1d875",
+      "validation-hierarchical-curriculum-heldout-v1-64": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-6436": "0450c",
+      "validation-hierarchical-curriculum-heldout-v1-6670": "10850",
+      "validation-hierarchical-curriculum-heldout-v1-6676": "04060",
+      "validation-hierarchical-curriculum-heldout-v1-679": "03c00",
+      "validation-hierarchical-curriculum-heldout-v1-6824": "14a5b",
+      "validation-hierarchical-curriculum-heldout-v1-6933": "12250",
+      "validation-hierarchical-curriculum-heldout-v1-7": "1ffff",
+      "validation-hierarchical-curriculum-heldout-v1-70": "1ffff",
+      "validation-hierarchical-curriculum-heldout-v1-706": "08110",
+      "validation-hierarchical-curriculum-heldout-v1-7192": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-7310": "00102",
+      "validation-hierarchical-curriculum-heldout-v1-7311": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-7372": "02100",
+      "validation-hierarchical-curriculum-heldout-v1-7515": "1cbc7",
+      "validation-hierarchical-curriculum-heldout-v1-7686": "00030",
+      "validation-hierarchical-curriculum-heldout-v1-792": "0c7f6",
+      "validation-hierarchical-curriculum-heldout-v1-7921": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-8037": "0ca8c",
+      "validation-hierarchical-curriculum-heldout-v1-8172": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-834": "1fffd",
+      "validation-hierarchical-curriculum-heldout-v1-8365": "02a2e",
+      "validation-hierarchical-curriculum-heldout-v1-844": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-8747": "00300",
+      "validation-hierarchical-curriculum-heldout-v1-8799": "16601",
+      "validation-hierarchical-curriculum-heldout-v1-8834": "13203",
+      "validation-hierarchical-curriculum-heldout-v1-89": "1ffff",
+      "validation-hierarchical-curriculum-heldout-v1-9116": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-9146": "10220",
+      "validation-hierarchical-curriculum-heldout-v1-935": "1ffff",
+      "validation-hierarchical-curriculum-heldout-v1-9360": "00000",
+      "validation-hierarchical-curriculum-heldout-v1-986": "04075",
+      "validation-hierarchical-curriculum-heldout-v1-9970": "00004"
+    }
+  },
+  "rows": {
+    "flat_value_on_regressed22": {
+      "cases": 22,
+      "completed": 0,
+      "lower_checkpoint_sha256": "8ec300614fdbf7ceebde9e9ba72a384fd44afd748ae08b2b790d31c28395a669",
+      "outcomes": {
+        "validation-hierarchical-curriculum-heldout-v1-11395": false,
+        "validation-hierarchical-curriculum-heldout-v1-11602": false,
+        "validation-hierarchical-curriculum-heldout-v1-12332": false,
+        "validation-hierarchical-curriculum-heldout-v1-12961": false,
+        "validation-hierarchical-curriculum-heldout-v1-14025": false,
+        "validation-hierarchical-curriculum-heldout-v1-1447": false,
+        "validation-hierarchical-curriculum-heldout-v1-14594": false,
+        "validation-hierarchical-curriculum-heldout-v1-1462": false,
+        "validation-hierarchical-curriculum-heldout-v1-14768": false,
+        "validation-hierarchical-curriculum-heldout-v1-15109": false,
+        "validation-hierarchical-curriculum-heldout-v1-1835": false,
+        "validation-hierarchical-curriculum-heldout-v1-1904": false,
+        "validation-hierarchical-curriculum-heldout-v1-2939": false,
+        "validation-hierarchical-curriculum-heldout-v1-4552": false,
+        "validation-hierarchical-curriculum-heldout-v1-5439": false,
+        "validation-hierarchical-curriculum-heldout-v1-5889": false,
+        "validation-hierarchical-curriculum-heldout-v1-60": false,
+        "validation-hierarchical-curriculum-heldout-v1-6078": false,
+        "validation-hierarchical-curriculum-heldout-v1-792": false,
+        "validation-hierarchical-curriculum-heldout-v1-8037": false,
+        "validation-hierarchical-curriculum-heldout-v1-8747": false,
+        "validation-hierarchical-curriculum-heldout-v1-9146": false
+      },
+      "outer_checkpoint_sha256": "7e1ea7f6c7e97e89eb3506784dce320c4d5698753be250b28397ecd3847cf4af",
+      "panel_sha256": "0df726cc9003879111a8ebfae6be062940d71435ee9603b54353e1cf8c1369ab",
+      "report_sha256": "23d71e9035e46319742fb94fca3a0125f58a60efc0eedb04b1a0bc46d0d38b29"
+    },
+    "lower49_outer49": {
+      "cases": 128,
+      "completed": 47,
+      "lower_checkpoint_sha256": "8ec300614fdbf7ceebde9e9ba72a384fd44afd748ae08b2b790d31c28395a669",
+      "outcomes": {
+        "validation-hierarchical-curriculum-heldout-v1-1047": false,
+        "validation-hierarchical-curriculum-heldout-v1-10822": false,
+        "validation-hierarchical-curriculum-heldout-v1-10869": false,
+        "validation-hierarchical-curriculum-heldout-v1-11": true,
+        "validation-hierarchical-curriculum-heldout-v1-11257": false,
+        "validation-hierarchical-curriculum-heldout-v1-11395": true,
+        "validation-hierarchical-curriculum-heldout-v1-11445": false,
+        "validation-hierarchical-curriculum-heldout-v1-11453": false,
+        "validation-hierarchical-curriculum-heldout-v1-11595": false,
+        "validation-hierarchical-curriculum-heldout-v1-11602": true,
+        "validation-hierarchical-curriculum-heldout-v1-11985": false,
+        "validation-hierarchical-curriculum-heldout-v1-1212": false,
+        "validation-hierarchical-curriculum-heldout-v1-12332": true,
+        "validation-hierarchical-curriculum-heldout-v1-1241": false,
+        "validation-hierarchical-curriculum-heldout-v1-12491": false,
+        "validation-hierarchical-curriculum-heldout-v1-1257": true,
+        "validation-hierarchical-curriculum-heldout-v1-12705": false,
+        "validation-hierarchical-curriculum-heldout-v1-1272": false,
+        "validation-hierarchical-curriculum-heldout-v1-12961": true,
+        "validation-hierarchical-curriculum-heldout-v1-13343": false,
+        "validation-hierarchical-curriculum-heldout-v1-13422": false,
+        "validation-hierarchical-curriculum-heldout-v1-136": true,
+        "validation-hierarchical-curriculum-heldout-v1-13694": false,
+        "validation-hierarchical-curriculum-heldout-v1-1394": true,
+        "validation-hierarchical-curriculum-heldout-v1-140": false,
+        "validation-hierarchical-curriculum-heldout-v1-14025": true,
+        "validation-hierarchical-curriculum-heldout-v1-14207": false,
+        "validation-hierarchical-curriculum-heldout-v1-1447": true,
+        "validation-hierarchical-curriculum-heldout-v1-14594": true,
+        "validation-hierarchical-curriculum-heldout-v1-1462": true,
+        "validation-hierarchical-curriculum-heldout-v1-14744": false,
+        "validation-hierarchical-curriculum-heldout-v1-14768": true,
+        "validation-hierarchical-curriculum-heldout-v1-14910": false,
+        "validation-hierarchical-curriculum-heldout-v1-14939": false,
+        "validation-hierarchical-curriculum-heldout-v1-15000": false,
+        "validation-hierarchical-curriculum-heldout-v1-15109": true,
+        "validation-hierarchical-curriculum-heldout-v1-15618": false,
+        "validation-hierarchical-curriculum-heldout-v1-15757": false,
+        "validation-hierarchical-curriculum-heldout-v1-15826": false,
+        "validation-hierarchical-curriculum-heldout-v1-15864": false,
+        "validation-hierarchical-curriculum-heldout-v1-15914": true,
+        "validation-hierarchical-curriculum-heldout-v1-16042": false,
+        "validation-hierarchical-curriculum-heldout-v1-1835": true,
+        "validation-hierarchical-curriculum-heldout-v1-189": true,
+        "validation-hierarchical-curriculum-heldout-v1-1904": true,
+        "validation-hierarchical-curriculum-heldout-v1-1914": false,
+        "validation-hierarchical-curriculum-heldout-v1-2038": false,
+        "validation-hierarchical-curriculum-heldout-v1-2334": false,
+        "validation-hierarchical-curriculum-heldout-v1-242": true,
+        "validation-hierarchical-curriculum-heldout-v1-271": false,
+        "validation-hierarchical-curriculum-heldout-v1-2839": false,
+        "validation-hierarchical-curriculum-heldout-v1-2939": true,
+        "validation-hierarchical-curriculum-heldout-v1-2955": false,
+        "validation-hierarchical-curriculum-heldout-v1-2958": true,
+        "validation-hierarchical-curriculum-heldout-v1-3124": false,
+        "validation-hierarchical-curriculum-heldout-v1-3144": true,
+        "validation-hierarchical-curriculum-heldout-v1-3358": false,
+        "validation-hierarchical-curriculum-heldout-v1-3405": false,
+        "validation-hierarchical-curriculum-heldout-v1-3435": false,
+        "validation-hierarchical-curriculum-heldout-v1-3454": true,
+        "validation-hierarchical-curriculum-heldout-v1-37": false,
+        "validation-hierarchical-curriculum-heldout-v1-371": false,
+        "validation-hierarchical-curriculum-heldout-v1-392": false,
+        "validation-hierarchical-curriculum-heldout-v1-4010": false,
+        "validation-hierarchical-curriculum-heldout-v1-4171": false,
+        "validation-hierarchical-curriculum-heldout-v1-425": false,
+        "validation-hierarchical-curriculum-heldout-v1-436": false,
+        "validation-hierarchical-curriculum-heldout-v1-4472": false,
+        "validation-hierarchical-curriculum-heldout-v1-4476": false,
+        "validation-hierarchical-curriculum-heldout-v1-4552": true,
+        "validation-hierarchical-curriculum-heldout-v1-4571": false,
+        "validation-hierarchical-curriculum-heldout-v1-458": true,
+        "validation-hierarchical-curriculum-heldout-v1-4739": true,
+        "validation-hierarchical-curriculum-heldout-v1-4750": false,
+        "validation-hierarchical-curriculum-heldout-v1-4786": false,
+        "validation-hierarchical-curriculum-heldout-v1-4790": false,
+        "validation-hierarchical-curriculum-heldout-v1-4811": false,
+        "validation-hierarchical-curriculum-heldout-v1-4841": false,
+        "validation-hierarchical-curriculum-heldout-v1-4970": false,
+        "validation-hierarchical-curriculum-heldout-v1-5018": false,
+        "validation-hierarchical-curriculum-heldout-v1-5149": false,
+        "validation-hierarchical-curriculum-heldout-v1-5166": false,
+        "validation-hierarchical-curriculum-heldout-v1-5302": false,
+        "validation-hierarchical-curriculum-heldout-v1-5439": true,
+        "validation-hierarchical-curriculum-heldout-v1-5482": false,
+        "validation-hierarchical-curriculum-heldout-v1-580": true,
+        "validation-hierarchical-curriculum-heldout-v1-5889": true,
+        "validation-hierarchical-curriculum-heldout-v1-60": true,
+        "validation-hierarchical-curriculum-heldout-v1-6066": false,
+        "validation-hierarchical-curriculum-heldout-v1-6078": true,
+        "validation-hierarchical-curriculum-heldout-v1-6113": true,
+        "validation-hierarchical-curriculum-heldout-v1-6166": false,
+        "validation-hierarchical-curriculum-heldout-v1-6327": false,
+        "validation-hierarchical-curriculum-heldout-v1-6330": false,
+        "validation-hierarchical-curriculum-heldout-v1-638": false,
+        "validation-hierarchical-curriculum-heldout-v1-64": false,
+        "validation-hierarchical-curriculum-heldout-v1-6436": false,
+        "validation-hierarchical-curriculum-heldout-v1-6670": false,
+        "validation-hierarchical-curriculum-heldout-v1-6676": false,
+        "validation-hierarchical-curriculum-heldout-v1-679": false,
+        "validation-hierarchical-curriculum-heldout-v1-6824": true,
+        "validation-hierarchical-curriculum-heldout-v1-6933": true,
+        "validation-hierarchical-curriculum-heldout-v1-7": true,
+        "validation-hierarchical-curriculum-heldout-v1-70": true,
+        "validation-hierarchical-curriculum-heldout-v1-706": false,
+        "validation-hierarchical-curriculum-heldout-v1-7192": false,
+        "validation-hierarchical-curriculum-heldout-v1-7310": false,
+        "validation-hierarchical-curriculum-heldout-v1-7311": false,
+        "validation-hierarchical-curriculum-heldout-v1-7372": false,
+        "validation-hierarchical-curriculum-heldout-v1-7515": true,
+        "validation-hierarchical-curriculum-heldout-v1-7686": false,
+        "validation-hierarchical-curriculum-heldout-v1-792": true,
+        "validation-hierarchical-curriculum-heldout-v1-7921": false,
+        "validation-hierarchical-curriculum-heldout-v1-8037": true,
+        "validation-hierarchical-curriculum-heldout-v1-8172": false,
+        "validation-hierarchical-curriculum-heldout-v1-834": true,
+        "validation-hierarchical-curriculum-heldout-v1-8365": true,
+        "validation-hierarchical-curriculum-heldout-v1-844": false,
+        "validation-hierarchical-curriculum-heldout-v1-8747": true,
+        "validation-hierarchical-curriculum-heldout-v1-8799": true,
+        "validation-hierarchical-curriculum-heldout-v1-8834": true,
+        "validation-hierarchical-curriculum-heldout-v1-89": true,
+        "validation-hierarchical-curriculum-heldout-v1-9116": false,
+        "validation-hierarchical-curriculum-heldout-v1-9146": true,
+        "validation-hierarchical-curriculum-heldout-v1-935": true,
+        "validation-hierarchical-curriculum-heldout-v1-9360": false,
+        "validation-hierarchical-curriculum-heldout-v1-986": false,
+        "validation-hierarchical-curriculum-heldout-v1-9970": false
+      },
+      "outer_checkpoint_sha256": "74d30e8bffa82f3e2e086d713743bbdca447f0473f0ec04df06273b8196fa31f",
+      "panel_sha256": "4358387a8a8fa211d480b620b2155a61b05d79e117b956e6cfc61182a934c0cc",
+      "report_sha256": "8b2465850a3f4939209dcca4e94aacf6eb87c6cbf2bfb0289efcdc6ffef28a7b"
+    },
+    "lower49_outer84": {
+      "cases": 128,
+      "completed": 40,
+      "lower_checkpoint_sha256": "8ec300614fdbf7ceebde9e9ba72a384fd44afd748ae08b2b790d31c28395a669",
+      "outcomes": {
+        "validation-hierarchical-curriculum-heldout-v1-1047": false,
+        "validation-hierarchical-curriculum-heldout-v1-10822": false,
+        "validation-hierarchical-curriculum-heldout-v1-10869": true,
+        "validation-hierarchical-curriculum-heldout-v1-11": true,
+        "validation-hierarchical-curriculum-heldout-v1-11257": false,
+        "validation-hierarchical-curriculum-heldout-v1-11395": false,
+        "validation-hierarchical-curriculum-heldout-v1-11445": true,
+        "validation-hierarchical-curriculum-heldout-v1-11453": false,
+        "validation-hierarchical-curriculum-heldout-v1-11595": false,
+        "validation-hierarchical-curriculum-heldout-v1-11602": false,
+        "validation-hierarchical-curriculum-heldout-v1-11985": false,
+        "validation-hierarchical-curriculum-heldout-v1-1212": true,
+        "validation-hierarchical-curriculum-heldout-v1-12332": false,
+        "validation-hierarchical-curriculum-heldout-v1-1241": true,
+        "validation-hierarchical-curriculum-heldout-v1-12491": true,
+        "validation-hierarchical-curriculum-heldout-v1-1257": true,
+        "validation-hierarchical-curriculum-heldout-v1-12705": false,
+        "validation-hierarchical-curriculum-heldout-v1-1272": false,
+        "validation-hierarchical-curriculum-heldout-v1-12961": false,
+        "validation-hierarchical-curriculum-heldout-v1-13343": false,
+        "validation-hierarchical-curriculum-heldout-v1-13422": false,
+        "validation-hierarchical-curriculum-heldout-v1-136": true,
+        "validation-hierarchical-curriculum-heldout-v1-13694": false,
+        "validation-hierarchical-curriculum-heldout-v1-1394": true,
+        "validation-hierarchical-curriculum-heldout-v1-140": false,
+        "validation-hierarchical-curriculum-heldout-v1-14025": false,
+        "validation-hierarchical-curriculum-heldout-v1-14207": false,
+        "validation-hierarchical-curriculum-heldout-v1-1447": false,
+        "validation-hierarchical-curriculum-heldout-v1-14594": false,
+        "validation-hierarchical-curriculum-heldout-v1-1462": false,
+        "validation-hierarchical-curriculum-heldout-v1-14744": true,
+        "validation-hierarchical-curriculum-heldout-v1-14768": false,
+        "validation-hierarchical-curriculum-heldout-v1-14910": false,
+        "validation-hierarchical-curriculum-heldout-v1-14939": false,
+        "validation-hierarchical-curriculum-heldout-v1-15000": false,
+        "validation-hierarchical-curriculum-heldout-v1-15109": false,
+        "validation-hierarchical-curriculum-heldout-v1-15618": true,
+        "validation-hierarchical-curriculum-heldout-v1-15757": false,
+        "validation-hierarchical-curriculum-heldout-v1-15826": false,
+        "validation-hierarchical-curriculum-heldout-v1-15864": false,
+        "validation-hierarchical-curriculum-heldout-v1-15914": true,
+        "validation-hierarchical-curriculum-heldout-v1-16042": false,
+        "validation-hierarchical-curriculum-heldout-v1-1835": false,
+        "validation-hierarchical-curriculum-heldout-v1-189": true,
+        "validation-hierarchical-curriculum-heldout-v1-1904": false,
+        "validation-hierarchical-curriculum-heldout-v1-1914": false,
+        "validation-hierarchical-curriculum-heldout-v1-2038": true,
+        "validation-hierarchical-curriculum-heldout-v1-2334": false,
+        "validation-hierarchical-curriculum-heldout-v1-242": true,
+        "validation-hierarchical-curriculum-heldout-v1-271": false,
+        "validation-hierarchical-curriculum-heldout-v1-2839": false,
+        "validation-hierarchical-curriculum-heldout-v1-2939": false,
+        "validation-hierarchical-curriculum-heldout-v1-2955": true,
+        "validation-hierarchical-curriculum-heldout-v1-2958": true,
+        "validation-hierarchical-curriculum-heldout-v1-3124": false,
+        "validation-hierarchical-curriculum-heldout-v1-3144": true,
+        "validation-hierarchical-curriculum-heldout-v1-3358": false,
+        "validation-hierarchical-curriculum-heldout-v1-3405": false,
+        "validation-hierarchical-curriculum-heldout-v1-3435": false,
+        "validation-hierarchical-curriculum-heldout-v1-3454": true,
+        "validation-hierarchical-curriculum-heldout-v1-37": false,
+        "validation-hierarchical-curriculum-heldout-v1-371": false,
+        "validation-hierarchical-curriculum-heldout-v1-392": true,
+        "validation-hierarchical-curriculum-heldout-v1-4010": false,
+        "validation-hierarchical-curriculum-heldout-v1-4171": false,
+        "validation-hierarchical-curriculum-heldout-v1-425": false,
+        "validation-hierarchical-curriculum-heldout-v1-436": false,
+        "validation-hierarchical-curriculum-heldout-v1-4472": false,
+        "validation-hierarchical-curriculum-heldout-v1-4476": false,
+        "validation-hierarchical-curriculum-heldout-v1-4552": false,
+        "validation-hierarchical-curriculum-heldout-v1-4571": true,
+        "validation-hierarchical-curriculum-heldout-v1-458": true,
+        "validation-hierarchical-curriculum-heldout-v1-4739": true,
+        "validation-hierarchical-curriculum-heldout-v1-4750": false,
+        "validation-hierarchical-curriculum-heldout-v1-4786": false,
+        "validation-hierarchical-curriculum-heldout-v1-4790": false,
+        "validation-hierarchical-curriculum-heldout-v1-4811": true,
+        "validation-hierarchical-curriculum-heldout-v1-4841": false,
+        "validation-hierarchical-curriculum-heldout-v1-4970": false,
+        "validation-hierarchical-curriculum-heldout-v1-5018": true,
+        "validation-hierarchical-curriculum-heldout-v1-5149": false,
+        "validation-hierarchical-curriculum-heldout-v1-5166": false,
+        "validation-hierarchical-curriculum-heldout-v1-5302": false,
+        "validation-hierarchical-curriculum-heldout-v1-5439": false,
+        "validation-hierarchical-curriculum-heldout-v1-5482": false,
+        "validation-hierarchical-curriculum-heldout-v1-580": true,
+        "validation-hierarchical-curriculum-heldout-v1-5889": false,
+        "validation-hierarchical-curriculum-heldout-v1-60": false,
+        "validation-hierarchical-curriculum-heldout-v1-6066": false,
+        "validation-hierarchical-curriculum-heldout-v1-6078": false,
+        "validation-hierarchical-curriculum-heldout-v1-6113": true,
+        "validation-hierarchical-curriculum-heldout-v1-6166": false,
+        "validation-hierarchical-curriculum-heldout-v1-6327": false,
+        "validation-hierarchical-curriculum-heldout-v1-6330": false,
+        "validation-hierarchical-curriculum-heldout-v1-638": true,
+        "validation-hierarchical-curriculum-heldout-v1-64": false,
+        "validation-hierarchical-curriculum-heldout-v1-6436": false,
+        "validation-hierarchical-curriculum-heldout-v1-6670": false,
+        "validation-hierarchical-curriculum-heldout-v1-6676": false,
+        "validation-hierarchical-curriculum-heldout-v1-679": false,
+        "validation-hierarchical-curriculum-heldout-v1-6824": true,
+        "validation-hierarchical-curriculum-heldout-v1-6933": true,
+        "validation-hierarchical-curriculum-heldout-v1-7": true,
+        "validation-hierarchical-curriculum-heldout-v1-70": true,
+        "validation-hierarchical-curriculum-heldout-v1-706": false,
+        "validation-hierarchical-curriculum-heldout-v1-7192": false,
+        "validation-hierarchical-curriculum-heldout-v1-7310": false,
+        "validation-hierarchical-curriculum-heldout-v1-7311": false,
+        "validation-hierarchical-curriculum-heldout-v1-7372": false,
+        "validation-hierarchical-curriculum-heldout-v1-7515": true,
+        "validation-hierarchical-curriculum-heldout-v1-7686": false,
+        "validation-hierarchical-curriculum-heldout-v1-792": false,
+        "validation-hierarchical-curriculum-heldout-v1-7921": false,
+        "validation-hierarchical-curriculum-heldout-v1-8037": false,
+        "validation-hierarchical-curriculum-heldout-v1-8172": false,
+        "validation-hierarchical-curriculum-heldout-v1-834": true,
+        "validation-hierarchical-curriculum-heldout-v1-8365": true,
+        "validation-hierarchical-curriculum-heldout-v1-844": false,
+        "validation-hierarchical-curriculum-heldout-v1-8747": false,
+        "validation-hierarchical-curriculum-heldout-v1-8799": true,
+        "validation-hierarchical-curriculum-heldout-v1-8834": true,
+        "validation-hierarchical-curriculum-heldout-v1-89": true,
+        "validation-hierarchical-curriculum-heldout-v1-9116": false,
+        "validation-hierarchical-curriculum-heldout-v1-9146": false,
+        "validation-hierarchical-curriculum-heldout-v1-935": true,
+        "validation-hierarchical-curriculum-heldout-v1-9360": false,
+        "validation-hierarchical-curriculum-heldout-v1-986": true,
+        "validation-hierarchical-curriculum-heldout-v1-9970": false
+      },
+      "outer_checkpoint_sha256": "f305010102d76dd5dd4b47ed28ea1d5b358ef609784d3ecb2402327190373337",
+      "panel_sha256": "4358387a8a8fa211d480b620b2155a61b05d79e117b956e6cfc61182a934c0cc",
+      "report_sha256": "f052e71b83f931572a75de563abe8cf6d6aaaee001e98de008f4e15b7caadd8d"
+    },
+    "lower84_outer49": {
+      "cases": 128,
+      "completed": 43,
+      "lower_checkpoint_sha256": "15d9798817b7d4217214402a04c75a9a0d12f72ba2e97c78589fd8fe5bfc051a",
+      "outcomes": {
+        "validation-hierarchical-curriculum-heldout-v1-1047": false,
+        "validation-hierarchical-curriculum-heldout-v1-10822": false,
+        "validation-hierarchical-curriculum-heldout-v1-10869": false,
+        "validation-hierarchical-curriculum-heldout-v1-11": true,
+        "validation-hierarchical-curriculum-heldout-v1-11257": false,
+        "validation-hierarchical-curriculum-heldout-v1-11395": true,
+        "validation-hierarchical-curriculum-heldout-v1-11445": true,
+        "validation-hierarchical-curriculum-heldout-v1-11453": true,
+        "validation-hierarchical-curriculum-heldout-v1-11595": false,
+        "validation-hierarchical-curriculum-heldout-v1-11602": true,
+        "validation-hierarchical-curriculum-heldout-v1-11985": false,
+        "validation-hierarchical-curriculum-heldout-v1-1212": false,
+        "validation-hierarchical-curriculum-heldout-v1-12332": true,
+        "validation-hierarchical-curriculum-heldout-v1-1241": false,
+        "validation-hierarchical-curriculum-heldout-v1-12491": false,
+        "validation-hierarchical-curriculum-heldout-v1-1257": true,
+        "validation-hierarchical-curriculum-heldout-v1-12705": false,
+        "validation-hierarchical-curriculum-heldout-v1-1272": false,
+        "validation-hierarchical-curriculum-heldout-v1-12961": true,
+        "validation-hierarchical-curriculum-heldout-v1-13343": false,
+        "validation-hierarchical-curriculum-heldout-v1-13422": false,
+        "validation-hierarchical-curriculum-heldout-v1-136": true,
+        "validation-hierarchical-curriculum-heldout-v1-13694": false,
+        "validation-hierarchical-curriculum-heldout-v1-1394": true,
+        "validation-hierarchical-curriculum-heldout-v1-140": false,
+        "validation-hierarchical-curriculum-heldout-v1-14025": false,
+        "validation-hierarchical-curriculum-heldout-v1-14207": false,
+        "validation-hierarchical-curriculum-heldout-v1-1447": false,
+        "validation-hierarchical-curriculum-heldout-v1-14594": true,
+        "validation-hierarchical-curriculum-heldout-v1-1462": true,
+        "validation-hierarchical-curriculum-heldout-v1-14744": false,
+        "validation-hierarchical-curriculum-heldout-v1-14768": true,
+        "validation-hierarchical-curriculum-heldout-v1-14910": false,
+        "validation-hierarchical-curriculum-heldout-v1-14939": false,
+        "validation-hierarchical-curriculum-heldout-v1-15000": false,
+        "validation-hierarchical-curriculum-heldout-v1-15109": true,
+        "validation-hierarchical-curriculum-heldout-v1-15618": false,
+        "validation-hierarchical-curriculum-heldout-v1-15757": false,
+        "validation-hierarchical-curriculum-heldout-v1-15826": false,
+        "validation-hierarchical-curriculum-heldout-v1-15864": false,
+        "validation-hierarchical-curriculum-heldout-v1-15914": true,
+        "validation-hierarchical-curriculum-heldout-v1-16042": false,
+        "validation-hierarchical-curriculum-heldout-v1-1835": true,
+        "validation-hierarchical-curriculum-heldout-v1-189": true,
+        "validation-hierarchical-curriculum-heldout-v1-1904": false,
+        "validation-hierarchical-curriculum-heldout-v1-1914": false,
+        "validation-hierarchical-curriculum-heldout-v1-2038": false,
+        "validation-hierarchical-curriculum-heldout-v1-2334": false,
+        "validation-hierarchical-curriculum-heldout-v1-242": true,
+        "validation-hierarchical-curriculum-heldout-v1-271": false,
+        "validation-hierarchical-curriculum-heldout-v1-2839": false,
+        "validation-hierarchical-curriculum-heldout-v1-2939": false,
+        "validation-hierarchical-curriculum-heldout-v1-2955": false,
+        "validation-hierarchical-curriculum-heldout-v1-2958": false,
+        "validation-hierarchical-curriculum-heldout-v1-3124": false,
+        "validation-hierarchical-curriculum-heldout-v1-3144": true,
+        "validation-hierarchical-curriculum-heldout-v1-3358": false,
+        "validation-hierarchical-curriculum-heldout-v1-3405": true,
+        "validation-hierarchical-curriculum-heldout-v1-3435": false,
+        "validation-hierarchical-curriculum-heldout-v1-3454": false,
+        "validation-hierarchical-curriculum-heldout-v1-37": false,
+        "validation-hierarchical-curriculum-heldout-v1-371": false,
+        "validation-hierarchical-curriculum-heldout-v1-392": false,
+        "validation-hierarchical-curriculum-heldout-v1-4010": true,
+        "validation-hierarchical-curriculum-heldout-v1-4171": false,
+        "validation-hierarchical-curriculum-heldout-v1-425": false,
+        "validation-hierarchical-curriculum-heldout-v1-436": false,
+        "validation-hierarchical-curriculum-heldout-v1-4472": false,
+        "validation-hierarchical-curriculum-heldout-v1-4476": false,
+        "validation-hierarchical-curriculum-heldout-v1-4552": false,
+        "validation-hierarchical-curriculum-heldout-v1-4571": false,
+        "validation-hierarchical-curriculum-heldout-v1-458": true,
+        "validation-hierarchical-curriculum-heldout-v1-4739": true,
+        "validation-hierarchical-curriculum-heldout-v1-4750": false,
+        "validation-hierarchical-curriculum-heldout-v1-4786": false,
+        "validation-hierarchical-curriculum-heldout-v1-4790": false,
+        "validation-hierarchical-curriculum-heldout-v1-4811": true,
+        "validation-hierarchical-curriculum-heldout-v1-4841": false,
+        "validation-hierarchical-curriculum-heldout-v1-4970": false,
+        "validation-hierarchical-curriculum-heldout-v1-5018": false,
+        "validation-hierarchical-curriculum-heldout-v1-5149": false,
+        "validation-hierarchical-curriculum-heldout-v1-5166": false,
+        "validation-hierarchical-curriculum-heldout-v1-5302": false,
+        "validation-hierarchical-curriculum-heldout-v1-5439": true,
+        "validation-hierarchical-curriculum-heldout-v1-5482": false,
+        "validation-hierarchical-curriculum-heldout-v1-580": true,
+        "validation-hierarchical-curriculum-heldout-v1-5889": false,
+        "validation-hierarchical-curriculum-heldout-v1-60": true,
+        "validation-hierarchical-curriculum-heldout-v1-6066": false,
+        "validation-hierarchical-curriculum-heldout-v1-6078": true,
+        "validation-hierarchical-curriculum-heldout-v1-6113": true,
+        "validation-hierarchical-curriculum-heldout-v1-6166": false,
+        "validation-hierarchical-curriculum-heldout-v1-6327": false,
+        "validation-hierarchical-curriculum-heldout-v1-6330": false,
+        "validation-hierarchical-curriculum-heldout-v1-638": false,
+        "validation-hierarchical-curriculum-heldout-v1-64": false,
+        "validation-hierarchical-curriculum-heldout-v1-6436": true,
+        "validation-hierarchical-curriculum-heldout-v1-6670": false,
+        "validation-hierarchical-curriculum-heldout-v1-6676": false,
+        "validation-hierarchical-curriculum-heldout-v1-679": true,
+        "validation-hierarchical-curriculum-heldout-v1-6824": true,
+        "validation-hierarchical-curriculum-heldout-v1-6933": true,
+        "validation-hierarchical-curriculum-heldout-v1-7": true,
+        "validation-hierarchical-curriculum-heldout-v1-70": true,
+        "validation-hierarchical-curriculum-heldout-v1-706": false,
+        "validation-hierarchical-curriculum-heldout-v1-7192": false,
+        "validation-hierarchical-curriculum-heldout-v1-7310": false,
+        "validation-hierarchical-curriculum-heldout-v1-7311": false,
+        "validation-hierarchical-curriculum-heldout-v1-7372": false,
+        "validation-hierarchical-curriculum-heldout-v1-7515": true,
+        "validation-hierarchical-curriculum-heldout-v1-7686": false,
+        "validation-hierarchical-curriculum-heldout-v1-792": true,
+        "validation-hierarchical-curriculum-heldout-v1-7921": false,
+        "validation-hierarchical-curriculum-heldout-v1-8037": false,
+        "validation-hierarchical-curriculum-heldout-v1-8172": false,
+        "validation-hierarchical-curriculum-heldout-v1-834": true,
+        "validation-hierarchical-curriculum-heldout-v1-8365": true,
+        "validation-hierarchical-curriculum-heldout-v1-844": false,
+        "validation-hierarchical-curriculum-heldout-v1-8747": false,
+        "validation-hierarchical-curriculum-heldout-v1-8799": true,
+        "validation-hierarchical-curriculum-heldout-v1-8834": true,
+        "validation-hierarchical-curriculum-heldout-v1-89": true,
+        "validation-hierarchical-curriculum-heldout-v1-9116": false,
+        "validation-hierarchical-curriculum-heldout-v1-9146": false,
+        "validation-hierarchical-curriculum-heldout-v1-935": true,
+        "validation-hierarchical-curriculum-heldout-v1-9360": false,
+        "validation-hierarchical-curriculum-heldout-v1-986": false,
+        "validation-hierarchical-curriculum-heldout-v1-9970": false
+      },
+      "outer_checkpoint_sha256": "74d30e8bffa82f3e2e086d713743bbdca447f0473f0ec04df06273b8196fa31f",
+      "panel_sha256": "4358387a8a8fa211d480b620b2155a61b05d79e117b956e6cfc61182a934c0cc",
+      "report_sha256": "eff0de963bf632946564c0a2b6485528a5b1e61aef00f5cd72aff53f2846e856"
+    },
+    "lower84_outer84": {
+      "cases": 128,
+      "completed": 38,
+      "lower_checkpoint_sha256": "15d9798817b7d4217214402a04c75a9a0d12f72ba2e97c78589fd8fe5bfc051a",
+      "outcomes": {
+        "validation-hierarchical-curriculum-heldout-v1-1047": false,
+        "validation-hierarchical-curriculum-heldout-v1-10822": false,
+        "validation-hierarchical-curriculum-heldout-v1-10869": true,
+        "validation-hierarchical-curriculum-heldout-v1-11": true,
+        "validation-hierarchical-curriculum-heldout-v1-11257": false,
+        "validation-hierarchical-curriculum-heldout-v1-11395": false,
+        "validation-hierarchical-curriculum-heldout-v1-11445": true,
+        "validation-hierarchical-curriculum-heldout-v1-11453": false,
+        "validation-hierarchical-curriculum-heldout-v1-11595": false,
+        "validation-hierarchical-curriculum-heldout-v1-11602": false,
+        "validation-hierarchical-curriculum-heldout-v1-11985": false,
+        "validation-hierarchical-curriculum-heldout-v1-1212": true,
+        "validation-hierarchical-curriculum-heldout-v1-12332": false,
+        "validation-hierarchical-curriculum-heldout-v1-1241": true,
+        "validation-hierarchical-curriculum-heldout-v1-12491": true,
+        "validation-hierarchical-curriculum-heldout-v1-1257": true,
+        "validation-hierarchical-curriculum-heldout-v1-12705": false,
+        "validation-hierarchical-curriculum-heldout-v1-1272": false,
+        "validation-hierarchical-curriculum-heldout-v1-12961": false,
+        "validation-hierarchical-curriculum-heldout-v1-13343": false,
+        "validation-hierarchical-curriculum-heldout-v1-13422": false,
+        "validation-hierarchical-curriculum-heldout-v1-136": true,
+        "validation-hierarchical-curriculum-heldout-v1-13694": false,
+        "validation-hierarchical-curriculum-heldout-v1-1394": true,
+        "validation-hierarchical-curriculum-heldout-v1-140": false,
+        "validation-hierarchical-curriculum-heldout-v1-14025": false,
+        "validation-hierarchical-curriculum-heldout-v1-14207": false,
+        "validation-hierarchical-curriculum-heldout-v1-1447": false,
+        "validation-hierarchical-curriculum-heldout-v1-14594": false,
+        "validation-hierarchical-curriculum-heldout-v1-1462": false,
+        "validation-hierarchical-curriculum-heldout-v1-14744": true,
+        "validation-hierarchical-curriculum-heldout-v1-14768": false,
+        "validation-hierarchical-curriculum-heldout-v1-14910": false,
+        "validation-hierarchical-curriculum-heldout-v1-14939": false,
+        "validation-hierarchical-curriculum-heldout-v1-15000": false,
+        "validation-hierarchical-curriculum-heldout-v1-15109": false,
+        "validation-hierarchical-curriculum-heldout-v1-15618": true,
+        "validation-hierarchical-curriculum-heldout-v1-15757": false,
+        "validation-hierarchical-curriculum-heldout-v1-15826": false,
+        "validation-hierarchical-curriculum-heldout-v1-15864": false,
+        "validation-hierarchical-curriculum-heldout-v1-15914": true,
+        "validation-hierarchical-curriculum-heldout-v1-16042": false,
+        "validation-hierarchical-curriculum-heldout-v1-1835": false,
+        "validation-hierarchical-curriculum-heldout-v1-189": true,
+        "validation-hierarchical-curriculum-heldout-v1-1904": false,
+        "validation-hierarchical-curriculum-heldout-v1-1914": false,
+        "validation-hierarchical-curriculum-heldout-v1-2038": true,
+        "validation-hierarchical-curriculum-heldout-v1-2334": false,
+        "validation-hierarchical-curriculum-heldout-v1-242": true,
+        "validation-hierarchical-curriculum-heldout-v1-271": false,
+        "validation-hierarchical-curriculum-heldout-v1-2839": false,
+        "validation-hierarchical-curriculum-heldout-v1-2939": false,
+        "validation-hierarchical-curriculum-heldout-v1-2955": false,
+        "validation-hierarchical-curriculum-heldout-v1-2958": true,
+        "validation-hierarchical-curriculum-heldout-v1-3124": false,
+        "validation-hierarchical-curriculum-heldout-v1-3144": true,
+        "validation-hierarchical-curriculum-heldout-v1-3358": false,
+        "validation-hierarchical-curriculum-heldout-v1-3405": false,
+        "validation-hierarchical-curriculum-heldout-v1-3435": false,
+        "validation-hierarchical-curriculum-heldout-v1-3454": true,
+        "validation-hierarchical-curriculum-heldout-v1-37": false,
+        "validation-hierarchical-curriculum-heldout-v1-371": false,
+        "validation-hierarchical-curriculum-heldout-v1-392": true,
+        "validation-hierarchical-curriculum-heldout-v1-4010": false,
+        "validation-hierarchical-curriculum-heldout-v1-4171": false,
+        "validation-hierarchical-curriculum-heldout-v1-425": false,
+        "validation-hierarchical-curriculum-heldout-v1-436": false,
+        "validation-hierarchical-curriculum-heldout-v1-4472": false,
+        "validation-hierarchical-curriculum-heldout-v1-4476": false,
+        "validation-hierarchical-curriculum-heldout-v1-4552": false,
+        "validation-hierarchical-curriculum-heldout-v1-4571": true,
+        "validation-hierarchical-curriculum-heldout-v1-458": true,
+        "validation-hierarchical-curriculum-heldout-v1-4739": true,
+        "validation-hierarchical-curriculum-heldout-v1-4750": false,
+        "validation-hierarchical-curriculum-heldout-v1-4786": false,
+        "validation-hierarchical-curriculum-heldout-v1-4790": false,
+        "validation-hierarchical-curriculum-heldout-v1-4811": true,
+        "validation-hierarchical-curriculum-heldout-v1-4841": false,
+        "validation-hierarchical-curriculum-heldout-v1-4970": false,
+        "validation-hierarchical-curriculum-heldout-v1-5018": true,
+        "validation-hierarchical-curriculum-heldout-v1-5149": false,
+        "validation-hierarchical-curriculum-heldout-v1-5166": false,
+        "validation-hierarchical-curriculum-heldout-v1-5302": false,
+        "validation-hierarchical-curriculum-heldout-v1-5439": false,
+        "validation-hierarchical-curriculum-heldout-v1-5482": false,
+        "validation-hierarchical-curriculum-heldout-v1-580": true,
+        "validation-hierarchical-curriculum-heldout-v1-5889": false,
+        "validation-hierarchical-curriculum-heldout-v1-60": false,
+        "validation-hierarchical-curriculum-heldout-v1-6066": false,
+        "validation-hierarchical-curriculum-heldout-v1-6078": false,
+        "validation-hierarchical-curriculum-heldout-v1-6113": false,
+        "validation-hierarchical-curriculum-heldout-v1-6166": false,
+        "validation-hierarchical-curriculum-heldout-v1-6327": false,
+        "validation-hierarchical-curriculum-heldout-v1-6330": false,
+        "validation-hierarchical-curriculum-heldout-v1-638": true,
+        "validation-hierarchical-curriculum-heldout-v1-64": false,
+        "validation-hierarchical-curriculum-heldout-v1-6436": false,
+        "validation-hierarchical-curriculum-heldout-v1-6670": true,
+        "validation-hierarchical-curriculum-heldout-v1-6676": false,
+        "validation-hierarchical-curriculum-heldout-v1-679": false,
+        "validation-hierarchical-curriculum-heldout-v1-6824": true,
+        "validation-hierarchical-curriculum-heldout-v1-6933": true,
+        "validation-hierarchical-curriculum-heldout-v1-7": true,
+        "validation-hierarchical-curriculum-heldout-v1-70": true,
+        "validation-hierarchical-curriculum-heldout-v1-706": false,
+        "validation-hierarchical-curriculum-heldout-v1-7192": false,
+        "validation-hierarchical-curriculum-heldout-v1-7310": false,
+        "validation-hierarchical-curriculum-heldout-v1-7311": false,
+        "validation-hierarchical-curriculum-heldout-v1-7372": false,
+        "validation-hierarchical-curriculum-heldout-v1-7515": true,
+        "validation-hierarchical-curriculum-heldout-v1-7686": false,
+        "validation-hierarchical-curriculum-heldout-v1-792": false,
+        "validation-hierarchical-curriculum-heldout-v1-7921": false,
+        "validation-hierarchical-curriculum-heldout-v1-8037": false,
+        "validation-hierarchical-curriculum-heldout-v1-8172": false,
+        "validation-hierarchical-curriculum-heldout-v1-834": true,
+        "validation-hierarchical-curriculum-heldout-v1-8365": false,
+        "validation-hierarchical-curriculum-heldout-v1-844": false,
+        "validation-hierarchical-curriculum-heldout-v1-8747": false,
+        "validation-hierarchical-curriculum-heldout-v1-8799": true,
+        "validation-hierarchical-curriculum-heldout-v1-8834": true,
+        "validation-hierarchical-curriculum-heldout-v1-89": true,
+        "validation-hierarchical-curriculum-heldout-v1-9116": false,
+        "validation-hierarchical-curriculum-heldout-v1-9146": true,
+        "validation-hierarchical-curriculum-heldout-v1-935": true,
+        "validation-hierarchical-curriculum-heldout-v1-9360": false,
+        "validation-hierarchical-curriculum-heldout-v1-986": false,
+        "validation-hierarchical-curriculum-heldout-v1-9970": false
+      },
+      "outer_checkpoint_sha256": "f305010102d76dd5dd4b47ed28ea1d5b358ef609784d3ecb2402327190373337",
+      "panel_sha256": "4358387a8a8fa211d480b620b2155a61b05d79e117b956e6cfc61182a934c0cc",
+      "report_sha256": "fc912af78ecec992948cae18c144937631b1f7246011a69a195477905eb425cc"
+    },
+    "uniform_policy_on_regressed22": {
+      "cases": 22,
+      "completed": 12,
+      "lower_checkpoint_sha256": "8ec300614fdbf7ceebde9e9ba72a384fd44afd748ae08b2b790d31c28395a669",
+      "outcomes": {
+        "validation-hierarchical-curriculum-heldout-v1-11395": false,
+        "validation-hierarchical-curriculum-heldout-v1-11602": true,
+        "validation-hierarchical-curriculum-heldout-v1-12332": false,
+        "validation-hierarchical-curriculum-heldout-v1-12961": false,
+        "validation-hierarchical-curriculum-heldout-v1-14025": true,
+        "validation-hierarchical-curriculum-heldout-v1-1447": false,
+        "validation-hierarchical-curriculum-heldout-v1-14594": true,
+        "validation-hierarchical-curriculum-heldout-v1-1462": true,
+        "validation-hierarchical-curriculum-heldout-v1-14768": true,
+        "validation-hierarchical-curriculum-heldout-v1-15109": false,
+        "validation-hierarchical-curriculum-heldout-v1-1835": false,
+        "validation-hierarchical-curriculum-heldout-v1-1904": true,
+        "validation-hierarchical-curriculum-heldout-v1-2939": true,
+        "validation-hierarchical-curriculum-heldout-v1-4552": false,
+        "validation-hierarchical-curriculum-heldout-v1-5439": true,
+        "validation-hierarchical-curriculum-heldout-v1-5889": false,
+        "validation-hierarchical-curriculum-heldout-v1-60": false,
+        "validation-hierarchical-curriculum-heldout-v1-6078": true,
+        "validation-hierarchical-curriculum-heldout-v1-792": true,
+        "validation-hierarchical-curriculum-heldout-v1-8037": true,
+        "validation-hierarchical-curriculum-heldout-v1-8747": true,
+        "validation-hierarchical-curriculum-heldout-v1-9146": false
+      },
+      "outer_checkpoint_sha256": "913121e1fb0da9213afad3c37ac1bc13294c353b35360475d42b6cf5dd93f714",
+      "panel_sha256": "0df726cc9003879111a8ebfae6be062940d71435ee9603b54353e1cf8c1369ab",
+      "report_sha256": "a389f20e17c07015442b1531d08a98243ede523122d951287a9b4bb3dd1cc01a"
+    }
+  },
+  "schema": "aic-hierarchical-stability-diagnosis-v1",
+  "search_config_sha256": "e503a8929093b2551b5831561c7e09997e56752b7884bee693df5e2679e9269f"
+}
