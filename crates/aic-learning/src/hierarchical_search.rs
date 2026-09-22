@@ -14,7 +14,7 @@ use aic_pilot_native::constructive::{
     learning::{CommandKind, Config as DomainConfig},
     routing_candidates::{Candidate, Config as CandidateConfig, Provenance, Request},
 };
-use aic_torch::tch::{Device, Tensor};
+use aic_torch::tch::{self, Device, Tensor};
 use anyhow::{Context, Result, ensure};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -22,6 +22,10 @@ use serde_json::{Value, json};
 
 use crate::{
     input::Tensors,
+    outer_model::{
+        ACTION_FEATURES, Batch as OuterBatch, Model as OuterModel, ParameterOrder as OuterOrder,
+    },
+    outer_training::Config as OuterTrainingConfig,
     route_guidance::{Model as GuidanceModel, ParameterOrder},
     route_guidance_training::Config as GuidanceTrainingConfig,
 };
@@ -65,7 +69,7 @@ struct Case {
 }
 
 #[derive(Clone)]
-enum MacroAction {
+pub(crate) enum MacroAction {
     Command(Command),
     Route(Candidate),
 }
@@ -80,7 +84,7 @@ struct ActionSummary {
 }
 
 #[derive(Default, Clone, Debug, Serialize)]
-struct Counters {
+pub(crate) struct Counters {
     expansions: usize,
     generated_macro_samples: usize,
     placement_samples: usize,
@@ -124,10 +128,11 @@ struct Report {
     device: String,
     catalog_sha256: String,
     lower_checkpoint_sha256: String,
+    outer_checkpoint_sha256: String,
     cases: Vec<CaseReport>,
 }
 
-struct Factory<'a> {
+pub(crate) struct Factory<'a> {
     guidance: &'a GuidanceModel,
     guidance_version: &'a str,
     device: Device,
@@ -135,10 +140,40 @@ struct Factory<'a> {
     candidate: &'a CandidateConfig,
     placement_page: usize,
     pool: rayon::ThreadPool,
+    outer: Option<&'a OuterModel>,
 }
 
 impl Factory<'_> {
-    fn actions(&self, session: &Session, counters: &mut Counters) -> Result<Vec<MacroAction>> {
+    pub(crate) fn new<'a>(
+        guidance: &'a GuidanceModel,
+        guidance_version: &'a str,
+        device: Device,
+        domain: DomainConfig,
+        candidate: &'a CandidateConfig,
+        placement_page: usize,
+        cpu_threads: usize,
+        outer: Option<&'a OuterModel>,
+    ) -> Result<Factory<'a>> {
+        Ok(Factory {
+            guidance,
+            guidance_version,
+            device,
+            domain,
+            candidate,
+            placement_page,
+            pool: rayon::ThreadPoolBuilder::new()
+                .num_threads(cpu_threads)
+                .thread_name(|index| format!("hierarchical-route-{index}"))
+                .build()?,
+            outer,
+        })
+    }
+
+    pub(crate) fn actions(
+        &self,
+        session: &Session,
+        counters: &mut Counters,
+    ) -> Result<Vec<MacroAction>> {
         ensure!(
             session.observe().active.is_none(),
             "aic-learning.hierarchical-state: macro state contains an active partial route"
@@ -212,10 +247,54 @@ impl Factory<'_> {
             .count();
         Ok(actions)
     }
+
+    fn score_actions(
+        &self,
+        session: &Session,
+        actions: &[MacroAction],
+        children: &[Session],
+    ) -> Result<(Vec<f64>, f64)> {
+        let Some(model) = self.outer else {
+            let scores = actions
+                .iter()
+                .zip(children)
+                .map(|(action, child)| action.prior_score(session, child))
+                .collect::<Vec<_>>();
+            let maximum = scores.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+            let weights = scores
+                .iter()
+                .map(|score| (score - maximum).exp())
+                .collect::<Vec<_>>();
+            let denominator = weights.iter().sum::<f64>();
+            return Ok((
+                weights
+                    .into_iter()
+                    .map(|weight| weight / denominator.max(f64::MIN_POSITIVE))
+                    .collect(),
+                state_value(session),
+            ));
+        };
+        let input = session
+            .macro_learning_input(&self.domain)
+            .map_err(anyhow::Error::new)?;
+        let features = actions
+            .iter()
+            .zip(children)
+            .map(|(action, child)| action.features(session, child, self.domain.placement))
+            .collect::<Vec<_>>();
+        let batch = OuterBatch::from_rows(&[input.as_ref()], &[features.as_slice()], self.device)?;
+        let prediction = tch::no_grad(|| model.forward(&batch))?;
+        let priors = Vec::<f32>::try_from(prediction.logp.exp().to_device(Device::Cpu))?
+            .into_iter()
+            .map(f64::from)
+            .collect();
+        let completion = prediction.values.double_value(&[0, 0]);
+        Ok((priors, completion))
+    }
 }
 
 impl MacroAction {
-    fn apply(&self, session: &Session) -> Result<Session> {
+    pub(crate) fn apply(&self, session: &Session) -> Result<Session> {
         let mut fork = session.clone();
         match self {
             Self::Command(command) => {
@@ -278,12 +357,79 @@ impl MacroAction {
             }
         }
     }
+
+    pub(crate) fn features(
+        &self,
+        before: &Session,
+        after: &Session,
+        bounds: Bounds,
+    ) -> [f32; ACTION_FEATURES] {
+        let mut row = [0.0; ACTION_FEATURES];
+        let scale = bounds.width().max(bounds.height()).max(1) as f32;
+        row[3] = construction_progress(before) as f32;
+        row[4] = construction_progress(after) as f32;
+        row[5] = row[4] - row[3];
+        row[23] = after.layout().is_some() as u8 as f32;
+        match self {
+            Self::Command(Command::Place {
+                position, rotation, ..
+            }) => {
+                row[0] = 1.0;
+                row[6] = position.x as f32 / scale;
+                row[7] = position.y as f32 / scale;
+                row[8] = (*rotation as f32).to_radians().sin();
+                row[9] = (*rotation as f32).to_radians().cos();
+            }
+            Self::Command(Command::PlaceTerminal { position, .. }) => {
+                row[1] = 1.0;
+                row[6] = position.x as f32 / scale;
+                row[7] = position.y as f32 / scale;
+            }
+            Self::Command(_) => unreachable!("macro command generator exposes only placements"),
+            Self::Route(candidate) => {
+                row[2] = 1.0;
+                let connection = before
+                    .problem()
+                    .connections
+                    .iter()
+                    .position(|connection| connection.id == candidate.connection)
+                    .unwrap_or(0);
+                row[6] = connection as f32 / before.problem().connections.len().max(1) as f32;
+                row[7] = candidate.steps as f32 / scale;
+                row[8] = candidate.turns as f32 / candidate.steps.max(1) as f32;
+                row[9] =
+                    candidate.overlap_with_previous as f32 / candidate.cells.len().max(1) as f32;
+                row[10] = (candidate.learned_cost as f32).ln_1p() / 16.0;
+                row[11] = candidate.predicted_success.unwrap_or(0.5);
+                row[12] = candidate.guidance_uncertainty.unwrap_or(1.0);
+                match &candidate.provenance {
+                    Provenance::Anchor => row[13] = 1.0,
+                    Provenance::Guided { .. } => row[14] = 1.0,
+                    Provenance::Diversified { .. } => row[15] = 1.0,
+                }
+                row[16] = candidate.source_port.is_some() as u8 as f32;
+                row[17] = candidate.target_port.is_some() as u8 as f32;
+                if let Some(min_x) = candidate.cells.iter().map(|point| point.x).min() {
+                    row[18] = min_x as f32 / scale;
+                    row[19] =
+                        candidate.cells.iter().map(|point| point.x).max().unwrap() as f32 / scale;
+                    row[20] =
+                        candidate.cells.iter().map(|point| point.y).min().unwrap() as f32 / scale;
+                    row[21] =
+                        candidate.cells.iter().map(|point| point.y).max().unwrap() as f32 / scale;
+                }
+                row[22] = candidate.cells.len() as f32 / (bounds.width() * bounds.height()) as f32;
+            }
+        }
+        row
+    }
 }
 
 pub fn run(
     config_path: &Path,
     panel_path: &Path,
     lower_training_output: &Path,
+    outer_training_output: &Path,
     catalog_root: &Path,
     output: &Path,
     device: Device,
@@ -304,23 +450,29 @@ pub fn run(
     let values: Tensors = Tensor::read_safetensors(&checkpoint)?.into_iter().collect();
     let guidance = GuidanceModel::load(&lower_config.model, &order, &values, device)?;
     let checkpoint_sha256 = crate::input::sha256(&checkpoint)?;
+    let outer_config: OuterTrainingConfig = read_json(&outer_training_output.join("config.json"))?;
+    let outer_order: OuterOrder = read_json(&outer_training_output.join("parameter-order.json"))?;
+    let outer_checkpoint = outer_training_output.join("state.safetensors");
+    let outer_checkpoint_sha256 = crate::input::sha256(&outer_checkpoint)?;
+    let outer_values: Tensors = Tensor::read_safetensors(&outer_checkpoint)?
+        .into_iter()
+        .collect();
+    let outer = OuterModel::load(&outer_config.model, &outer_order, &outer_values, device)?;
     let loaded = aic_layout_gen::io::load_catalogs(catalog_root)?;
     let catalogs = Arc::new(loaded.catalogs);
-    let factory = Factory {
-        guidance: &guidance,
-        guidance_version: &checkpoint_sha256,
+    let factory = Factory::new(
+        &guidance,
+        &checkpoint_sha256,
         device,
-        domain: DomainConfig {
+        DomainConfig {
             placement: config.bounds,
             extension_lengths: config.extension_lengths.clone(),
         },
-        candidate: &config.candidate,
-        placement_page: config.placement_page,
-        pool: rayon::ThreadPoolBuilder::new()
-            .num_threads(config.cpu_threads)
-            .thread_name(|index| format!("hierarchical-route-{index}"))
-            .build()?,
-    };
+        &config.candidate,
+        config.placement_page,
+        config.cpu_threads,
+        Some(&outer),
+    )?;
     // Warm the complete lower-tool path once outside both measurements. This
     // includes graph/raster inference, exact route search and native replay.
     let warmup = prefix_session(&panel.cases[0], &panel, catalogs.clone())?;
@@ -344,6 +496,7 @@ pub fn run(
         device: format!("{device:?}"),
         catalog_sha256: catalogs.identity.clone(),
         lower_checkpoint_sha256: checkpoint_sha256,
+        outer_checkpoint_sha256,
         cases,
     };
     write_report(output, &report)?;
@@ -420,6 +573,7 @@ struct Edge {
 struct Node {
     session: Session,
     visits: u32,
+    value: Option<f64>,
     actions: Option<Vec<Edge>>,
 }
 
@@ -439,6 +593,7 @@ fn mcts_search(
         let mut nodes = vec![Node {
             session: working.clone(),
             visits: 0,
+            value: None,
             actions: None,
         }];
         for _ in 0..config.simulations_per_move {
@@ -486,7 +641,9 @@ fn simulate(
         if path.len() == config.horizon {
             break state_value(&nodes[current].session);
         }
-        ensure_node_expanded(nodes, current, factory, counters)?;
+        if nodes[current].actions.is_none() {
+            break ensure_node_expanded(nodes, current, factory, counters)?;
+        }
         let Some(actions) = nodes[current]
             .actions
             .as_ref()
@@ -520,16 +677,16 @@ fn simulate(
         let child_session = nodes[current].actions.as_ref().unwrap()[edge]
             .action
             .apply(&nodes[current].session)?;
-        let value = state_value(&child_session);
         let child = nodes.len();
         nodes.push(Node {
             session: child_session,
             visits: 0,
+            value: None,
             actions: None,
         });
         nodes[current].actions.as_mut().unwrap()[edge].child = Some(child);
         current = child;
-        break value;
+        break ensure_node_expanded(nodes, current, factory, counters)?;
     };
     nodes[current].visits += 1;
     for (node, edge) in path.into_iter().rev() {
@@ -546,42 +703,39 @@ fn ensure_node_expanded(
     node: usize,
     factory: &Factory<'_>,
     counters: &mut Counters,
-) -> Result<()> {
+) -> Result<f64> {
     if nodes[node].actions.is_some() {
-        return Ok(());
+        return Ok(nodes[node]
+            .value
+            .unwrap_or_else(|| state_value(&nodes[node].session)));
     }
     let actions = factory.actions(&nodes[node].session, counters)?;
-    let mut applied = Vec::with_capacity(actions.len());
-    for action in actions {
-        let child = action.apply(&nodes[node].session)?;
-        let score = action.prior_score(&nodes[node].session, &child);
-        applied.push((action, score));
+    if actions.is_empty() {
+        let value = state_value(&nodes[node].session);
+        nodes[node].value = Some(value);
+        nodes[node].actions = Some(vec![]);
+        return Ok(value);
     }
-    let maximum = applied
+    let children = actions
         .iter()
-        .map(|(_, score)| *score)
-        .fold(f64::NEG_INFINITY, f64::max);
-    let denominator = applied
-        .iter()
-        .map(|(_, score)| (score - maximum).exp())
-        .sum::<f64>();
+        .map(|action| action.apply(&nodes[node].session))
+        .collect::<Result<Vec<_>>>()?;
+    let (priors, value) = factory.score_actions(&nodes[node].session, &actions, &children)?;
     nodes[node].actions = Some(
-        applied
+        actions
             .into_iter()
-            .map(|(action, score)| Edge {
+            .zip(priors)
+            .map(|(action, prior)| Edge {
                 action,
-                prior: if denominator > 0.0 {
-                    (score - maximum).exp() / denominator
-                } else {
-                    0.0
-                },
+                prior,
                 visits: 0,
                 value_sum: 0.0,
                 child: None,
             })
             .collect(),
     );
-    Ok(())
+    nodes[node].value = Some(value);
+    Ok(value)
 }
 
 fn prefix_session(case: &Case, panel: &Panel, catalogs: Arc<Catalogs>) -> Result<Session> {

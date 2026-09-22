@@ -329,6 +329,20 @@ impl Session {
         }
         Ok(Arc::new(Input::new_for_route(self, config, connection)))
     }
+
+    /// Encodes a stable macro-search state without inheriting the most recent
+    /// primitive command as the policy query.
+    pub fn macro_learning_input(&self, config: &Config) -> Result<Arc<Input>, Diagnostic> {
+        config.validate(self)?;
+        if self.active.is_some() {
+            return Err(error(
+                "macro-learning-state",
+                "learning-domain",
+                "macro-search encoding requires a stable state",
+            ));
+        }
+        Ok(Arc::new(Input::new_for_macro(self, config)))
+    }
 }
 
 impl Domain {
@@ -1198,6 +1212,16 @@ fn direction_index(direction: Direction) -> i64 {
 }
 
 impl Input {
+    fn new_for_macro(session: &Session, config: &Config) -> Self {
+        let mut input = Self::new(session, config);
+        for row in &mut input.entity_features {
+            row[7] = 0.;
+        }
+        input.focus_features = [0.; FOCUS_FEATURES];
+        input.focus_entity = -1;
+        input
+    }
+
     fn new_for_route(session: &Session, config: &Config, connection: usize) -> Self {
         let mut input = Self::new(session, config);
         for row in &mut input.entity_features {

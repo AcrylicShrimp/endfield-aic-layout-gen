@@ -32,6 +32,27 @@ pub struct RouteGuidanceModelConfig {
     pub maximum_edge_cost: u32,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct OuterModelConfig {
+    pub schema: String,
+    pub encoder: ConstructiveModelConfig,
+    pub width: i64,
+}
+
+impl OuterModelConfig {
+    pub const SCHEMA: &'static str = "aic-hierarchical-outer-model-v1";
+
+    pub fn validate(&self) -> Result<()> {
+        self.encoder.validate()?;
+        ensure!(
+            self.schema == Self::SCHEMA && (8..=4096).contains(&self.width),
+            "aic-learning.outer-model-config: invalid schema or dimensions"
+        );
+        Ok(())
+    }
+}
+
 impl RouteGuidanceModelConfig {
     pub const SCHEMA: &'static str = "aic-route-guidance-model-v1";
 

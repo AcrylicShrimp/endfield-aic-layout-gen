@@ -9,6 +9,10 @@ pub mod model;
 #[cfg(feature = "outcomes")]
 pub mod outcomes;
 #[cfg(feature = "libtorch")]
+pub mod outer_model;
+#[cfg(feature = "libtorch")]
+pub mod outer_training;
+#[cfg(feature = "libtorch")]
 pub mod pretraining;
 #[cfg(feature = "outcomes")]
 pub mod route_candidates;

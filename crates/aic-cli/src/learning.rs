@@ -44,7 +44,29 @@ pub enum LearningCommand {
         /// Completed train-route-guidance output directory.
         #[arg(long)]
         lower_training_output: PathBuf,
+        /// Completed train-hierarchical-outer output directory.
+        #[arg(long)]
+        outer_training_output: PathBuf,
         /// Directory containing normalized facilities, transports and logistics components.
+        #[arg(long)]
+        catalog_root: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long, default_value = "cuda:0")]
+        device: String,
+    },
+    /// Train the separate outer macro policy/value model from exact continuations.
+    #[cfg(feature = "learning")]
+    TrainHierarchicalOuter {
+        #[arg(long)]
+        config: PathBuf,
+        #[arg(long)]
+        training_panel: PathBuf,
+        #[arg(long)]
+        evaluation_panel: PathBuf,
+        /// Completed train-route-guidance output directory.
+        #[arg(long)]
+        lower_training_output: PathBuf,
         #[arg(long)]
         catalog_root: PathBuf,
         #[arg(long)]
@@ -281,6 +303,8 @@ pub fn run(command: LearningCommand) -> Result<()> {
         LearningCommand::TrainRouteGuidance { config, .. } => config,
         #[cfg(feature = "learning")]
         LearningCommand::HierarchicalSearchHarness { config, .. } => config,
+        #[cfg(feature = "learning")]
+        LearningCommand::TrainHierarchicalOuter { config, .. } => config,
         LearningCommand::CollectOutcomes { config, .. } => config,
         LearningCommand::ValidateOutcomes { dataset } => dataset,
         #[cfg(feature = "learning")]
@@ -359,12 +383,32 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             config,
             panel,
             lower_training_output,
+            outer_training_output,
             catalog_root,
             output,
             device,
         } => aic_learning::hierarchical_search::run(
             &config,
             &panel,
+            &lower_training_output,
+            &outer_training_output,
+            &catalog_root,
+            &output,
+            update::parse_device(&device)?,
+        ),
+        #[cfg(feature = "learning")]
+        LearningCommand::TrainHierarchicalOuter {
+            config,
+            training_panel,
+            evaluation_panel,
+            lower_training_output,
+            catalog_root,
+            output,
+            device,
+        } => aic_learning::outer_training::run(
+            &config,
+            &training_panel,
+            &evaluation_panel,
             &lower_training_output,
             &catalog_root,
             &output,
