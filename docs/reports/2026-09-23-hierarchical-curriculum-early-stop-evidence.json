@@ -1,0 +1,140 @@
+{
+  "schema": "aic-hierarchical-curriculum-early-stop-evidence-v1",
+  "decision": "do-not-resume",
+  "verdict": "stability-first",
+  "stopped_at_utc": "2026-09-22T22:03:45.789393+00:00",
+  "run": {
+    "configured_generations": 100,
+    "completed_generations": 88,
+    "last_committed_generation": 87,
+    "pending_generation": 88,
+    "pending_generation_files": [
+      "training-panel.json"
+    ],
+    "final_curriculum_level": 1,
+    "promotion_generation": 3,
+    "wandb_run_id": "7718b4f7291e77b636a0702b",
+    "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/7718b4f7291e77b636a0702b",
+    "wandb_final_state": "finished",
+    "wandb_last_history_step": 87
+  },
+  "identities": {
+    "binding_sha256": "4d5cc00b3f8988290e4a280a5da8a577a8265492de9adb5a9709f62764c146f6",
+    "binary_sha256": "6b0c7fad7869f63da3859c35fa077500887a2fd1835067fbcc8871823bb5c747",
+    "latest_lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+    "latest_outer_checkpoint_sha256": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520",
+    "server_stop_manifest_sha256": "231146bfa197da7479caecc84b4fb0d1be41dc41ccd46705708e98af292b19c9"
+  },
+  "level_0": {
+    "generation_range": [
+      0,
+      3
+    ],
+    "training_completion_mean": 0.8984375,
+    "final_recent_training_completion_rate": 0.8984375
+  },
+  "level_1": {
+    "generation_range": [
+      4,
+      87
+    ],
+    "generations": 84,
+    "training_completion_mean": 0.5275297619047619,
+    "training_completion_minimum": 0.28125,
+    "training_completion_maximum": 0.78125,
+    "training_completion_final": 0.5625,
+    "training_completion_standard_deviation": 0.10214712550108984,
+    "training_completion_slope_per_generation": 0.00017781208869089803,
+    "first_10_generation_training_completion_mean": 0.565625,
+    "last_10_generation_training_completion_mean": 0.525,
+    "final_recent_training_completion_rate": 0.4921875
+  },
+  "heldout": {
+    "cases": 128,
+    "completed_series": [
+      [4, 37],
+      [9, 45],
+      [14, 44],
+      [19, 39],
+      [24, 46],
+      [29, 40],
+      [34, 38],
+      [39, 32],
+      [44, 42],
+      [49, 47],
+      [54, 40],
+      [59, 41],
+      [64, 37],
+      [69, 36],
+      [74, 45],
+      [79, 42],
+      [84, 38]
+    ],
+    "completed_mean": 40.529411764705884,
+    "completed_minimum": 32,
+    "completed_maximum": 47,
+    "completed_final": 38,
+    "completed_slope_per_generation": -0.01764705882352941,
+    "final_by_facilities": {
+      "1": [11, 12],
+      "2": [26, 52],
+      "3": [1, 64]
+    },
+    "final_by_connections": {
+      "2": [6, 6],
+      "3": [10, 11],
+      "4": [7, 11],
+      "5": [14, 45],
+      "6": [1, 21],
+      "7": [0, 25],
+      "8": [0, 9]
+    },
+    "final_failure_terminations": {
+      "no-macro-actions": 90
+    }
+  },
+  "initial_root_prior_snapshots": [
+    {
+      "generation": 4,
+      "mean_normalized_entropy": 0.9999100219873638,
+      "mean_maximum_prior": 0.0003981211992735546
+    },
+    {
+      "generation": 9,
+      "mean_normalized_entropy": 0.9998967512290882,
+      "mean_maximum_prior": 0.0003993794296024282
+    },
+    {
+      "generation": 49,
+      "mean_normalized_entropy": 0.9999836303039931,
+      "mean_maximum_prior": 0.00037621611795319936
+    },
+    {
+      "generation": 84,
+      "mean_normalized_entropy": 0.9999926140202462,
+      "mean_maximum_prior": 0.0003697186008771672
+    },
+    {
+      "generation": 87,
+      "mean_normalized_entropy": 0.9999920294255951,
+      "mean_maximum_prior": 0.00035452604606408964
+    }
+  ],
+  "training": {
+    "outer_loss_improved_generations": 55,
+    "lower_loss_improved_generations": 73,
+    "maximum_gradient_norm_median": 146.36939239501953,
+    "maximum_gradient_norm_maximum": 1203.4642333984375,
+    "generation_87_maximum_gradient_norm": 557.9113159179688,
+    "update_seconds_total": 6303.66306945,
+    "level_1_mcts_samples_per_minute_median": 383171.41695041425
+  },
+  "runtime_incident": {
+    "generation": 86,
+    "diagnostic_code": "aic-learning.route-guidance-compiled-parity",
+    "maximum_absolute_error": 0.001227617,
+    "stderr_sha256": "645cf411f70fa79d0ca8b347fc7067ed8c388a55604d647b77f18131e30e6710",
+    "same_binary_retry": "passed"
+  },
+  "source_limit": "The launch manifest's source_commit field is malformed; binary, binding, configuration, input, checkpoint, and retained source-file hashes are the authoritative identities."
+}
