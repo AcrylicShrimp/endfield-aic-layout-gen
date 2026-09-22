@@ -13,8 +13,8 @@ use crate::{
     schema::ModelConfig,
     training::{config::Resources as TrainingResources, resources::Guard},
 };
-use aic_layout_gen::Config as GeneratorConfig;
-use aic_pilot_native::physical_editor::{PhysicalCandidateOptions, PhysicalSessionLimits};
+use aic_pilot_native::learning::{Limits, Options};
+use aic_recipe_layout_gen::{RecipeFactorySpec, RecipeGeneratorConfig, RecipePackingProfile};
 use aic_torch::tch::{Device, Tensor, no_grad};
 use anyhow::{Context, Result, ensure};
 use serde::{Deserialize, Serialize};
@@ -28,8 +28,16 @@ use std::{
     time::Instant,
 };
 
-const SCHEMA: &str = "aic-physical-outcome-online-pretraining-v1";
-const STATE_SCHEMA: &str = "aic-physical-outcome-online-state-v1";
+const SCHEMA: &str = "aic-physical-outcome-online-pretraining-v2";
+const STATE_SCHEMA: &str = "aic-physical-outcome-online-state-v2";
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct RootClass {
+    target_item: String,
+    facilities: i64,
+    packing_profile: RecipePackingProfile,
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -37,11 +45,13 @@ struct Config {
     schema: String,
     model: ModelConfig,
     initialization_seed: u64,
-    generator: GeneratorConfig,
-    candidates: PhysicalCandidateOptions,
-    session: PhysicalSessionLimits,
+    generator: RecipeGeneratorConfig,
+    root_classes: Vec<RootClass>,
+    actions: Options,
+    native: Limits,
     workers: usize,
     roots_per_update: usize,
+    trajectories_per_factory: usize,
     roots_per_minibatch: usize,
     development_roots: usize,
     development_interval_updates: u64,
@@ -93,15 +103,32 @@ impl Config {
             self.workers > 0
                 && self.roots_per_update == self.workers
                 && self.roots_per_update % self.roots_per_minibatch == 0
+                && self.trajectories_per_factory > 0
+                && self.roots_per_update % self.trajectories_per_factory == 0
+                && self.development_roots % self.trajectories_per_factory == 0
+                && self.roots_per_update / self.trajectories_per_factory
+                    >= self.roots_per_minibatch
                 && self.development_roots > 0
                 && self.development_roots <= self.workers,
             "aic-learning.online-config-batching: invalid worker or root batch sizes"
         );
         ensure!(
-            self.session.max_actions == 32
-                && self.session.route_expansions == 50_000
-                && self.session.max_total_route_expansions == 1_600_000,
+            self.native.schema == "declarative-edit-v2"
+                && self.native.max_actions == 32
+                && self.native.route_expansions == 50_000
+                && self.native.max_total_route_expansions == 1_600_000,
             "aic-learning.online-config-session: expected established 32-action native limits"
+        );
+        self.generator.validate()?;
+        ensure!(
+            !self.root_classes.is_empty()
+                && self.root_classes.len() <= 1024
+                && self.root_classes.iter().all(|class| {
+                    !class.target_item.is_empty()
+                        && class.facilities > 0
+                        && class.facilities <= class.packing_profile.maximum_facilities()
+                }),
+            "aic-learning.online-config-roots: invalid or empty recipe root distribution"
         );
         ensure!(
             self.checkpoint_interval_updates > 0
@@ -156,8 +183,10 @@ struct State {
     pid: u32,
     update: u64,
     training_roots: u64,
+    training_factories: u64,
     training_rows: u64,
     development_roots: u64,
+    development_factories: u64,
     development_rows: u64,
     elapsed_seconds: f64,
     latest_checkpoint: Option<String>,
@@ -212,8 +241,8 @@ pub fn run(
     let (mut collector, catalog_hash) = Collector::new(
         catalog_root,
         config.generator.clone(),
-        config.candidates.clone(),
-        config.session.clone(),
+        config.actions.clone(),
+        config.native.clone(),
         config.workers,
     )?;
     let mut predictor = Predictor::new_parts(
@@ -253,8 +282,10 @@ pub fn run(
             pid: std::process::id(),
             update: 0,
             training_roots: 0,
+            training_factories: 0,
             training_rows: 0,
             development_roots: 0,
+            development_factories: 0,
             development_rows: 0,
             elapsed_seconds: 0.0,
             latest_checkpoint: None,
@@ -322,6 +353,8 @@ pub fn run(
             config.roots_per_update,
             config.train_generation_seed,
             config.train_action_seed,
+            &config.root_classes,
+            config.trajectories_per_factory,
         )?;
         let rows = collector.collect(&specs)?;
         let mut losses = Vec::new();
@@ -342,6 +375,7 @@ pub fn run(
         }
         state.update += 1;
         state.training_roots += specs.len() as u64;
+        state.training_factories += distinct_factories(&specs) as u64;
         state.training_rows += rows.len() as u64;
         state.elapsed_seconds = base_elapsed + started.elapsed().as_secs_f64();
         let loss = mean(&losses);
@@ -360,6 +394,8 @@ pub fn run(
                 config.development_roots,
                 config.development_generation_seed,
                 config.development_action_seed,
+                &config.root_classes,
+                config.trajectories_per_factory,
             )?;
             let rows = collector.collect(&specs)?;
             state.last_development_loss = Some(evaluate(
@@ -370,6 +406,7 @@ pub fn run(
                 device,
             )?);
             state.development_roots += specs.len() as u64;
+            state.development_factories += distinct_factories(&specs) as u64;
             state.development_rows += rows.len() as u64;
         }
         if state.update % config.checkpoint_interval_updates == 0 {
@@ -385,7 +422,8 @@ pub fn run(
                 output,
                 json!({"schema":"aic-physical-outcome-online-metric-v1",
                 "update":state.update,"elapsed_seconds":state.elapsed_seconds,
-                "training_roots":state.training_roots,"training_rows":state.training_rows,
+                "training_roots":state.training_roots,"training_factories":state.training_factories,
+                "training_rows":state.training_rows,
                 "train_loss":window_loss/window_updates as f64,
                 "gradient_norm":window_gradient/window_updates as f64,
                 "development_loss":state.last_development_loss,
@@ -411,7 +449,8 @@ pub fn run(
             output,
             json!({"schema":"aic-physical-outcome-online-metric-v1",
             "update":state.update,"elapsed_seconds":state.elapsed_seconds,
-            "training_roots":state.training_roots,"training_rows":state.training_rows,
+            "training_roots":state.training_roots,"training_factories":state.training_factories,
+            "training_rows":state.training_rows,
             "train_loss":window_loss/window_updates as f64,
             "gradient_norm":window_gradient/window_updates as f64,
             "development_loss":state.last_development_loss,
@@ -433,8 +472,10 @@ pub fn run(
     );
     Ok(
         json!({"schema":STATE_SCHEMA,"status":state.status,"stop_reason":state.stop_reason,
-        "update":state.update,"training_roots":state.training_roots,"training_rows":state.training_rows,
-        "development_roots":state.development_roots,"development_rows":state.development_rows,
+        "update":state.update,"training_roots":state.training_roots,
+        "training_factories":state.training_factories,"training_rows":state.training_rows,
+        "development_roots":state.development_roots,
+        "development_factories":state.development_factories,"development_rows":state.development_rows,
         "elapsed_seconds":state.elapsed_seconds,"peak_rss_bytes":guard.peak_rss(),
         "encoder":encoder_path,"encoder_sha256":sha256(&encoder_path)?}),
     )
@@ -446,28 +487,52 @@ fn root_specs(
     count: usize,
     generation: u64,
     action: u64,
+    classes: &[RootClass],
+    trajectories_per_factory: usize,
 ) -> Result<Vec<RootSpec>> {
+    ensure!(
+        start % trajectories_per_factory as u64 == 0 && count % trajectories_per_factory == 0,
+        "aic-learning.online-roots: root range must align to factory reuse"
+    );
+    let unique_factories = count / trajectories_per_factory;
+    let first_factory = start / trajectories_per_factory as u64;
     (0..count)
         .map(|offset| {
             let ordinal = start
                 .checked_add(offset as u64)
                 .context("aic-learning.online-seed: ordinal overflow")?;
+            let factory_ordinal = first_factory
+                .checked_add((offset % unique_factories) as u64)
+                .context("aic-learning.online-seed: factory ordinal overflow")?;
+            let class = &classes[(factory_ordinal % classes.len() as u64) as usize];
             Ok(RootSpec {
                 root_id: format!("{prefix}-{ordinal:012}"),
-                blocks: if ordinal % 2 == 0 { 8 } else { 16 },
-                generation_seed: generation
-                    .checked_add(
-                        ordinal
-                            .checked_mul(1024)
-                            .context("aic-learning.online-seed: generation stride overflow")?,
-                    )
-                    .context("aic-learning.online-seed: generation overflow")?,
+                factory: RecipeFactorySpec {
+                    target_item: class.target_item.clone(),
+                    facilities: class.facilities,
+                    packing_profile: class.packing_profile,
+                    seed: generation
+                        .checked_add(
+                            factory_ordinal
+                                .checked_mul(1024)
+                                .context("aic-learning.online-seed: generation stride overflow")?,
+                        )
+                        .context("aic-learning.online-seed: generation overflow")?,
+                },
                 action_seed: action
                     .checked_add(ordinal)
                     .context("aic-learning.online-seed: action overflow")?,
             })
         })
         .collect()
+}
+
+fn distinct_factories(specs: &[RootSpec]) -> usize {
+    specs
+        .iter()
+        .map(|spec| &spec.factory)
+        .collect::<std::collections::BTreeSet<_>>()
+        .len()
 }
 
 fn evaluate(

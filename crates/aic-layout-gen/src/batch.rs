@@ -1,4 +1,4 @@
-use crate::{Attempt, Config, Generator, io, render};
+use crate::{Attempt, Config, IntentGenerator, ResolvedPolicy, io, render};
 use aic_layout::physical::Metrics;
 use anyhow::{Context, Result};
 use serde::Serialize;
@@ -25,6 +25,7 @@ pub struct Row {
     pub validation_ms: f64,
     pub publication_ms: f64,
     pub attempts: Vec<Attempt>,
+    pub resolved: Option<ResolvedPolicy>,
 }
 
 #[derive(Serialize)]
@@ -55,10 +56,8 @@ pub fn run(
         "count must be 1..4096 and workers 1..16"
     );
     let loaded = io::load_catalogs(catalog_dir)?;
-    let generator = Generator::new(&loaded.catalogs, config.clone())
-        .map_err(|d| anyhow::anyhow!(serde_json::to_string(&d).unwrap()))?;
-    let estimate =
-        workers as u64 * (config.route_work_per_call as u64 * 640 + config.max_cells as u64 * 256);
+    let generator = IntentGenerator::new(&loaded.catalogs, config.clone())?;
+    let estimate = workers as u64 * config.conservative_workspace_bytes()?;
     anyhow::ensure!(
         estimate <= 2 * 1024 * 1024 * 1024,
         "configured workers/route work exceed the 2 GiB conservative workspace guard"
@@ -99,7 +98,8 @@ pub fn run(
             for (index, result) in &rx {
                 let before = Instant::now();
                 let row = match result {
-                    Ok(generated) => {
+                    Ok(intent_generated) => {
+                        let generated = intent_generated.generated;
                         let bytes = serde_json::to_vec(&generated.layout)?;
                         anyhow::ensure!(
                             bytes.len() <= 16 * 1024 * 1024,
@@ -114,7 +114,7 @@ pub fn run(
                         )?;
                         let row = Row {
                             index,
-                            seed: generated.seed,
+                            seed: intent_generated.request_seed,
                             status: "complete".into(),
                             blocks: generated.layout.problem.blocks.len(),
                             connections: generated.layout.problem.connections.len(),
@@ -124,6 +124,7 @@ pub fn run(
                             validation_ms: generated.validation_ms,
                             publication_ms: before.elapsed().as_secs_f64() * 1000.0,
                             attempts: generated.attempts,
+                            resolved: Some(intent_generated.resolved),
                         };
                         io::write_json(
                             &output.join(format!("case-{index:05}.json")),
@@ -131,11 +132,15 @@ pub fn run(
                         )?;
                         row
                     }
-                    Err(failed) => {
-                        io::write_json(&output.join(format!("case-{index:05}.json")), &failed)?;
+                    Err(intent_failed) => {
+                        let failed = intent_failed.failure;
+                        io::write_json(
+                            &output.join(format!("case-{index:05}.json")),
+                            &serde_json::json!({"failure":failed,"resolved":intent_failed.resolved}),
+                        )?;
                         Row {
                             index,
-                            seed: failed.seed,
+                            seed: intent_failed.request_seed,
                             status: failed.diagnostic.code,
                             blocks: failed.attempts.last().map_or(0, |a| a.blocks),
                             connections: 0,
@@ -145,6 +150,7 @@ pub fn run(
                             validation_ms: 0.0,
                             publication_ms: before.elapsed().as_secs_f64() * 1000.0,
                             attempts: failed.attempts,
+                            resolved: Some(intent_failed.resolved),
                         }
                     }
                 };

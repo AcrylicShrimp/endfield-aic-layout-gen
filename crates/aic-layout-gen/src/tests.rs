@@ -1,4 +1,6 @@
-use crate::{Config, Generator, io, packing};
+use crate::{
+    Config as PublicConfig, Generator, IntentGenerator, MechanismConfig as Config, io, packing,
+};
 use aic_layout::{
     physical::{Layout, Problem, SCHEMA, Solution},
     rate::Rate,
@@ -329,12 +331,13 @@ fn invalid_and_impossible_configuration_is_rejected_before_sampling() {
 #[test]
 fn transport_quotas_and_acyclic_order_survive_routing() {
     let loaded = catalogs();
-    let config: Config =
+    let config: PublicConfig =
         io::read(&Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/mixed-dag.json")).unwrap();
-    let result = Generator::new(&loaded.catalogs, config)
+    let result = IntentGenerator::new(&loaded.catalogs, config)
         .unwrap()
         .generate(8000)
-        .unwrap();
+        .unwrap()
+        .generated;
     assert!(result.metrics.belt_connections >= 4 && result.metrics.pipe_connections >= 3);
     let problem = &result.layout.problem;
     let mut remaining: std::collections::BTreeSet<_> =

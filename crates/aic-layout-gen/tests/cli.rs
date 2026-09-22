@@ -75,7 +75,7 @@ fn cli_generates_validates_and_preserves_seed_identity_across_worker_counts() {
     assert!(!dir.join("invalid").exists());
     let mut oversized: serde_json::Value =
         serde_json::from_slice(&fs::read(&config).unwrap()).unwrap();
-    oversized["route_work_per_call"] = serde_json::json!(usize::MAX);
+    oversized["facilities"] = serde_json::json!([8, 999]);
     let oversized_path = dir.join("oversized.json");
     fs::write(&oversized_path, serde_json::to_vec(&oversized).unwrap()).unwrap();
     let rejected = Command::new(cli)
@@ -89,7 +89,7 @@ fn cli_generates_validates_and_preserves_seed_identity_across_worker_counts() {
         .output()
         .unwrap();
     assert_eq!(rejected.status.code(), Some(1));
-    assert!(String::from_utf8_lossy(&rejected.stderr).contains("aic-layout-gen.config"));
+    assert!(String::from_utf8_lossy(&rejected.stderr).contains("facilities"));
     assert!(!dir.join("oversized").exists());
     let existing = Command::new(cli)
         .current_dir(&root)
@@ -122,13 +122,9 @@ fn survey_records_equal_slots_without_persisting_layouts() {
     )
     .unwrap();
     config["facility_buckets"] = serde_json::json!([[2, 3], [4, 5]]);
-    config["attempts_per_bucket"] = serde_json::json!(2);
+    config["slots_per_bucket"] = serde_json::json!(2);
     config["workers"] = serde_json::json!(2);
     config["max_elapsed_seconds"] = serde_json::json!(60);
-    config["generator"]["max_attempts"] = serde_json::json!(1);
-    config["generator"]["max_pair_trials"] = serde_json::json!(512);
-    config["generator"]["route_work_per_call"] = serde_json::json!(12000);
-    config["generator"]["route_work_per_attempt"] = serde_json::json!(600000);
     let config_path = dir.join("config.json");
     fs::write(&config_path, serde_json::to_vec_pretty(&config).unwrap()).unwrap();
     let output = dir.join("output");
@@ -157,6 +153,14 @@ fn survey_records_equal_slots_without_persisting_layouts() {
     assert_eq!(report["summaries"][1]["requested"], 2);
     assert_eq!(report["rows"][0]["seed"], 4000);
     assert_eq!(report["rows"][3]["seed"], 4003);
+    assert!(
+        report["rows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|row| row["attempt_count"].as_u64().unwrap() <= 1
+                && row["resolved"]["schema"] == "aic-layout-generator-scale-policy-v1")
+    );
     assert!(!output.join("layout-00000.json").exists());
     fs::remove_dir_all(&dir).unwrap();
 }

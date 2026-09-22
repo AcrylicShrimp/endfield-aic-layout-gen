@@ -1,7 +1,7 @@
 //! Bounded procedural physical-action outcome datasets.
 
 pub mod config;
-#[cfg(feature = "libtorch")]
+#[cfg(any(feature = "libtorch", test))]
 pub(crate) mod live;
 pub mod run;
 pub mod sample;

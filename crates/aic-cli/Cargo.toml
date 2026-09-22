@@ -18,6 +18,7 @@ learning = ["outcomes", "aic-learning/libtorch"]
 aic-data.workspace = true
 aic-layout.workspace = true
 aic-layout-gen.workspace = true
+aic-recipe-layout-gen.workspace = true
 aic-routing.workspace = true
 aic-learning = { workspace = true, optional = true }
 anyhow.workspace = true

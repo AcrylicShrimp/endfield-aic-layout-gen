@@ -13,13 +13,20 @@ libtorch = [
     "dep:aic-torch",
     "aic-torch/libtorch",
 ]
-outcomes = ["dep:aic-data", "dep:aic-layout", "dep:aic-layout-gen", "dep:aic-pilot-native"]
+outcomes = [
+    "dep:aic-data",
+    "dep:aic-layout",
+    "dep:aic-layout-gen",
+    "dep:aic-pilot-native",
+    "dep:aic-recipe-layout-gen",
+]
 
 [dependencies]
 aic-pilot-native = { workspace = true, optional = true }
 aic-data = { workspace = true, optional = true }
 aic-layout = { workspace = true, optional = true }
 aic-layout-gen = { workspace = true, optional = true }
+aic-recipe-layout-gen = { workspace = true, optional = true }
 aic-torch = { workspace = true, optional = true }
 anyhow.workspace = true
 serde.workspace = true

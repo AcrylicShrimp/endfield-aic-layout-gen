@@ -36,6 +36,7 @@ dependencies = [
  "aic-layout",
  "aic-layout-gen",
  "aic-learning",
+ "aic-recipe-layout-gen",
  "aic-routing",
  "anyhow",
  "clap",
@@ -90,6 +91,7 @@ dependencies = [
  "aic-layout",
  "aic-layout-gen",
  "aic-pilot-native",
+ "aic-recipe-layout-gen",
  "aic-torch",
  "anyhow",
  "postcard",
@@ -108,6 +110,21 @@ dependencies = [
  "aic-routing",
  "crossbeam-channel",
  "indexmap",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+]
+
+[[package]]
+name = "aic-recipe-layout-gen"
+version = "0.1.0"
+dependencies = [
+ "aic-data",
+ "aic-layout",
+ "aic-layout-gen",
+ "aic-routing",
+ "anyhow",
+ "clap",
  "serde",
  "serde_json",
  "sha2 0.11.0",

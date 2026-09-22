@@ -67,6 +67,10 @@ impl<'a> Generator<'a> {
         Ok(Self { catalogs, config })
     }
 
+    pub(crate) fn from_validated(catalogs: &'a Catalogs, config: Config) -> Self {
+        Self { catalogs, config }
+    }
+
     /// Return a fully routed, independently validated layout or explicit exhaustion.
     /// Retry seeds and all unsuccessful attempt summaries are retained.
     pub fn generate(&self, seed: u64) -> Result<Generated, Failure> {
@@ -297,6 +301,7 @@ impl<'a> Generator<'a> {
                     || existing.contains(&(s, t))
                     || joining && root(&parent, s) == root(&parent, t)
                     || long && d < long_distance
+                    || c.partition_distance_classes && !long && d >= long_distance
                 {
                     continue;
                 }

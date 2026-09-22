@@ -19,6 +19,8 @@ pub struct Config {
     pub max_bridges_per_route: usize,
     pub max_degree: usize,
     pub long_link_fraction: f64,
+    #[serde(default)]
+    pub partition_distance_classes: bool,
     pub min_branch_blocks: usize,
     pub min_merge_blocks: usize,
     pub min_connections: BTreeMap<TransportKind, usize>,
@@ -44,6 +46,7 @@ impl Default for Config {
             max_bridges_per_route: 4,
             max_degree: 5,
             long_link_fraction: 0.4,
+            partition_distance_classes: false,
             min_branch_blocks: 1,
             min_merge_blocks: 1,
             min_connections: BTreeMap::new(),
@@ -72,7 +75,7 @@ impl Config {
             || !self
                 .edges_per_block
                 .iter()
-                .all(|v| v.is_finite() && *v >= 1.0 && *v <= 8.0)
+                .all(|v| v.is_finite() && *v > 0.0 && *v <= 8.0)
             || self.edges_per_block[0] > self.edges_per_block[1]
             || self.gap[0] < 1
             || self.gap[1] < self.gap[0]
@@ -84,7 +87,7 @@ impl Config {
             || !(1..=64).contains(&self.ports_per_pair)
             || !(1..=1_000_000).contains(&self.route_work_per_call)
             || self.route_work_per_attempt < self.route_work_per_call
-            || self.route_work_per_attempt > 10_000_000
+            || self.route_work_per_attempt > 250_000_000
             || self.max_bridges_per_route > 8
             || !(2..=32).contains(&self.max_degree)
             || !self.long_link_fraction.is_finite()
@@ -120,7 +123,8 @@ impl Config {
             let minimum = (n as f64 * self.edges_per_block[0]).ceil() as usize;
             let maximum = (n as f64 * self.edges_per_block[1]).ceil() as usize;
             let pair_limit = n * (n - 1) / if self.acyclic { 2 } else { 1 };
-            if maximum > pair_limit.min(n * self.max_degree / 2)
+            if minimum < n - 1
+                || maximum > pair_limit.min(n * self.max_degree / 2)
                 || self.min_connections.values().sum::<usize>() > minimum
                 || self.min_branch_blocks * 2 > minimum
                 || self.min_merge_blocks * 2 > minimum

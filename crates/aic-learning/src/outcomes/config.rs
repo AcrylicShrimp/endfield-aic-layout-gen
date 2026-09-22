@@ -1,5 +1,5 @@
 use aic_layout::physical_identity;
-use aic_layout_gen::Config as GeneratorConfig;
+use aic_layout_gen::MechanismConfig as GeneratorConfig;
 use aic_pilot_native::physical_editor::{PhysicalCandidateOptions, PhysicalSessionLimits};
 use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};

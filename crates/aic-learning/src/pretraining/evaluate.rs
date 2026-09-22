@@ -8,12 +8,12 @@ use crate::{
     input::{Tensors, sha256},
     outcomes::{
         sample::choose_random,
-        storage::{ObservedOutcome, Row, WorkRecord},
+        storage::{Row, observed_factory_outcome},
     },
     schema::ModelConfig,
     training::evaluation::Panel,
 };
-use aic_layout::{physical::Metrics, rng::Rng};
+use aic_layout::rng::Rng;
 use aic_pilot_native::{
     generation::physical_identity::Limits as IdentityLimits,
     input::{CatalogPaths, load_catalogs},
@@ -292,7 +292,11 @@ fn collect_rows(
                         step,
                         pre_action,
                         selected,
-                        outcome: observed_outcome(&result["outcome"], &next, &config.native)?,
+                        outcome: observed_factory_outcome(
+                            &result["outcome"],
+                            &next,
+                            &config.native,
+                        )?,
                     },
                     Meta {
                         case: panel.manifest.cases[case].id.clone(),
@@ -320,77 +324,6 @@ fn ensure_ready(replies: Vec<(usize, Reply)>) -> Result<()> {
         "aic-learning.head-evaluation-protocol: ready required"
     );
     Ok(())
-}
-
-fn observed_outcome(value: &Value, next: &Observation, limits: &Limits) -> Result<ObservedOutcome> {
-    let status = value["status"]
-        .as_str()
-        .context("aic-learning.head-evaluation-outcome: missing status")?
-        .to_owned();
-    let diagnostics = value["diagnostics"].as_array().cloned().unwrap_or_default();
-    let censored = diagnostics.iter().any(|diagnostic| {
-        diagnostic["code"]
-            .as_str()
-            .is_some_and(|code| code.ends_with(".elapsed") || code.ends_with(".budget-exhausted"))
-    });
-    let changed = matches!(status.as_str(), "draft_accepted" | "validated" | "improved");
-    let expanded = value["details"]["route_expansions"].as_u64().unwrap_or(0) as usize;
-    let current_metrics = matches!(status.as_str(), "validated" | "improved")
-        .then(|| metric(&value["details"]["native_acceptance"]["metrics"]))
-        .transpose()?;
-    Ok(ObservedOutcome {
-        status,
-        charged: value["charged"] == true,
-        censored,
-        attempts: value["attempts"].as_u64().unwrap_or(next.attempts),
-        revision: value["revision"].as_u64().unwrap_or(next.revision),
-        done: value["done"] == true,
-        work: WorkRecord {
-            expanded,
-            preflight_expanded: value["details"]["preflight_expansions"]
-                .as_u64()
-                .unwrap_or(0) as usize,
-            route_calls: value["details"]["route_calls"].as_u64().unwrap_or(0) as usize,
-            pending: next.input.pending,
-            routes: vec![],
-            committed: changed,
-        },
-        best_metrics: metric(&value["best_metrics"])
-            .context("aic-learning.head-evaluation-metrics: invalid retained best")?,
-        current_pending: changed.then_some(next.input.pending),
-        current_conflicts: changed.then_some(next.input.conflicts),
-        current_metrics,
-        route_budget_exhausted: changed.then_some(expanded >= limits.route_expansions),
-        diagnostics: vec![],
-    })
-}
-
-fn metric(value: &Value) -> Result<Metrics> {
-    let score = value["score"]
-        .as_array()
-        .context("aic-learning.head-evaluation-metrics: missing score")?;
-    ensure!(
-        score.len() == 3,
-        "aic-learning.head-evaluation-metrics: score length"
-    );
-    Ok(Metrics {
-        width: value["width"].as_i64().unwrap_or(0),
-        height: value["height"].as_i64().unwrap_or(0),
-        area: score[0].as_u64().context("area score")?,
-        body_cells: 0,
-        transport_cells: score[1].as_u64().context("transport score")?,
-        turns: score[2].as_u64().context("turn score")?,
-        occupancy: 0.0,
-        weak_components: 0,
-        branch_blocks: 0,
-        merge_blocks: 0,
-        max_degree: 0,
-        mean_port_distance: 0.0,
-        mean_detour: 0.0,
-        belt_connections: 0,
-        pipe_connections: 0,
-        bridges: 0,
-    })
 }
 
 fn summarize(rows: &[Scored], count_scale: f64) -> Value {

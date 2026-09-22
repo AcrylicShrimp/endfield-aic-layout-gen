@@ -30,15 +30,15 @@ target/release/aic-layout-gen survey \
   --output artifacts/layout-generation-survey
 ```
 
-The survey gives every configured facility-count bucket the same number of slots.
-It writes one compact row for every slot and per-bucket success, cost, status and
-occupancy summaries to `report.json`. Occupancy is measured by independent layout
-validation. Reported quantiles select the value at `floor((n - 1) * p / 100)` in
-sorted order; min/max expose rare extremes separately from the central quantiles.
-The deadline is checked between bounded generator operations. Interrupted and
-not-started slots remain explicit and make the command exit with status 2. A
-terminal generation failure is measured evidence, so it does not make a completed
-survey command fail.
+The survey gives every configured facility-count bucket the same number of raw
+construction slots. Each slot fixes its exact facility count, topology, packing
+profile and long-connection preference, then performs one attempt. It writes one
+compact row for every slot plus facility-bucket and topology/packing summaries.
+Occupancy is measured by independent layout validation. Reported quantiles select
+the value at `floor((n - 1) * p / 100)` in sorted order; min/max expose rare
+extremes. Interrupted and not-started slots remain explicit and make the command
+exit with status 2. A terminal generation failure is measured evidence, so it
+does not make a completed survey command fail.
 
 Open the output's `index.html` for the gallery. Individual pages offer belt, pipe
 and port visibility controls, route isolation by clicking, and hover descriptions.
@@ -60,54 +60,62 @@ datasets; seed replay across future algorithm versions is not promised.
 
 ## Configuration
 
-All fields are explicit; unknown fields and inconsistent targets are rejected.
-The seven files in `examples/` supply bounded starting points:
+The public `aic-layout-generator-v2` configuration contains only semantic choices.
+Unknown fields and inconsistent requests are rejected. The seven files in
+`examples/` supply bounded starting points:
 
 | Profile | Block range | Purpose |
 | --- | --- | --- |
 | `default` | 12–20 | Mixed transport, branching and merging |
 | `small` | 8–12 | Fast small examples |
-| `large` | 32–48 | Larger construction stress; strong acceptance bias under these budgets |
-| `compact` | 12–20 | Minimum inter-block gaps |
-| `spacious` | 12–20 | Larger inter-block gaps |
+| `large` | 32–48 | Larger scale-aware construction |
+| `compact` | 12–20 | Compact packing profile |
+| `spacious` | 12–20 | Spacious packing profile |
 | `no-bridges` | 8–12 | Forbid same-layer crossings; belt/pipe layer overlaps remain legal |
 | `mixed-dag` | 16–24 | Acyclic graph with at least four belt and three pipe links |
 
-`edges_per_block` controls sampled directed edge count. `max_degree` counts all
-incoming and outgoing edges. Branch/merge minima count blocks with multiple
-outgoing/incoming links, not splitter/converger components. `min_connections`
-specifies transport quotas. Empty `facility_ids` uses eligible external facilities;
-eligibility requires at least two ports among the requested transports.
+`topology_profiles` selects scale-independent graph shapes. `tree` requests
+`n-1` connections, `light-cycles` adds `ceil(n/4)`, and `branching` adds
+`ceil(n/2)` plus scale-aware branch and merge requirements. The generator first
+samples this semantic request and keeps it fixed across production retries.
+`minimum_connections` specifies explicit transport quotas. Empty `facility_ids`
+uses eligible external facilities; eligibility requires at least two ports among
+the requested transports.
 
-`long_link_fraction` is the probability of selecting the distant-only candidate
-branch. Distant means at least the 75th percentile of pairwise block-origin
-Manhattan distances in that packing. It is not a promised fraction of accepted
-edges. The report records the threshold and accepted count.
+`long_connection_preference` is the probability of selecting the distant-only
+candidate branch at each pair trial. Distant means at least the 75th percentile
+of pairwise block-origin Manhattan distances in that packing. Ordinary trials
+select from the other three quartiles. This is a construction preference rather
+than a promised fraction of accepted edges because route feasibility affects
+which trials succeed. Each attempt records the threshold and accepted count.
 
-Attempts resample both geometry and graph targets within the configured ranges.
-Consequently successful output is biased toward easier sizes and graphs. For a
-fixed-size dataset set both endpoints of `blocks` to that size and inspect failures.
+`packing_profiles` contains `compact`, `balanced` and `spacious`. These select
+versioned internal spacing policies; final spatial occupancy remains a measured
+result. `effort` selects `fast`, `standard` or `thorough`. The versioned
+`scale-policy-v1` derives retry count, pair trials, routing work, margin and canvas
+guard from the facility and target-connection counts. Every case records the
+resolved values. Callers do not scale internal work limits themselves.
+
 After publication, every connection is a fixed obligation: later rearrangement
-must preserve it. This generator has no operation that relaxes a published problem.
-
-`max_cells`, `max_attempts`, `max_pair_trials`, `ports_per_pair`, routing expansion
-budgets and bridge limits bound construction work. The CLI also limits count to
-4096, workers to 16 and applies a conservative 2 GiB workspace estimate. These
-are implementation guards, not game limits or an operating-system RSS cap.
+must preserve it. The CLI limits count to 4096, workers to 16 and applies a
+conservative 2 GiB workspace estimate over all configured semantic profiles.
 Files read by the CLI and published physical layouts are limited to 16 MiB.
 
 ## Library and shared format
 
 ```rust,ignore
 let loaded = aic_layout_gen::io::load_catalogs(catalog_directory)?;
-let generator = aic_layout_gen::Generator::new(&loaded.catalogs, config)?;
-let generated = generator.generate(seed)?;
-// generated.layout already passed aic_layout::validation::validate.
+let generator = aic_layout_gen::IntentGenerator::new(&loaded.catalogs, config)?;
+let result = generator.generate(seed)?;
+// result.generated.layout already passed independent physical validation.
+// result.resolved records every mechanism value derived by scale-policy-v1.
 ```
 
-The retained generator borrows validated catalogs. Workers share these immutable
-inputs, retain typed route state during construction and publish through a bounded
-queue. Catalogs are read, validated and hashed once per command, not per edge.
+The retained semantic generator borrows validated catalogs. The low-level
+`MechanismConfig` remains available for established internal workspace consumers,
+but it is not the standalone CLI contract. Workers share immutable catalogs,
+retain typed route state during construction and publish through a bounded queue.
+Catalogs are read, validated and hashed once per command, not per edge.
 
 `aic-layout` owns `aic-physical-layout-v2`: `problem` contains block/facility
 identities, boundary terminals, and connection endpoint identities, commodity
@@ -133,4 +141,4 @@ recipe-bound PPO environment, nor are they optimal layouts. Pretraining integrat
 requires its separate data/admission and evaluation design.
 
 See the [design](../../docs/designs/2026-09-15.00-procedural-layout-generation.md)
-and [measured results](../../docs/reports/2026-09-15-procedural-layout-generation.md).
+and [scale-aware configuration design](../../docs/designs/2026-09-16.01-scale-aware-layout-generator.md).

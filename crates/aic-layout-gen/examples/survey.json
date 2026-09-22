@@ -1,32 +1,23 @@
 {
-  "schema": "aic-layout-generation-survey-v1",
+  "schema": "aic-layout-generation-survey-v2",
   "generator": {
-    "schema": "aic-layout-generator-v1",
-    "blocks": [
-      2,
-      3
+    "topology_profiles": [
+      "tree",
+      "light-cycles",
+      "branching"
     ],
-    "edges_per_block": [
-      1.0,
-      1.0
+    "packing_profiles": [
+      "compact",
+      "balanced",
+      "spacious"
     ],
-    "gap": [
-      1,
-      5
+    "long_connection_preference": [
+      0.1,
+      0.4
     ],
-    "margin": 6,
-    "max_cells": 65536,
-    "max_attempts": 2,
-    "max_pair_trials": 4096,
-    "ports_per_pair": 8,
-    "route_work_per_call": 50000,
-    "route_work_per_attempt": 10000000,
-    "max_bridges_per_route": 4,
-    "max_degree": 5,
-    "long_link_fraction": 0.1,
-    "min_branch_blocks": 0,
-    "min_merge_blocks": 0,
-    "min_connections": {},
+    "effort": "standard",
+    "crossings": "allowed",
+    "minimum_connections": {},
     "transports": [
       "belt",
       "pipe"
@@ -35,20 +26,56 @@
     "acyclic": false
   },
   "facility_buckets": [
-    [2, 3],
-    [4, 5],
-    [6, 7],
-    [8, 11],
-    [12, 15],
-    [16, 23],
-    [24, 31],
-    [32, 39],
-    [40, 49],
-    [50, 63],
-    [64, 79],
-    [80, 100]
+    [
+      2,
+      3
+    ],
+    [
+      4,
+      5
+    ],
+    [
+      6,
+      7
+    ],
+    [
+      8,
+      11
+    ],
+    [
+      12,
+      15
+    ],
+    [
+      16,
+      23
+    ],
+    [
+      24,
+      31
+    ],
+    [
+      32,
+      39
+    ],
+    [
+      40,
+      49
+    ],
+    [
+      50,
+      63
+    ],
+    [
+      64,
+      79
+    ],
+    [
+      80,
+      100
+    ]
   ],
-  "attempts_per_bucket": 64,
+  "slots_per_bucket": 64,
   "workers": 4,
   "max_elapsed_seconds": 900
 }
