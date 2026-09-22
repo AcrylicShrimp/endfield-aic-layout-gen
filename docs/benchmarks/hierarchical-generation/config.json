@@ -1,6 +1,7 @@
 {
   "schema": "aic-hierarchical-generation-training-v1",
   "epochs": 200,
+  "checkpoint_interval_epochs": 20,
   "batch_states": 8,
   "search_temperature": 1.0,
   "lower_model_temperature": 4.0,

@@ -1395,7 +1395,7 @@ fn validate_config(config: &Config) -> Result<()> {
 fn validate_panel(panel: &Panel) -> Result<()> {
     ensure!(
         panel.schema == PANEL_SCHEMA
-            && panel.partition == "held-out"
+            && matches!(panel.partition.as_str(), "training" | "held-out")
             && !panel.cases.is_empty()
             && panel.cases.len() <= 4096,
         "aic-learning.hierarchical-panel: invalid schema, partition or cases"

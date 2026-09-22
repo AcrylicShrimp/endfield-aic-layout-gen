@@ -94,6 +94,9 @@ pub enum LearningCommand {
         output: PathBuf,
         #[arg(long, default_value = "cuda:0")]
         device: String,
+        /// Resume the latest atomic epoch-boundary checkpoint in the pending output.
+        #[arg(long)]
+        resume: bool,
     },
     /// Collect the fixed bounded procedural physical-action outcome dataset.
     CollectOutcomes {
@@ -447,6 +450,7 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             catalog_root,
             output,
             device,
+            resume,
         } => aic_learning::hierarchical_generation::run(
             &config,
             &panel,
@@ -456,6 +460,7 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             &catalog_root,
             &output,
             update::parse_device(&device)?,
+            resume,
         ),
         LearningCommand::CollectOutcomes {
             config,
