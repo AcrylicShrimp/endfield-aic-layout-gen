@@ -72,28 +72,29 @@ endpoints, but it agrees with the behavioral regression. W&B acknowledged all
 committed steps 0 through 10 at
 [run 332c36231b222cc0fbcdea3b](https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/332c36231b222cc0fbcdea3b).
 
-## Interpretation and next experiment
+## Interpretation and diagnosis
 
 The first three exact `0.5` rates were observed 16/32 outcomes, not a configured
 or predicted initial probability. The initial learner almost always solved the
 two-connection shape and usually failed the three-or-more-connection shape;
 fresh panels happened to contain roughly equal amounts of those classes.
 
-The leading explanation is a self-reinforcing data imbalance. Later collections
-contain few successful multi-connection trajectories, and each 200-epoch update
-replaces the training panel rather than replaying successful records from the
-recent 128 cases. The updated policy then supplies still fewer successful hard
-examples to the next MCTS collection. Random panel composition cannot explain
-the held-out decline or the drop in conditional multi-connection success.
+The retained-checkpoint diagnosis is complete. Crossed checkpoint evaluations
+and policy/value ablations isolate the regression to the outer policy prior;
+the generation-nine lower model improves the warm outer checkpoint, and
+removing the learned outer policy restores 30/32 completions. The learned prior
+became concentrated enough that prior-ranked progressive widening excluded
+useful actions from the search. Failed episodes then supplied the same biased
+visit distributions as unqualified policy targets, while each 200-epoch update
+replaced the preceding generation rather than replaying successful hard roots.
+See the
+[`policy-collapse diagnosis`](2026-09-22-hierarchical-curriculum-policy-collapse-diagnosis.md)
+for the controlled matrix, ablations and next-run requirements.
 
-Before another long run, evaluate retained generation checkpoints on one common
-diagnostic panel and separate outer-policy selection failure from lower routing
-failure. If the checkpoint comparison confirms forgetting, the smallest next
-treatment is a bounded four-generation replay window with shape-aware sampling
-that retains successful multi-connection roots. Re-run a short readiness series
-and require non-decreasing fixed diagnostic completion before launching another
-100-generation curriculum. Do not use the held-out panel for checkpoint
-selection; retain it for the final generalization measurement.
+Do not resume the original run. Before another long run, require a bounded
+replay window, outcome-aware treatment of failed-root policy targets, and
+anchor-guaranteed exploration to pass the fixed diagnostic panel. Keep the
+held-out panel untouched for the final generalization measurement.
 
 ## Stop and retention state
 

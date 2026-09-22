@@ -1,0 +1,197 @@
+{
+  "schema": "aic-hierarchical-curriculum-regression-diagnostic-manifest-v1",
+  "selected": [
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-66",
+      "source_generation": 0,
+      "connections": 2,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-3004",
+      "source_generation": 0,
+      "connections": 2,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-3302",
+      "source_generation": 0,
+      "connections": 2,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-2406",
+      "source_generation": 0,
+      "connections": 2,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-453",
+      "source_generation": 0,
+      "connections": 2,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-2181",
+      "source_generation": 0,
+      "connections": 2,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-1604",
+      "source_generation": 0,
+      "connections": 2,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-937",
+      "source_generation": 0,
+      "connections": 2,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-365",
+      "source_generation": 0,
+      "connections": 3,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-3109",
+      "source_generation": 0,
+      "connections": 3,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-3371",
+      "source_generation": 0,
+      "connections": 3,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-2342",
+      "source_generation": 0,
+      "connections": 4,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-2329",
+      "source_generation": 0,
+      "connections": 3,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000001-2540",
+      "source_generation": 1,
+      "connections": 3,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000001-1558",
+      "source_generation": 1,
+      "connections": 3,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000002-763",
+      "source_generation": 2,
+      "connections": 3,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000002-1541",
+      "source_generation": 2,
+      "connections": 3,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000002-589",
+      "source_generation": 2,
+      "connections": 3,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000003-2665",
+      "source_generation": 3,
+      "connections": 3,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000003-405",
+      "source_generation": 3,
+      "connections": 3,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000003-1405",
+      "source_generation": 3,
+      "connections": 3,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000003-1966",
+      "source_generation": 3,
+      "connections": 3,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000004-443",
+      "source_generation": 4,
+      "connections": 3,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000004-275",
+      "source_generation": 4,
+      "connections": 3,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000004-3197",
+      "source_generation": 4,
+      "connections": 3,
+      "source_completed": true
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-2733",
+      "source_generation": 0,
+      "connections": 3,
+      "source_completed": false
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-3428",
+      "source_generation": 0,
+      "connections": 4,
+      "source_completed": false
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-3619",
+      "source_generation": 0,
+      "connections": 3,
+      "source_completed": false
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-3790",
+      "source_generation": 0,
+      "connections": 3,
+      "source_completed": false
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-631",
+      "source_generation": 0,
+      "connections": 3,
+      "source_completed": false
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-2627",
+      "source_generation": 0,
+      "connections": 3,
+      "source_completed": false
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-584",
+      "source_generation": 0,
+      "connections": 3,
+      "source_completed": false
+    }
+  ]
+}

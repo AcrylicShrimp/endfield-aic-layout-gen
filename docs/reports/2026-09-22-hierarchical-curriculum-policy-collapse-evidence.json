@@ -1,0 +1,648 @@
+{
+  "schema": "aic-hierarchical-curriculum-policy-collapse-diagnosis-v1",
+  "source_commit": "5e8cbf4d6d45425ce916b597fc1961400868c292",
+  "diagnosis_parent_commit": "1a329eee3021da7a81e7ce4fa5a83579048538a9",
+  "panel": {
+    "sha256": "976bceeb93bf935578e862ce6d715184f6f3be939c3d736854ba74a56071d873",
+    "manifest_sha256": "0e13d484c91f838c7e81188bf14618a6a87260c96a3a8ad7d80c0979c5e0f12b",
+    "cases": 32,
+    "easy_controls": 8,
+    "early_hard_successes": 17,
+    "early_hard_failures": 7,
+    "heldout_used": false
+  },
+  "matrix": [
+    {
+      "name": "lower-g0_outer-g0",
+      "completed": 20,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 12,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 20,
+        "no-macro-actions": 12
+      },
+      "lower_checkpoint_sha256": "2b60a179d2831b87a2f1484669a39500df01aa8854abea9c47ecb916e0f753b1",
+      "outer_checkpoint_sha256": "3c647471bc738e7518a54f2867d215c38907d2ebc16ecbb359e76feda90667b2",
+      "report_sha256": "16697b22f3939babdb6cf36a555c7ae869dd35dac863fd7e8beefd8bc22d83f7"
+    },
+    {
+      "name": "lower-g0_outer-g9",
+      "completed": 9,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 6,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 3,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 9,
+        "no-macro-actions": 23
+      },
+      "lower_checkpoint_sha256": "2b60a179d2831b87a2f1484669a39500df01aa8854abea9c47ecb916e0f753b1",
+      "outer_checkpoint_sha256": "5e11cf22c7924581aeb43de21361953d38e0022bf8d085bfda8ada827ea6a030",
+      "report_sha256": "7fb162f94a12c1d16bc32b442a4c1c9709a33eed0da06b02255f2130cfa7d24a"
+    },
+    {
+      "name": "lower-g10_outer-g10",
+      "completed": 9,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 6,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 3,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 9,
+        "no-macro-actions": 23
+      },
+      "lower_checkpoint_sha256": "48eeab79b3d4961e5978d5b9c858ac9b5e4a773b197617f807c80f36cbfb50fe",
+      "outer_checkpoint_sha256": "6ca2bfab8d99097b9d058ddff8b6f93f1764e3075f9d31ee96a793601c9059f4",
+      "report_sha256": "67ef0e6a2075606cf1d32ddbdf3004edcaecc7618d162bfbe47d2b95733b2eb0"
+    },
+    {
+      "name": "lower-g4_outer-g4",
+      "completed": 18,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 10,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 18,
+        "no-macro-actions": 14
+      },
+      "lower_checkpoint_sha256": "f549ccdc9451dc10cfcc2ef0003252c9fdf765210690789d9585c30728524d80",
+      "outer_checkpoint_sha256": "ad891c5201510dde73b628f3faed14ab5479605a88bab2a66233081a776510c8",
+      "report_sha256": "cd971468a700a147e0f6b3c476b819bac085b176e43244346447048301969bc5"
+    },
+    {
+      "name": "lower-g4_outer-g9",
+      "completed": 9,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 6,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 3,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 9,
+        "no-macro-actions": 23
+      },
+      "lower_checkpoint_sha256": "f549ccdc9451dc10cfcc2ef0003252c9fdf765210690789d9585c30728524d80",
+      "outer_checkpoint_sha256": "5e11cf22c7924581aeb43de21361953d38e0022bf8d085bfda8ada827ea6a030",
+      "report_sha256": "a7220b7802b21bd1df17909a5078f26dc53456091a6907efaefa9af99e92ebd8"
+    },
+    {
+      "name": "lower-g9_outer-g4",
+      "completed": 18,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 10,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 18,
+        "no-macro-actions": 14
+      },
+      "lower_checkpoint_sha256": "bc68bbb1e819d2958e9388f4e07fc35dab059a14056c936dfce7743ef013ad77",
+      "outer_checkpoint_sha256": "ad891c5201510dde73b628f3faed14ab5479605a88bab2a66233081a776510c8",
+      "report_sha256": "05a1a7041c06051f814a341c515dd913b0741156eef22b325765b9dccb164c27"
+    },
+    {
+      "name": "lower-g9_outer-g9",
+      "completed": 9,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 6,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 3,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 9,
+        "no-macro-actions": 23
+      },
+      "lower_checkpoint_sha256": "bc68bbb1e819d2958e9388f4e07fc35dab059a14056c936dfce7743ef013ad77",
+      "outer_checkpoint_sha256": "5e11cf22c7924581aeb43de21361953d38e0022bf8d085bfda8ada827ea6a030",
+      "report_sha256": "0ae6d6abe24cd9e1fd390f93631b02774219b8cb6bd2df76ee240ad754bfcd96"
+    },
+    {
+      "name": "lower-g9_outer-warm",
+      "completed": 24,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 15,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 1,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 24,
+        "no-macro-actions": 8
+      },
+      "lower_checkpoint_sha256": "bc68bbb1e819d2958e9388f4e07fc35dab059a14056c936dfce7743ef013ad77",
+      "outer_checkpoint_sha256": "d86a6016daa029e92669306dd7205c6b15a3e6660bf967ad3bd58e03424b8b35",
+      "report_sha256": "51c04bd1410c78a09ee530f322e8d876e7edda0aa92f928852cd282e92276152"
+    },
+    {
+      "name": "lower-warm_outer-g9",
+      "completed": 10,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 6,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 4,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 10,
+        "no-macro-actions": 22
+      },
+      "lower_checkpoint_sha256": "7bf16ae8e13f3b5ddd896d72ffa03fcb135ec582fdea2b8e670331d4e6de0bf7",
+      "outer_checkpoint_sha256": "5e11cf22c7924581aeb43de21361953d38e0022bf8d085bfda8ada827ea6a030",
+      "report_sha256": "b780b644658d54a20fcbbd5ed3b9e86d063bbe8af165ec1515b1785a8f532743"
+    },
+    {
+      "name": "lower-warm_outer-warm",
+      "completed": 20,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 12,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 20,
+        "no-macro-actions": 12
+      },
+      "lower_checkpoint_sha256": "7bf16ae8e13f3b5ddd896d72ffa03fcb135ec582fdea2b8e670331d4e6de0bf7",
+      "outer_checkpoint_sha256": "d86a6016daa029e92669306dd7205c6b15a3e6660bf967ad3bd58e03424b8b35",
+      "report_sha256": "2a4a8fd6ca0beed5dd3e10f9c53a487ef7d5358133f4dd12813134e3523b8368"
+    }
+  ],
+  "outer_ablations": [
+    {
+      "name": "outer-g9-anchor05",
+      "completed": 9,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 6,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 3,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 9,
+        "no-macro-actions": 23
+      },
+      "lower_checkpoint_sha256": "bc68bbb1e819d2958e9388f4e07fc35dab059a14056c936dfce7743ef013ad77",
+      "outer_checkpoint_sha256": "5e11cf22c7924581aeb43de21361953d38e0022bf8d085bfda8ada827ea6a030",
+      "report_sha256": "511667405f5b27da2ab4fb26962db2df43718250bbbab8e65af89855ddda266e"
+    },
+    {
+      "name": "outer-g9-anchor075",
+      "completed": 10,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 6,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 4,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 10,
+        "no-macro-actions": 22
+      },
+      "lower_checkpoint_sha256": "bc68bbb1e819d2958e9388f4e07fc35dab059a14056c936dfce7743ef013ad77",
+      "outer_checkpoint_sha256": "5e11cf22c7924581aeb43de21361953d38e0022bf8d085bfda8ada827ea6a030",
+      "report_sha256": "677cb8a2acfc0788f021ae72b45c4b7839b8af6278bf8f9ec034a9eb99925f7f"
+    },
+    {
+      "name": "outer-g9-anchor1",
+      "completed": 30,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 16,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 6,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 30,
+        "no-macro-actions": 2
+      },
+      "lower_checkpoint_sha256": "bc68bbb1e819d2958e9388f4e07fc35dab059a14056c936dfce7743ef013ad77",
+      "outer_checkpoint_sha256": "5e11cf22c7924581aeb43de21361953d38e0022bf8d085bfda8ada827ea6a030",
+      "report_sha256": "d761931195ff75a329c9ead4bf6789765327e6571b802fb5acbae6f4527ca16a"
+    },
+    {
+      "name": "outer-g9-policyzero",
+      "completed": 30,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 16,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 6,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 30,
+        "no-macro-actions": 2
+      },
+      "lower_checkpoint_sha256": "bc68bbb1e819d2958e9388f4e07fc35dab059a14056c936dfce7743ef013ad77",
+      "outer_checkpoint_sha256": "fbf3d83ac1346ff636f338a52e6e3488cc99cb74f3f62e9607ac532f999b0f7e",
+      "report_sha256": "32bc3db8dd065854b06837523183e6ceefaae6384380b2ce94151615a6c606a3"
+    },
+    {
+      "name": "outer-g9-valuezero",
+      "completed": 9,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 6,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 3,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 0,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 9,
+        "no-macro-actions": 23
+      },
+      "lower_checkpoint_sha256": "bc68bbb1e819d2958e9388f4e07fc35dab059a14056c936dfce7743ef013ad77",
+      "outer_checkpoint_sha256": "d2a8198bbc9bfd6326134a424f6bf43c58d0cd370381b40dde57300cbd01c1ea",
+      "report_sha256": "261fe66605ff74ee7338fffed383c3e2e6a9c85283d8194449202cda6a8c0940"
+    },
+    {
+      "name": "outer-g9-anchor1-valuezero",
+      "completed": 30,
+      "cases": 32,
+      "groups": {
+        "easy-control": {
+          "completed": 8,
+          "cases": 8
+        },
+        "early-hard-success": {
+          "completed": 16,
+          "cases": 17
+        },
+        "early-hard-failure": {
+          "completed": 6,
+          "cases": 7
+        }
+      },
+      "terminations": {
+        "fully-validated": 30,
+        "no-macro-actions": 2
+      },
+      "lower_checkpoint_sha256": "bc68bbb1e819d2958e9388f4e07fc35dab059a14056c936dfce7743ef013ad77",
+      "outer_checkpoint_sha256": "d2a8198bbc9bfd6326134a424f6bf43c58d0cd370381b40dde57300cbd01c1ea",
+      "report_sha256": "6b51cee1454c9172fa66fa95e784f41a22d57f0f5c0516364a76e996997d5184"
+    }
+  ],
+  "root_prior_analysis": {
+    "learned": {
+      "top1_prior_mean": 0.6007066025444713,
+      "top4_prior_mass_mean": 0.7448164031472646,
+      "normalized_entropy_mean": 0.43857621651301937,
+      "selected_prior_rank_median": 1.0,
+      "root_actions_mean": 224
+    },
+    "anchor": {
+      "top1_prior_mean": 0.004664814121049043,
+      "top4_prior_mass_mean": 0.01860328647770977,
+      "normalized_entropy_mean": 0.9999710565915132,
+      "selected_prior_rank_median": 2.0,
+      "root_actions_mean": 224
+    },
+    "policyzero": {
+      "top1_prior_mean": 0.004514417810373848,
+      "top4_prior_mass_mean": 0.018043678741437575,
+      "normalized_entropy_mean": 0.9999981885016725,
+      "selected_prior_rank_median": 2.0,
+      "root_actions_mean": 224
+    },
+    "valuezero": {
+      "top1_prior_mean": 0.6007066025444713,
+      "top4_prior_mass_mean": 0.7448164031472646,
+      "normalized_entropy_mean": 0.43857621651301937,
+      "selected_prior_rank_median": 1.0,
+      "root_actions_mean": 224
+    },
+    "warm": {
+      "top1_prior_mean": 0.010022588290949637,
+      "top4_prior_mass_mean": 0.039956993097869216,
+      "normalized_entropy_mean": 0.9400516713416568,
+      "selected_prior_rank_median": 5.0,
+      "root_actions_mean": 224
+    },
+    "anchor_recovered_failures": {
+      "cases": 21,
+      "same_first_action": 0,
+      "anchor_selected_action_learned_prior_rank_median": 18
+    }
+  },
+  "collection_feedback": [
+    {
+      "generation": 0,
+      "completed_cases": 16,
+      "root_states": 183,
+      "failed_episode_root_fraction": 0.4972677595628415,
+      "visit_target_normalized_entropy_mean": 0.2606631381747663,
+      "selected_is_prior_top_fraction": 0.5081967213114754,
+      "first_placement_mean": [
+        3.28125,
+        3.03125
+      ]
+    },
+    {
+      "generation": 1,
+      "completed_cases": 16,
+      "root_states": 170,
+      "failed_episode_root_fraction": 0.5117647058823529,
+      "visit_target_normalized_entropy_mean": 0.36583942599820474,
+      "selected_is_prior_top_fraction": 0.7235294117647059,
+      "first_placement_mean": [
+        1.84375,
+        3
+      ]
+    },
+    {
+      "generation": 2,
+      "completed_cases": 16,
+      "root_states": 173,
+      "failed_episode_root_fraction": 0.5144508670520231,
+      "visit_target_normalized_entropy_mean": 0.36441895041267097,
+      "selected_is_prior_top_fraction": 0.7861271676300579,
+      "first_placement_mean": [
+        1.75,
+        3.0625
+      ]
+    },
+    {
+      "generation": 3,
+      "completed_cases": 17,
+      "root_states": 174,
+      "failed_episode_root_fraction": 0.47701149425287354,
+      "visit_target_normalized_entropy_mean": 0.3448891344048436,
+      "selected_is_prior_top_fraction": 0.7758620689655172,
+      "first_placement_mean": [
+        1.84375,
+        2.90625
+      ]
+    },
+    {
+      "generation": 4,
+      "completed_cases": 18,
+      "root_states": 167,
+      "failed_episode_root_fraction": 0.4431137724550898,
+      "visit_target_normalized_entropy_mean": 0.3282180015666035,
+      "selected_is_prior_top_fraction": 0.874251497005988,
+      "first_placement_mean": [
+        1.90625,
+        3.9375
+      ]
+    },
+    {
+      "generation": 5,
+      "completed_cases": 15,
+      "root_states": 166,
+      "failed_episode_root_fraction": 0.5481927710843374,
+      "visit_target_normalized_entropy_mean": 0.340907847043937,
+      "selected_is_prior_top_fraction": 0.927710843373494,
+      "first_placement_mean": [
+        1.75,
+        3.46875
+      ]
+    },
+    {
+      "generation": 6,
+      "completed_cases": 12,
+      "root_states": 176,
+      "failed_episode_root_fraction": 0.6420454545454546,
+      "visit_target_normalized_entropy_mean": 0.33062036477146783,
+      "selected_is_prior_top_fraction": 0.8920454545454546,
+      "first_placement_mean": [
+        1.65625,
+        3.03125
+      ]
+    },
+    {
+      "generation": 7,
+      "completed_cases": 11,
+      "root_states": 170,
+      "failed_episode_root_fraction": 0.6764705882352942,
+      "visit_target_normalized_entropy_mean": 0.3464483408716891,
+      "selected_is_prior_top_fraction": 0.9176470588235294,
+      "first_placement_mean": [
+        1.5,
+        2.625
+      ]
+    },
+    {
+      "generation": 8,
+      "completed_cases": 14,
+      "root_states": 173,
+      "failed_episode_root_fraction": 0.5722543352601156,
+      "visit_target_normalized_entropy_mean": 0.3154520196586552,
+      "selected_is_prior_top_fraction": 0.884393063583815,
+      "first_placement_mean": [
+        1.6875,
+        3.59375
+      ]
+    },
+    {
+      "generation": 9,
+      "completed_cases": 12,
+      "root_states": 165,
+      "failed_episode_root_fraction": 0.6363636363636364,
+      "visit_target_normalized_entropy_mean": 0.31712408963742406,
+      "selected_is_prior_top_fraction": 0.9939393939393939,
+      "first_placement_mean": [
+        1.59375,
+        3.21875
+      ]
+    },
+    {
+      "generation": 10,
+      "completed_cases": 12,
+      "root_states": 171,
+      "failed_episode_root_fraction": 0.6257309941520468,
+      "visit_target_normalized_entropy_mean": 0.3029244643545501,
+      "selected_is_prior_top_fraction": 0.9298245614035088,
+      "first_placement_mean": [
+        1.53125,
+        3.125
+      ]
+    },
+    {
+      "generation": 11,
+      "completed_cases": 14,
+      "root_states": 170,
+      "failed_episode_root_fraction": 0.5647058823529412,
+      "visit_target_normalized_entropy_mean": 0.30423133970365424,
+      "selected_is_prior_top_fraction": 0.9705882352941176,
+      "first_placement_mean": [
+        1.6875,
+        2.90625
+      ]
+    }
+  ],
+  "budget_probe": {
+    "cases": 8,
+    "baseline_simulations_per_move": 64,
+    "baseline_completed": 0,
+    "runs": [
+      {
+        "simulations_per_move": 256,
+        "completed": 2,
+        "cases": 8,
+        "report_sha256": "034b0454855f8771ecae8f40d3ad6a87f8aede9fd5a2e39cdd7ee3c2d05867a7"
+      },
+      {
+        "simulations_per_move": 1024,
+        "completed": 3,
+        "cases": 8,
+        "report_sha256": "99da9882f2de8eb9b570a5476e665ddf54f1392e9895c8bb0fb6a4936f5ecf82"
+      }
+    ]
+  },
+  "verdict": {
+    "component": "outer policy prior",
+    "lower_model_regressed": false,
+    "outer_value_head_regressed": false,
+    "mechanism": "failed-episode visit imitation plus prior-ranked progressive widening formed a self-reinforcing low-entropy policy loop",
+    "continue_original_run": false
+  }
+}

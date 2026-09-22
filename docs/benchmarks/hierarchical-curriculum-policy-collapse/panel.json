@@ -1,0 +1,2052 @@
+{
+  "schema": "aic-hierarchical-search-panel-v1",
+  "partition": "training",
+  "limits": {
+    "max_turns": 10000,
+    "max_extension": 32
+  },
+  "cases": [
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-66",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "seedcollector-1-mode-normal"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-plant-sp-2",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-plant-sp-seed-2",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-plant-sp-2",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-plant-sp-seed-2",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-3004",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "component-mc-1-mode-normal"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-copper-enr2",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-copper-enr2-cmpt",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-copper-enr2",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-copper-enr2-cmpt",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 20
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-3302",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "planter-1-mode-normal"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-plant-moss-seed-3",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-plant-moss-3",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-plant-moss-seed-3",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-plant-moss-3",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-2406",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "transmuter-1-mode-gastrans"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-liquid-acid",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-gas-acid",
+            "transport": "pipe"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-liquid-acid",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-gas-acid",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-453",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "furnance-1-mode-normal"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-iron-ore",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-iron-nugget",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-iron-ore",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-iron-nugget",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-2181",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "transmuter-1-mode-liquidtrans"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-gas-xiranite-enr",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-liquid-xiranite-enr",
+            "transport": "pipe"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-gas-xiranite-enr",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-liquid-xiranite-enr",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 10
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-1604",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-plant-moss-1",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-plant-moss-powder-1",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-plant-moss-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-plant-moss-powder-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-937",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "seedcollector-1-mode-normal"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-plant-bbflower-1",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-plant-bbflower-seed-1",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-plant-bbflower-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-plant-bbflower-seed-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-365",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "filling-powder-mc-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-glass-bottle",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-liquid-xiranite-enr",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-fbottle-glass-xiranite-enr",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-glass-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-0",
+            "commodity": "item-liquid-xiranite-enr",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-fbottle-glass-xiranite-enr",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-3109",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "filling-powder-mc-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-iron-enr-bottle",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-liquid-sewage",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-fbottle-ironenr-sewage",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-iron-enr-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-0",
+            "commodity": "item-liquid-sewage",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-fbottle-ironenr-sewage",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-3371",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "filling-powder-mc-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-iron-bottle",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-liquid-acid",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-fbottle-iron-acid",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-iron-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-0",
+            "commodity": "item-liquid-acid",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-fbottle-iron-acid",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-2342",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "mix-pool-2-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-iron-powder",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-liquid-copper-enr",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-copper-enr",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-3",
+            "direction": "output",
+            "commodity": "item-liquid-sewage",
+            "transport": "pipe"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-iron-powder",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-0",
+            "commodity": "item-liquid-copper-enr",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 1
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-copper-enr",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-3",
+            "source": "block-0",
+            "target": "terminal-3",
+            "commodity": "item-liquid-sewage",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-2329",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "filling-powder-mc-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-copper-enr-bottle",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-liquid-xiranite-poly",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-fbottle-copperenr-xiranite-poly",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-copper-enr-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-0",
+            "commodity": "item-liquid-xiranite-poly",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-fbottle-copperenr-xiranite-poly",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000001-2540",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "gas-reactor-1-mode-gas"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-gas-copper-enr",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-gas-xiranite",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-gas-copper-enr2",
+            "transport": "pipe"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-gas-copper-enr",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 1
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-0",
+            "commodity": "item-gas-xiranite",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-gas-copper-enr2",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000001-1558",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "seedcollector-1-mode-normal"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-plant-sp-3",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-plant-sp-seed-3",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-plant-sp-seed-3",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-plant-sp-3",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-plant-sp-seed-3",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-plant-sp-seed-3",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000002-763",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "seedcollector-1-mode-normal"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-plant-sp-3",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-plant-sp-seed-3",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-plant-sp-seed-3",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-plant-sp-3",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-plant-sp-seed-3",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-plant-sp-seed-3",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000002-1541",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-plant-bbflower-1",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-plant-bbflower-powder-1",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-plant-bbflower-powder-1",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-plant-bbflower-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-plant-bbflower-powder-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-plant-bbflower-powder-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000002-589",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "xiranite-oven-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-liquid-xiranite",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-muck-feces-1",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-muck-xiranite-1",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-liquid-xiranite",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-0",
+            "commodity": "item-muck-feces-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-muck-xiranite-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000003-2665",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "planter-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-liquid-water",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-plant-grass-seed-1",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-plant-grass-1",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-liquid-water",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-0",
+            "commodity": "item-plant-grass-seed-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-plant-grass-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000003-405",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "seedcollector-1-mode-normal"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-plant-sp-2",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-plant-sp-seed-2",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-plant-sp-seed-2",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-plant-sp-2",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-plant-sp-seed-2",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-plant-sp-seed-2",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000003-1405",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "seedcollector-1-mode-normal"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-plant-moss-1",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-plant-moss-seed-1",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-plant-moss-seed-1",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-plant-moss-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-plant-moss-seed-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-plant-moss-seed-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000003-1966",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "planter-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-liquid-water",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-plant-grass-seed-2",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-plant-grass-2",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-liquid-water",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-0",
+            "commodity": "item-plant-grass-seed-2",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-plant-grass-2",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000004-443",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "seedcollector-1-mode-normal"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-plant-sp-4",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-plant-sp-seed-4",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-plant-sp-seed-4",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-plant-sp-4",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-plant-sp-seed-4",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-plant-sp-seed-4",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000004-275",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "seedcollector-1-mode-normal"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-plant-sp-1",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-plant-sp-seed-1",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-plant-sp-seed-1",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-plant-sp-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-plant-sp-seed-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-plant-sp-seed-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000004-3197",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "seedcollector-1-mode-normal"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-plant-sp-3",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-plant-sp-seed-3",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-plant-sp-seed-3",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-plant-sp-3",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-plant-sp-seed-3",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-plant-sp-seed-3",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-2733",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "dismantler-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-fbottle-copper-grass-1",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-copper-bottle",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-liquid-plant-grass-1",
+            "transport": "pipe"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-fbottle-copper-grass-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-copper-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-liquid-plant-grass-1",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-3428",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "mix-pool-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-liquid-sewage",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-liquid-xiranite",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-liquid-xiranite-poly",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-3",
+            "direction": "output",
+            "commodity": "item-liquid-xiranite-lowpoly",
+            "transport": "pipe"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-liquid-sewage",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-0",
+            "commodity": "item-liquid-xiranite",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-liquid-xiranite-poly",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-3",
+            "source": "block-0",
+            "target": "terminal-3",
+            "commodity": "item-liquid-xiranite-lowpoly",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-3619",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "dismantler-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-fbottle-glass-acid",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-glass-bottle",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-liquid-acid",
+            "transport": "pipe"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-fbottle-glass-acid",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-glass-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-liquid-acid",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-3790",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "tools-assebling-mc-1-mode-normal"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-glass-cmpt",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-plant-bbflower-powder-1",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-proc-bomb-1",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-glass-cmpt",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-0",
+            "commodity": "item-plant-bbflower-powder-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 40
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-proc-bomb-1",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 40
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-631",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "dismantler-1-mode-gasliquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-gasjar-copper-gas-copper",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-copper-jar",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-gas-copper",
+            "transport": "pipe"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-gasjar-copper-gas-copper",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-copper-jar",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-gas-copper",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-2627",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "dismantler-1-mode-gasliquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-gasjar-copper-gas-inert",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-copper-jar",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-gas-inert",
+            "transport": "pipe"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-gasjar-copper-gas-inert",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-copper-jar",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-gas-inert",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-curriculum-v1-g000000-584",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "dismantler-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-fbottle-copperenr-water",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-copper-enr-bottle",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-liquid-water",
+            "transport": "pipe"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-fbottle-copperenr-water",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-0",
+            "target": "terminal-1",
+            "commodity": "item-copper-enr-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-liquid-water",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    }
+  ]
+}
