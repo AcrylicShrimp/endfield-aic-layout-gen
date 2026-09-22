@@ -29,6 +29,21 @@ pub mod search;
 mod test_support;
 
 pub const CHECKPOINT_SCHEMA: &str = "aic-constructive-attention-checkpoint-v2";
+pub(crate) const INPUT_TENSOR_COUNT: usize = 12;
+const INPUT_TENSOR_NAMES: [&str; INPUT_TENSOR_COUNT] = [
+    "entity_features",
+    "relation_features",
+    "spatial_features",
+    "global_features",
+    "focus_features",
+    "relation_index",
+    "entity_graph",
+    "entity_counts",
+    "spatial_owners",
+    "spatial_graph",
+    "spatial_counts",
+    "focus_entity",
+];
 
 pub struct FactorDecision<'a> {
     pub observation: usize,
@@ -256,6 +271,29 @@ impl InputBatch {
     pub fn graphs(&self) -> i64 {
         self.graphs
     }
+
+    pub(crate) fn trace_tensors(&self) -> Vec<Tensor> {
+        INPUT_TENSOR_NAMES
+            .iter()
+            .map(|name| self.values[*name].shallow_clone())
+            .collect()
+    }
+
+    pub(crate) fn from_trace_tensors(values: &[Tensor], graphs: i64) -> Result<Self> {
+        ensure!(
+            values.len() == INPUT_TENSOR_COUNT && graphs > 0,
+            "aic-learning.constructive-trace-input: invalid tensor or graph count"
+        );
+        Ok(Self {
+            values: INPUT_TENSOR_NAMES
+                .iter()
+                .zip(values)
+                .map(|(name, value)| ((*name).into(), value.shallow_clone()))
+                .collect(),
+            graphs,
+            entity_offsets: Vec::new(),
+        })
+    }
 }
 
 impl ChoiceBatch {
@@ -289,6 +327,23 @@ pub struct Model {
 }
 
 impl Model {
+    pub(crate) fn inference_copy(&self) -> Self {
+        let parameters = self
+            .parameters
+            .iter()
+            .map(|(name, value)| (name.clone(), value.detach()))
+            .collect::<Vec<_>>();
+        let weights = parameters
+            .iter()
+            .map(|(name, value)| (name.clone(), value.shallow_clone()))
+            .collect();
+        Self {
+            config: self.config.clone(),
+            parameters,
+            weights,
+        }
+    }
+
     pub fn initial_state(
         config: &ConstructiveModelConfig,
         seed: u64,
@@ -371,7 +426,7 @@ impl Model {
         )
     }
 
-    pub fn encode(&self, batch: &InputBatch) -> Result<Encoded> {
+    pub(crate) fn encode_unchecked(&self, batch: &InputBatch) -> Encoded {
         let b = &batch.values;
         let mut entities = self.linear("entities.0", &b["entity_features"]).tanh();
         let relations = self.linear("relations.0", &b["relation_features"]).tanh();
@@ -472,16 +527,21 @@ impl Model {
         let values = self
             .linear("critic.2", &self.linear("critic.0", &context).tanh())
             .squeeze_dim(-1);
-        ensure!(
-            bool::try_from(values.isfinite().all())?,
-            "aic-learning.constructive-forward: nonfinite encoding"
-        );
-        Ok(Encoded {
+        Encoded {
             entities,
             context,
             values,
             attention,
-        })
+        }
+    }
+
+    pub fn encode(&self, batch: &InputBatch) -> Result<Encoded> {
+        let encoded = self.encode_unchecked(batch);
+        ensure!(
+            bool::try_from(encoded.values.isfinite().all())?,
+            "aic-learning.constructive-forward: nonfinite encoding"
+        );
+        Ok(encoded)
     }
 
     pub fn score(&self, encoded: &Encoded, batch: &ChoiceBatch) -> Result<Prediction> {

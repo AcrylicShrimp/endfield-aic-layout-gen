@@ -5,13 +5,16 @@
 //! nonnegative directed edge costs; the native router remains responsible for
 //! every legality and replay decision.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::Mutex,
+};
 
 use aic_pilot_native::constructive::routing_candidates::{
     DirectedCost, GUIDANCE_GRID_CHANNELS, GUIDANCE_SCHEMA, Guidance, GuidanceHead, GuidanceInput,
 };
-use aic_torch::tch::{self, Device, Kind, Tensor};
-use anyhow::{Result, ensure};
+use aic_torch::tch::{self, CModule, Device, Kind, Tensor};
+use anyhow::{Context, Result, anyhow, ensure};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -49,6 +52,14 @@ pub struct Model {
     pub encoder: Encoder,
     pub parameters: Vec<(String, Tensor)>,
     weights: Tensors,
+}
+
+/// TorchScript traces keyed by the graph count and raster dimensions used by
+/// one frozen lower-model inference batch.
+pub struct CompiledModel<'a> {
+    eager: &'a Model,
+    frozen: Model,
+    modules: Mutex<BTreeMap<(i64, i64, i64), CModule>>,
 }
 
 impl Batch {
@@ -108,6 +119,28 @@ impl Batch {
 
     pub fn dimensions(&self) -> (i64, i64) {
         (self.width, self.height)
+    }
+
+    fn trace_tensors(&self) -> Vec<Tensor> {
+        let mut values = self.graph.trace_tensors();
+        values.push(self.raster.shallow_clone());
+        values
+    }
+
+    fn from_trace_tensors(values: &[Tensor], graphs: i64, width: i64, height: i64) -> Result<Self> {
+        ensure!(
+            values.len() == crate::constructive::INPUT_TENSOR_COUNT + 1,
+            "aic-learning.route-guidance-trace-input: invalid tensor count"
+        );
+        Ok(Self {
+            graph: InputBatch::from_trace_tensors(
+                &values[..crate::constructive::INPUT_TENSOR_COUNT],
+                graphs,
+            )?,
+            raster: values[crate::constructive::INPUT_TENSOR_COUNT].shallow_clone(),
+            width,
+            height,
+        })
     }
 }
 
@@ -220,8 +253,8 @@ impl Model {
         )
     }
 
-    pub fn forward(&self, batch: &Batch) -> Result<Prediction> {
-        let encoded = self.encoder.encode(&batch.graph)?;
+    fn forward_unchecked(&self, batch: &Batch) -> Prediction {
+        let encoded = self.encoder.encode_unchecked(&batch.graph);
         let first = self.conv("raster.enc", &batch.raster, 1, 1).silu();
         let down = self.conv("raster.down", &first, 2, 1).silu();
         let size = down.size();
@@ -254,20 +287,27 @@ impl Model {
             .sigmoid();
         let success = outcomes.select(-1, 0);
         let uncertainty = outcomes.select(-1, 1);
-        ensure!(
-            bool::try_from(
-                directed_costs
-                    .isfinite()
-                    .all()
-                    .logical_and(&outcomes.isfinite().all())
-            )?,
-            "aic-learning.route-guidance-forward: nonfinite prediction"
-        );
-        Ok(Prediction {
+        Prediction {
             directed_costs,
             success,
             uncertainty,
-        })
+        }
+    }
+
+    pub fn forward(&self, batch: &Batch) -> Result<Prediction> {
+        let prediction = self.forward_unchecked(batch);
+        ensure!(
+            bool::try_from(
+                prediction
+                    .directed_costs
+                    .isfinite()
+                    .all()
+                    .logical_and(&prediction.success.isfinite().all())
+                    .logical_and(&prediction.uncertainty.isfinite().all())
+            )?,
+            "aic-learning.route-guidance-forward: nonfinite prediction"
+        );
+        Ok(prediction)
     }
 
     pub fn predict_native(
@@ -282,64 +322,14 @@ impl Model {
         );
         let batch = Batch::from_inputs(inputs, device)?;
         let prediction = tch::no_grad(|| self.forward(&batch))?;
-        let costs = Vec::<f32>::try_from(
-            prediction
-                .directed_costs
-                .round()
-                .to_device(Device::Cpu)
-                .view([-1]),
-        )?;
-        let success = Vec::<f32>::try_from(prediction.success.to_device(Device::Cpu).view([-1]))?;
-        let uncertainty =
-            Vec::<f32>::try_from(prediction.uncertainty.to_device(Device::Cpu).view([-1]))?;
-        let heads = self.config.heads;
-        let area = usize::try_from(batch.width * batch.height).expect("validated raster area");
-        let per_input = heads * 4 * area;
-        Ok(inputs
-            .iter()
-            .enumerate()
-            .map(|(input_index, input)| Guidance {
-                schema: GUIDANCE_SCHEMA.into(),
-                state_revision: input.state_revision,
-                connection: input.connection.clone(),
-                model_version: model_version.into(),
-                heads: (0..heads)
-                    .map(|head| {
-                        let base = input_index * per_input + head * 4 * area;
-                        let mut directed_costs = Vec::with_capacity(4 * area);
-                        for direction in 0..4 {
-                            for y in 0..batch.height {
-                                for x in 0..batch.width {
-                                    let offset = base
-                                        + direction * area
-                                        + usize::try_from(y * batch.width + x)
-                                            .expect("validated raster offset");
-                                    let cost = costs[offset]
-                                        .clamp(0.0, self.config.maximum_edge_cost as f32)
-                                        as u32;
-                                    if cost > 0 {
-                                        directed_costs.push(DirectedCost {
-                                            point: aic_layout::geometry::Point {
-                                                x: input.bounds.min_x + x,
-                                                y: input.bounds.min_y + y,
-                                            },
-                                            direction,
-                                            cost,
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                        GuidanceHead {
-                            id: format!("head-{head}"),
-                            directed_costs,
-                            predicted_success: success[input_index * heads + head],
-                            uncertainty: uncertainty[input_index * heads + head],
-                        }
-                    })
-                    .collect(),
-            })
-            .collect())
+        prediction_to_native(
+            inputs,
+            model_version,
+            &batch,
+            prediction,
+            self.config.heads,
+            self.config.maximum_edge_cost,
+        )
     }
 
     pub fn snapshot(&self) -> Tensors {
@@ -362,6 +352,186 @@ impl Model {
         }));
         values
     }
+}
+
+impl<'a> CompiledModel<'a> {
+    pub fn new(eager: &'a Model) -> Self {
+        tch::jit::set_profiling_mode(false);
+        let weights = eager
+            .weights
+            .iter()
+            .map(|(name, value)| (name.clone(), value.detach()))
+            .collect();
+        Self {
+            eager,
+            frozen: Model {
+                config: eager.config.clone(),
+                encoder: eager.encoder.inference_copy(),
+                parameters: eager
+                    .parameters
+                    .iter()
+                    .map(|(name, value)| (name.clone(), value.detach()))
+                    .collect(),
+                weights,
+            },
+            modules: Mutex::new(BTreeMap::new()),
+        }
+    }
+
+    pub fn predict_native(
+        &self,
+        inputs: &[&GuidanceInput],
+        model_version: &str,
+        device: Device,
+    ) -> Result<Vec<Guidance>> {
+        ensure!(
+            !model_version.is_empty() && model_version.len() <= 256,
+            "aic-learning.route-guidance-version: invalid model version"
+        );
+        let batch = Batch::from_inputs(inputs, device)?;
+        let prediction = tch::no_grad(|| self.forward(&batch))?;
+        prediction_to_native(
+            inputs,
+            model_version,
+            &batch,
+            prediction,
+            self.eager.config.heads,
+            self.eager.config.maximum_edge_cost,
+        )
+    }
+
+    fn forward(&self, batch: &Batch) -> Result<Prediction> {
+        let inputs = batch.trace_tensors();
+        let key = (batch.graph.graphs(), batch.width, batch.height);
+        let mut modules = self.modules.lock().map_err(|_| {
+            anyhow!("aic-learning.route-guidance-compiled-lock: poisoned trace cache")
+        })?;
+        if !modules.contains_key(&key) {
+            let frozen = &self.frozen;
+            let (graphs, width, height) = key;
+            let mut trace = |values: &[Tensor]| {
+                let batch = Batch::from_trace_tensors(values, graphs, width, height)
+                    .expect("validated route-guidance trace tensors");
+                vec![pack_prediction(&frozen.forward_unchecked(&batch))]
+            };
+            let module = tch::no_grad(|| {
+                CModule::create_by_tracing(
+                    "AicRouteGuidanceInference",
+                    "forward",
+                    &inputs,
+                    &mut trace,
+                )
+            })?;
+            let expected = pack_prediction(&self.eager.forward_unchecked(batch));
+            let actual = module.forward_ts(&inputs).context(
+                "aic-learning.route-guidance-compiled-execution: parity invocation failed",
+            )?;
+            ensure!(
+                actual.size() == expected.size()
+                    && actual.allclose(&expected, 1e-5, 1e-5, false)
+                    && bool::try_from(actual.isfinite().all())?,
+                "aic-learning.route-guidance-compiled-parity: traced output differs from eager output"
+            );
+            modules.insert(key, module);
+        }
+        let packed = modules[&key].forward_ts(&inputs).context(
+            "aic-learning.route-guidance-compiled-execution: inference invocation failed",
+        )?;
+        let costs = key.0 * self.eager.config.heads as i64 * 4 * key.1 * key.2;
+        let outcomes = key.0 * self.eager.config.heads as i64;
+        Ok(Prediction {
+            directed_costs: packed.narrow(0, 0, costs).view([
+                key.0,
+                self.eager.config.heads as i64,
+                4,
+                key.2,
+                key.1,
+            ]),
+            success: packed
+                .narrow(0, costs, outcomes)
+                .view([key.0, self.eager.config.heads as i64]),
+            uncertainty: packed
+                .narrow(0, costs + outcomes, outcomes)
+                .view([key.0, self.eager.config.heads as i64]),
+        })
+    }
+}
+
+fn pack_prediction(prediction: &Prediction) -> Tensor {
+    Tensor::cat(
+        &[
+            prediction.directed_costs.flatten(0, -1),
+            prediction.success.flatten(0, -1),
+            prediction.uncertainty.flatten(0, -1),
+        ],
+        0,
+    )
+}
+
+fn prediction_to_native(
+    inputs: &[&GuidanceInput],
+    model_version: &str,
+    batch: &Batch,
+    prediction: Prediction,
+    heads: usize,
+    maximum_edge_cost: u32,
+) -> Result<Vec<Guidance>> {
+    let costs = Vec::<f32>::try_from(
+        prediction
+            .directed_costs
+            .round()
+            .to_device(Device::Cpu)
+            .view([-1]),
+    )?;
+    let success = Vec::<f32>::try_from(prediction.success.to_device(Device::Cpu).view([-1]))?;
+    let uncertainty =
+        Vec::<f32>::try_from(prediction.uncertainty.to_device(Device::Cpu).view([-1]))?;
+    let area = usize::try_from(batch.width * batch.height).expect("validated raster area");
+    let per_input = heads * 4 * area;
+    Ok(inputs
+        .iter()
+        .enumerate()
+        .map(|(input_index, input)| Guidance {
+            schema: GUIDANCE_SCHEMA.into(),
+            state_revision: input.state_revision,
+            connection: input.connection.clone(),
+            model_version: model_version.into(),
+            heads: (0..heads)
+                .map(|head| {
+                    let base = input_index * per_input + head * 4 * area;
+                    let mut directed_costs = Vec::with_capacity(4 * area);
+                    for direction in 0..4 {
+                        for y in 0..batch.height {
+                            for x in 0..batch.width {
+                                let offset = base
+                                    + direction * area
+                                    + usize::try_from(y * batch.width + x)
+                                        .expect("validated raster offset");
+                                let cost =
+                                    costs[offset].clamp(0.0, maximum_edge_cost as f32) as u32;
+                                if cost > 0 {
+                                    directed_costs.push(DirectedCost {
+                                        point: aic_layout::geometry::Point {
+                                            x: input.bounds.min_x + x,
+                                            y: input.bounds.min_y + y,
+                                        },
+                                        direction,
+                                        cost,
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    GuidanceHead {
+                        id: format!("head-{head}"),
+                        directed_costs,
+                        predicted_success: success[input_index * heads + head],
+                        uncertainty: uncertainty[input_index * heads + head],
+                    }
+                })
+                .collect(),
+        })
+        .collect())
 }
 
 fn raster_layers(config: &RouteGuidanceModelConfig) -> Vec<(String, Vec<i64>, i64)> {

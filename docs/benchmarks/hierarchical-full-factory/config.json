@@ -27,5 +27,6 @@
   "horizon": 5,
   "max_moves": 5,
   "exploration": 1.25,
-  "anchor_prior_mass": 0.5
+  "anchor_prior_mass": 0.5,
+  "compiled_inference": true
 }

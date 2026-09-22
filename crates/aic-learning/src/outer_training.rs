@@ -173,6 +173,7 @@ pub fn run(
         config.search.placement_page,
         config.search.cpu_threads,
         config.search.anchor_prior_mass,
+        config.search.compiled_inference,
         None,
     )?;
     let training = collect_panel(

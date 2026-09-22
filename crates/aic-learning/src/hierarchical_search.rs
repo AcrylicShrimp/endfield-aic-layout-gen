@@ -27,10 +27,13 @@ use sha2::{Digest, Sha256};
 use crate::{
     input::Tensors,
     outer_model::{
-        ACTION_FEATURES, Batch as OuterBatch, Model as OuterModel, ParameterOrder as OuterOrder,
+        ACTION_FEATURES, Batch as OuterBatch, CompiledModel as CompiledOuterModel,
+        Model as OuterModel, ParameterOrder as OuterOrder,
     },
     outer_training::Config as OuterTrainingConfig,
-    route_guidance::{Model as GuidanceModel, ParameterOrder},
+    route_guidance::{
+        CompiledModel as CompiledGuidanceModel, Model as GuidanceModel, ParameterOrder,
+    },
     route_guidance_training::Config as GuidanceTrainingConfig,
 };
 
@@ -41,6 +44,10 @@ const MAX_INPUT_BYTES: u64 = 16 * 1024 * 1024;
 
 fn default_anchor_prior_mass() -> f64 {
     0.25
+}
+
+fn default_compiled_inference() -> bool {
+    true
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -59,6 +66,8 @@ pub struct Config {
     pub exploration: f64,
     #[serde(default = "default_anchor_prior_mass")]
     pub anchor_prior_mass: f64,
+    #[serde(default = "default_compiled_inference")]
+    pub compiled_inference: bool,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -173,8 +182,41 @@ pub(crate) struct Report {
     cases: Vec<CaseReport>,
 }
 
+enum GuidanceRunner<'a> {
+    Eager(&'a GuidanceModel),
+    Compiled(CompiledGuidanceModel<'a>),
+}
+
+impl GuidanceRunner<'_> {
+    fn predict_native(
+        &self,
+        inputs: &[&aic_pilot_native::constructive::routing_candidates::GuidanceInput],
+        model_version: &str,
+        device: Device,
+    ) -> Result<Vec<aic_pilot_native::constructive::routing_candidates::Guidance>> {
+        match self {
+            Self::Eager(model) => model.predict_native(inputs, model_version, device),
+            Self::Compiled(model) => model.predict_native(inputs, model_version, device),
+        }
+    }
+}
+
+enum OuterRunner<'a> {
+    Eager(&'a OuterModel),
+    Compiled(CompiledOuterModel<'a>),
+}
+
+impl OuterRunner<'_> {
+    fn forward(&self, batch: &OuterBatch) -> Result<crate::outer_model::Prediction> {
+        match self {
+            Self::Eager(model) => model.forward(batch),
+            Self::Compiled(model) => model.forward(batch),
+        }
+    }
+}
+
 pub(crate) struct Factory<'a> {
-    guidance: &'a GuidanceModel,
+    guidance: GuidanceRunner<'a>,
     guidance_version: &'a str,
     device: Device,
     domain: DomainConfig,
@@ -182,7 +224,7 @@ pub(crate) struct Factory<'a> {
     placement_page: usize,
     anchor_prior_mass: f64,
     pool: rayon::ThreadPool,
-    outer: Option<&'a OuterModel>,
+    outer: Option<OuterRunner<'a>>,
 }
 
 impl Factory<'_> {
@@ -195,10 +237,15 @@ impl Factory<'_> {
         placement_page: usize,
         cpu_threads: usize,
         anchor_prior_mass: f64,
+        compiled_inference: bool,
         outer: Option<&'a OuterModel>,
     ) -> Result<Factory<'a>> {
         Ok(Factory {
-            guidance,
+            guidance: if compiled_inference {
+                GuidanceRunner::Compiled(CompiledGuidanceModel::new(guidance))
+            } else {
+                GuidanceRunner::Eager(guidance)
+            },
             guidance_version,
             device,
             domain,
@@ -209,7 +256,13 @@ impl Factory<'_> {
                 .num_threads(cpu_threads)
                 .thread_name(|index| format!("hierarchical-route-{index}"))
                 .build()?,
-            outer,
+            outer: outer.map(|outer| {
+                if compiled_inference {
+                    OuterRunner::Compiled(CompiledOuterModel::new(outer))
+                } else {
+                    OuterRunner::Eager(outer)
+                }
+            }),
         })
     }
 
@@ -475,7 +528,7 @@ impl Factory<'_> {
         actions: &[MacroAction],
         children: &[Session],
     ) -> Result<(Vec<f64>, f64)> {
-        let Some(model) = self.outer else {
+        let Some(model) = self.outer.as_ref() else {
             let scores = actions
                 .iter()
                 .zip(children)
@@ -880,12 +933,14 @@ pub fn run(
         config.placement_page,
         config.cpu_threads,
         config.anchor_prior_mass,
+        config.compiled_inference,
         Some(&outer),
     )?;
-    // Warm the complete lower-tool path once outside both measurements. This
-    // includes graph/raster inference, exact route search and native replay.
+    // Warm the complete integrated path once outside both measurements. This
+    // builds every compiled trace needed by the panel and includes graph/raster
+    // inference, exact route search and native replay.
     let warmup = prefix_session(&panel.cases[0], &panel, catalogs.clone())?;
-    let _ = factory.actions(&warmup, &mut Counters::default())?;
+    let _ = beam_search(warmup, &factory, &config)?;
     let mut cases = Vec::with_capacity(panel.cases.len());
     for case in &panel.cases {
         let root = prefix_session(case, &panel, catalogs.clone())?;

@@ -1,10 +1,13 @@
 //! Separate policy/value model for stable-state hierarchical macro actions.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::Mutex,
+};
 
 use aic_pilot_native::constructive::learning::Input;
-use aic_torch::tch::{Device, Kind, Tensor};
-use anyhow::{Result, ensure};
+use aic_torch::tch::{self, CModule, Device, Kind, Tensor};
+use anyhow::{Context, Result, anyhow, ensure};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -43,6 +46,15 @@ pub struct Model {
     pub encoder: Encoder,
     pub parameters: Vec<(String, Tensor)>,
     weights: Tensors,
+}
+
+/// A frozen TorchScript trace of the outer inference graph. Training continues
+/// to use `Model` directly; this wrapper is created only around immutable
+/// generation checkpoints.
+pub struct CompiledModel<'a> {
+    eager: &'a Model,
+    frozen: Model,
+    module: Mutex<Option<CModule>>,
 }
 
 impl Batch {
@@ -86,6 +98,29 @@ impl Batch {
 
     pub fn states(&self) -> usize {
         self.graph.graphs() as usize
+    }
+
+    fn trace_tensors(&self) -> Vec<Tensor> {
+        let mut values = self.graph.trace_tensors();
+        values.push(self.action_features.shallow_clone());
+        values.push(self.action_graph.shallow_clone());
+        values
+    }
+
+    fn from_trace_tensors(values: &[Tensor], graphs: i64) -> Result<Self> {
+        ensure!(
+            values.len() == crate::constructive::INPUT_TENSOR_COUNT + 2,
+            "aic-learning.outer-trace-input: invalid tensor count"
+        );
+        Ok(Self {
+            graph: InputBatch::from_trace_tensors(
+                &values[..crate::constructive::INPUT_TENSOR_COUNT],
+                graphs,
+            )?,
+            action_features: values[crate::constructive::INPUT_TENSOR_COUNT].shallow_clone(),
+            action_graph: values[crate::constructive::INPUT_TENSOR_COUNT + 1].shallow_clone(),
+            offsets: Vec::new(),
+        })
     }
 }
 
@@ -182,8 +217,8 @@ impl Model {
         )
     }
 
-    pub fn forward(&self, batch: &Batch) -> Result<Prediction> {
-        let encoded = self.encoder.encode(&batch.graph)?;
+    fn forward_unchecked(&self, batch: &Batch) -> Prediction {
+        let encoded = self.encoder.encode_unchecked(&batch.graph);
         let action_context = encoded.context().index_select(0, &batch.action_graph);
         let hidden = self
             .linear(
@@ -196,21 +231,27 @@ impl Model {
         let values = self
             .linear("value.2", &self.linear("value.0", encoded.context()).tanh())
             .sigmoid();
-        ensure!(
-            bool::try_from(
-                logits
-                    .isfinite()
-                    .all()
-                    .logical_and(&logp.isfinite().all())
-                    .logical_and(&values.isfinite().all())
-            )?,
-            "aic-learning.outer-model-forward: nonfinite prediction"
-        );
-        Ok(Prediction {
+        Prediction {
             logits,
             logp,
             values,
-        })
+        }
+    }
+
+    pub fn forward(&self, batch: &Batch) -> Result<Prediction> {
+        let prediction = self.forward_unchecked(batch);
+        ensure!(
+            bool::try_from(
+                prediction
+                    .logits
+                    .isfinite()
+                    .all()
+                    .logical_and(&prediction.logp.isfinite().all())
+                    .logical_and(&prediction.values.isfinite().all())
+            )?,
+            "aic-learning.outer-model-forward: nonfinite prediction"
+        );
+        Ok(prediction)
     }
 
     pub fn snapshot(&self) -> Tensors {
@@ -233,6 +274,103 @@ impl Model {
         }));
         values
     }
+}
+
+impl<'a> CompiledModel<'a> {
+    pub fn new(eager: &'a Model) -> Self {
+        // The profiling executor in the retained LibTorch build specializes an
+        // empty spatial-token input to the wrong dtype on its second call.
+        // The non-profiling TorchScript executor preserves the traced schema
+        // and still executes the compiled graph.
+        tch::jit::set_profiling_mode(false);
+        let weights = eager
+            .weights
+            .iter()
+            .map(|(name, value)| (name.clone(), value.detach()))
+            .collect();
+        Self {
+            eager,
+            frozen: Model {
+                config: eager.config.clone(),
+                encoder: eager.encoder.inference_copy(),
+                parameters: eager
+                    .parameters
+                    .iter()
+                    .map(|(name, value)| (name.clone(), value.detach()))
+                    .collect(),
+                weights,
+            },
+            module: Mutex::new(None),
+        }
+    }
+
+    pub fn forward(&self, batch: &Batch) -> Result<Prediction> {
+        let inputs = batch.trace_tensors();
+        let graphs = batch.graph.graphs();
+        let actions = batch.action_features.size()[0];
+        let mut guard = self
+            .module
+            .lock()
+            .map_err(|_| anyhow!("aic-learning.outer-compiled-lock: poisoned trace cache"))?;
+        if guard.is_none() {
+            let frozen = &self.frozen;
+            let mut trace = |values: &[Tensor]| {
+                let batch = Batch::from_trace_tensors(values, graphs)
+                    .expect("validated outer trace tensors");
+                let prediction = frozen.forward_unchecked(&batch);
+                vec![pack_prediction(&prediction)]
+            };
+            let module = tch::no_grad(|| {
+                CModule::create_by_tracing("AicOuterInference", "forward", &inputs, &mut trace)
+            })?;
+            let expected = pack_prediction(&self.eager.forward_unchecked(batch));
+            let actual = module
+                .forward_ts(&inputs)
+                .context("aic-learning.outer-compiled-execution: parity invocation failed")?;
+            ensure!(
+                actual.size() == expected.size()
+                    && actual.allclose(&expected, 1e-5, 1e-5, false)
+                    && bool::try_from(actual.isfinite().all())?,
+                "aic-learning.outer-compiled-parity: traced output differs from eager output"
+            );
+            *guard = Some(module);
+        }
+        let packed = guard
+            .as_ref()
+            .expect("compiled outer module initialized")
+            .forward_ts(&inputs)
+            .map_err(|error| {
+                anyhow!(
+                    "aic-learning.outer-compiled-execution: inference invocation failed; inputs={:?}: {error}",
+                    inputs
+                        .iter()
+                        .map(|value| (value.kind(), value.size()))
+                        .collect::<Vec<_>>()
+                )
+            })?;
+        let logp = packed.narrow(0, 0, actions);
+        let values = packed
+            .narrow(0, actions, graphs * VALUE_HEADS as i64)
+            .view([graphs, VALUE_HEADS as i64]);
+        // The search boundary consumes probabilities and values only. Retain
+        // logits as an empty tensor so training cannot accidentally use this
+        // frozen inference wrapper.
+        Ok(Prediction {
+            logits: Tensor::empty([0], (Kind::Float, packed.device())),
+            logp,
+            values,
+        })
+    }
+}
+
+fn pack_prediction(prediction: &Prediction) -> Tensor {
+    Tensor::cat(
+        &[
+            prediction.logp.flatten(0, -1),
+            prediction.values.flatten(0, -1),
+        ],
+        0,
+    )
 }
 
 fn layers(config: &OuterModelConfig) -> Vec<(String, i64, i64)> {
