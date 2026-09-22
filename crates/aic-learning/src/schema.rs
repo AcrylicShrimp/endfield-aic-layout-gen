@@ -22,6 +22,32 @@ pub struct ConstructiveModelConfig {
     pub message_rounds: usize,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct RouteGuidanceModelConfig {
+    pub schema: String,
+    pub encoder: ConstructiveModelConfig,
+    pub raster_width: i64,
+    pub heads: usize,
+    pub maximum_edge_cost: u32,
+}
+
+impl RouteGuidanceModelConfig {
+    pub const SCHEMA: &'static str = "aic-route-guidance-model-v1";
+
+    pub fn validate(&self) -> Result<()> {
+        self.encoder.validate()?;
+        ensure!(
+            self.schema == Self::SCHEMA
+                && (8..=1024).contains(&self.raster_width)
+                && (1..=8).contains(&self.heads)
+                && (1..=1_000_000).contains(&self.maximum_edge_cost),
+            "aic-learning.route-guidance-model-config: invalid schema or dimensions"
+        );
+        Ok(())
+    }
+}
+
 impl ConstructiveModelConfig {
     pub const SCHEMA: &'static str = "aic-constructive-attention-model-v2";
 

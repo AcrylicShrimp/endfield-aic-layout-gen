@@ -454,6 +454,7 @@ fn attempt(
                     crossing_limit: limits.crossings_per_route,
                     allow_zero_length: c.zero_length,
                     cell_penalties: None,
+                    edge_penalties: None,
                 },
             )?
         };

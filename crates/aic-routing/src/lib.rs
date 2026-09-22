@@ -139,6 +139,9 @@ pub struct PathOptions<'a> {
     /// Optional nonnegative additive step costs. These affect path ordering
     /// only; blocked cells and crossing legality remain exact graph rules.
     pub cell_penalties: Option<&'a IndexMap<Point, u32>>,
+    /// Optional nonnegative additive directed-edge costs, keyed by the cell
+    /// entered and the cardinal movement direction. They affect ordering only.
+    pub edge_penalties: Option<&'a IndexMap<(Point, usize), u32>>,
 }
 #[derive(Debug, Serialize)]
 pub struct PathResult {
@@ -216,6 +219,7 @@ pub fn shortest_path(
         crossing_limit,
         allow_zero_length,
         cell_penalties,
+        edge_penalties,
     } = options;
     let width = bounds.width();
     let height = bounds.height();
@@ -231,6 +235,11 @@ pub fn shortest_path(
             penalties
                 .iter()
                 .any(|(point, &penalty)| !bounds.contains(*point) || penalty > 1_000_000)
+        })
+        || edge_penalties.is_some_and(|penalties| {
+            penalties.iter().any(|(&(point, direction), &penalty)| {
+                !bounds.contains(point) || direction > 3 || penalty > 1_000_000
+            })
         })
     {
         let mut d = Diagnostic::new(
@@ -270,6 +279,7 @@ pub fn shortest_path(
             crossing_limit,
             allow_zero_length,
             cell_penalties: None,
+            edge_penalties: None,
         },
         256.min(work_budget / 4),
     );
@@ -391,7 +401,14 @@ pub fn shortest_path(
             let penalty = cell_penalties
                 .and_then(|penalties| penalties.get(&q))
                 .copied()
-                .unwrap_or(0);
+                .unwrap_or(0)
+                .saturating_add(
+                    edge_penalties
+                        .and_then(|penalties| penalties.get(&(q, d)))
+                        .copied()
+                        .unwrap_or(0),
+                )
+                .min(1_000_000);
             let g = p.g
                 + (i64::from(penalty) + 1) * weight
                 + i64::from(p.direction != 4 && p.direction != d);

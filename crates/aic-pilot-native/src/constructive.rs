@@ -1263,6 +1263,92 @@ mod tests {
     }
 
     #[test]
+    fn route_guidance_is_task_focused_and_preserves_an_anchor_candidate() {
+        let mut session = session();
+        for command in [
+            Command::Place {
+                block: "source".into(),
+                position: Point { x: 5, y: 12 },
+                rotation: 0,
+            },
+            Command::Place {
+                block: "target".into(),
+                position: Point { x: 5, y: 2 },
+                rotation: 0,
+            },
+        ] {
+            assert!(session.step(command).accepted);
+        }
+        let request = routing_candidates::Request {
+            state_revision: session.observe().revision,
+            connection: "connection-0".into(),
+        };
+        let config = route_candidate_config();
+        let input = session
+            .route_guidance_input(&request, &config, &learning_config())
+            .unwrap();
+        assert_eq!(
+            input.grid.len(),
+            routing_candidates::GUIDANCE_GRID_CHANNELS * 16 * 16
+        );
+        assert_eq!(input.graph.focus_entity, 2);
+        assert_eq!(input.graph.entity_features[2][7], 1.0);
+
+        let anchor = session
+            .route_candidates(&request, &config)
+            .unwrap()
+            .candidates
+            .remove(0);
+        let directed_costs = anchor
+            .cells
+            .windows(2)
+            .map(|edge| {
+                let direction = match (edge[1].x - edge[0].x, edge[1].y - edge[0].y) {
+                    (1, 0) => 0,
+                    (0, 1) => 1,
+                    (-1, 0) => 2,
+                    (0, -1) => 3,
+                    _ => unreachable!(),
+                };
+                routing_candidates::DirectedCost {
+                    point: edge[1],
+                    direction,
+                    cost: 100,
+                }
+            })
+            .collect();
+        let report = session
+            .route_candidates_with_guidance(
+                &request,
+                &config,
+                &routing_candidates::Guidance {
+                    schema: routing_candidates::GUIDANCE_SCHEMA.into(),
+                    state_revision: request.state_revision,
+                    connection: request.connection.clone(),
+                    model_version: "test-guidance-v1".into(),
+                    heads: vec![routing_candidates::GuidanceHead {
+                        id: "preserve-anchor-corridor".into(),
+                        directed_costs,
+                        predicted_success: 0.75,
+                        uncertainty: 0.25,
+                    }],
+                },
+            )
+            .unwrap();
+
+        assert!(matches!(
+            report.candidates[0].provenance,
+            routing_candidates::Provenance::Anchor
+        ));
+        assert_eq!(report.candidates[0].cells, anchor.cells);
+        assert!(report.candidates.iter().any(|candidate| matches!(
+            candidate.provenance,
+            routing_candidates::Provenance::Guided { .. }
+        ) && candidate.cells != anchor.cells));
+        assert!(report.native_rejections.is_empty());
+    }
+
+    #[test]
     fn route_learning_domain_exposes_only_the_selected_connection() {
         let mut session = session();
         place_pair(&mut session);

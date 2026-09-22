@@ -10,6 +10,8 @@ pub mod outcomes;
 pub mod pretraining;
 #[cfg(feature = "outcomes")]
 pub mod route_candidates;
+#[cfg(feature = "libtorch")]
+pub mod route_guidance;
 pub mod schema;
 #[cfg(feature = "libtorch")]
 pub mod update;

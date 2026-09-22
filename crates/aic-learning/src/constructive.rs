@@ -596,6 +596,12 @@ pub struct Encoded {
     pub attention: Tensor,
 }
 
+impl Encoded {
+    pub(crate) fn context(&self) -> &Tensor {
+        &self.context
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

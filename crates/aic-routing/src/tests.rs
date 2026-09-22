@@ -41,6 +41,7 @@ fn route_kernel_timing() {
                 crossing_limit: 0,
                 allow_zero_length: false,
                 cell_penalties: None,
+                edge_penalties: None,
             },
         )
         .unwrap();
@@ -152,6 +153,7 @@ fn reverse_negative_preserves_every_forward_reachable_crossing_walk() {
                         crossing_limit,
                         allow_zero_length: false,
                         cell_penalties: None,
+                        edge_penalties: None,
                     };
                     let reachable = forward_reachable(start, end, &blocked, bounds, &options);
                     for cap in [0, 1, 2, 5, 256] {
@@ -199,6 +201,7 @@ fn sealed_goal_fails_locally_and_charges_reverse_work() {
             crossing_limit: 8,
             allow_zero_length: false,
             cell_penalties: None,
+            edge_penalties: None,
         },
     )
     .unwrap();
@@ -233,6 +236,7 @@ fn reverse_cutoff_still_runs_astar_and_preserves_directed_route_quality() {
             crossing_limit: 0,
             allow_zero_length: false,
             cell_penalties: None,
+            edge_penalties: None,
         },
     )
     .unwrap();
@@ -268,6 +272,7 @@ fn cell_penalties_select_a_distinct_equal_length_corridor() {
                 crossing_limit: 0,
                 allow_zero_length: false,
                 cell_penalties: penalties,
+                edge_penalties: None,
             },
         )
         .unwrap()
@@ -288,4 +293,58 @@ fn cell_penalties_select_a_distinct_equal_length_corridor() {
     assert_ne!(anchor, diverse);
     assert_eq!(diverse.first(), Some(&start));
     assert_eq!(diverse.last(), Some(&end));
+}
+
+#[test]
+fn directed_edge_penalties_change_ordering_without_changing_legality() {
+    let start = Point { x: 0, y: 1 };
+    let end = Point { x: 4, y: 1 };
+    let bounds = Bounds {
+        min_x: 0,
+        min_y: 0,
+        max_x: 4,
+        max_y: 2,
+    };
+    let blocked = IndexSet::from([Point { x: 2, y: 1 }]);
+    let crossings = Crossings::new();
+    let route = |penalties| {
+        shortest_path(
+            start,
+            end,
+            &blocked,
+            bounds,
+            PathOptions {
+                first: None,
+                last: None,
+                work_budget: 1_000,
+                crossings: &crossings,
+                crossing_limit: 0,
+                allow_zero_length: false,
+                cell_penalties: None,
+                edge_penalties: penalties,
+            },
+        )
+        .unwrap()
+        .cells
+        .unwrap()
+    };
+    let anchor = route(None);
+    let penalties = anchor
+        .windows(2)
+        .map(|edge| {
+            let direction = match (edge[1].x - edge[0].x, edge[1].y - edge[0].y) {
+                (1, 0) => 0,
+                (0, 1) => 1,
+                (-1, 0) => 2,
+                (0, -1) => 3,
+                _ => unreachable!(),
+            };
+            ((edge[1], direction), 10)
+        })
+        .collect::<IndexMap<_, _>>();
+    let guided = route(Some(&penalties));
+
+    assert_eq!(anchor.len(), guided.len());
+    assert_ne!(anchor, guided);
+    assert!(guided.iter().all(|point| !blocked.contains(point)));
 }

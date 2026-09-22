@@ -1039,6 +1039,7 @@ pub(crate) fn repair_pending_validated_until(
                 crossing_limit: 0,
                 allow_zero_length: edge.zero_length,
                 cell_penalties: None,
+                edge_penalties: None,
             },
         )
         .map_err(|failure| error("routing", failure.entity.to_string(), failure.message))?;

@@ -307,6 +307,28 @@ impl Session {
             domain,
         })
     }
+
+    /// Encodes a stable state with an unresolved connection as the explicit
+    /// focus. Candidate guidance uses this instead of inheriting the most
+    /// recent constructive command as its attention query.
+    pub fn route_guidance_learning_input(
+        &self,
+        config: &Config,
+        connection: usize,
+    ) -> Result<Arc<Input>, Diagnostic> {
+        config.validate(self)?;
+        if self.active.is_some()
+            || connection >= self.problem.connections.len()
+            || self.routes[connection].is_some()
+        {
+            return Err(error(
+                "route-guidance-target",
+                "learning-domain",
+                "route guidance requires an unresolved connection in a stable state",
+            ));
+        }
+        Ok(Arc::new(Input::new_for_route(self, config, connection)))
+    }
 }
 
 impl Domain {
@@ -1176,6 +1198,19 @@ fn direction_index(direction: Direction) -> i64 {
 }
 
 impl Input {
+    fn new_for_route(session: &Session, config: &Config, connection: usize) -> Self {
+        let mut input = Self::new(session, config);
+        for row in &mut input.entity_features {
+            row[7] = 0.;
+        }
+        let entity = session.problem.blocks.len() + session.problem.terminals.len() + connection;
+        input.entity_features[entity][7] = 1.;
+        input.focus_features = [0.; FOCUS_FEATURES];
+        input.focus_features[2] = 1.;
+        input.focus_entity = entity as i64;
+        input
+    }
+
     fn new(session: &Session, config: &Config) -> Self {
         let scale = config
             .placement
