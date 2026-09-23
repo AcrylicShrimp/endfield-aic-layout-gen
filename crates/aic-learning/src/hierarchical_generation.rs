@@ -1,7 +1,7 @@
 //! Alternating-generation distillation from frozen hierarchical MCTS records.
 
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, VecDeque},
     fs,
     path::{Path, PathBuf},
     sync::Arc,
@@ -65,6 +65,16 @@ pub struct Config {
     pub outer_learning_rate: f64,
     pub gradient_clip: f64,
     pub seed: u64,
+    #[serde(default)]
+    pub outer_states_per_epoch: Option<usize>,
+    #[serde(default = "default_true")]
+    pub train_lower: bool,
+    #[serde(default = "default_true")]
+    pub train_failed_policy: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 struct OuterExample {
@@ -73,6 +83,130 @@ struct OuterExample {
     entity_references: Vec<i64>,
     target: Vec<f32>,
     values: ValueTarget,
+    successful_episode: bool,
+}
+
+struct ReplaySource {
+    identity: ReplayIdentity,
+    examples: Vec<OuterExample>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+struct ReplayIdentity {
+    panel_sha256: String,
+    collection_sha256: String,
+}
+
+pub(crate) struct ReplayWindow {
+    capacity: usize,
+    sources: VecDeque<ReplaySource>,
+}
+
+impl ReplayWindow {
+    pub(crate) fn new(capacity: usize) -> Self {
+        Self {
+            capacity,
+            sources: VecDeque::new(),
+        }
+    }
+
+    fn identities(&self) -> Vec<ReplayIdentity> {
+        self.sources
+            .iter()
+            .map(|source| source.identity.clone())
+            .collect()
+    }
+
+    fn examples(&self) -> Vec<&OuterExample> {
+        self.sources
+            .iter()
+            .flat_map(|source| source.examples.iter())
+            .collect()
+    }
+
+    fn push(&mut self, source: ReplaySource) {
+        if self.capacity == 0 {
+            return;
+        }
+        self.sources.push_back(source);
+        while self.sources.len() > self.capacity {
+            self.sources.pop_front();
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn restore_source(
+        &mut self,
+        panel_path: &Path,
+        collection_path: &Path,
+        lower_training_output: &Path,
+        outer_training_output: &Path,
+        catalog_root: &Path,
+        generation_config: &Config,
+    ) -> Result<()> {
+        if self.capacity == 0 {
+            return Ok(());
+        }
+        let panel = load_published_panel(panel_path)?;
+        let collection = load_published_report(collection_path)?;
+        validate_inputs(&panel.value, &collection.value)?;
+        let lower_config_bytes = bounded_read(&lower_training_output.join("config.json"))?;
+        let lower_order_bytes = bounded_read(&lower_training_output.join("parameter-order.json"))?;
+        let lower_config: LowerTrainingConfig = serde_json::from_slice(&lower_config_bytes)?;
+        let outer_config_bytes = bounded_read(&outer_training_output.join("config.json"))?;
+        let outer_order_bytes = bounded_read(&outer_training_output.join("parameter-order.json"))?;
+        let outer_config: OuterTrainingConfig = serde_json::from_slice(&outer_config_bytes)?;
+        ensure!(
+            bytes_sha256(&lower_config_bytes) == collection.value.lower_config_sha256
+                && bytes_sha256(&lower_order_bytes)
+                    == collection.value.lower_parameter_order_sha256
+                && crate::input::sha256(&lower_training_output.join("state.safetensors"))?
+                    == collection.value.lower_checkpoint_sha256
+                && bytes_sha256(&outer_config_bytes) == collection.value.outer_config_sha256
+                && bytes_sha256(&outer_order_bytes)
+                    == collection.value.outer_parameter_order_sha256
+                && crate::input::sha256(&outer_training_output.join("state.safetensors"))?
+                    == collection.value.outer_checkpoint_sha256
+                && semantic_sha256(&outer_config.search)? == collection.value.search_config_sha256,
+            "aic-learning.hierarchical-replay-lineage: replay model or search differs"
+        );
+        validate_collection_structure(&collection.value, &outer_config.search)?;
+        let loaded = aic_layout_gen::io::load_catalogs(catalog_root)?;
+        ensure!(
+            loaded.catalogs.identity == collection.value.catalog_sha256,
+            "aic-learning.hierarchical-replay-catalog: replay catalog differs"
+        );
+        let domain = DomainConfig {
+            placement: outer_config.search.bounds,
+            extension_lengths: outer_config.search.extension_lengths.clone(),
+        };
+        ensure!(
+            lower_config.learning_domain == domain,
+            "aic-learning.hierarchical-replay-domain: replay lower and outer domains differ"
+        );
+        let (outer, _) = collect_examples(
+            panel.value,
+            collection.value,
+            &domain,
+            &outer_config,
+            &lower_config,
+            Arc::new(loaded.catalogs),
+            generation_config,
+            false,
+        )?;
+        self.push(ReplaySource {
+            identity: ReplayIdentity {
+                panel_sha256: panel.sha256,
+                collection_sha256: collection.sha256,
+            },
+            examples: outer
+                .into_iter()
+                .filter(|example| example.successful_episode)
+                .collect(),
+        });
+        Ok(())
+    }
 }
 
 struct LowerCandidate {
@@ -105,6 +239,10 @@ struct Report {
     collection_sha256: String,
     panel_sha256: String,
     root_states: usize,
+    outer_states_per_epoch: usize,
+    replay_root_states: usize,
+    train_lower: bool,
+    train_failed_policy: bool,
     outer_action_samples: usize,
     lower_route_samples: usize,
     epochs: usize,
@@ -134,6 +272,8 @@ struct RecoveryBinding {
     source_outer_config_sha256: String,
     source_outer_parameter_order_sha256: String,
     source_outer_checkpoint_sha256: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    replay_sources: Vec<ReplayIdentity>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -188,6 +328,7 @@ pub fn run(
         output,
         device,
         resume,
+        &mut ReplayWindow::new(0),
     )
 }
 
@@ -202,6 +343,7 @@ pub(crate) fn run_published(
     output: &Path,
     device: Device,
     resume: bool,
+    replay: &mut ReplayWindow,
 ) -> Result<Value> {
     validate_output_state(output, resume)?;
     let pending = pending_path(output)?;
@@ -298,11 +440,14 @@ pub(crate) fn run_published(
         &lower_config,
         catalogs.clone(),
         &config,
+        config.train_lower,
     )?;
     ensure!(
-        !outer_examples.is_empty() && !lower_examples.is_empty(),
+        !outer_examples.is_empty() && (!config.train_lower || !lower_examples.is_empty()),
         "aic-learning.hierarchical-generation-samples: collection has no usable roots or route choices"
     );
+    let replay_examples = replay.examples();
+    let replay_root_states = replay_examples.len();
 
     let binding = RecoveryBinding {
         schema: RECOVERY_BINDING_SCHEMA.into(),
@@ -316,6 +461,7 @@ pub(crate) fn run_published(
         source_outer_config_sha256: bytes_sha256(&outer_config_bytes),
         source_outer_parameter_order_sha256: bytes_sha256(&outer_order_bytes),
         source_outer_checkpoint_sha256: outer_source_sha256.clone(),
+        replay_sources: replay.identities(),
     };
     let binding_bytes = serde_json::to_vec_pretty(&binding)?;
     let binding_sha256 = bytes_sha256(&binding_bytes);
@@ -354,7 +500,7 @@ pub(crate) fn run_published(
             training_seconds: 0.0,
             initial_outer_loss: None,
             final_outer_loss: 0.0,
-            initial_lower_loss: None,
+            initial_lower_loss: (!config.train_lower).then_some(0.0),
             final_lower_loss: 0.0,
             maximum_gradient_norm: 0.0,
             lower_sha256: String::new(),
@@ -406,17 +552,18 @@ pub(crate) fn run_published(
     let started = Instant::now();
     let initial_training_seconds = recovery.training_seconds;
     for epoch in recovery.completed_epochs..config.epochs {
-        let rotation = (config.seed as usize).wrapping_add(epoch) % outer_examples.len();
-        let order = (0..outer_examples.len())
-            .map(|index| (index + rotation) % outer_examples.len())
-            .collect::<Vec<_>>();
-        for indices in order.chunks(config.batch_states) {
-            let examples = indices
-                .iter()
-                .map(|&index| &outer_examples[index])
-                .collect::<Vec<_>>();
+        let order = outer_epoch_examples(
+            &outer_examples,
+            &replay_examples,
+            config
+                .outer_states_per_epoch
+                .unwrap_or(outer_examples.len()),
+            config.seed,
+            epoch,
+        );
+        for examples in order.chunks(config.batch_states) {
             outer_optimizer.zero_grad()?;
-            let loss = outer_loss(&outer, &examples, device)?;
+            let loss = outer_loss(&outer, examples, config.train_failed_policy, device)?;
             let scalar = f64::try_from(&loss)?;
             ensure!(
                 scalar.is_finite(),
@@ -436,34 +583,36 @@ pub(crate) fn run_published(
                 .sum::<usize>();
         }
 
-        let lower_rotation = (config.seed as usize).wrapping_add(epoch) % lower_examples.len();
-        let order = (0..lower_examples.len())
-            .map(|index| (index + lower_rotation) % lower_examples.len())
-            .collect::<Vec<_>>();
-        for indices in order.chunks(config.batch_states) {
-            let examples = indices
-                .iter()
-                .map(|&index| &lower_examples[index])
+        if config.train_lower {
+            let lower_rotation = (config.seed as usize).wrapping_add(epoch) % lower_examples.len();
+            let order = (0..lower_examples.len())
+                .map(|index| (index + lower_rotation) % lower_examples.len())
                 .collect::<Vec<_>>();
-            lower_optimizer.zero_grad()?;
-            let loss = lower_loss(&lower, &examples, config.lower_model_temperature, device)?;
-            let scalar = f64::try_from(&loss)?;
-            ensure!(
-                scalar.is_finite(),
-                "aic-learning.hierarchical-generation-lower-loss: nonfinite"
-            );
-            recovery.initial_lower_loss.get_or_insert(scalar);
-            recovery.final_lower_loss = scalar;
-            loss.backward();
-            recovery.maximum_gradient_norm = recovery
-                .maximum_gradient_norm
-                .max(lower_optimizer.clip_grad_norm(config.gradient_clip)?);
-            lower_optimizer.step()?;
-            recovery.updates += 1;
-            recovery.processed_samples += examples
-                .iter()
-                .map(|example| example.candidates.len())
-                .sum::<usize>();
+            for indices in order.chunks(config.batch_states) {
+                let examples = indices
+                    .iter()
+                    .map(|&index| &lower_examples[index])
+                    .collect::<Vec<_>>();
+                lower_optimizer.zero_grad()?;
+                let loss = lower_loss(&lower, &examples, config.lower_model_temperature, device)?;
+                let scalar = f64::try_from(&loss)?;
+                ensure!(
+                    scalar.is_finite(),
+                    "aic-learning.hierarchical-generation-lower-loss: nonfinite"
+                );
+                recovery.initial_lower_loss.get_or_insert(scalar);
+                recovery.final_lower_loss = scalar;
+                loss.backward();
+                recovery.maximum_gradient_norm = recovery
+                    .maximum_gradient_norm
+                    .max(lower_optimizer.clip_grad_norm(config.gradient_clip)?);
+                lower_optimizer.step()?;
+                recovery.updates += 1;
+                recovery.processed_samples += examples
+                    .iter()
+                    .map(|example| example.candidates.len())
+                    .sum::<usize>();
+            }
         }
         recovery.completed_epochs = epoch + 1;
         recovery.training_seconds = initial_training_seconds + started.elapsed().as_secs_f64();
@@ -494,7 +643,11 @@ pub(crate) fn run_published(
         lower_training_output.join("parameter-order.json"),
         pending.join("lower/parameter-order.json"),
     )?;
-    write_tensors(&pending.join("lower/state.safetensors"), lower.snapshot())?;
+    if config.train_lower {
+        write_tensors(&pending.join("lower/state.safetensors"), lower.snapshot())?;
+    } else {
+        fs::copy(&lower_source, pending.join("lower/state.safetensors"))?;
+    }
     fs::copy(
         outer_training_output.join("config.json"),
         pending.join("outer/config.json"),
@@ -521,6 +674,12 @@ pub(crate) fn run_published(
         collection_sha256,
         panel_sha256,
         root_states: outer_examples.len(),
+        outer_states_per_epoch: config
+            .outer_states_per_epoch
+            .unwrap_or(outer_examples.len()),
+        replay_root_states,
+        train_lower: config.train_lower,
+        train_failed_policy: config.train_failed_policy,
         outer_action_samples: outer_examples
             .iter()
             .map(|example| example.features.len())
@@ -550,6 +709,19 @@ pub(crate) fn run_published(
         serde_json::to_vec_pretty(&report)?,
     )?;
     fs::rename(&pending, output)?;
+    drop(replay_examples);
+    if replay.capacity > 0 {
+        replay.push(ReplaySource {
+            identity: ReplayIdentity {
+                panel_sha256: report.panel_sha256.clone(),
+                collection_sha256: report.collection_sha256.clone(),
+            },
+            examples: outer_examples
+                .into_iter()
+                .filter(|example| example.successful_episode)
+                .collect(),
+        });
+    }
     Ok(json!({
         "schema": REPORT_SCHEMA,
         "status": "complete",
@@ -571,6 +743,7 @@ fn collect_examples(
     lower_config: &LowerTrainingConfig,
     catalogs: Arc<Catalogs>,
     config: &Config,
+    collect_lower: bool,
 ) -> Result<(Vec<OuterExample>, Vec<LowerExample>)> {
     let limits = panel.limits;
     let mut cases = panel
@@ -651,21 +824,57 @@ fn collect_examples(
                 entity_references,
                 target,
                 values,
+                successful_episode: record.later_fully_validated,
             });
-            collect_lower_examples(
-                &session,
-                &record,
-                domain,
-                lower_config,
-                &source_lower_checkpoint_sha256,
-                &outer_config.search.candidate,
-                config.search_temperature,
-                &mut lower_examples,
-            )?;
+            if collect_lower {
+                collect_lower_examples(
+                    &session,
+                    &record,
+                    domain,
+                    lower_config,
+                    &source_lower_checkpoint_sha256,
+                    &outer_config.search.candidate,
+                    config.search_temperature,
+                    &mut lower_examples,
+                )?;
+            }
             session = children[record.selected_action].clone();
         }
     }
     Ok((outer_examples, lower_examples))
+}
+
+fn outer_epoch_examples<'a>(
+    current: &'a [OuterExample],
+    replay: &[&'a OuterExample],
+    slots: usize,
+    seed: u64,
+    epoch: usize,
+) -> Vec<&'a OuterExample> {
+    let count = current.len();
+    if replay.is_empty() {
+        let rotation = if slots == count {
+            (seed as usize).wrapping_add(epoch) % count
+        } else {
+            (seed as usize).wrapping_add(epoch.wrapping_mul(slots)) % count
+        };
+        return (0..slots)
+            .map(|index| &current[(index + rotation) % count])
+            .collect();
+    }
+    let replay_count = slots / 2;
+    let current_count = slots - replay_count;
+    let current_start = (seed as usize).wrapping_add(epoch.wrapping_mul(current_count)) % count;
+    let replay_start =
+        (seed as usize).wrapping_add(epoch.wrapping_mul(replay_count)) % replay.len();
+    let mut examples = Vec::with_capacity(slots);
+    for index in 0..current_count {
+        examples.push(&current[(current_start + index) % count]);
+        if index < replay_count {
+            examples.push(replay[(replay_start + index) % replay.len()]);
+        }
+    }
+    examples
 }
 
 fn collect_lower_examples(
@@ -887,7 +1096,12 @@ fn search_weight(visits: u32, _prior: f64, temperature: f64) -> f64 {
     }
 }
 
-fn outer_loss(model: &OuterModel, examples: &[&OuterExample], device: Device) -> Result<Tensor> {
+fn outer_loss(
+    model: &OuterModel,
+    examples: &[&OuterExample],
+    train_failed_policy: bool,
+    device: Device,
+) -> Result<Tensor> {
     let inputs = examples
         .iter()
         .map(|example| example.input.as_ref())
@@ -906,20 +1120,26 @@ fn outer_loss(model: &OuterModel, examples: &[&OuterExample], device: Device) ->
     for (state, example) in examples.iter().enumerate() {
         let range = batch.action_range(state);
         let target = Tensor::from_slice(&example.target).to_device(device);
-        policies.push(
-            -(target
-                * prediction
-                    .logp
-                    .narrow(0, range.start, range.end - range.start))
-            .sum(Kind::Float),
-        );
+        if train_failed_policy || example.successful_episode {
+            policies.push(
+                -(target
+                    * prediction
+                        .logp
+                        .narrow(0, range.start, range.end - range.start))
+                .sum(Kind::Float),
+            );
+        }
     }
     let targets = examples
         .iter()
         .map(|example| example.values)
         .collect::<Vec<_>>();
-    Ok(Tensor::stack(&policies, 0).mean(Kind::Float)
-        + value_loss(&prediction.values, &targets, device)?)
+    let policy = if policies.is_empty() {
+        Tensor::zeros([], (Kind::Float, device))
+    } else {
+        Tensor::stack(&policies, 0).sum(Kind::Float) / examples.len() as f64
+    };
+    Ok(policy + value_loss(&prediction.values, &targets, device)?)
 }
 
 fn lower_loss(
@@ -1024,7 +1244,10 @@ fn validate_config(config: &Config) -> Result<()> {
             && config.outer_learning_rate > 0.0
             && config.gradient_clip.is_finite()
             && config.gradient_clip > 0.0
-            && config.seed <= i64::MAX as u64,
+            && config.seed <= i64::MAX as u64
+            && config
+                .outer_states_per_epoch
+                .is_none_or(|states| (1..=4096).contains(&states)),
         "aic-learning.hierarchical-generation-config: invalid training controls"
     );
     Ok(())

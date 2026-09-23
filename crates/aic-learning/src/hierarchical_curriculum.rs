@@ -39,6 +39,10 @@ pub struct Config {
     pub max_turns: u64,
     pub max_extension: i64,
     pub levels: Vec<Level>,
+    #[serde(default)]
+    pub outer_success_replay_generations: usize,
+    #[serde(default)]
+    pub diagnostic_training_evaluation: bool,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -139,9 +143,14 @@ pub fn run(
         "aic-learning.hierarchical-curriculum-generation-config: invalid seed"
     );
     let heldout = hierarchical_search::load_published_panel(heldout_panel_path)?;
+    let evaluation_partition = if config.diagnostic_training_evaluation {
+        "training"
+    } else {
+        "held-out"
+    };
     ensure!(
-        heldout.value.partition == "held-out" && !heldout.value.cases.is_empty(),
-        "aic-learning.hierarchical-curriculum-heldout: expected a nonempty held-out panel"
+        heldout.value.partition == evaluation_partition && !heldout.value.cases.is_empty(),
+        "aic-learning.hierarchical-curriculum-heldout: expected a nonempty {evaluation_partition} evaluation panel"
     );
     let heldout_identities = problem_identities(&heldout.value)?;
 
@@ -214,6 +223,26 @@ pub fn run(
         state
     };
 
+    let mut replay =
+        hierarchical_generation::ReplayWindow::new(config.outer_success_replay_generations);
+    if config.outer_success_replay_generations > 0 {
+        for previous in state
+            .completed_generations
+            .saturating_sub(config.outer_success_replay_generations)
+            ..state.completed_generations
+        {
+            restore_replay_source(
+                &mut replay,
+                output,
+                previous,
+                initial_lower_output,
+                initial_outer_output,
+                catalog_root,
+                &generation_template,
+            )?;
+        }
+    }
+
     while state.completed_generations < config.generations {
         let generation = state.completed_generations;
         let directory = output.join("generations").join(format!("{generation:06}"));
@@ -227,6 +256,15 @@ pub fn run(
                     && summary.level == state.level,
                 "aic-learning.hierarchical-curriculum-summary: retained generation differs"
             );
+            restore_replay_source(
+                &mut replay,
+                output,
+                generation,
+                initial_lower_output,
+                initial_outer_output,
+                catalog_root,
+                &generation_template,
+            )?;
             state.completed_generations += 1;
             state.level = summary.next_level;
             state.recent_training_success = summary.recent_training_success_after;
@@ -335,6 +373,17 @@ pub fn run(
                 &training_output,
                 device,
                 pending.exists(),
+                &mut replay,
+            )?;
+        } else {
+            restore_replay_source(
+                &mut replay,
+                output,
+                generation,
+                initial_lower_output,
+                initial_outer_output,
+                catalog_root,
+                &generation_template,
             )?;
         }
 
@@ -361,7 +410,7 @@ pub fn run(
         ensure!(
             heldout_report.as_ref().is_none_or(|report| {
                 report.value.schema == hierarchical_search::REPORT_SCHEMA
-                    && report.value.partition == "held-out"
+                    && report.value.partition == evaluation_partition
                     && !report.value.root_records_retained
             }),
             "aic-learning.hierarchical-curriculum-heldout: invalid evaluation report"
@@ -485,7 +534,8 @@ fn validate_config(config: &Config) -> Result<()> {
             && config.max_turns > 0
             && config.max_extension > 0
             && !config.levels.is_empty()
-            && config.levels.len() <= 1024,
+            && config.levels.len() <= 1024
+            && config.outer_success_replay_generations <= 4,
         "aic-learning.hierarchical-curriculum-config: invalid controls"
     );
     for (index, level) in config.levels.iter().enumerate() {
@@ -520,6 +570,28 @@ fn source_outputs(
             .join("training");
         (previous.join("lower"), previous.join("outer"))
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn restore_replay_source(
+    replay: &mut hierarchical_generation::ReplayWindow,
+    output: &Path,
+    generation: usize,
+    initial_lower: &Path,
+    initial_outer: &Path,
+    catalog_root: &Path,
+    generation_config: &hierarchical_generation::Config,
+) -> Result<()> {
+    let directory = output.join("generations").join(format!("{generation:06}"));
+    let (lower, outer) = source_outputs(output, generation, initial_lower, initial_outer);
+    replay.restore_source(
+        &directory.join("training-panel.json"),
+        &directory.join("collection.json"),
+        &lower,
+        &outer,
+        catalog_root,
+        generation_config,
+    )
 }
 
 fn problem_identities(panel: &Panel) -> Result<BTreeSet<String>> {
