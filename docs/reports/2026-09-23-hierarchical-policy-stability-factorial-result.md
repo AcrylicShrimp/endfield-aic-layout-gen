@@ -130,6 +130,10 @@ compact evidence before raw cleanup with:
 ```
 
 The raw collection files, generated panels, intermediate optimizer
-checkpoints and final model checkpoints have no active continuation
-requirement. They are removed after verifying the committed closeout evidence;
-the cleanup manifest records exact paths and free-space change.
+checkpoints and final model checkpoints had no active continuation
+requirement. After verifying the committed closeout evidence and the original
+generation-87 checkpoint sources, they and regenerable build caches were
+removed. The [cleanup manifest](2026-09-23-hierarchical-policy-stability-screen-cleanup.json)
+records the exact paths, 5,465,935,927 file bytes removed and filesystem free
+space rising from 173,620,420,608 to 178,862,350,336 bytes. The compact
+evidence and W&B histories remain available.

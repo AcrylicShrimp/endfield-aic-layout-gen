@@ -1,0 +1,60 @@
+{
+  "schema": "aic-hierarchical-stability-screen-cleanup-v1",
+  "training_source_commit": "31555f5",
+  "verified_evidence_sha256": "5c60038ecd5bdd4c1b06a0803f96cdedd3a11b08a8d89236df7ce65b9dcbd3ec",
+  "retained_server_evidence": [
+    "artifacts/policy-stability-screen/evidence.json",
+    "artifacts/policy-stability-screen/launch.json",
+    "artifacts/policy-stability-inputs/baseline-evidence.json",
+    "artifacts/policy-stability-smoke-evidence.json"
+  ],
+  "removed": [
+    {
+      "path": "artifacts/policy-stability-screen/arm-a",
+      "bytes": 928574500
+    },
+    {
+      "path": "artifacts/policy-stability-screen/arm-b",
+      "bytes": 946680891
+    },
+    {
+      "path": "artifacts/policy-stability-screen/arm-c",
+      "bytes": 934585742
+    },
+    {
+      "path": "artifacts/policy-stability-screen/arm-d",
+      "bytes": 949818231
+    },
+    {
+      "path": "artifacts/policy-stability-screen/logs",
+      "bytes": 31856
+    },
+    {
+      "path": "artifacts/policy-stability-inputs/common-panels",
+      "bytes": 647695
+    },
+    {
+      "path": "artifacts/policy-stability-inputs/diagnostic-panel.json",
+      "bytes": 167427
+    },
+    {
+      "path": "artifacts/policy-stability-inputs/initial-lower",
+      "bytes": 308245
+    },
+    {
+      "path": "artifacts/policy-stability-inputs/initial-outer",
+      "bytes": 121787
+    },
+    {
+      "path": "artifacts/policy-stability-screen-supervisor.log",
+      "bytes": 337
+    },
+    {
+      "path": "target",
+      "bytes": 1704999216
+    }
+  ],
+  "removed_file_bytes": 5465935927,
+  "filesystem_free_bytes_before": 173620420608,
+  "filesystem_free_bytes_after": 178862350336
+}
