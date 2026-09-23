@@ -1,0 +1,1983 @@
+{
+  "schema": "aic-hierarchical-stability-screen-evidence-v1",
+  "source_commit": "31555f5",
+  "diagnostic_panel_sha256": "0fc86bb56d0ec0809b782c850f81a02a954a14416c2e83742f28a5a73c62e29f",
+  "baseline_evidence_sha256": "4177fb47bad98c3b99a1faba1c12a6b6aaa7e39de3ec04240867ee6bfbc487d3",
+  "baseline_completed": 27,
+  "diagnostic_case_ids": [
+    "train-hierarchical-policy-stability-diagnostic-v1-16204",
+    "train-hierarchical-policy-stability-diagnostic-v1-4016",
+    "train-hierarchical-policy-stability-diagnostic-v1-9414",
+    "train-hierarchical-policy-stability-diagnostic-v1-9649",
+    "train-hierarchical-policy-stability-diagnostic-v1-142",
+    "train-hierarchical-policy-stability-diagnostic-v1-17471",
+    "train-hierarchical-policy-stability-diagnostic-v1-17840",
+    "train-hierarchical-policy-stability-diagnostic-v1-9497",
+    "train-hierarchical-policy-stability-diagnostic-v1-16621",
+    "train-hierarchical-policy-stability-diagnostic-v1-9609",
+    "train-hierarchical-policy-stability-diagnostic-v1-29012",
+    "train-hierarchical-policy-stability-diagnostic-v1-17749",
+    "train-hierarchical-policy-stability-diagnostic-v1-23437",
+    "train-hierarchical-policy-stability-diagnostic-v1-27266",
+    "train-hierarchical-policy-stability-diagnostic-v1-9073",
+    "train-hierarchical-policy-stability-diagnostic-v1-10079",
+    "train-hierarchical-policy-stability-diagnostic-v1-30724",
+    "train-hierarchical-policy-stability-diagnostic-v1-14254",
+    "train-hierarchical-policy-stability-diagnostic-v1-31636",
+    "train-hierarchical-policy-stability-diagnostic-v1-14819",
+    "train-hierarchical-policy-stability-diagnostic-v1-8825",
+    "train-hierarchical-policy-stability-diagnostic-v1-13011",
+    "train-hierarchical-policy-stability-diagnostic-v1-26099",
+    "train-hierarchical-policy-stability-diagnostic-v1-18100",
+    "train-hierarchical-policy-stability-diagnostic-v1-19145",
+    "train-hierarchical-policy-stability-diagnostic-v1-32698",
+    "train-hierarchical-policy-stability-diagnostic-v1-1044",
+    "train-hierarchical-policy-stability-diagnostic-v1-29888",
+    "train-hierarchical-policy-stability-diagnostic-v1-14191",
+    "train-hierarchical-policy-stability-diagnostic-v1-28306",
+    "train-hierarchical-policy-stability-diagnostic-v1-2991",
+    "train-hierarchical-policy-stability-diagnostic-v1-15566",
+    "train-hierarchical-policy-stability-diagnostic-v1-20697",
+    "train-hierarchical-policy-stability-diagnostic-v1-3395",
+    "train-hierarchical-policy-stability-diagnostic-v1-12246",
+    "train-hierarchical-policy-stability-diagnostic-v1-26247",
+    "train-hierarchical-policy-stability-diagnostic-v1-7748",
+    "train-hierarchical-policy-stability-diagnostic-v1-31119",
+    "train-hierarchical-policy-stability-diagnostic-v1-9633",
+    "train-hierarchical-policy-stability-diagnostic-v1-4443",
+    "train-hierarchical-policy-stability-diagnostic-v1-35",
+    "train-hierarchical-policy-stability-diagnostic-v1-19192",
+    "train-hierarchical-policy-stability-diagnostic-v1-9867",
+    "train-hierarchical-policy-stability-diagnostic-v1-24768",
+    "train-hierarchical-policy-stability-diagnostic-v1-10142",
+    "train-hierarchical-policy-stability-diagnostic-v1-11320",
+    "train-hierarchical-policy-stability-diagnostic-v1-24634",
+    "train-hierarchical-policy-stability-diagnostic-v1-11237",
+    "train-hierarchical-policy-stability-diagnostic-v1-11756",
+    "train-hierarchical-policy-stability-diagnostic-v1-21722",
+    "train-hierarchical-policy-stability-diagnostic-v1-14889",
+    "train-hierarchical-policy-stability-diagnostic-v1-9992",
+    "train-hierarchical-policy-stability-diagnostic-v1-31514",
+    "train-hierarchical-policy-stability-diagnostic-v1-17808",
+    "train-hierarchical-policy-stability-diagnostic-v1-29740",
+    "train-hierarchical-policy-stability-diagnostic-v1-21874",
+    "train-hierarchical-policy-stability-diagnostic-v1-4494",
+    "train-hierarchical-policy-stability-diagnostic-v1-3985",
+    "train-hierarchical-policy-stability-diagnostic-v1-946",
+    "train-hierarchical-policy-stability-diagnostic-v1-23009",
+    "train-hierarchical-policy-stability-diagnostic-v1-26969",
+    "train-hierarchical-policy-stability-diagnostic-v1-19393",
+    "train-hierarchical-policy-stability-diagnostic-v1-1624",
+    "train-hierarchical-policy-stability-diagnostic-v1-7592"
+  ],
+  "arms": {
+    "a": {
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/ee78cfa06405cde238aed635",
+      "wandb_remote_confirmed_step": 7,
+      "output_report_sha256": "75f5c407dc858f738dc7afe963baa0032663cd7e5879427534353a73a73ca81a",
+      "total_integrated_wall_seconds": 1649.3159265518188,
+      "raw_output_bytes": 928574500,
+      "last_two_evaluations": [
+        24,
+        21
+      ],
+      "last_two_mean": 22.5,
+      "last_two_minimum": 21,
+      "evaluation_success_masks_hex": "cf84f103600fbf5b0fe04010066b05a181b19622511324001f8701406d0f20fb",
+      "generations": [
+        {
+          "generation": 0,
+          "panel_sha256": "c8a470a2188d08741f1f8f5f159f35b32e49c5a74e248fe1db3b92512bdca451",
+          "collection_sha256": "44863981720064dddd71eb35b4b0736d6977030f4eae46e8f74763a2b6127103",
+          "training_report_sha256": "dbe4ebf7f7ebb84b0e4b2e4b50ab40f39e99d5d10af08110109a8788db0380c9",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "ddbe2b7d34a5cfe538dcd21f39dd872eff89461ae42c53f25e377dbfcaf9ca42",
+          "training_completed": 18,
+          "training_cases": 32,
+          "root_states": 270,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 147,
+          "failed_policy_roots": 123,
+          "updates": 3200,
+          "training_seconds": 9.521441594,
+          "integrated_generation_wall_seconds": 112.92911696434021,
+          "outer_relative_l2_from_start": 0.06721715006204483,
+          "outer_relative_l2_from_prior": 0.06721715006204483,
+          "policy_head_relative_l2_from_start": 0.0674377854850079,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 18,
+              "no-macro-actions": 14
+            },
+            "successful": {
+              "count": 147,
+              "mean_entropy": 0.9334642602805356,
+              "mean_max_prior": 0.12613995618290025,
+              "mean_unvisited_target_mass": 0.6098178429840952
+            },
+            "failed": {
+              "count": 123,
+              "mean_entropy": 0.9761052597200017,
+              "mean_max_prior": 0.07164230438020255,
+              "mean_unvisited_target_mass": 0.6988472948000475
+            }
+          }
+        },
+        {
+          "generation": 1,
+          "panel_sha256": "b12a371ae0896420259611eaede22122ea4aa15cc6aa7d8a2b15a2dcc2b750af",
+          "collection_sha256": "d561f54b53eac4f85a66fdb4a4999237e550c51b6fab967ec2cd6b5eaebdaf2d",
+          "training_report_sha256": "98af94636a911e4120fcb1ec7c35b711c22eb986fb269b26e047c3041b688db3",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "5cb21b06945be2db2208e1d46a2e365e0fa21aecf39e7ca493db671c22484537",
+          "training_completed": 17,
+          "training_cases": 32,
+          "root_states": 288,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 150,
+          "failed_policy_roots": 138,
+          "updates": 3200,
+          "training_seconds": 9.365641319,
+          "integrated_generation_wall_seconds": 323.981094121933,
+          "outer_relative_l2_from_start": 0.09139487287263687,
+          "outer_relative_l2_from_prior": 0.06420588335774273,
+          "policy_head_relative_l2_from_start": 0.08947581282335705,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 17,
+              "no-macro-actions": 15
+            },
+            "successful": {
+              "count": 150,
+              "mean_entropy": 0.9198423995293291,
+              "mean_max_prior": 0.1394686149137213,
+              "mean_unvisited_target_mass": 0.6240630405397786
+            },
+            "failed": {
+              "count": 138,
+              "mean_entropy": 0.9599026890799218,
+              "mean_max_prior": 0.07678462043923563,
+              "mean_unvisited_target_mass": 0.7341126063963317
+            }
+          },
+          "evaluation_report_sha256": "4f1c8ddc57709264cb35e7d72c0029fb14ec9bf0622f787182fc9814fcf6cfb5",
+          "evaluation": {
+            "completed": 30,
+            "cases": 64,
+            "vs_start": {
+              "gained": 14,
+              "lost": 11
+            },
+            "vs_prior_evaluation": null,
+            "connection_strata": {
+              "3": {
+                "completed": 6,
+                "cases": 6
+              },
+              "4": {
+                "completed": 8,
+                "cases": 12
+              },
+              "5": {
+                "completed": 12,
+                "cases": 36
+              },
+              "6": {
+                "completed": 4,
+                "cases": 10
+              }
+            },
+            "termination_counts": {
+              "fully-validated": 30,
+              "no-macro-actions": 34
+            },
+            "mean_footprint_area": 319.9,
+            "mean_transport_cells": 85.6,
+            "mean_turns": 13.7
+          }
+        },
+        {
+          "generation": 2,
+          "panel_sha256": "fe8c5518818d0cdaee3c5a5ef58fcc9fa5ec029e89b0cebaa8d172435e505e02",
+          "collection_sha256": "76055f1bad433cce1c9154247ece29789b07db8ed1bf6e85fd2a93d52caaa8d9",
+          "training_report_sha256": "90909a18f57e053d603cd4714134cf3fbc30f9e864a23fe006b75b121872bea1",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "f8675aea4dfa62f30fda0b4be07cfefe6126644bfadfea1416a27a86e3d843ce",
+          "training_completed": 20,
+          "training_cases": 32,
+          "root_states": 265,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 162,
+          "failed_policy_roots": 103,
+          "updates": 3200,
+          "training_seconds": 10.727211013,
+          "integrated_generation_wall_seconds": 103.97006249427795,
+          "outer_relative_l2_from_start": 0.11250141705626242,
+          "outer_relative_l2_from_prior": 0.06682886245291564,
+          "policy_head_relative_l2_from_start": 0.10969048469021772,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 20,
+              "no-macro-actions": 12
+            },
+            "successful": {
+              "count": 162,
+              "mean_entropy": 0.9257219931689508,
+              "mean_max_prior": 0.12615870691207823,
+              "mean_unvisited_target_mass": 0.6473004971331142
+            },
+            "failed": {
+              "count": 103,
+              "mean_entropy": 0.9705565116861504,
+              "mean_max_prior": 0.08415970642518009,
+              "mean_unvisited_target_mass": 0.6814368818719894
+            }
+          }
+        },
+        {
+          "generation": 3,
+          "panel_sha256": "e5d4ea6a81fca4131151d68536b087c09d0be05ef51b0dbd2e0ee45fb928ff55",
+          "collection_sha256": "784e9677b9222456d5e09ab96ca40374af373deeec0de9f121271bfc0ad6b854",
+          "training_report_sha256": "16d194705665d7b94c0b5363c7c89d1341472028464807124fef645f8a2705c1",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "5afd308324cec6d36ac843172a14d1484837ed292d882d16ac370f7afa72c55d",
+          "training_completed": 15,
+          "training_cases": 32,
+          "root_states": 280,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 135,
+          "failed_policy_roots": 145,
+          "updates": 3200,
+          "training_seconds": 11.307595644,
+          "integrated_generation_wall_seconds": 284.70252084732056,
+          "outer_relative_l2_from_start": 0.12869534847107136,
+          "outer_relative_l2_from_prior": 0.06766435412209366,
+          "policy_head_relative_l2_from_start": 0.1268864456057919,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 15,
+              "no-macro-actions": 17
+            },
+            "successful": {
+              "count": 135,
+              "mean_entropy": 0.9423203516992964,
+              "mean_max_prior": 0.11445781624830778,
+              "mean_unvisited_target_mass": 0.6502290872710311
+            },
+            "failed": {
+              "count": 145,
+              "mean_entropy": 0.9744562973709169,
+              "mean_max_prior": 0.07815102025549381,
+              "mean_unvisited_target_mass": 0.7118020017839236
+            }
+          },
+          "evaluation_report_sha256": "c32f6738e36e5da7bd1a32e4c766755efaec23dd203d2934aa43e9f8a718f4c3",
+          "evaluation": {
+            "completed": 27,
+            "cases": 64,
+            "vs_start": {
+              "gained": 14,
+              "lost": 14
+            },
+            "vs_prior_evaluation": {
+              "gained": 11,
+              "lost": 14
+            },
+            "connection_strata": {
+              "3": {
+                "completed": 6,
+                "cases": 6
+              },
+              "4": {
+                "completed": 8,
+                "cases": 12
+              },
+              "5": {
+                "completed": 10,
+                "cases": 36
+              },
+              "6": {
+                "completed": 3,
+                "cases": 10
+              }
+            },
+            "termination_counts": {
+              "fully-validated": 27,
+              "no-macro-actions": 37
+            },
+            "mean_footprint_area": 314.2962962962963,
+            "mean_transport_cells": 85.33333333333333,
+            "mean_turns": 13.333333333333334
+          }
+        },
+        {
+          "generation": 4,
+          "panel_sha256": "17e7bfece54b051682788de61fffc24f9e5da7bb86fca34966e2aacf8782b245",
+          "collection_sha256": "ef1e25ca499d0b2ef00bde38f19c3aedaa5593a7295aea2effa7a327e63f94f4",
+          "training_report_sha256": "00651a521972f3e3c3708327dcc3e981acfdf65d9b34d28f5af84aad9e0bf1a2",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "5abd451f88325f7d5b520fca41501428df13b270a7298b549fc111ffeb926de1",
+          "training_completed": 14,
+          "training_cases": 32,
+          "root_states": 275,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 115,
+          "failed_policy_roots": 160,
+          "updates": 3200,
+          "training_seconds": 8.488036954,
+          "integrated_generation_wall_seconds": 111.54101347923279,
+          "outer_relative_l2_from_start": 0.14658851207525753,
+          "outer_relative_l2_from_prior": 0.06876423145313139,
+          "policy_head_relative_l2_from_start": 0.14558653261968643,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 14,
+              "no-macro-actions": 18
+            },
+            "successful": {
+              "count": 115,
+              "mean_entropy": 0.9399385240769487,
+              "mean_max_prior": 0.11683301974584438,
+              "mean_unvisited_target_mass": 0.6289799621571507
+            },
+            "failed": {
+              "count": 160,
+              "mean_entropy": 0.9757341219496184,
+              "mean_max_prior": 0.06728228085807682,
+              "mean_unvisited_target_mass": 0.7427886075488298
+            }
+          }
+        },
+        {
+          "generation": 5,
+          "panel_sha256": "692beab82402393388ac686f59e70f0d8af1cd676a449b1e5dae5e794cc0b49c",
+          "collection_sha256": "11abc8f84d33ffc24df6250edf7a0ef659d92ccb0b57382bf7a9f3103e83df23",
+          "training_report_sha256": "f3522fab56da16133240d2b077f57bba7591af03780027f8d264dd3434fc5f0e",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "e33d0a7e64cc01020c180e439895b774724e9d9e4effe292b2914039132486e8",
+          "training_completed": 15,
+          "training_cases": 32,
+          "root_states": 273,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 114,
+          "failed_policy_roots": 159,
+          "updates": 3200,
+          "training_seconds": 8.4303201,
+          "integrated_generation_wall_seconds": 290.9986255168915,
+          "outer_relative_l2_from_start": 0.1579084059864501,
+          "outer_relative_l2_from_prior": 0.06212756126824008,
+          "policy_head_relative_l2_from_start": 0.15228548482184395,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 15,
+              "no-macro-actions": 17
+            },
+            "successful": {
+              "count": 114,
+              "mean_entropy": 0.9298725910581035,
+              "mean_max_prior": 0.13188329953320493,
+              "mean_unvisited_target_mass": 0.6185608129825765
+            },
+            "failed": {
+              "count": 159,
+              "mean_entropy": 0.9769989026799826,
+              "mean_max_prior": 0.06448343015678486,
+              "mean_unvisited_target_mass": 0.7307122908601288
+            }
+          },
+          "evaluation_report_sha256": "11f58459621cb1e171ea3f2403a855d82b1d15d2496a3103c9f6a3c3e2d54e3f",
+          "evaluation": {
+            "completed": 24,
+            "cases": 64,
+            "vs_start": {
+              "gained": 13,
+              "lost": 16
+            },
+            "vs_prior_evaluation": {
+              "gained": 9,
+              "lost": 12
+            },
+            "connection_strata": {
+              "3": {
+                "completed": 5,
+                "cases": 6
+              },
+              "4": {
+                "completed": 7,
+                "cases": 12
+              },
+              "5": {
+                "completed": 10,
+                "cases": 36
+              },
+              "6": {
+                "completed": 2,
+                "cases": 10
+              }
+            },
+            "termination_counts": {
+              "fully-validated": 24,
+              "no-macro-actions": 40
+            },
+            "mean_footprint_area": 314.375,
+            "mean_transport_cells": 83.83333333333333,
+            "mean_turns": 11.791666666666666
+          }
+        },
+        {
+          "generation": 6,
+          "panel_sha256": "e0462f4d7d63ba3467cd78770c9e5010255938bd5c1c59da05a2bd2e5c3b0b85",
+          "collection_sha256": "bce5a0c1406375c0638359ff4ce89d787c48fd415ec6214f104b15971b753cfd",
+          "training_report_sha256": "008da410b42fc19401cacf3a00a408cb584c6aac5c8fcf138d055040245eb214",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "1c41ff4bd0b0dfd8266e52ffd8c92a39fec47f4f88c22fe13115137ed67346c1",
+          "training_completed": 11,
+          "training_cases": 32,
+          "root_states": 278,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 90,
+          "failed_policy_roots": 188,
+          "updates": 3200,
+          "training_seconds": 11.48693143,
+          "integrated_generation_wall_seconds": 129.84053897857666,
+          "outer_relative_l2_from_start": 0.17001959519163332,
+          "outer_relative_l2_from_prior": 0.06446070085301357,
+          "policy_head_relative_l2_from_start": 0.16111249750428325,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 11,
+              "no-macro-actions": 21
+            },
+            "successful": {
+              "count": 90,
+              "mean_entropy": 0.9468699280237858,
+              "mean_max_prior": 0.10670068026467017,
+              "mean_unvisited_target_mass": 0.6205074038283666
+            },
+            "failed": {
+              "count": 188,
+              "mean_entropy": 0.9823638580904015,
+              "mean_max_prior": 0.05158365294827707,
+              "mean_unvisited_target_mass": 0.7685140483719691
+            }
+          }
+        },
+        {
+          "generation": 7,
+          "panel_sha256": "ea9858a20970a02cd4000b2b19711f513874d3f83db891879928c585ba1bf9cb",
+          "collection_sha256": "c3a09d51fb20113497e5c6ebc36d0b665de37b434c9bfde5ebbb84a5085265fa",
+          "training_report_sha256": "fef94a974f3d0f44c56b417d55c0eaaca2a9e254183f5e9f1cad7a434462c13e",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "9e355560bbbc4921000d59afc68c19d902a5a1410cd6b172565c732bad5c9e4c",
+          "training_completed": 12,
+          "training_cases": 32,
+          "root_states": 293,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 103,
+          "failed_policy_roots": 190,
+          "updates": 3200,
+          "training_seconds": 8.71907075,
+          "integrated_generation_wall_seconds": 291.35195422172546,
+          "outer_relative_l2_from_start": 0.18251304882724767,
+          "outer_relative_l2_from_prior": 0.06491666422196916,
+          "policy_head_relative_l2_from_start": 0.17699109780845135,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 12,
+              "no-macro-actions": 20
+            },
+            "successful": {
+              "count": 103,
+              "mean_entropy": 0.9433620088094021,
+              "mean_max_prior": 0.1116184283006171,
+              "mean_unvisited_target_mass": 0.6610777494057665
+            },
+            "failed": {
+              "count": 190,
+              "mean_entropy": 0.9816200742493159,
+              "mean_max_prior": 0.06139274536342797,
+              "mean_unvisited_target_mass": 0.6895447651562645
+            }
+          },
+          "evaluation_report_sha256": "4910306d10f3409b74724aca7221ff8daa6cca5f44b25048048157f0bde82626",
+          "evaluation": {
+            "completed": 21,
+            "cases": 64,
+            "vs_start": {
+              "gained": 9,
+              "lost": 15
+            },
+            "vs_prior_evaluation": {
+              "gained": 10,
+              "lost": 13
+            },
+            "connection_strata": {
+              "3": {
+                "completed": 6,
+                "cases": 6
+              },
+              "4": {
+                "completed": 6,
+                "cases": 12
+              },
+              "5": {
+                "completed": 7,
+                "cases": 36
+              },
+              "6": {
+                "completed": 2,
+                "cases": 10
+              }
+            },
+            "termination_counts": {
+              "fully-validated": 21,
+              "no-macro-actions": 43
+            },
+            "mean_footprint_area": 297.3333333333333,
+            "mean_transport_cells": 74.38095238095238,
+            "mean_turns": 11.714285714285714
+          }
+        }
+      ]
+    },
+    "b": {
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/cfc34fb4e9e5220d6b507ccd",
+      "wandb_remote_confirmed_step": 7,
+      "output_report_sha256": "a3639f29436e351577244b79222fe01f16a954bdb3b41cb577f945d3a06afe2d",
+      "total_integrated_wall_seconds": 1644.4489243030548,
+      "raw_output_bytes": 946680891,
+      "last_two_evaluations": [
+        33,
+        34
+      ],
+      "last_two_mean": 33.5,
+      "last_two_minimum": 33,
+      "evaluation_success_masks_hex": "cf5dfc4a310fc7640b00ee94401f00f9c09cd0a6f08e4d002f8ea0814fd709f8",
+      "generations": [
+        {
+          "generation": 0,
+          "panel_sha256": "c8a470a2188d08741f1f8f5f159f35b32e49c5a74e248fe1db3b92512bdca451",
+          "collection_sha256": "03dfe65bd5e806bbda15140d78f0ceab84b4a7404fefd70f2c5a37ccf4e0a53d",
+          "training_report_sha256": "757b3b22bb38689ccd7bc98ba69f67df84cfcba335ada6108874d809700080e4",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "f596237958f25730f73a9ec483f8b96e85bafb8ed4ac0877c9d4be26a999d64f",
+          "training_completed": 18,
+          "training_cases": 32,
+          "root_states": 270,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 147,
+          "failed_policy_roots": 123,
+          "updates": 3200,
+          "training_seconds": 8.476160312,
+          "integrated_generation_wall_seconds": 110.65902757644653,
+          "outer_relative_l2_from_start": 0.06659186536041868,
+          "outer_relative_l2_from_prior": 0.06659186536041868,
+          "policy_head_relative_l2_from_start": 0.06518938677465687,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 18,
+              "no-macro-actions": 14
+            },
+            "successful": {
+              "count": 147,
+              "mean_entropy": 0.9334642711772309,
+              "mean_max_prior": 0.12613994811712104,
+              "mean_unvisited_target_mass": 0.6098178449679916
+            },
+            "failed": {
+              "count": 123,
+              "mean_entropy": 0.9761052672741182,
+              "mean_max_prior": 0.07164230764437474,
+              "mean_unvisited_target_mass": 0.6988472971299488
+            }
+          }
+        },
+        {
+          "generation": 1,
+          "panel_sha256": "b12a371ae0896420259611eaede22122ea4aa15cc6aa7d8a2b15a2dcc2b750af",
+          "collection_sha256": "800e1cd147a5d240828f1dec91509ccbed1f97590ad9837eb35e1d38b1dada60",
+          "training_report_sha256": "86d0271d535fa846dd888ac82747eb4f0f97a5eb86ff70fd30166865b755ec86",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "6a85c0ab08061fc7c93bf8356110c02bf8ec3dd9938e2ab3820a2fe3c5b800c5",
+          "training_completed": 15,
+          "training_cases": 32,
+          "root_states": 282,
+          "replay_root_states": 147,
+          "replay_slots_per_epoch": 128,
+          "successful_policy_roots": 127,
+          "failed_policy_roots": 155,
+          "updates": 3200,
+          "training_seconds": 10.620732152,
+          "integrated_generation_wall_seconds": 299.53035497665405,
+          "outer_relative_l2_from_start": 0.09457788387045499,
+          "outer_relative_l2_from_prior": 0.05682219264206873,
+          "policy_head_relative_l2_from_start": 0.09251021286467903,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 15,
+              "no-macro-actions": 17
+            },
+            "successful": {
+              "count": 127,
+              "mean_entropy": 0.9282210366779562,
+              "mean_max_prior": 0.12494172280002472,
+              "mean_unvisited_target_mass": 0.6193232465050155
+            },
+            "failed": {
+              "count": 155,
+              "mean_entropy": 0.9834133529219208,
+              "mean_max_prior": 0.05836674254995686,
+              "mean_unvisited_target_mass": 0.738365132994162
+            }
+          },
+          "evaluation_report_sha256": "5be1ea014629e1cb4d65ad28744a0dc25ef9f14c63a42f671dff1061d3d766aa",
+          "evaluation": {
+            "completed": 25,
+            "cases": 64,
+            "vs_start": {
+              "gained": 13,
+              "lost": 15
+            },
+            "vs_prior_evaluation": null,
+            "connection_strata": {
+              "3": {
+                "completed": 6,
+                "cases": 6
+              },
+              "4": {
+                "completed": 7,
+                "cases": 12
+              },
+              "5": {
+                "completed": 8,
+                "cases": 36
+              },
+              "6": {
+                "completed": 4,
+                "cases": 10
+              }
+            },
+            "termination_counts": {
+              "fully-validated": 25,
+              "no-macro-actions": 39
+            },
+            "mean_footprint_area": 318.48,
+            "mean_transport_cells": 79.36,
+            "mean_turns": 11.84
+          }
+        },
+        {
+          "generation": 2,
+          "panel_sha256": "fe8c5518818d0cdaee3c5a5ef58fcc9fa5ec029e89b0cebaa8d172435e505e02",
+          "collection_sha256": "f61ec9a2077d9fad011d457913a22ec0edb808382adc7fb3241ada23fd369436",
+          "training_report_sha256": "440183b39484dfd71aa4328ef17e063dbf4955cca281da901dad8d6ed4381d3e",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "c3af0b8979eb290babff6515e6b49f7c6a972fa368fddd5037501b2341ab2580",
+          "training_completed": 19,
+          "training_cases": 32,
+          "root_states": 261,
+          "replay_root_states": 274,
+          "replay_slots_per_epoch": 128,
+          "successful_policy_roots": 145,
+          "failed_policy_roots": 116,
+          "updates": 3200,
+          "training_seconds": 8.424155225,
+          "integrated_generation_wall_seconds": 97.60166788101196,
+          "outer_relative_l2_from_start": 0.11573979006764261,
+          "outer_relative_l2_from_prior": 0.05238317492994107,
+          "policy_head_relative_l2_from_start": 0.11397444107418955,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 19,
+              "no-macro-actions": 13
+            },
+            "successful": {
+              "count": 145,
+              "mean_entropy": 0.910967062488498,
+              "mean_max_prior": 0.14836915459084735,
+              "mean_unvisited_target_mass": 0.6254969704421299
+            },
+            "failed": {
+              "count": 116,
+              "mean_entropy": 0.9659816046673826,
+              "mean_max_prior": 0.07348746036984659,
+              "mean_unvisited_target_mass": 0.7195450616124367
+            }
+          }
+        },
+        {
+          "generation": 3,
+          "panel_sha256": "e5d4ea6a81fca4131151d68536b087c09d0be05ef51b0dbd2e0ee45fb928ff55",
+          "collection_sha256": "61bce405620cfd01100dbb4d1174ba0fc4f97ea165c0fcd03082f76f746fb7f0",
+          "training_report_sha256": "04543b73e92bd7a9aa04457055056de9a56a8c6f59e6d45f1a98b0e0074a14bf",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "43fe2a4066dcc557859ef8a45ffe46d0a36b1631d2882675fe3afeb4064b5dda",
+          "training_completed": 17,
+          "training_cases": 32,
+          "root_states": 280,
+          "replay_root_states": 419,
+          "replay_slots_per_epoch": 128,
+          "successful_policy_roots": 142,
+          "failed_policy_roots": 138,
+          "updates": 3200,
+          "training_seconds": 8.206382598,
+          "integrated_generation_wall_seconds": 288.5761091709137,
+          "outer_relative_l2_from_start": 0.1369617812331244,
+          "outer_relative_l2_from_prior": 0.05904764811707946,
+          "policy_head_relative_l2_from_start": 0.13735607943836917,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 17,
+              "no-macro-actions": 15
+            },
+            "successful": {
+              "count": 142,
+              "mean_entropy": 0.9369511659207921,
+              "mean_max_prior": 0.12045300377046157,
+              "mean_unvisited_target_mass": 0.6220629412411981
+            },
+            "failed": {
+              "count": 138,
+              "mean_entropy": 0.9704524276044225,
+              "mean_max_prior": 0.06661706482065663,
+              "mean_unvisited_target_mass": 0.7201743733968144
+            }
+          },
+          "evaluation_report_sha256": "45f4217b19fbdf535f6810e117cd3e419d932818d057b635707bd2d7421f879b",
+          "evaluation": {
+            "completed": 23,
+            "cases": 64,
+            "vs_start": {
+              "gained": 10,
+              "lost": 14
+            },
+            "vs_prior_evaluation": {
+              "gained": 10,
+              "lost": 12
+            },
+            "connection_strata": {
+              "3": {
+                "completed": 6,
+                "cases": 6
+              },
+              "4": {
+                "completed": 7,
+                "cases": 12
+              },
+              "5": {
+                "completed": 5,
+                "cases": 36
+              },
+              "6": {
+                "completed": 5,
+                "cases": 10
+              }
+            },
+            "termination_counts": {
+              "fully-validated": 23,
+              "no-macro-actions": 41
+            },
+            "mean_footprint_area": 322.04347826086956,
+            "mean_transport_cells": 83.65217391304348,
+            "mean_turns": 13.391304347826088
+          }
+        },
+        {
+          "generation": 4,
+          "panel_sha256": "17e7bfece54b051682788de61fffc24f9e5da7bb86fca34966e2aacf8782b245",
+          "collection_sha256": "0991be962f641aa544af5bbb746f80dc376907128b1df8dfc9a820cd6c6614f4",
+          "training_report_sha256": "399ebc0d80bbeff84c7937fc107bd998022e0426bfe81e99bdf3a1eb41f05569",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "365ff1601c92f4cd675b1749af30fe249f96f3ab25d501bf5e82b9672ae4f8de",
+          "training_completed": 20,
+          "training_cases": 32,
+          "root_states": 284,
+          "replay_root_states": 561,
+          "replay_slots_per_epoch": 128,
+          "successful_policy_roots": 171,
+          "failed_policy_roots": 113,
+          "updates": 3200,
+          "training_seconds": 9.068711894,
+          "integrated_generation_wall_seconds": 120.40192246437073,
+          "outer_relative_l2_from_start": 0.15108949915365746,
+          "outer_relative_l2_from_prior": 0.05100098124945048,
+          "policy_head_relative_l2_from_start": 0.15107464799357534,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 20,
+              "no-macro-actions": 12
+            },
+            "successful": {
+              "count": 171,
+              "mean_entropy": 0.9313105778201326,
+              "mean_max_prior": 0.12611194954230642,
+              "mean_unvisited_target_mass": 0.645319338388572
+            },
+            "failed": {
+              "count": 113,
+              "mean_entropy": 0.9631282012358942,
+              "mean_max_prior": 0.08316698600381799,
+              "mean_unvisited_target_mass": 0.7071679423983187
+            }
+          }
+        },
+        {
+          "generation": 5,
+          "panel_sha256": "692beab82402393388ac686f59e70f0d8af1cd676a449b1e5dae5e794cc0b49c",
+          "collection_sha256": "5e4e889c5d077f25c7e2a36be2c06c2f0878967e9f1a4387414c502a6a0556ae",
+          "training_report_sha256": "53151ca387e02c10bc3a3497dbd43de45a35a0331abf4da9d472150c033a34ee",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "1d2e41a95c8d6cede2fcbcfe1759e692ce4a4345c0a19b068e590a2263a50320",
+          "training_completed": 19,
+          "training_cases": 32,
+          "root_states": 276,
+          "replay_root_states": 585,
+          "replay_slots_per_epoch": 128,
+          "successful_policy_roots": 155,
+          "failed_policy_roots": 121,
+          "updates": 3200,
+          "training_seconds": 10.471438533,
+          "integrated_generation_wall_seconds": 299.04835963249207,
+          "outer_relative_l2_from_start": 0.16606748360929072,
+          "outer_relative_l2_from_prior": 0.053973584225563566,
+          "policy_head_relative_l2_from_start": 0.16567328255550753,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 19,
+              "no-macro-actions": 13
+            },
+            "successful": {
+              "count": 155,
+              "mean_entropy": 0.9408219997224573,
+              "mean_max_prior": 0.11992129776394359,
+              "mean_unvisited_target_mass": 0.6160607779627532
+            },
+            "failed": {
+              "count": 121,
+              "mean_entropy": 0.971665280520223,
+              "mean_max_prior": 0.06253051652838587,
+              "mean_unvisited_target_mass": 0.7234332868186925
+            }
+          },
+          "evaluation_report_sha256": "90d76e9fa0e0b75704d5433ab6f6526950e54e8d252e6cde4991726830f77aa2",
+          "evaluation": {
+            "completed": 33,
+            "cases": 64,
+            "vs_start": {
+              "gained": 15,
+              "lost": 9
+            },
+            "vs_prior_evaluation": {
+              "gained": 16,
+              "lost": 6
+            },
+            "connection_strata": {
+              "3": {
+                "completed": 6,
+                "cases": 6
+              },
+              "4": {
+                "completed": 10,
+                "cases": 12
+              },
+              "5": {
+                "completed": 13,
+                "cases": 36
+              },
+              "6": {
+                "completed": 4,
+                "cases": 10
+              }
+            },
+            "termination_counts": {
+              "fully-validated": 33,
+              "no-macro-actions": 31
+            },
+            "mean_footprint_area": 308.969696969697,
+            "mean_transport_cells": 83.06060606060606,
+            "mean_turns": 13.030303030303031
+          }
+        },
+        {
+          "generation": 6,
+          "panel_sha256": "e0462f4d7d63ba3467cd78770c9e5010255938bd5c1c59da05a2bd2e5c3b0b85",
+          "collection_sha256": "09e276313f8c3c325f91ff8a88c8231b18dc835c63115f9bbbdf86cbc0231c54",
+          "training_report_sha256": "9c7d1f692e3e2c5afe37ff1adf42db17d151c75270bd8dab2ff21cb54c49c5eb",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "8c84c3cfe9580b7925ee6a2c12b67dd4fddf7d53125fc824d10d5360869fac69",
+          "training_completed": 14,
+          "training_cases": 32,
+          "root_states": 279,
+          "replay_root_states": 613,
+          "replay_slots_per_epoch": 128,
+          "successful_policy_roots": 121,
+          "failed_policy_roots": 158,
+          "updates": 3200,
+          "training_seconds": 9.463338474,
+          "integrated_generation_wall_seconds": 128.3740417957306,
+          "outer_relative_l2_from_start": 0.17827508513548548,
+          "outer_relative_l2_from_prior": 0.05259072156026837,
+          "policy_head_relative_l2_from_start": 0.17701480817345003,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 14,
+              "no-macro-actions": 18
+            },
+            "successful": {
+              "count": 121,
+              "mean_entropy": 0.9315300410110452,
+              "mean_max_prior": 0.12266334336496473,
+              "mean_unvisited_target_mass": 0.6322172832743717
+            },
+            "failed": {
+              "count": 158,
+              "mean_entropy": 0.9692321081260397,
+              "mean_max_prior": 0.06606113195811592,
+              "mean_unvisited_target_mass": 0.7454541842570758
+            }
+          }
+        },
+        {
+          "generation": 7,
+          "panel_sha256": "ea9858a20970a02cd4000b2b19711f513874d3f83db891879928c585ba1bf9cb",
+          "collection_sha256": "89944a2c6d6aae036fab0a10ca1bcb4263abeaed20fa4adaef87a69b35ba3199",
+          "training_report_sha256": "c14920365ebdfb650a9d4dbfb61f7344b16dcb91041d39df76cf3f5dc0533549",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "883885b581bb2a1de63ffd1048ab2ea9c3d86d1f03ebdd6a2a00861dcc909fe4",
+          "training_completed": 15,
+          "training_cases": 32,
+          "root_states": 292,
+          "replay_root_states": 589,
+          "replay_slots_per_epoch": 128,
+          "successful_policy_roots": 139,
+          "failed_policy_roots": 153,
+          "updates": 3200,
+          "training_seconds": 8.516680859000001,
+          "integrated_generation_wall_seconds": 300.25644087791443,
+          "outer_relative_l2_from_start": 0.1909135899446346,
+          "outer_relative_l2_from_prior": 0.050076319634248086,
+          "policy_head_relative_l2_from_start": 0.18984587679100376,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 15,
+              "no-macro-actions": 17
+            },
+            "successful": {
+              "count": 139,
+              "mean_entropy": 0.9426014718596316,
+              "mean_max_prior": 0.1084130064877561,
+              "mean_unvisited_target_mass": 0.6432498052519156
+            },
+            "failed": {
+              "count": 153,
+              "mean_entropy": 0.9766182758760071,
+              "mean_max_prior": 0.05019563827437275,
+              "mean_unvisited_target_mass": 0.7583193413644403
+            }
+          },
+          "evaluation_report_sha256": "6c0ccd979c69fc039091243bdf17521d40381f17f6fb7d9de445216ef08bc61d",
+          "evaluation": {
+            "completed": 34,
+            "cases": 64,
+            "vs_start": {
+              "gained": 15,
+              "lost": 8
+            },
+            "vs_prior_evaluation": {
+              "gained": 12,
+              "lost": 11
+            },
+            "connection_strata": {
+              "3": {
+                "completed": 4,
+                "cases": 6
+              },
+              "4": {
+                "completed": 10,
+                "cases": 12
+              },
+              "5": {
+                "completed": 11,
+                "cases": 36
+              },
+              "6": {
+                "completed": 9,
+                "cases": 10
+              }
+            },
+            "termination_counts": {
+              "fully-validated": 34,
+              "no-macro-actions": 30
+            },
+            "mean_footprint_area": 325.8235294117647,
+            "mean_transport_cells": 87.6470588235294,
+            "mean_turns": 12.911764705882353
+          }
+        }
+      ]
+    },
+    "c": {
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/42b17b0e7c348ff8bb061de8",
+      "wandb_remote_confirmed_step": 7,
+      "output_report_sha256": "926ac174617c14e3d676c6ce27f13671fa20c50e2996df92b7d720f7c55ab9a0",
+      "total_integrated_wall_seconds": 1736.5845181941986,
+      "raw_output_bytes": 934585742,
+      "last_two_evaluations": [
+        26,
+        29
+      ],
+      "last_two_mean": 27.5,
+      "last_two_minimum": 26,
+      "evaluation_success_masks_hex": "7f50de2e200f0fb74f465302482f8138609a0001e203a848ccb2804a1e0ff8fa",
+      "generations": [
+        {
+          "generation": 0,
+          "panel_sha256": "c8a470a2188d08741f1f8f5f159f35b32e49c5a74e248fe1db3b92512bdca451",
+          "collection_sha256": "bbfdd9da3de17c788373e8b11d71ede05256606f8b0584acb63a3d9afaa0486f",
+          "training_report_sha256": "91f6525a7996eb7d2a19694ba175406a06fbb4092b395961302e770c82b614f7",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "e3c8ba7a4c1ad510862b7fc757d54e7322fc4a29651444c1b54d340cf6be67a3",
+          "training_completed": 18,
+          "training_cases": 32,
+          "root_states": 270,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 147,
+          "failed_policy_roots": 0,
+          "updates": 3200,
+          "training_seconds": 7.503953781,
+          "integrated_generation_wall_seconds": 110.63393545150757,
+          "outer_relative_l2_from_start": 0.06172579967399843,
+          "outer_relative_l2_from_prior": 0.06172579967399843,
+          "policy_head_relative_l2_from_start": 0.0610873880850186,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 18,
+              "no-macro-actions": 14
+            },
+            "successful": {
+              "count": 147,
+              "mean_entropy": 0.9334642715139146,
+              "mean_max_prior": 0.12613994638718767,
+              "mean_unvisited_target_mass": 0.6098178419292752
+            },
+            "failed": {
+              "count": 123,
+              "mean_entropy": 0.9761052603340756,
+              "mean_max_prior": 0.07164230164117626,
+              "mean_unvisited_target_mass": 0.6988472976432509
+            }
+          }
+        },
+        {
+          "generation": 1,
+          "panel_sha256": "b12a371ae0896420259611eaede22122ea4aa15cc6aa7d8a2b15a2dcc2b750af",
+          "collection_sha256": "bd115cdb7671007aa38b8c41941cd05741d4513ef20133ff2db70f03e1ee43b3",
+          "training_report_sha256": "91e22759f47abac91468180b435f68b5d8ba77991a13cc237d7e1d12fee0d608",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "80a7c9e935399113c9340625b9cdf264524f7d885fdeadae29d61f57e234af43",
+          "training_completed": 11,
+          "training_cases": 32,
+          "root_states": 280,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 88,
+          "failed_policy_roots": 0,
+          "updates": 3200,
+          "training_seconds": 8.08642723,
+          "integrated_generation_wall_seconds": 328.3717050552368,
+          "outer_relative_l2_from_start": 0.08413254444618687,
+          "outer_relative_l2_from_prior": 0.05901978218794588,
+          "policy_head_relative_l2_from_start": 0.07913357460258895,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 11,
+              "no-macro-actions": 21
+            },
+            "successful": {
+              "count": 88,
+              "mean_entropy": 0.9326944970098955,
+              "mean_max_prior": 0.1280398890274983,
+              "mean_unvisited_target_mass": 0.6009961419642977
+            },
+            "failed": {
+              "count": 192,
+              "mean_entropy": 0.9690858419205768,
+              "mean_max_prior": 0.0775080336115796,
+              "mean_unvisited_target_mass": 0.7264467144755898
+            }
+          },
+          "evaluation_report_sha256": "eb3465e3d6b98dfd1edfe0e751c059907bfb858faeba37158060ac9f9411382b",
+          "evaluation": {
+            "completed": 22,
+            "cases": 64,
+            "vs_start": {
+              "gained": 9,
+              "lost": 14
+            },
+            "vs_prior_evaluation": null,
+            "connection_strata": {
+              "3": {
+                "completed": 6,
+                "cases": 6
+              },
+              "4": {
+                "completed": 5,
+                "cases": 12
+              },
+              "5": {
+                "completed": 7,
+                "cases": 36
+              },
+              "6": {
+                "completed": 4,
+                "cases": 10
+              }
+            },
+            "termination_counts": {
+              "fully-validated": 22,
+              "no-macro-actions": 42
+            },
+            "mean_footprint_area": 319.3636363636364,
+            "mean_transport_cells": 78.95454545454545,
+            "mean_turns": 10.909090909090908
+          }
+        },
+        {
+          "generation": 2,
+          "panel_sha256": "fe8c5518818d0cdaee3c5a5ef58fcc9fa5ec029e89b0cebaa8d172435e505e02",
+          "collection_sha256": "d03923fd56be801dba20d5af369c6787fcffaa322e90809ea031f93bae185751",
+          "training_report_sha256": "0ea2c8872cd48f3a638dbfcf0f580e8423bbc6f29f4847f64a118dadfa68974d",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "09af98568a75eaf7ab140e3ef8fabe195b5fb2cea681c77b50b7e1a58e32a2f3",
+          "training_completed": 22,
+          "training_cases": 32,
+          "root_states": 267,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 179,
+          "failed_policy_roots": 0,
+          "updates": 3200,
+          "training_seconds": 9.296858963,
+          "integrated_generation_wall_seconds": 101.41816115379333,
+          "outer_relative_l2_from_start": 0.10471907773355588,
+          "outer_relative_l2_from_prior": 0.06338448402653252,
+          "policy_head_relative_l2_from_start": 0.09567323844832883,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 22,
+              "no-macro-actions": 10
+            },
+            "successful": {
+              "count": 179,
+              "mean_entropy": 0.9361839497151212,
+              "mean_max_prior": 0.11840980798406035,
+              "mean_unvisited_target_mass": 0.6334360429949271
+            },
+            "failed": {
+              "count": 88,
+              "mean_entropy": 0.9655338795765994,
+              "mean_max_prior": 0.08023757654445508,
+              "mean_unvisited_target_mass": 0.7045862295767755
+            }
+          }
+        },
+        {
+          "generation": 3,
+          "panel_sha256": "e5d4ea6a81fca4131151d68536b087c09d0be05ef51b0dbd2e0ee45fb928ff55",
+          "collection_sha256": "c41c207a2371b685d14ccfbf2f25780e563d38cc474917261a3386511d520fcd",
+          "training_report_sha256": "c6f0b24cd8facc81206d4352ae62d3ed957c310482d2a365a9eb4c5a5c523c9c",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "5d8ca11efcab307dcbb2dda15cb44b0e340413d5f0de655561c7529ab77c2dfb",
+          "training_completed": 15,
+          "training_cases": 32,
+          "root_states": 281,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 122,
+          "failed_policy_roots": 0,
+          "updates": 3200,
+          "training_seconds": 7.290550838,
+          "integrated_generation_wall_seconds": 309.2842881679535,
+          "outer_relative_l2_from_start": 0.11948215318055347,
+          "outer_relative_l2_from_prior": 0.056447661479828264,
+          "policy_head_relative_l2_from_start": 0.10674882049649528,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 15,
+              "no-macro-actions": 17
+            },
+            "successful": {
+              "count": 122,
+              "mean_entropy": 0.9286139048463555,
+              "mean_max_prior": 0.13080988386975134,
+              "mean_unvisited_target_mass": 0.6149158208755179
+            },
+            "failed": {
+              "count": 159,
+              "mean_entropy": 0.9782320844643522,
+              "mean_max_prior": 0.057837357250570494,
+              "mean_unvisited_target_mass": 0.7404073410820284
+            }
+          },
+          "evaluation_report_sha256": "769f701a886031b4b3853282fbe99086bb58219ce19c27bf638cbeed0b7caf3b",
+          "evaluation": {
+            "completed": 31,
+            "cases": 64,
+            "vs_start": {
+              "gained": 15,
+              "lost": 11
+            },
+            "vs_prior_evaluation": {
+              "gained": 16,
+              "lost": 7
+            },
+            "connection_strata": {
+              "3": {
+                "completed": 6,
+                "cases": 6
+              },
+              "4": {
+                "completed": 8,
+                "cases": 12
+              },
+              "5": {
+                "completed": 13,
+                "cases": 36
+              },
+              "6": {
+                "completed": 4,
+                "cases": 10
+              }
+            },
+            "termination_counts": {
+              "fully-validated": 31,
+              "no-macro-actions": 33
+            },
+            "mean_footprint_area": 328.2903225806452,
+            "mean_transport_cells": 83.16129032258064,
+            "mean_turns": 12.387096774193548
+          }
+        },
+        {
+          "generation": 4,
+          "panel_sha256": "17e7bfece54b051682788de61fffc24f9e5da7bb86fca34966e2aacf8782b245",
+          "collection_sha256": "41e4f3d56bd2f682fabe9a540e543caa85860f635ea225c29fd7e1aaf3d09eed",
+          "training_report_sha256": "ff785e20c3c21ecb5fd6b6dceb302dce995eaa13ec6b639e67a33fa3f2f57bdb",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "bf681b25f6a5f6ae3a7be975461d68459f8c192ba61a8b26bda466ab176ed922",
+          "training_completed": 17,
+          "training_cases": 32,
+          "root_states": 279,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 142,
+          "failed_policy_roots": 0,
+          "updates": 3200,
+          "training_seconds": 8.231373818,
+          "integrated_generation_wall_seconds": 130.5750949382782,
+          "outer_relative_l2_from_start": 0.13163024190245806,
+          "outer_relative_l2_from_prior": 0.054998694908101706,
+          "policy_head_relative_l2_from_start": 0.11607354576971692,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 17,
+              "no-macro-actions": 15
+            },
+            "successful": {
+              "count": 142,
+              "mean_entropy": 0.9331352589620511,
+              "mean_max_prior": 0.11299292971886339,
+              "mean_unvisited_target_mass": 0.6486226112250137
+            },
+            "failed": {
+              "count": 137,
+              "mean_entropy": 0.9683676344950389,
+              "mean_max_prior": 0.06901328930495014,
+              "mean_unvisited_target_mass": 0.7057634843910794
+            }
+          }
+        },
+        {
+          "generation": 5,
+          "panel_sha256": "692beab82402393388ac686f59e70f0d8af1cd676a449b1e5dae5e794cc0b49c",
+          "collection_sha256": "f8243e8eb2e288369329c6f9d612213ca1b67910aff49c6945c95f8a18b08171",
+          "training_report_sha256": "e667296c742375cc033aef633d6a8a37b6b500918b3488ef2bc6a6e09a71939b",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "6b71f2903c1c0990a726414947e934de3bfcf003a9e471af47f5e09ddcce1d9c",
+          "training_completed": 15,
+          "training_cases": 32,
+          "root_states": 271,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 119,
+          "failed_policy_roots": 0,
+          "updates": 3200,
+          "training_seconds": 8.612942021,
+          "integrated_generation_wall_seconds": 302.70953607559204,
+          "outer_relative_l2_from_start": 0.1443176242164891,
+          "outer_relative_l2_from_prior": 0.06268113401738505,
+          "policy_head_relative_l2_from_start": 0.13078685666560477,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 15,
+              "no-macro-actions": 17
+            },
+            "successful": {
+              "count": 119,
+              "mean_entropy": 0.932379810045866,
+              "mean_max_prior": 0.12125671036879851,
+              "mean_unvisited_target_mass": 0.620591185766107
+            },
+            "failed": {
+              "count": 152,
+              "mean_entropy": 0.9611982191519538,
+              "mean_max_prior": 0.08352927700019397,
+              "mean_unvisited_target_mass": 0.7009347222849988
+            }
+          },
+          "evaluation_report_sha256": "44f1e55fd88eccad5ba35643a62139843abde33ddf52e466a75a38d31408aa0c",
+          "evaluation": {
+            "completed": 26,
+            "cases": 64,
+            "vs_start": {
+              "gained": 16,
+              "lost": 17
+            },
+            "vs_prior_evaluation": {
+              "gained": 10,
+              "lost": 15
+            },
+            "connection_strata": {
+              "3": {
+                "completed": 6,
+                "cases": 6
+              },
+              "4": {
+                "completed": 6,
+                "cases": 12
+              },
+              "5": {
+                "completed": 11,
+                "cases": 36
+              },
+              "6": {
+                "completed": 3,
+                "cases": 10
+              }
+            },
+            "termination_counts": {
+              "fully-validated": 26,
+              "no-macro-actions": 38
+            },
+            "mean_footprint_area": 313.3076923076923,
+            "mean_transport_cells": 83.26923076923077,
+            "mean_turns": 11.653846153846153
+          }
+        },
+        {
+          "generation": 6,
+          "panel_sha256": "e0462f4d7d63ba3467cd78770c9e5010255938bd5c1c59da05a2bd2e5c3b0b85",
+          "collection_sha256": "95610b8bd19e6c5087b1defde3ca855fad65d360c3ea58a93f228fca42a6ce3f",
+          "training_report_sha256": "7c59dfdbda95206db92425a3986f88298b3fcf3ee5e6125813f6cd878d163e94",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "f732de2486db218eb1a86537480bd4e2823464c1c46f23c3621fda1c75966b5d",
+          "training_completed": 16,
+          "training_cases": 32,
+          "root_states": 284,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 139,
+          "failed_policy_roots": 0,
+          "updates": 3200,
+          "training_seconds": 10.406599193,
+          "integrated_generation_wall_seconds": 143.13119864463806,
+          "outer_relative_l2_from_start": 0.15462895176466335,
+          "outer_relative_l2_from_prior": 0.05558590084328684,
+          "policy_head_relative_l2_from_start": 0.1380361674636841,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 16,
+              "no-macro-actions": 16
+            },
+            "successful": {
+              "count": 139,
+              "mean_entropy": 0.9166682625872234,
+              "mean_max_prior": 0.141637340219525,
+              "mean_unvisited_target_mass": 0.6385909020569831
+            },
+            "failed": {
+              "count": 145,
+              "mean_entropy": 0.9651589805133646,
+              "mean_max_prior": 0.06862946400336914,
+              "mean_unvisited_target_mass": 0.7679731200094387
+            }
+          }
+        },
+        {
+          "generation": 7,
+          "panel_sha256": "ea9858a20970a02cd4000b2b19711f513874d3f83db891879928c585ba1bf9cb",
+          "collection_sha256": "f97483a3bf98c3b6ba687761c2721e37504fe1caeafa8fd4afab8accab13cfc2",
+          "training_report_sha256": "562371470793daf38905fbf66a0a9614039370a143b71504507f87f1053fcb60",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "4988e240c28243fffb91805220087f4413d42066c8be3bd1dcfcc081357201fb",
+          "training_completed": 13,
+          "training_cases": 32,
+          "root_states": 291,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 118,
+          "failed_policy_roots": 0,
+          "updates": 3200,
+          "training_seconds": 7.61950052,
+          "integrated_generation_wall_seconds": 310.45959877967834,
+          "outer_relative_l2_from_start": 0.16660366822598185,
+          "outer_relative_l2_from_prior": 0.06334427810348893,
+          "policy_head_relative_l2_from_start": 0.1499384604205289,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 13,
+              "no-macro-actions": 19
+            },
+            "successful": {
+              "count": 118,
+              "mean_entropy": 0.9050907952944603,
+              "mean_max_prior": 0.1582767417309883,
+              "mean_unvisited_target_mass": 0.6128515164036076
+            },
+            "failed": {
+              "count": 173,
+              "mean_entropy": 0.9658626312432201,
+              "mean_max_prior": 0.07695532716863616,
+              "mean_unvisited_target_mass": 0.6943542830289832
+            }
+          },
+          "evaluation_report_sha256": "458474047d438ed2ab556eb3adbfc55161f5c7edfbf70d24b2b86c84b5b581e9",
+          "evaluation": {
+            "completed": 29,
+            "cases": 64,
+            "vs_start": {
+              "gained": 14,
+              "lost": 12
+            },
+            "vs_prior_evaluation": {
+              "gained": 14,
+              "lost": 11
+            },
+            "connection_strata": {
+              "3": {
+                "completed": 6,
+                "cases": 6
+              },
+              "4": {
+                "completed": 7,
+                "cases": 12
+              },
+              "5": {
+                "completed": 10,
+                "cases": 36
+              },
+              "6": {
+                "completed": 6,
+                "cases": 10
+              }
+            },
+            "termination_counts": {
+              "fully-validated": 29,
+              "no-macro-actions": 35
+            },
+            "mean_footprint_area": 322.0344827586207,
+            "mean_transport_cells": 85.03448275862068,
+            "mean_turns": 13.10344827586207
+          }
+        }
+      ]
+    },
+    "d": {
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/2266309dfe31a428e52273ba",
+      "wandb_remote_confirmed_step": 7,
+      "output_report_sha256": "b9e728d11fbd1fc1d5d23c3e178dc377b91a0d5078abea84bece583657100b41",
+      "total_integrated_wall_seconds": 1694.7856006622314,
+      "raw_output_bytes": 949818231,
+      "last_two_evaluations": [
+        31,
+        34
+      ],
+      "last_two_mean": 32.5,
+      "last_two_minimum": 31,
+      "evaluation_success_masks_hex": "c7e8fd09812f4f5f0d00a080d60f83fe08c8c444fba32f025faf20d0048fc0f3",
+      "generations": [
+        {
+          "generation": 0,
+          "panel_sha256": "c8a470a2188d08741f1f8f5f159f35b32e49c5a74e248fe1db3b92512bdca451",
+          "collection_sha256": "1199e1771d4e3355dc6fd8cebcdcce789f2fa304d243cb142cb93bc2171f67ec",
+          "training_report_sha256": "6e3dd059e285bb079f2c99deff7efe005268821edbf42b8c1cbb83e49215bce7",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "703cc49a3413bf82bb704c137e648c0aa66db1d53167fac9181d339e44c1f974",
+          "training_completed": 18,
+          "training_cases": 32,
+          "root_states": 270,
+          "replay_root_states": 0,
+          "replay_slots_per_epoch": 0,
+          "successful_policy_roots": 147,
+          "failed_policy_roots": 0,
+          "updates": 3200,
+          "training_seconds": 8.387353416,
+          "integrated_generation_wall_seconds": 110.84734869003296,
+          "outer_relative_l2_from_start": 0.062066925121276394,
+          "outer_relative_l2_from_prior": 0.062066925121276394,
+          "policy_head_relative_l2_from_start": 0.060684043342958356,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 18,
+              "no-macro-actions": 14
+            },
+            "successful": {
+              "count": 147,
+              "mean_entropy": 0.9334642680773225,
+              "mean_max_prior": 0.12613994415955912,
+              "mean_unvisited_target_mass": 0.6098178457769238
+            },
+            "failed": {
+              "count": 123,
+              "mean_entropy": 0.9761052637998304,
+              "mean_max_prior": 0.07164230734290766,
+              "mean_unvisited_target_mass": 0.6988472964206548
+            }
+          }
+        },
+        {
+          "generation": 1,
+          "panel_sha256": "b12a371ae0896420259611eaede22122ea4aa15cc6aa7d8a2b15a2dcc2b750af",
+          "collection_sha256": "435d16f42c6f3373eb18d6d2e67d7a8d29893c91b7a199464016ca7cde0a2fbe",
+          "training_report_sha256": "f4dffb164ff9e20640b74e81d4251f5d070ec6eacb54c716e8b5a6d41c09ba3e",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "1cba51ef068a74ee842554188986e9f73cff361084739e543614da1cd2102800",
+          "training_completed": 18,
+          "training_cases": 32,
+          "root_states": 288,
+          "replay_root_states": 147,
+          "replay_slots_per_epoch": 128,
+          "successful_policy_roots": 159,
+          "failed_policy_roots": 0,
+          "updates": 3200,
+          "training_seconds": 11.254487043,
+          "integrated_generation_wall_seconds": 317.83923864364624,
+          "outer_relative_l2_from_start": 0.08971301900183472,
+          "outer_relative_l2_from_prior": 0.05349102088156658,
+          "policy_head_relative_l2_from_start": 0.08919413164388966,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 18,
+              "no-macro-actions": 14
+            },
+            "successful": {
+              "count": 159,
+              "mean_entropy": 0.9345923189946355,
+              "mean_max_prior": 0.11663732650691644,
+              "mean_unvisited_target_mass": 0.6460792051468198
+            },
+            "failed": {
+              "count": 129,
+              "mean_entropy": 0.9659814399241525,
+              "mean_max_prior": 0.06864896577072244,
+              "mean_unvisited_target_mass": 0.728384224399458
+            }
+          },
+          "evaluation_report_sha256": "c61e763b4dc5e517f695d3f7b167fc62705e17ecc8b7ccb02b254465887c151c",
+          "evaluation": {
+            "completed": 25,
+            "cases": 64,
+            "vs_start": {
+              "gained": 13,
+              "lost": 15
+            },
+            "vs_prior_evaluation": null,
+            "connection_strata": {
+              "3": {
+                "completed": 6,
+                "cases": 6
+              },
+              "4": {
+                "completed": 9,
+                "cases": 12
+              },
+              "5": {
+                "completed": 8,
+                "cases": 36
+              },
+              "6": {
+                "completed": 2,
+                "cases": 10
+              }
+            },
+            "termination_counts": {
+              "fully-validated": 25,
+              "no-macro-actions": 39
+            },
+            "mean_footprint_area": 298.24,
+            "mean_transport_cells": 75.04,
+            "mean_turns": 11.92
+          }
+        },
+        {
+          "generation": 2,
+          "panel_sha256": "fe8c5518818d0cdaee3c5a5ef58fcc9fa5ec029e89b0cebaa8d172435e505e02",
+          "collection_sha256": "d4560a69c9bd51cf89e5b3a867061772e9e05fa9d6d9fb928c63db61f86f393d",
+          "training_report_sha256": "df37347b56b9c8ac91e3bc5ee62c59280f9cc7dc0ee10cea5992261d10628175",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "5b302377b73e0d155931ef6259e20385dadf020c24a859a723c22e8adc634e9c",
+          "training_completed": 16,
+          "training_cases": 32,
+          "root_states": 260,
+          "replay_root_states": 306,
+          "replay_slots_per_epoch": 128,
+          "successful_policy_roots": 127,
+          "failed_policy_roots": 0,
+          "updates": 3200,
+          "training_seconds": 8.879445929,
+          "integrated_generation_wall_seconds": 99.7408344745636,
+          "outer_relative_l2_from_start": 0.10945984668230703,
+          "outer_relative_l2_from_prior": 0.05223942109871823,
+          "policy_head_relative_l2_from_start": 0.11040864812985013,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 16,
+              "no-macro-actions": 16
+            },
+            "successful": {
+              "count": 127,
+              "mean_entropy": 0.9145536655931495,
+              "mean_max_prior": 0.1456528694212178,
+              "mean_unvisited_target_mass": 0.5968393993172645
+            },
+            "failed": {
+              "count": 133,
+              "mean_entropy": 0.9808431866340795,
+              "mean_max_prior": 0.06073288367014421,
+              "mean_unvisited_target_mass": 0.7256215798730332
+            }
+          }
+        },
+        {
+          "generation": 3,
+          "panel_sha256": "e5d4ea6a81fca4131151d68536b087c09d0be05ef51b0dbd2e0ee45fb928ff55",
+          "collection_sha256": "a00f3fa99c7d7be38a275c51ba05e025bd9dc227977b4e08559e0bc393ba9463",
+          "training_report_sha256": "61188617ef03a31dcdb64cf09a15a620c4ff1268c63ddf866592fd153bce854e",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "8b86f21a3ff2c5ba2cce0fc93a8baa4d02a40eaac430946a1326afd66352c8a6",
+          "training_completed": 15,
+          "training_cases": 32,
+          "root_states": 274,
+          "replay_root_states": 433,
+          "replay_slots_per_epoch": 128,
+          "successful_policy_roots": 123,
+          "failed_policy_roots": 0,
+          "updates": 3200,
+          "training_seconds": 9.005942721,
+          "integrated_generation_wall_seconds": 311.5937485694885,
+          "outer_relative_l2_from_start": 0.12689971828841262,
+          "outer_relative_l2_from_prior": 0.048834929432176,
+          "policy_head_relative_l2_from_start": 0.12859855256907943,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 15,
+              "no-macro-actions": 17
+            },
+            "successful": {
+              "count": 123,
+              "mean_entropy": 0.9403874163854808,
+              "mean_max_prior": 0.1199886764591549,
+              "mean_unvisited_target_mass": 0.6165926151648587
+            },
+            "failed": {
+              "count": 151,
+              "mean_entropy": 0.9668932705027506,
+              "mean_max_prior": 0.0781447426596633,
+              "mean_unvisited_target_mass": 0.7144059903096746
+            }
+          },
+          "evaluation_report_sha256": "5c4dd80eaeee3e584ce7dfa1c2f4a3505b50d2060c35eee8bb04a6da119081af",
+          "evaluation": {
+            "completed": 27,
+            "cases": 64,
+            "vs_start": {
+              "gained": 14,
+              "lost": 14
+            },
+            "vs_prior_evaluation": {
+              "gained": 10,
+              "lost": 8
+            },
+            "connection_strata": {
+              "3": {
+                "completed": 6,
+                "cases": 6
+              },
+              "4": {
+                "completed": 9,
+                "cases": 12
+              },
+              "5": {
+                "completed": 9,
+                "cases": 36
+              },
+              "6": {
+                "completed": 3,
+                "cases": 10
+              }
+            },
+            "termination_counts": {
+              "fully-validated": 27,
+              "no-macro-actions": 37
+            },
+            "mean_footprint_area": 328.77777777777777,
+            "mean_transport_cells": 87.18518518518519,
+            "mean_turns": 11.88888888888889
+          }
+        },
+        {
+          "generation": 4,
+          "panel_sha256": "17e7bfece54b051682788de61fffc24f9e5da7bb86fca34966e2aacf8782b245",
+          "collection_sha256": "2776b36f260c1f95cacef40357f5a522446879d5f736f7140b70516e1e90bbb2",
+          "training_report_sha256": "61330528a68297c9142701fcd2c13516b0457be54c9ba20a3205ca142bbb4b5d",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "bf8394381b5556ed23d7376a924ea26527efee2d7d96affdf940bea7411e7548",
+          "training_completed": 19,
+          "training_cases": 32,
+          "root_states": 284,
+          "replay_root_states": 556,
+          "replay_slots_per_epoch": 128,
+          "successful_policy_roots": 169,
+          "failed_policy_roots": 0,
+          "updates": 3200,
+          "training_seconds": 10.155913104,
+          "integrated_generation_wall_seconds": 119.45306205749512,
+          "outer_relative_l2_from_start": 0.14435820450361167,
+          "outer_relative_l2_from_prior": 0.0479155408712505,
+          "policy_head_relative_l2_from_start": 0.14874608208354623,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 19,
+              "no-macro-actions": 13
+            },
+            "successful": {
+              "count": 169,
+              "mean_entropy": 0.9385532786395075,
+              "mean_max_prior": 0.11810649253638998,
+              "mean_unvisited_target_mass": 0.6414210153835254
+            },
+            "failed": {
+              "count": 115,
+              "mean_entropy": 0.9588419695966283,
+              "mean_max_prior": 0.07970961470649394,
+              "mean_unvisited_target_mass": 0.7272324919939048
+            }
+          }
+        },
+        {
+          "generation": 5,
+          "panel_sha256": "692beab82402393388ac686f59e70f0d8af1cd676a449b1e5dae5e794cc0b49c",
+          "collection_sha256": "3d2bc516465f7f5ffc914b7d30205161c31cd5925290a0001080acb260cfa416",
+          "training_report_sha256": "830f5cda7b714ca96ab8a7e9d0734825e44d2d6ec26830f71c711c8f1b21379c",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "3e14f3f7d8388778e8bfa3a44d5051119fa340703bec3f73e2550016caa2e1e0",
+          "training_completed": 21,
+          "training_cases": 32,
+          "root_states": 282,
+          "replay_root_states": 578,
+          "replay_slots_per_epoch": 128,
+          "successful_policy_roots": 177,
+          "failed_policy_roots": 0,
+          "updates": 3200,
+          "training_seconds": 8.746617506,
+          "integrated_generation_wall_seconds": 295.2155828475952,
+          "outer_relative_l2_from_start": 0.15912478285792261,
+          "outer_relative_l2_from_prior": 0.046878012714791806,
+          "policy_head_relative_l2_from_start": 0.16514476223852004,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 21,
+              "no-macro-actions": 11
+            },
+            "successful": {
+              "count": 177,
+              "mean_entropy": 0.9380678125703762,
+              "mean_max_prior": 0.11355607704631121,
+              "mean_unvisited_target_mass": 0.6382577060662168
+            },
+            "failed": {
+              "count": 105,
+              "mean_entropy": 0.9676324980229241,
+              "mean_max_prior": 0.07945982627760065,
+              "mean_unvisited_target_mass": 0.7041464922098273
+            }
+          },
+          "evaluation_report_sha256": "633310d48420a2c61d939609c9e1c15d4f4165b7c08da50b7823c5680ce90fc2",
+          "evaluation": {
+            "completed": 31,
+            "cases": 64,
+            "vs_start": {
+              "gained": 14,
+              "lost": 10
+            },
+            "vs_prior_evaluation": {
+              "gained": 15,
+              "lost": 11
+            },
+            "connection_strata": {
+              "3": {
+                "completed": 6,
+                "cases": 6
+              },
+              "4": {
+                "completed": 9,
+                "cases": 12
+              },
+              "5": {
+                "completed": 14,
+                "cases": 36
+              },
+              "6": {
+                "completed": 2,
+                "cases": 10
+              }
+            },
+            "termination_counts": {
+              "fully-validated": 31,
+              "no-macro-actions": 33
+            },
+            "mean_footprint_area": 334.0967741935484,
+            "mean_transport_cells": 89.41935483870968,
+            "mean_turns": 12.806451612903226
+          }
+        },
+        {
+          "generation": 6,
+          "panel_sha256": "e0462f4d7d63ba3467cd78770c9e5010255938bd5c1c59da05a2bd2e5c3b0b85",
+          "collection_sha256": "823e1f2efb014857798d642e1ffb710c92964b3c4b820d3ffc61609f9564d48e",
+          "training_report_sha256": "63bf7b82de43f807b1b54d856059f546e08dac60aef801cba6c86aba9ff35f32",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "94043dfeeff82c5eac4f3544c6f86b5a79e49acd651e0ea34c745fcdf21d6d7d",
+          "training_completed": 17,
+          "training_cases": 32,
+          "root_states": 285,
+          "replay_root_states": 596,
+          "replay_slots_per_epoch": 128,
+          "successful_policy_roots": 149,
+          "failed_policy_roots": 0,
+          "updates": 3200,
+          "training_seconds": 10.882024691,
+          "integrated_generation_wall_seconds": 124.25607466697693,
+          "outer_relative_l2_from_start": 0.1715199816345117,
+          "outer_relative_l2_from_prior": 0.04763193767630275,
+          "policy_head_relative_l2_from_start": 0.17543598538379782,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 17,
+              "no-macro-actions": 15
+            },
+            "successful": {
+              "count": 149,
+              "mean_entropy": 0.9369711744875892,
+              "mean_max_prior": 0.1145096017971457,
+              "mean_unvisited_target_mass": 0.6797907436161233
+            },
+            "failed": {
+              "count": 136,
+              "mean_entropy": 0.9798583565456834,
+              "mean_max_prior": 0.06179839727219995,
+              "mean_unvisited_target_mass": 0.7082387130022183
+            }
+          }
+        },
+        {
+          "generation": 7,
+          "panel_sha256": "ea9858a20970a02cd4000b2b19711f513874d3f83db891879928c585ba1bf9cb",
+          "collection_sha256": "b00c00bf012d33d13cc4c4c4006dc2b7086f1cfd48e67e7a6987a06d347396fe",
+          "training_report_sha256": "7bfbdb787150fbbb883ccd0c332183792a0de217a5894e0ec1867c844447c291",
+          "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+          "outer_checkpoint_sha256": "afd2ac349f1d1286ffb4fb4d5fc6a3fded5cee22a6cd8da1aa42f38d031e9d93",
+          "training_completed": 12,
+          "training_cases": 32,
+          "root_states": 286,
+          "replay_root_states": 618,
+          "replay_slots_per_epoch": 128,
+          "successful_policy_roots": 103,
+          "failed_policy_roots": 0,
+          "updates": 3200,
+          "training_seconds": 8.95509535,
+          "integrated_generation_wall_seconds": 315.83971071243286,
+          "outer_relative_l2_from_start": 0.18178933866406186,
+          "outer_relative_l2_from_prior": 0.04769071881912389,
+          "policy_head_relative_l2_from_start": 0.18566878523136265,
+          "roots": {
+            "termination_counts": {
+              "fully-validated": 12,
+              "no-macro-actions": 20
+            },
+            "successful": {
+              "count": 103,
+              "mean_entropy": 0.9255382443072064,
+              "mean_max_prior": 0.11894432744730683,
+              "mean_unvisited_target_mass": 0.6765551790707215
+            },
+            "failed": {
+              "count": 183,
+              "mean_entropy": 0.9720872425890856,
+              "mean_max_prior": 0.07110410849174217,
+              "mean_unvisited_target_mass": 0.7068497565796351
+            }
+          },
+          "evaluation_report_sha256": "24c19332fc90be707c842cbd2cc91d255062ab2f29baca11b41499c9b441f68d",
+          "evaluation": {
+            "completed": 34,
+            "cases": 64,
+            "vs_start": {
+              "gained": 20,
+              "lost": 13
+            },
+            "vs_prior_evaluation": {
+              "gained": 12,
+              "lost": 9
+            },
+            "connection_strata": {
+              "3": {
+                "completed": 5,
+                "cases": 6
+              },
+              "4": {
+                "completed": 9,
+                "cases": 12
+              },
+              "5": {
+                "completed": 13,
+                "cases": 36
+              },
+              "6": {
+                "completed": 7,
+                "cases": 10
+              }
+            },
+            "termination_counts": {
+              "fully-validated": 34,
+              "no-macro-actions": 30
+            },
+            "mean_footprint_area": 319.1470588235294,
+            "mean_transport_cells": 86.1470588235294,
+            "mean_turns": 13.0
+          }
+        }
+      ]
+    }
+  }
+}
