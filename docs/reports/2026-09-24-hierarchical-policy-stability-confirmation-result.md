@@ -106,5 +106,9 @@ The original launch command is in
 `tools/factory-edit-pilot/run_hierarchical_stability_confirmation.sh` and the
 same script's `--resume` mode continued after S2-B's telemetry repair. The
 source panel seeds and namespaces are in the design and tracked curriculum
-configurations. A separate cleanup manifest records removed replayable server
-artifacts after this report and evidence are committed.
+configurations. After verifying that the committed evidence matched the server
+analysis byte for byte, the experiment's raw outputs, generated inputs and
+build cache were removed. The [cleanup manifest](2026-09-24-hierarchical-policy-stability-confirmation-cleanup.json)
+records 12,122,023,743 file bytes removed and filesystem free space rising
+from 166,808,158,208 to 178,862,133,248 bytes. The separate canonical
+generation-87 checkpoint remains available for the next bounded investigation.

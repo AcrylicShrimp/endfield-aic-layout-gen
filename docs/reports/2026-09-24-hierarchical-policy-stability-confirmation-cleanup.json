@@ -1,0 +1,24 @@
+{
+  "schema": "aic-policy-stability-confirmation-cleanup-v1",
+  "utc": "2026-09-23T16:30:29.720901+00:00",
+  "server_root": "~/Srv/aic-policy-stability-20260923",
+  "result_commit": "0fb5fb3c4fc6d4ba8a0ba5841983fc9d9ea5b149",
+  "removed": [
+    {
+      "path": "artifacts/policy-stability-confirmation",
+      "file_bytes": 11332985200
+    },
+    {
+      "path": "artifacts/policy-confirmation-inputs",
+      "file_bytes": 2565158
+    },
+    {
+      "path": "target",
+      "file_bytes": 786473385
+    }
+  ],
+  "removed_file_bytes": 12122023743,
+  "filesystem_free_before": 166808158208,
+  "filesystem_free_after": 178862133248,
+  "retained": "Tracked protocol, launch manifest, baseline, three stream evidence files, summary, report and recovery record in the local repository; canonical generation-87 source checkpoint under a separate server experiment."
+}
