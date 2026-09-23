@@ -1,0 +1,17 @@
+{
+  "schema": "aic-policy-stability-baseline-cleanup-v1",
+  "source_commit": "31555f5",
+  "verified_evidence": "artifacts/policy-stability-inputs/baseline-evidence.json",
+  "removed": [
+    {
+      "path": "artifacts/policy-stability-inputs/baseline-report.json",
+      "bytes": 224600529
+    },
+    {
+      "path": "artifacts/policy-stability-inputs/baseline-run.log",
+      "bytes": 295
+    }
+  ],
+  "filesystem_free_bytes_before": 177158262784,
+  "filesystem_free_bytes_after": 177382875136
+}
