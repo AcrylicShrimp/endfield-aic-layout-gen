@@ -1,0 +1,29 @@
+{
+  "schema": "aic-policy-stability-smoke-cleanup-v1",
+  "source_commit": "31555f5",
+  "verified_evidence": "artifacts/policy-stability-smoke-evidence.json",
+  "removed": [
+    {
+      "path": "artifacts/policy-stability-smoke-a",
+      "bytes": 233477109
+    },
+    {
+      "path": "artifacts/policy-stability-smoke-d",
+      "bytes": 230358617
+    },
+    {
+      "path": "artifacts/policy-stability-smoke-d.log",
+      "bytes": 0
+    },
+    {
+      "path": "artifacts/policy-stability-smoke-d-resume.log",
+      "bytes": 4622
+    },
+    {
+      "path": "artifacts/policy-stability-inputs/diagnostic-candidates.json",
+      "bytes": 661391
+    }
+  ],
+  "filesystem_free_bytes_before": 176917938176,
+  "filesystem_free_bytes_after": 177382887424
+}
