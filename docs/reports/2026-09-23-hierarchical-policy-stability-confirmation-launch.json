@@ -1,0 +1,60 @@
+{
+  "schema": "aic-policy-stability-confirmation-launch-v1",
+  "status": "prepared",
+  "source_commit": "31555f5",
+  "protocol_commit": "f23f3b3c0899c05164231e1e8243b229d2c4d5d2",
+  "release_binary_sha256": "e594b5425074a03731524d8c91991126232d840ef44a86e8b0630e1f16800fdf",
+  "server_root": "~/Srv/aic-policy-stability-20260923",
+  "prepared_utc": "2026-09-23T04:31:36.554994+00:00",
+  "input_sha256": {
+    "initial_lower": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+    "initial_outer": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520",
+    "diagnostic_panel": "e452abcc69d48cda568c714f53c44e91547a54e94eb25ef1cd8a3efc8034de5a",
+    "prior_diagnostic_panel": "0fc86bb56d0ec0809b782c850f81a02a954a14416c2e83742f28a5a73c62e29f",
+    "diagnostic_candidates": "65d281973c35a69dba08195345e21810be0eb0680395414cedd1771581b6e495",
+    "baseline_evidence": "47e338aca27ceefc5fed1fd2c6c01eba47c23c3b101da6fec858bf6939d61d83",
+    "common_panels": {
+      "s1": {
+        "000000": "0a9527c2ba17a722a7c489919782299e2af096561533b789fa231cd1d5e7b062",
+        "000001": "2c5370162fcd639b93e51b6835c7405ec96e059d4d42fcb49d28e3eff1607d97",
+        "000002": "8cba71963c57f7490f8eb325147614125dad1d7d2059842fa3b7dfe0c8816d30",
+        "000003": "88d570bb7c67eba585ecacd6d2cf5d133093daf01a4e0fb714d730f7a65c8d98",
+        "000004": "08d2e26049ad5cd492f8399212f25bae29761c98f1fd31fc9ea54236714b3f33",
+        "000005": "55d400030d464029fb01ffd420c1017e57145e0ee7d62b8f29a15eceb33c8356",
+        "000006": "e6ef8511ed3ef0449df98bb2771607d8beff5c478e9d181994049abd0a30e7c3",
+        "000007": "5358166e2f20875679dbfd9d364bc289ce7eda54fb7cef5fd841b1b239b932eb"
+      },
+      "s2": {
+        "000000": "6f35861e060eb51c0cd3c38970fce6801bda7f19d5405933e8a8c8b0adda8428",
+        "000001": "e68f939c07e1c86b20d46991730acce999cca5344101d5877bc921e204e0e8b6",
+        "000002": "75d71cb12e2f77d82a8b580ef7bbf95b585cda9a43fca01f47249effd11cfbf1",
+        "000003": "ff6ed7521000afaa53d9c468ce799498178ca9f281a55df707d193a9729532ae",
+        "000004": "f118c281828ffc7c645017fbc292eec2cc27db453d6d5f69f6ac1dc101a9e06b",
+        "000005": "48399b59a41c3775a3269fe8605eac5e1639da491106ed92f50645ef4b3b55a0",
+        "000006": "f7dcf5570b93b3f10a1cb205301517627362b0b743f417f80b0733b9f27b903d",
+        "000007": "e889679cd7f52000cb2d42291497b4a66d4528040208cbdbbbccdb4081b4473a"
+      },
+      "s3": {
+        "000000": "6c4f33eced6e9256a47be770057ebabf5f96a8e48ad1a8f4f646d77ad1b7cb58",
+        "000001": "572847343d3850e5d1b546fa08a0e7e407d72d2eb59639dbfe1ac41bc9a607ed",
+        "000002": "efd668800c697a1b28350469c15fe980c95aa000bb3218b7b012263ad2170024",
+        "000003": "2cd705b28c0a8ffcf4c7fb0b3cce4bc47d79a5221be672c46198d84529b7eb50",
+        "000004": "6fad1b697df518f62039797fab71e9b2d29f725456ab8c8d36953104cfdd67b3",
+        "000005": "e549f1ebc36303b0c5e37894ab634c88ac01c408c6c0c4e6e1211b4c8dbd849f",
+        "000006": "bd131f2c563dad94cd230171b6da2609cf71df8eb587eb3cde824013e1628c61",
+        "000007": "d315af474571dd520ea2ed9a2092f83c75d6b20f0dea222bf57b67e9c4be36be"
+      }
+    }
+  },
+  "diagnostic_separation": {
+    "training_panel_count": 24,
+    "training_problem_identities": 530,
+    "prior_diagnostic_identities": 64,
+    "selected_cases": 64,
+    "selected_train_overlap": 0,
+    "selected_prior_overlap": 0
+  },
+  "baseline_completed": 20,
+  "baseline_easy_completed": 7,
+  "baseline_easy_cases": 14
+}

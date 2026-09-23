@@ -1,0 +1,33 @@
+{
+  "schema": "aic-policy-stability-confirmation-input-cleanup-v1",
+  "utc": "2026-09-23T04:31:51.828325+00:00",
+  "removed": [
+    {
+      "path": "artifacts/policy-confirmation-inputs/baseline-report.json",
+      "bytes": 233315550
+    },
+    {
+      "path": "artifacts/policy-confirmation-inputs/baseline.log",
+      "bytes": 297
+    },
+    {
+      "path": "artifacts/policy-confirmation-inputs/prior-panels",
+      "bytes": 647695
+    },
+    {
+      "path": "artifacts/policy-confirmation-inputs/prior-diagnostic-candidates.json",
+      "bytes": 661391
+    },
+    {
+      "path": "artifacts/policy-confirmation-inputs/prior-diagnostic-panel.json",
+      "bytes": 167427
+    },
+    {
+      "path": "artifacts/policy-confirmation-inputs/diagnostic-candidates-512.json",
+      "bytes": 1356100
+    }
+  ],
+  "removed_file_bytes": 236148460,
+  "filesystem_free_before": 177913589760,
+  "filesystem_free_after": 178149769216
+}
