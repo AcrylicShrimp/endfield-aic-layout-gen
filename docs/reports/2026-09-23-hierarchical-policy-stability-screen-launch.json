@@ -1,0 +1,53 @@
+{
+  "schema": "aic-policy-stability-screen-launch-v1",
+  "status": "running",
+  "source_commit": "31555f5",
+  "release_binary_sha256": "e594b5425074a03731524d8c91991126232d840ef44a86e8b0630e1f16800fdf",
+  "server_root": "~/Srv/aic-policy-stability-20260923",
+  "launch_utc": "2026-09-23T00:55:41.717491+00:00",
+  "preflight": {
+    "filesystem_free_human": "166G",
+    "gpu": "NVIDIA GeForce RTX 5090",
+    "gpu_memory_mib": 32607,
+    "active_gpu_processes": 0,
+    "torch_cuda_available": true
+  },
+  "input_sha256": {
+    "initial_lower": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+    "initial_outer": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520",
+    "diagnostic_panel": "0fc86bb56d0ec0809b782c850f81a02a954a14416c2e83742f28a5a73c62e29f",
+    "common_panels": {
+      "000000": "c8a470a2188d08741f1f8f5f159f35b32e49c5a74e248fe1db3b92512bdca451",
+      "000001": "b12a371ae0896420259611eaede22122ea4aa15cc6aa7d8a2b15a2dcc2b750af",
+      "000002": "fe8c5518818d0cdaee3c5a5ef58fcc9fa5ec029e89b0cebaa8d172435e505e02",
+      "000003": "e5d4ea6a81fca4131151d68536b087c09d0be05ef51b0dbd2e0ee45fb928ff55",
+      "000004": "17e7bfece54b051682788de61fffc24f9e5da7bb86fca34966e2aacf8782b245",
+      "000005": "692beab82402393388ac686f59e70f0d8af1cd676a449b1e5dae5e794cc0b49c",
+      "000006": "e0462f4d7d63ba3467cd78770c9e5010255938bd5c1c59da05a2bd2e5c3b0b85",
+      "000007": "ea9858a20970a02cd4000b2b19711f513874d3f83db891879928c585ba1bf9cb"
+    }
+  },
+  "baseline_completed": 27,
+  "wandb_readiness": {
+    "smoke_run_id": "ffae5089721aa13fbfe5c6e5",
+    "remote_acknowledged_step": 1
+  },
+  "screen_observer": {
+    "arm": "a",
+    "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/ee78cfa06405cde238aed635",
+    "remote_acknowledged_step": 0
+  },
+  "first_commit": {
+    "arm": "a",
+    "generation": 0,
+    "panel_sha256": "c8a470a2188d08741f1f8f5f159f35b32e49c5a74e248fe1db3b92512bdca451",
+    "training_completed": 18,
+    "training_cases": 32,
+    "root_states": 270,
+    "updates": 3200,
+    "outer_states_per_epoch": 256,
+    "replay_root_states": 0,
+    "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9"
+  },
+  "supervisor_pid": 170363
+}
