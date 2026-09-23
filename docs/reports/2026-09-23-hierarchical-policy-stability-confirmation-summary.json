@@ -1,0 +1,87 @@
+{
+  "schema": "aic-hierarchical-stability-confirmation-summary-v1",
+  "diagnostic_panel_sha256": "e452abcc69d48cda568c714f53c44e91547a54e94eb25ef1cd8a3efc8034de5a",
+  "streams": [
+    "s1",
+    "s2",
+    "s3"
+  ],
+  "candidates": {
+    "B": {
+      "matched_control": "A",
+      "per_stream": {
+        "s1": {
+          "last_two_mean_gain": 0,
+          "last_two_minimum_gain": -2,
+          "easy_final_completed": 11,
+          "easy_final_vs_start": 4,
+          "gen5_completed": 19,
+          "gen5_to_gen7_lost": 10,
+          "easy_and_retention_guard": false
+        },
+        "s2": {
+          "last_two_mean_gain": 2,
+          "last_two_minimum_gain": 3,
+          "easy_final_completed": 9,
+          "easy_final_vs_start": 2,
+          "gen5_completed": 31,
+          "gen5_to_gen7_lost": 18,
+          "easy_and_retention_guard": false
+        },
+        "s3": {
+          "last_two_mean_gain": 2,
+          "last_two_minimum_gain": 0,
+          "easy_final_completed": 6,
+          "easy_final_vs_start": -1,
+          "gen5_completed": 28,
+          "gen5_to_gen7_lost": 19,
+          "easy_and_retention_guard": false
+        }
+      },
+      "three_stream_mean_gain": 1.3333333333333333,
+      "three_stream_minimum_gain": 0.3333333333333333,
+      "positive_streams": 2,
+      "easy_and_retention_guarded_streams": 0,
+      "passes": false
+    },
+    "D": {
+      "matched_control": "C",
+      "per_stream": {
+        "s1": {
+          "last_two_mean_gain": -8,
+          "last_two_minimum_gain": -7,
+          "easy_final_completed": 6,
+          "easy_final_vs_start": -1,
+          "gen5_completed": 24,
+          "gen5_to_gen7_lost": 15,
+          "easy_and_retention_guard": false
+        },
+        "s2": {
+          "last_two_mean_gain": -3.5,
+          "last_two_minimum_gain": -3,
+          "easy_final_completed": 9,
+          "easy_final_vs_start": 2,
+          "gen5_completed": 19,
+          "gen5_to_gen7_lost": 12,
+          "easy_and_retention_guard": false
+        },
+        "s3": {
+          "last_two_mean_gain": 0.0,
+          "last_two_minimum_gain": 4,
+          "easy_final_completed": 5,
+          "easy_final_vs_start": -2,
+          "gen5_completed": 25,
+          "gen5_to_gen7_lost": 15,
+          "easy_and_retention_guard": false
+        }
+      },
+      "three_stream_mean_gain": -3.8333333333333335,
+      "three_stream_minimum_gain": -2,
+      "positive_streams": 0,
+      "easy_and_retention_guarded_streams": 0,
+      "passes": false
+    }
+  },
+  "selected_for_integrated_check": null,
+  "decision": "investigate-update-magnitude"
+}
