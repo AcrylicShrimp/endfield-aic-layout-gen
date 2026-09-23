@@ -1,6 +1,6 @@
 {
   "schema": "aic-policy-stability-confirmation-launch-v1",
-  "status": "prepared",
+  "status": "running",
   "source_commit": "31555f5",
   "protocol_commit": "f23f3b3c0899c05164231e1e8243b229d2c4d5d2",
   "release_binary_sha256": "e594b5425074a03731524d8c91991126232d840ef44a86e8b0630e1f16800fdf",
@@ -56,5 +56,50 @@
   },
   "baseline_completed": 20,
   "baseline_easy_completed": 7,
-  "baseline_easy_cases": 14
+  "baseline_easy_cases": 14,
+  "launch_utc": "2026-09-23T04:36:10.480816+00:00",
+  "supervisor_pid": 177462,
+  "configuration_sha256": {
+    "curriculum-s1-a": "a97839407705cb04fa67e45baf2d2771f12faecf3f888c9285d3fb3c1a986370",
+    "curriculum-s1-b": "319fffd9a076890c0184cab3f95508bccffcb4b7ece69c658e54a0c3d8234890",
+    "curriculum-s1-c": "a97839407705cb04fa67e45baf2d2771f12faecf3f888c9285d3fb3c1a986370",
+    "curriculum-s1-d": "319fffd9a076890c0184cab3f95508bccffcb4b7ece69c658e54a0c3d8234890",
+    "curriculum-s2-a": "4297e68ca9d874c5c5ef30a8466e222c7bf42d62ce836dd341c7d481da7c2b2f",
+    "curriculum-s2-b": "edca1bb6eef60e707a98ec345c911b7e705eb7911ed3fb6a83f1e21d1e7471be",
+    "curriculum-s2-c": "4297e68ca9d874c5c5ef30a8466e222c7bf42d62ce836dd341c7d481da7c2b2f",
+    "curriculum-s2-d": "edca1bb6eef60e707a98ec345c911b7e705eb7911ed3fb6a83f1e21d1e7471be",
+    "curriculum-s3-a": "0ffef08dd83dc657f7c841be683e09713933c07dafa7ddcbe10b3fd710bb1012",
+    "curriculum-s3-b": "7155c7fbfd156d970b8bdf9c2121669dfcf0ebb866065352ae3743cb2da37079",
+    "curriculum-s3-c": "0ffef08dd83dc657f7c841be683e09713933c07dafa7ddcbe10b3fd710bb1012",
+    "curriculum-s3-d": "7155c7fbfd156d970b8bdf9c2121669dfcf0ebb866065352ae3743cb2da37079",
+    "generation-a": "46afb5070beaa68842fa4857b78a69410d80eef767bfbd310da3593ca0726660",
+    "generation-b": "46afb5070beaa68842fa4857b78a69410d80eef767bfbd310da3593ca0726660",
+    "generation-c": "9ee0665ec8c728f37d9a4b684e8ed81b9766ab412d3c0a58b417ad5cf07cc59a",
+    "generation-d": "9ee0665ec8c728f37d9a4b684e8ed81b9766ab412d3c0a58b417ad5cf07cc59a",
+    "search": "8e93eabedac15f81adbb27bd9ca0a3f05f985d339bc9e84e647f87b60c06e48d",
+    "sampling": "69c9fe638fc23af815c00ca4698d47d6e448fb15616e1235ef3c3e993a627fc6",
+    "selector": "cb3f72a9d7ec048d1dff0574390256b3349dc756803c72f100fadcb50115c968",
+    "runner": "4e2613c5be7c7774b5b9984a14c781d93a496d19a6f824a0afdd70cff6d126bc"
+  },
+  "first_observer": {
+    "stream": "s1",
+    "arm": "a",
+    "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/8a1e43076a9d85627d562544",
+    "remote_acknowledged_step": 0
+  },
+  "first_commit": {
+    "stream": "s1",
+    "arm": "a",
+    "generation": 0,
+    "panel_sha256": "0a9527c2ba17a722a7c489919782299e2af096561533b789fa231cd1d5e7b062",
+    "panel_matches_prepared": true,
+    "training_completed": 16,
+    "training_cases": 32,
+    "updates": 3200,
+    "outer_states_per_epoch": 256,
+    "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+    "train_lower": false,
+    "train_failed_policy": true,
+    "replay_root_states": 0
+  }
 }
