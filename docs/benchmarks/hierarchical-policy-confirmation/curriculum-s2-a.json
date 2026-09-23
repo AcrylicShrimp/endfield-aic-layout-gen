@@ -1,0 +1,22 @@
+{
+  "schema": "aic-hierarchical-curriculum-v1",
+  "generations": 8,
+  "training_cases": 32,
+  "evaluation_interval": 2,
+  "success_window_cases": 128,
+  "advance_completion_rate": 0.75,
+  "seed": 20261030,
+  "namespace": "hierarchical-policy-confirmation-s2-v1",
+  "max_turns": 10000,
+  "max_extension": 32,
+  "levels": [
+    {
+      "min_facilities": 2,
+      "max_facilities": 2,
+      "max_terminals": 6,
+      "max_connections": 6
+    }
+  ],
+  "diagnostic_training_evaluation": true,
+  "outer_success_replay_generations": 0
+}
