@@ -1,0 +1,40 @@
+{
+  "schema": "aic-hierarchical-update-budget-probe-v1",
+  "training_source_commit": "31555f5",
+  "experiment_commit": "4048baca7944e46ab6b9bb7dd63620f695760a74",
+  "server_root": "~/Srv/aic-policy-stability-20260923",
+  "release_binary_sha256": "e594b5425074a03731524d8c91991126232d840ef44a86e8b0630e1f16800fdf",
+  "search_config_sha256": "8e93eabedac15f81adbb27bd9ca0a3f05f985d339bc9e84e647f87b60c06e48d",
+  "sampling_sha256": "69c9fe638fc23af815c00ca4698d47d6e448fb15616e1235ef3c3e993a627fc6",
+  "generation_config_sha256": {
+    "25": "4baa33abea219a1e2b28afd1f40e280e0150586ffc9f9a44e83d6c9e30bb31f4",
+    "50": "5acb3e1097c4a0619e9a5592a06e96fe9ff159a891de1bd51348dccc216b985c",
+    "100": "dc81cdbc9e5ab0798881d5f24ea22d975fa41fed449372a9d7139e60827d8a48",
+    "200": "46afb5070beaa68842fa4857b78a69410d80eef767bfbd310da3593ca0726660"
+  },
+  "initial_lower_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+  "initial_outer_sha256": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520",
+  "training_panel_sha256": {
+    "s1": "1a3fc0578c44090363eaf6945d2a31065488b79c46d72c71afb63edcdcca8dcf",
+    "s2": "f1d57712a6c6f6652a4cc4cfa6b4fb715e01ca2c956abb98e5356aa61cf9b38b",
+    "s3": "06bcd51cd07daf85d7a6348bb8f95bb00785a8d672431f5490145dce25423c3c"
+  },
+  "diagnostic_panel_sha256": "b76e49e443d80a7359bfe7fd1935c1d22e7b3a2dfca45fd58d86ff1c9488d6a3",
+  "diagnostic_candidates_sha256": "4aee1427e3d77bceb6d5fab9171a9f0ab16808b8e0e21129f455e3bc9eb41f18",
+  "prior_screen_diagnostic_sha256": "0fc86bb56d0ec0809b782c850f81a02a954a14416c2e83742f28a5a73c62e29f",
+  "prior_confirmation_diagnostic_sha256": "e452abcc69d48cda568c714f53c44e91547a54e94eb25ef1cd8a3efc8034de5a",
+  "training_problem_identities": 91,
+  "diagnostic_cases": 64,
+  "planned_records": 12,
+  "budgets_epochs": [
+    25,
+    50,
+    100,
+    200
+  ],
+  "streams": [
+    "s1",
+    "s2",
+    "s3"
+  ]
+}

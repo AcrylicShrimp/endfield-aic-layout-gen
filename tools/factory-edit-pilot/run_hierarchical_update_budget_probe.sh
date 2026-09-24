@@ -27,7 +27,7 @@ for _ in {1..90}; do
   if [[ -f "$root/wandb-observer.json" ]] && "$python" - "$root/wandb-observer.json" <<'PY'
 import json,sys
 status=json.load(open(sys.argv[1]))
-raise SystemExit(0 if status['status']=='ready' and status['remote_confirmed_step']>=0 else 1)
+raise SystemExit(0 if status['status'] in ('ready', 'running') and status['remote_confirmed_step']>=0 else 1)
 PY
   then ready=1; break; fi
   if ! kill -0 "$observer" 2>/dev/null; then break; fi
