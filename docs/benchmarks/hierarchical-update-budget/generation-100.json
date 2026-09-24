@@ -1,0 +1,15 @@
+{
+  "schema": "aic-hierarchical-generation-training-v1",
+  "epochs": 100,
+  "checkpoint_interval_epochs": 20,
+  "batch_states": 16,
+  "search_temperature": 1.0,
+  "lower_model_temperature": 4.0,
+  "lower_learning_rate": 1e-05,
+  "outer_learning_rate": 0.0003,
+  "gradient_clip": 1.0,
+  "seed": 20260925,
+  "train_lower": false,
+  "outer_states_per_epoch": 256,
+  "train_failed_policy": true
+}
