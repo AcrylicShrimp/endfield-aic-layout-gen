@@ -1,0 +1,19 @@
+{
+  "schema": "aic-hierarchical-update-budget-cleanup-v1",
+  "closed_at_epoch": 1790290792.2399838,
+  "paths_removed": [
+    {
+      "path": "artifacts/update-budget-probe",
+      "bytes_before": 3354935628,
+      "description": "replayable generated panels, frozen collections, raw evaluations, optimizer checkpoints, W&B local telemetry and logs"
+    },
+    {
+      "path": "target",
+      "bytes_before": 786473385,
+      "description": "regenerable release build cache"
+    }
+  ],
+  "filesystem_free_bytes_before": 175016550400,
+  "filesystem_free_bytes_after": 179082465280,
+  "filesystem_free_bytes_recovered": 4065914880
+}
