@@ -187,6 +187,11 @@ def paired_case(stream, left, right):
     keys = list(left_actions)
     p = [left_actions[key]["policy_target"] for key in keys]
     q = [right_actions[key]["policy_target"] for key in keys]
+    mixed_prior = [(left_actions[key]["prior"] + left_actions[key]["anchor_prior"]) / 2
+                   for key in keys]
+    prior_total = sum(mixed_prior)
+    require(prior_total > 0, f"empty mixed prior: {stream}/{left['id']}")
+    mixed_prior = [value / prior_total for value in mixed_prior]
     require(all(value is not None and value >= 0 for value in p + q)
             and abs(sum(p) - 1) < 1e-6 and abs(sum(q) - 1) < 1e-6,
             f"invalid target distribution: {stream}/{left['id']}")
@@ -209,6 +214,7 @@ def paired_case(stream, left, right):
                                                         for key in keys)) / len(keys),
         "top_target_unvisited_128": left_actions[keys[top_p]]["visits"] == 0,
         "top_target_probability_128": p[top_p],
+        "js_target_vs_mixed_prior_128_bits": js_divergence(p, mixed_prior),
         "target_entropy_128": entropy_p,
         "target_entropy_512": entropy_q,
         "effective_actions_128": math.exp(entropy_p),
@@ -267,10 +273,16 @@ def summarize(root):
                                                 for row in covered]),
             "mean_uniform_unvisited_mass_128": mean([row["uniform_unvisited_mass_128"]
                                                      for row in covered]),
+            "mean_top_target_probability_128": mean([row["top_target_probability_128"]
+                                                       for row in covered]),
+            "mean_js_target_vs_mixed_prior_128_bits": mean([
+                row["js_target_vs_mixed_prior_128_bits"] for row in covered]),
             "top_target_unvisited_128": sum(row["top_target_unvisited_128"]
                                             for row in covered),
             "top1_disagreement": sum(not row["top_target_same"] for row in covered),
             "mean_js_divergence_bits": mean([row["js_divergence_bits"] for row in covered]),
+            "mean_js_target_vs_mixed_prior_128_bits": mean([
+                row["js_target_vs_mixed_prior_128_bits"] for row in covered]),
             "successful_128": {
                 "covered": sum(row["completed_128"] for row in covered),
                 "mean_unvisited_target_mass": mean([row["unvisited_target_mass_128"]
