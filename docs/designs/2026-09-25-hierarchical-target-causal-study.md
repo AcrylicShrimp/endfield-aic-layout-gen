@@ -99,6 +99,19 @@ primary run had completed only the first two ranks of its second seed, before
 the remaining alternative-action outcomes were inspected. Keep its runtime
 and inputs separate from the primary matrix and the 512-simulation control.
 
+For the target's search-seed agreement promised in section 3, use a separate
+first-root-only 16-candidate/128-simulation search on all 48 frozen cases
+under root seeds 20260922, 20260923, and 20260924. Keep the same generation-87
+weights, panel cases, candidate/action witnesses, prior mix, and other search
+settings; set `max_moves` to one. Require the first-root state and complete
+action witnesses to match across seeds and the retained baseline collection.
+Compare selected-action membership, visited-set overlap, full-distribution
+Jensen-Shannon divergence, unvisited mass, entropy, and conditional rank
+agreement for the current and prespecified transformed targets. The width
+matrix already supplies search-budget changes at fixed seed. The independent
+continuations supply outcome-seed variation. Do not combine these three
+sources of variation into one effect estimate.
+
 ## 3. Target construction and learner effect
 
 On the same frozen root records, compare the present full completed-Q target
