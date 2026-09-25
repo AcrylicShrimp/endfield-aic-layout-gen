@@ -51,10 +51,11 @@ highest-mixed-prior action, the highest-Q visited action in the
 a base-rate control. Deduplicate exact witnesses. Keep the original case ID;
 use downstream root seeds 20260922, 20260923, and 20260924 and 23 remaining
 macro moves for every forced first action. Run variants as panel batches to
-reuse model loading and compiled inference. Verify every prefix through native
-session replay and
-match its resulting state to the recorded action witness. First-root action
-selection is not rerun in these continuations.
+reuse model loading and compiled inference. Verify every recorded witness is
+accepted by native prefix replay and its resulting state hash agrees across
+seeds. The baseline-selected witness must reproduce the original second-root
+hash when that root exists. First-root action selection is not rerun in these
+continuations.
 
 Report validated completion frequency, partial connection progress, and
 conditional layout quality per paired action and seed. Separate wider actions
@@ -66,6 +67,11 @@ one action a *clear continuation winner* over another only if its completion
 count exceeds the other's by at least two of the three seeds; equal or
 one-seed differences remain unresolved. Report all outcomes regardless of this
 label.
+
+If fewer than 20 clear pairs remain or a claimed outside-16 advantage changes
+with downstream seed, rerun only those unresolved first-action pairs with 512
+simulations per later move before judging coverage or Q ranking. Keep that
+escalation separate from the primary 128-simulation outcomes.
 
 ## 3. Target construction and learner effect
 
