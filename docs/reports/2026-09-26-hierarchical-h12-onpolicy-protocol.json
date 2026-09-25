@@ -1,0 +1,49 @@
+{
+  "schema": "aic-hierarchical-target-learner-protocol-v1",
+  "phase": "confirmation",
+  "contrast": "horizon12-vs-horizon6-current",
+  "experiment_commit": "249d943d",
+  "planned_records": 9,
+  "runner_sha256": "2522fdd811921941665a7ec5478c696a38476635b44e058ff5e0333064dffa36",
+  "helper_sha256": "a3d0576a4f2852074d41e82c8c9b460776b6d75156218523ee58a1f7d655da7b",
+  "training_helper_sha256": "a9cb2cb4194f24c7384da1c914166cd4137a0796752afbe0b12ba15b74426ab8",
+  "tracking_sha256": "8defe5cb00e861b1fb6c1ab2bc86f55c56adb3ed1508e377bd7b53bc67d478ef",
+  "control_protocol_sha256": "db27d655a4c5281ac753183c012747396ec7f12a064fcb80b9f29de00e02c3b1",
+  "control_progress_sha256": "efa870d8d44169736894ced2c97f74eeab5df503d8cbecdd1e25291daddc58f0",
+  "binary_sha256": "66f72a2dbdf45aadbc50e4dfe8f3634012ef5f5a76d8159c698de20f85d7a4fa",
+  "source_search_sha256": "8e93eabedac15f81adbb27bd9ca0a3f05f985d339bc9e84e647f87b60c06e48d",
+  "search_sha256": "190fc4ce63ac481dbb25a5d662454817fb73242a5f03da3cecb304b3b9619551",
+  "generation_sha256": "dc81cdbc9e5ab0798881d5f24ea22d975fa41fed449372a9d7139e60827d8a48",
+  "sampling_sha256": "69c9fe638fc23af815c00ca4698d47d6e448fb15616e1235ef3c3e993a627fc6",
+  "lower_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+  "outer_sha256": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520",
+  "outer_h12_config_sha256": "e79aea019734906cb42a6694c1e65520aa87cda7ae137f9e6836a222cc2f12f0",
+  "outer_h12_order_sha256": "b1ab40000e0d20955ca9fcb4e0137710c31729e9e7b5c7aecc5c7e1c648bdfa5",
+  "screen_diagnostic_sha256": "94f3bb8e30224410ecc5a57aacad6d61109551e1c624a4b967c87259d7339702",
+  "source_panels": {
+    "s1": "a1bae05c58a35d468f509517c6d148710a189cb2686fcc432dde5d411ec27b66",
+    "s2": "989c891cb1ef3c2de10a2833ca985cc04af89ddc753374b34436956079d9640d",
+    "s3": "bf2465b8a1b8b7459237316d403e6206d1217828fd9adaba67d8975f64413871"
+  },
+  "panels": {
+    "train-s1-g0": "41cf181ab81af6bb64174e6c6153accaf229de319fb9df67312a33be543a1338",
+    "train-s1-g1": "3cddc03027fde921b4dd1d2fbbca7bea1094bf79dc6be5f5b5e4e65d8d52da41",
+    "train-s1-g2": "00bc1868c067cb267780a18126f8ec7502b9e08726b7e9cc72e4c57b9ee55073",
+    "train-s2-g0": "01bd8585c3a0ad56900651130336d90b3549039f63d8a4b1e704816d9119ca10",
+    "train-s2-g1": "944eceac1e1e65c7758a622802407077b20c743bf67889e8129791a96c4e0def",
+    "train-s2-g2": "1bd75fa0267f25168ab1094ee1b442e7ba5c4763917c3c58f9085b9f7540edc3",
+    "train-s3-g0": "a84ba4b5caf511e147c9289a73e4e639b8e73c28626370d35530b876cd71ec0a",
+    "train-s3-g1": "d52da409c043f6c3070e8ea6637848178dd5b18636843110be8d03aaa41cd135",
+    "train-s3-g2": "32db5818245522aca570195f3672c2e3ce94a3e77d6acd63de1aea9436d725df",
+    "diagnostic": "136a4c23daff9750255360e0a4d9451f9b618b38c1011237b3f5360812629998"
+  },
+  "numeric_gate": {
+    "final_mean_completion_gain": 4,
+    "final_stream_wins": 2,
+    "final_mean_fewer_lost_start_successes": 3,
+    "final_positive_retention_streams": 2,
+    "generation_2_3_mean_completion_gain": 0,
+    "all_seed_mean_completion_gain": 4,
+    "positive_seed_means": 2
+  }
+}
