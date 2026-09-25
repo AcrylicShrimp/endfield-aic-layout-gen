@@ -109,6 +109,16 @@ candidate and its case's baseline with the already reviewed 16-candidate,
 Preserve all ten outcomes, including ties and reversals, separately from the
 128-simulation triplets; this small escalation cannot provide a new
 population-level prevalence estimate or erase contradictory seed outcomes.
+The original-seed 512-simulation escalation favored all ten candidates, but
+reuses the original seed triplet and thus does not resolve the independent
+triplet's reversal. Before judging the ten pairs, repeat the **same selected
+ten pairs and their nine baselines** at 512 simulations under independent
+root seeds 20260925–20260927, keeping first-action witnesses, 16 candidates,
+23 remaining moves, weights, and every other control unchanged. Compare
+direction and magnitude across both 512-simulation triplets and both
+128-simulation triplets. This follow-up was declared after seeing only the
+original-seed high-budget result; it cannot retroactively make the selection
+unbiased or turn these trials into a population estimate.
 
 For the target's search-seed agreement promised in section 3, use a separate
 first-root-only 16-candidate/128-simulation search on all 48 frozen cases

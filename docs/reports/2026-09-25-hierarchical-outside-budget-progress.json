@@ -1,0 +1,133 @@
+{
+  "schema": "aic-hierarchical-outside-budget-progress-v1",
+  "protocol_sha256": "6cb499f58d0159b98414f8abdf6c01471ca5b8382cdaf150455f31087e865890",
+  "status": "complete",
+  "records": [
+    {
+      "seed": 20260922,
+      "rank": 0,
+      "report_sha256": "541ae04228b52f81e626277d6fea8c7b0f03293b274074ed6f9d47761cf953e6",
+      "report_bytes": 16983761,
+      "wall_seconds": 83.93910423300258
+    },
+    {
+      "seed": 20260922,
+      "rank": 3,
+      "report_sha256": "fa72f69dc49aaf4d78434458664c1491c50e900116db6ac0fc2c12d334520959",
+      "report_bytes": 4735392,
+      "wall_seconds": 21.976412379000976
+    },
+    {
+      "seed": 20260922,
+      "rank": 4,
+      "report_sha256": "de148c5cc2ff68a62f7bb9c4d26522906872c71246744a78781f91b1c381730f",
+      "report_bytes": 5154870,
+      "wall_seconds": 20.238062936994538
+    },
+    {
+      "seed": 20260922,
+      "rank": 5,
+      "report_sha256": "c15dfc345301550b737f6d9bb79b795d00ad850abc9aa4c42d7d283d25866969",
+      "report_bytes": 3751000,
+      "wall_seconds": 16.509197211002174
+    },
+    {
+      "seed": 20260922,
+      "rank": 6,
+      "report_sha256": "5e19ff9203403b475a639bff79c5138a1b41afce8b4feaddabb2e815e42ae6f4",
+      "report_bytes": 5864533,
+      "wall_seconds": 19.1899342100005
+    },
+    {
+      "seed": 20260922,
+      "rank": 7,
+      "report_sha256": "9f23e4330609d90aa1508ea721efa51af177c307bf12a6390920ddeba7691103",
+      "report_bytes": 2011542,
+      "wall_seconds": 9.258018519998586
+    },
+    {
+      "seed": 20260923,
+      "rank": 0,
+      "report_sha256": "c56e24ebb7e660722a35005443cf47a177ff10ad38e999c69c4a0cb5ec14e6f0",
+      "report_bytes": 18049609,
+      "wall_seconds": 75.52668961299787
+    },
+    {
+      "seed": 20260923,
+      "rank": 3,
+      "report_sha256": "1fbca109fa3523aba39acb4f6fee1b1ce7a0e3343640dcc99ae379138eed8fca",
+      "report_bytes": 3651118,
+      "wall_seconds": 23.427504661995044
+    },
+    {
+      "seed": 20260923,
+      "rank": 4,
+      "report_sha256": "90352dc87344f8858fb6485485fb9a6bc9d0cbca01ab9f9e01dd4fb03a5bfb38",
+      "report_bytes": 5479653,
+      "wall_seconds": 20.056520559999626
+    },
+    {
+      "seed": 20260923,
+      "rank": 5,
+      "report_sha256": "e074c2d3c28d1de1c802302320c594ca0070db96538205df1cc5ad0302fb7514",
+      "report_bytes": 3297543,
+      "wall_seconds": 17.65903770300065
+    },
+    {
+      "seed": 20260923,
+      "rank": 6,
+      "report_sha256": "0ba55123d6c2b1f0a54b3145a38f69c5e384e861905d14b282ae925905833e78",
+      "report_bytes": 5236665,
+      "wall_seconds": 22.311292209000385
+    },
+    {
+      "seed": 20260923,
+      "rank": 7,
+      "report_sha256": "03c49feec04f55a8e0f7a7eefbedc560f30aa3c455f1af303fece92b766511df",
+      "report_bytes": 1466318,
+      "wall_seconds": 6.709437179000815
+    },
+    {
+      "seed": 20260924,
+      "rank": 0,
+      "report_sha256": "5244260607f9d018d707246beeac8249c7eeb1d54063d3f13222ee4832805690",
+      "report_bytes": 15946996,
+      "wall_seconds": 85.89940644099988
+    },
+    {
+      "seed": 20260924,
+      "rank": 3,
+      "report_sha256": "01aaef6053687babf9975bc5e1126845ac8468cc73954a0f38e80d42f790bf54",
+      "report_bytes": 4196746,
+      "wall_seconds": 26.33396509299928
+    },
+    {
+      "seed": 20260924,
+      "rank": 4,
+      "report_sha256": "64bb40611f46328f84105e7a9442789a7753fc31d1e3f31c5b89d2b7198e5303",
+      "report_bytes": 5339048,
+      "wall_seconds": 18.364486169004522
+    },
+    {
+      "seed": 20260924,
+      "rank": 5,
+      "report_sha256": "3480472883840cac360e40dec372db911cc7d64a6754df64c31e223e023ee066",
+      "report_bytes": 3203040,
+      "wall_seconds": 23.350346197999897
+    },
+    {
+      "seed": 20260924,
+      "rank": 6,
+      "report_sha256": "61d9cb9aea40f2c4f26521b65cc45f17fb17b9fab8ee65e128ba516f738b5bd8",
+      "report_bytes": 5168147,
+      "wall_seconds": 22.78165498100134
+    },
+    {
+      "seed": 20260924,
+      "rank": 7,
+      "report_sha256": "9b327b13100c02a46f7a35f60e27a01e3015ac28e603c8e2d4ec22897ed32f1d",
+      "report_bytes": 2346671,
+      "wall_seconds": 8.447056179997162
+    }
+  ]
+}
