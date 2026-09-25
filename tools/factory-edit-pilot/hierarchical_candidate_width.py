@@ -222,12 +222,36 @@ def summarize_case(stream, reports, index):
         require(all(target is not None and target >= 0 for target in targets)
                 and abs(sum(targets) - 1) < 1e-6,
                 f"invalid target: {stream}/{arm}/{case['id']}")
+        visited_records = [action for action in root["actions"] if action["visits"] > 0]
+        low_q = min(visited_records, key=lambda action: action["q"])
+        high_q = max(visited_records, key=lambda action: action["q"])
+        unvisited_record = next((action for action in root["actions"]
+                                 if action["visits"] == 0), None)
+        inferred_imputed_q = None
+        visited_below_imputation = None
+        if unvisited_record is not None and high_q["q"] - low_q["q"] > 1e-8:
+            log_ratio = lambda action: (math.log(max(action["policy_target"], 1e-300))
+                - math.log(max(0.5 * (action["prior"] + action["anchor_prior"]), 1e-300)))
+            slope = ((log_ratio(high_q) - log_ratio(low_q))
+                     / (high_q["q"] - low_q["q"]))
+            if slope > 1e-8:
+                inferred_imputed_q = (high_q["q"]
+                                      - (log_ratio(high_q) - log_ratio(unvisited_record))
+                                      / slope)
+                visited_below_imputation = sum(
+                    action["q"] < inferred_imputed_q for action in visited_records)
+        weighted_visited_q = (sum(action["q"] * action["visits"]
+                                  for action in visited_records)
+                              / sum(action["visits"] for action in visited_records))
         result = case["mcts"]
         row["arms"][arm] = {
             "selected_action_sha256": hashlib.sha256(selected.encode()).hexdigest(),
             "selected_in_baseline_16": selected in base_visits,
             "selected_q": current[selected]["q"],
             "selected_visits": current[selected]["visits"],
+            "weighted_visited_q": weighted_visited_q,
+            "inferred_unvisited_imputation_q": inferred_imputed_q,
+            "visited_below_imputation": visited_below_imputation,
             "visited_actions": len(visited),
             "visited_overlap_baseline_16": len(visited & base_visits),
             "completed": result["fully_validated"],
@@ -308,6 +332,8 @@ def summarize(root):
         arm = label(candidates, simulations)
         values = [case["arms"][arm] for case in cases]
         baseline = [case["arms"]["c16-n128"] for case in cases]
+        imputed_counts = [value["visited_below_imputation"] for value in values
+                          if value["visited_below_imputation"] is not None]
         arms[arm] = {
             "completed": sum(value["completed"] for value in values),
             "gained_vs_c16_n128": sum(value["completed"] and not base["completed"]
@@ -326,6 +352,8 @@ def summarize(root):
                 value["learned_prior_effective_actions"] for value in values),
             "mean_mixed_prior_visited_mass": statistics.mean(
                 value["mixed_prior_visited_mass"] for value in values),
+            "mean_visited_below_imputation": statistics.mean(imputed_counts)
+            if imputed_counts else None,
             "mean_unvisited_target_mass": statistics.mean(
                 value["unvisited_target_mass"] for value in values),
             "mean_target_prior_js_bits": statistics.mean(
