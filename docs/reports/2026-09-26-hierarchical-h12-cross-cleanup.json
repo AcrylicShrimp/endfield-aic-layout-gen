@@ -1,0 +1,29 @@
+{
+  "schema": "aic-research-cleanup-v1",
+  "phase": "horizon12-same-search-cross",
+  "status": "complete",
+  "retained_progress": "artifacts/recovery-horizon-onpolicy-v2/cross/progress.json",
+  "retained_summary": "artifacts/recovery-horizon-onpolicy-v2/cross/summary.json",
+  "retained_shadow_models_for_mixed-seed_continuation": true,
+  "removed": [
+    {
+      "path": "artifacts/recovery-horizon-onpolicy-v2/cross/evaluations",
+      "bytes": 1404996408
+    },
+    {
+      "path": "artifacts/recovery-horizon-onpolicy-v2/cross/logs",
+      "bytes": 1946
+    },
+    {
+      "path": "artifacts/recovery-horizon-onpolicy-v2/cross/run-rest.log",
+      "bytes": 225
+    },
+    {
+      "path": "artifacts/recovery-horizon-onpolicy-v2/cross/run-rest.pid",
+      "bytes": 6
+    }
+  ],
+  "removed_bytes": 1404998585,
+  "free_bytes_before": 161859231744,
+  "free_bytes_after": 163264282624
+}

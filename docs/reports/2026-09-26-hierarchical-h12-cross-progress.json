@@ -1,0 +1,67 @@
+{
+  "schema": "aic-hierarchical-horizon-cross-progress-v1",
+  "protocol_sha256": "6ec4f7b15c9b77ca4be874bf3c783af386c5b7fb41f6eac0b14e3e2da750f345",
+  "status": "complete",
+  "records": [
+    {
+      "case_success": "0001100000001011011100111111011110111100111111110101011111111011",
+      "completed": 42,
+      "name": "s1-model-h6-search-h12",
+      "stream": "s1",
+      "trained_horizon": 6,
+      "search_horizon": 12,
+      "report_sha256": "66b4b36a9649b5aebeab5949f07b7935499856511e3959a5852410c545aee22d",
+      "evaluation_seconds": 219.91137917000742
+    },
+    {
+      "case_success": "0000100010000010010000010111000001010011100000111010001111001100",
+      "completed": 23,
+      "name": "s1-model-h12-search-h6",
+      "stream": "s1",
+      "trained_horizon": 12,
+      "search_horizon": 6,
+      "report_sha256": "0ac3c391e977758911672aef20d0e257101e7f83c24138f882efd3300109c70e",
+      "evaluation_seconds": 189.53478047100361
+    },
+    {
+      "case_success": "0110111001100011011001011111011100110100110001110000001110011101",
+      "completed": 35,
+      "name": "s2-model-h6-search-h12",
+      "stream": "s2",
+      "trained_horizon": 6,
+      "search_horizon": 12,
+      "report_sha256": "4337a4171d93c69d8ddad23878e7059d2a7c1abcf3fec11a13ec1e90bba9abb4",
+      "evaluation_seconds": 206.93512780299352
+    },
+    {
+      "case_success": "0000110010000110100010010011001000010011011110101001000001001101",
+      "completed": 25,
+      "name": "s2-model-h12-search-h6",
+      "stream": "s2",
+      "trained_horizon": 12,
+      "search_horizon": 6,
+      "report_sha256": "84928d396b681f84ac30b9ef6419c08ab26a753694cbe6e04c78077a3a6d1296",
+      "evaluation_seconds": 192.61108803600655
+    },
+    {
+      "case_success": "1111101000001110001101110010010011011100011010110011011000111001",
+      "completed": 34,
+      "name": "s3-model-h6-search-h12",
+      "stream": "s3",
+      "trained_horizon": 6,
+      "search_horizon": 12,
+      "report_sha256": "27695c8b85f0749e06b32d7a9ff6b2ae9a211ae6b15926d809404b80451eef0b",
+      "evaluation_seconds": 208.48414454200247
+    },
+    {
+      "case_success": "0100000010001111011011001010001000010000010001010100010100010000",
+      "completed": 21,
+      "name": "s3-model-h12-search-h6",
+      "stream": "s3",
+      "trained_horizon": 12,
+      "search_horizon": 6,
+      "report_sha256": "276853c153bd7d1c754ee911f39b87e20922af45e8daf655234a175e151d8fa2",
+      "evaluation_seconds": 199.2901941339951
+    }
+  ]
+}
