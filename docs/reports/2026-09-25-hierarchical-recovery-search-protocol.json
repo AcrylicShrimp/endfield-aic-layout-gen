@@ -1,0 +1,119 @@
+{
+  "schema": "aic-hierarchical-recovery-search-protocol-v1",
+  "experiment_commit": "898eb3d1",
+  "runner_sha256": "3c1dfa54f987baa86b2093859475d9552614e2464951c8ea80c0774a5a258757",
+  "binary_sha256": "e594b5425074a03731524d8c91991126232d840ef44a86e8b0630e1f16800fdf",
+  "lower_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+  "outer_sha256": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520",
+  "panels": {
+    "s1": "a1bae05c58a35d468f509517c6d148710a189cb2686fcc432dde5d411ec27b66",
+    "s2": "989c891cb1ef3c2de10a2833ca985cc04af89ddc753374b34436956079d9640d",
+    "s3": "bf2465b8a1b8b7459237316d403e6206d1217828fd9adaba67d8975f64413871"
+  },
+  "configs": {
+    "base-20260922": {
+      "search": "8e93eabedac15f81adbb27bd9ca0a3f05f985d339bc9e84e647f87b60c06e48d",
+      "outer": "d3226611ef6d36008b104db96e4bb6746cad99f35909b51fd174bf5fda825b47",
+      "model_config": "d3226611ef6d36008b104db96e4bb6746cad99f35909b51fd174bf5fda825b47"
+    },
+    "base-20260923": {
+      "search": "870d6cca04b9a517e4ade2835ccaca45ca9a4c61e86baac294efe1a5642a3ba8",
+      "outer": "1ef2463bb01e70e2d47c53e6773d74e9b72472df4da8f4df473032a6b37c4dcb",
+      "model_config": "1ef2463bb01e70e2d47c53e6773d74e9b72472df4da8f4df473032a6b37c4dcb"
+    },
+    "base-20260924": {
+      "search": "a7a108f2a249f59185cdbce565a9afeb91aaf2a225056a4fd9b92485293f3785",
+      "outer": "fa2c37fde320bf5ab8709f8371ea438f78b5e44ce0055d1b095aa6f417b12561",
+      "model_config": "fa2c37fde320bf5ab8709f8371ea438f78b5e44ce0055d1b095aa6f417b12561"
+    },
+    "q02-20260922": {
+      "search": "f08a192f285c2c09765fb41e822a9719b1c6b0bd4197b37ad5bb5761923ae5e7",
+      "outer": "8d1617b6c6def324358af405d884c1d8dd9372f53ec70e5d77e4510ac4c3f741",
+      "model_config": "8d1617b6c6def324358af405d884c1d8dd9372f53ec70e5d77e4510ac4c3f741"
+    },
+    "q02-20260923": {
+      "search": "80d1cce014571d8abcb08f822cdbeef3efb927d2eeecf093ac43a5de4b0fdcbb",
+      "outer": "33b14de01849d2b4b733a3bfd1fb9d0b45a8a08e538fc39e6c60ebeca4532716",
+      "model_config": "33b14de01849d2b4b733a3bfd1fb9d0b45a8a08e538fc39e6c60ebeca4532716"
+    },
+    "q02-20260924": {
+      "search": "f59758540588cd029716f13b22a409207c1d8eb00500e0d89a813e13f225d5fb",
+      "outer": "fc8e6a8975673598ac090e034792dae979c85aa3a520dd70a09e7f893882e4f7",
+      "model_config": "fc8e6a8975673598ac090e034792dae979c85aa3a520dd70a09e7f893882e4f7"
+    },
+    "q001-20260922": {
+      "search": "3da8761f5281dab2ab2567b0872cfb7044c497062a4dd8d46a11b3044f41b94d",
+      "outer": "a850e38cc1aba2f933fbba3caf7d7e50932281fc311d2161a97b12ea7224466a",
+      "model_config": "a850e38cc1aba2f933fbba3caf7d7e50932281fc311d2161a97b12ea7224466a"
+    },
+    "q001-20260923": {
+      "search": "62bb23675296ef8439d8e41b3326bf257a3686b30cc3b587217783022f40e8c4",
+      "outer": "54952195748b838c16df43198dcbd41c312b774603c5abaef76e412f6b3288eb",
+      "model_config": "54952195748b838c16df43198dcbd41c312b774603c5abaef76e412f6b3288eb"
+    },
+    "q001-20260924": {
+      "search": "ca39d723f432a067ea7a921ae39f55532b6ade4d6141cb579d9696f654e32b2c",
+      "outer": "986673e390ebb2dcb5b7507d8d8069a177c303f730a5c4bb6d085c77438551a4",
+      "model_config": "986673e390ebb2dcb5b7507d8d8069a177c303f730a5c4bb6d085c77438551a4"
+    },
+    "anchor16-20260922": {
+      "search": "fede7883ec89c19a0f3105bcf694cadfcc140a0c544b8b6ec336b3c380860b46",
+      "outer": "b9024ea674fc6ef56d8487253804c45fafa1c1d5b39017595b53f885ba97acae",
+      "model_config": "b9024ea674fc6ef56d8487253804c45fafa1c1d5b39017595b53f885ba97acae"
+    },
+    "anchor16-20260923": {
+      "search": "65b4a97eaec2089bb029d8e35be428c5ba06272ed86485c8247a7a0baaae498b",
+      "outer": "98dae484d6a65517a2dbf8398a277d03c2d358cd326d0513edd9144a208093b2",
+      "model_config": "98dae484d6a65517a2dbf8398a277d03c2d358cd326d0513edd9144a208093b2"
+    },
+    "anchor16-20260924": {
+      "search": "b750d4629a8844b7cf93b3a9146ea7159fd9941b6af08c2d5690b17f5633baf5",
+      "outer": "2c2430e4b50f95dc5488bf14f6c05fb81bb6e6001e75ba47a6828a203ee5c644",
+      "model_config": "2c2430e4b50f95dc5488bf14f6c05fb81bb6e6001e75ba47a6828a203ee5c644"
+    },
+    "anchor0-20260922": {
+      "search": "1389a79b23e4969759534c769ca3a8b93379ed8141ee85cebebf50581838037e",
+      "outer": "7830adb9ffdaf876d221b6bb4a7ad26f20ac1beef4475f75c008c95ac3a80b16",
+      "model_config": "7830adb9ffdaf876d221b6bb4a7ad26f20ac1beef4475f75c008c95ac3a80b16"
+    },
+    "anchor0-20260923": {
+      "search": "6b3d3d5ce8ff31d343c769353bbb990e007ae3810ebc1b80e21995c6f74bfe23",
+      "outer": "002365d881033b63980c6f286b48dd13a2c13a0f7e80758e9c9cf13fca077b18",
+      "model_config": "002365d881033b63980c6f286b48dd13a2c13a0f7e80758e9c9cf13fca077b18"
+    },
+    "anchor0-20260924": {
+      "search": "ef9046ea44b47da1191b3f5efe2b0fe04f83faec8fd3f58f24d02d74b824fbf6",
+      "outer": "bb2efb14deca443b8e433e147ec4270990c7d7ac5bde9f4b63c7a471139213ed",
+      "model_config": "bb2efb14deca443b8e433e147ec4270990c7d7ac5bde9f4b63c7a471139213ed"
+    },
+    "horizon12-20260922": {
+      "search": "190fc4ce63ac481dbb25a5d662454817fb73242a5f03da3cecb304b3b9619551",
+      "outer": "e79aea019734906cb42a6694c1e65520aa87cda7ae137f9e6836a222cc2f12f0",
+      "model_config": "e79aea019734906cb42a6694c1e65520aa87cda7ae137f9e6836a222cc2f12f0"
+    },
+    "horizon12-20260923": {
+      "search": "45a63e4952646635d2846f5417045e3587ffe0e798d4dfecd37ca6c85ded7f9c",
+      "outer": "3bf1f3dc4ad3046fc957dd9ef2dbcc6b763d8d277bfe8c576adeb8d75a4bd800",
+      "model_config": "3bf1f3dc4ad3046fc957dd9ef2dbcc6b763d8d277bfe8c576adeb8d75a4bd800"
+    },
+    "horizon12-20260924": {
+      "search": "9c2fe6de11f4e34f6449a05a67564b32b534ea550fe662225f9ef4494e9cf6aa",
+      "outer": "f77e40d7ecb15a25772969ac973c761b3d72bc20f5682595e24391f516655cc8",
+      "model_config": "f77e40d7ecb15a25772969ac973c761b3d72bc20f5682595e24391f516655cc8"
+    }
+  },
+  "arms": [
+    "base",
+    "q02",
+    "q001",
+    "anchor16",
+    "anchor0",
+    "horizon12"
+  ],
+  "seeds": [
+    20260922,
+    20260923,
+    20260924
+  ],
+  "planned_cells": 54
+}

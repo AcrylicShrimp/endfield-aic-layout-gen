@@ -1,0 +1,1459 @@
+{
+  "schema": "aic-hierarchical-recovery-search-compact-v1",
+  "runner_sha256": "5e63dbd407751e8541e07b2874c649bca33396e331f91716ee4bdc8700802f0e",
+  "protocol_sha256": "d81caef355dd32d9e0caa247d519b49c5a20471be3e2591dceab9c90ae02a7e6",
+  "progress_sha256": "fdb8d0968a52ab39bdd0acfbeea2a1950a0a3e5efdb0ec1751cecdf5d375bba8",
+  "full_summary_sha256": "819f6541b15f5d76da89337325fff340d99001fec6b21cdece5203d7256d6ac1",
+  "full_alignment_sha256": "5b0fd4b930f1a9bebbaa17d1068ab2b65e9001d98fa09558ccbb10ba88189299",
+  "success_mask_bit_order": [
+    20260922,
+    20260923,
+    20260924
+  ],
+  "summary": {
+    "base": {
+      "completed_per_seed": [
+        19,
+        16,
+        14
+      ],
+      "mean_completed": 16.333333333333332,
+      "mean_gain_over_base": 0.0,
+      "robust_successes": 11,
+      "robust_lost_from_base": 0,
+      "paired_per_seed": [
+        {
+          "gain": 0,
+          "loss": 0
+        },
+        {
+          "gain": 0,
+          "loss": 0
+        },
+        {
+          "gain": 0,
+          "loss": 0
+        }
+      ],
+      "first_actions_equal_base_per_seed": [
+        48,
+        48,
+        48
+      ],
+      "wall_seconds": 500.73328200099786,
+      "passes_screen": false
+    },
+    "q02": {
+      "completed_per_seed": [
+        13,
+        15,
+        10
+      ],
+      "mean_completed": 12.666666666666666,
+      "mean_gain_over_base": -3.666666666666666,
+      "robust_successes": 9,
+      "robust_lost_from_base": 3,
+      "paired_per_seed": [
+        {
+          "gain": 2,
+          "loss": 8
+        },
+        {
+          "gain": 4,
+          "loss": 5
+        },
+        {
+          "gain": 1,
+          "loss": 5
+        }
+      ],
+      "first_actions_equal_base_per_seed": [
+        39,
+        38,
+        39
+      ],
+      "wall_seconds": 520.2328276860062,
+      "passes_screen": false
+    },
+    "q001": {
+      "completed_per_seed": [
+        8,
+        10,
+        4
+      ],
+      "mean_completed": 7.333333333333333,
+      "mean_gain_over_base": -9.0,
+      "robust_successes": 4,
+      "robust_lost_from_base": 7,
+      "paired_per_seed": [
+        {
+          "gain": 1,
+          "loss": 12
+        },
+        {
+          "gain": 3,
+          "loss": 9
+        },
+        {
+          "gain": 0,
+          "loss": 10
+        }
+      ],
+      "first_actions_equal_base_per_seed": [
+        37,
+        36,
+        37
+      ],
+      "wall_seconds": 514.6905803659974,
+      "passes_screen": false
+    },
+    "anchor16": {
+      "completed_per_seed": [
+        15,
+        20,
+        22
+      ],
+      "mean_completed": 19,
+      "mean_gain_over_base": 2.666666666666668,
+      "robust_successes": 20,
+      "robust_lost_from_base": 5,
+      "paired_per_seed": [
+        {
+          "gain": 6,
+          "loss": 10
+        },
+        {
+          "gain": 11,
+          "loss": 7
+        },
+        {
+          "gain": 14,
+          "loss": 6
+        }
+      ],
+      "first_actions_equal_base_per_seed": [
+        1,
+        0,
+        0
+      ],
+      "wall_seconds": 511.22981195600005,
+      "passes_screen": false
+    },
+    "anchor0": {
+      "completed_per_seed": [
+        19,
+        16,
+        14
+      ],
+      "mean_completed": 16.333333333333332,
+      "mean_gain_over_base": 0.0,
+      "robust_successes": 11,
+      "robust_lost_from_base": 0,
+      "paired_per_seed": [
+        {
+          "gain": 0,
+          "loss": 0
+        },
+        {
+          "gain": 0,
+          "loss": 0
+        },
+        {
+          "gain": 0,
+          "loss": 0
+        }
+      ],
+      "first_actions_equal_base_per_seed": [
+        48,
+        48,
+        48
+      ],
+      "wall_seconds": 518.3846377990048,
+      "passes_screen": false
+    },
+    "horizon12": {
+      "completed_per_seed": [
+        26,
+        29,
+        29
+      ],
+      "mean_completed": 28,
+      "mean_gain_over_base": 11.666666666666668,
+      "robust_successes": 28,
+      "robust_lost_from_base": 0,
+      "paired_per_seed": [
+        {
+          "gain": 9,
+          "loss": 2
+        },
+        {
+          "gain": 17,
+          "loss": 4
+        },
+        {
+          "gain": 18,
+          "loss": 3
+        }
+      ],
+      "first_actions_equal_base_per_seed": [
+        33,
+        26,
+        26
+      ],
+      "wall_seconds": 546.7902178639997,
+      "passes_screen": true
+    }
+  },
+  "action_alignment": {
+    "base-20260922": {
+      "case_mean_pair_loss": 1.8864932502414453,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 14,
+      "q_winner": 3,
+      "q_loser": 10,
+      "q_tie": 1,
+      "terminal_value_visible_roots": 101,
+      "total_roots": 452,
+      "first_four_terminal_value_visible_roots": 18,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.9947168871598926,
+      "later_root_unvisited_target_mass_mean": 0.645102522920066,
+      "first_root_effective_action_fraction_mean": 0.9937759031252887
+    },
+    "base-20260923": {
+      "case_mean_pair_loss": 1.5622108810496262,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 1,
+      "q_winner": 0,
+      "q_loser": 0,
+      "q_tie": 1,
+      "terminal_value_visible_roots": 92,
+      "total_roots": 451,
+      "first_four_terminal_value_visible_roots": 17,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.9947533288337287,
+      "later_root_unvisited_target_mass_mean": 0.6532454018422066,
+      "first_root_effective_action_fraction_mean": 0.9937939439083746
+    },
+    "base-20260924": {
+      "case_mean_pair_loss": 1.5670104409293228,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 1,
+      "q_winner": 0,
+      "q_loser": 0,
+      "q_tie": 1,
+      "terminal_value_visible_roots": 77,
+      "total_roots": 450,
+      "first_four_terminal_value_visible_roots": 14,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.9947219789204432,
+      "later_root_unvisited_target_mass_mean": 0.6538422161944778,
+      "first_root_effective_action_fraction_mean": 0.9937672137246464
+    },
+    "q02-20260922": {
+      "case_mean_pair_loss": 0.8238362433081872,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 14,
+      "q_winner": 4,
+      "q_loser": 9,
+      "q_tie": 1,
+      "terminal_value_visible_roots": 75,
+      "total_roots": 439,
+      "first_four_terminal_value_visible_roots": 17,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.9956931971978747,
+      "later_root_unvisited_target_mass_mean": 0.6593068840952112,
+      "first_root_effective_action_fraction_mean": 0.999272850792409
+    },
+    "q02-20260923": {
+      "case_mean_pair_loss": 0.7975536031725708,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 1,
+      "q_winner": 0,
+      "q_loser": 0,
+      "q_tie": 1,
+      "terminal_value_visible_roots": 81,
+      "total_roots": 449,
+      "first_four_terminal_value_visible_roots": 17,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.9956895475827068,
+      "later_root_unvisited_target_mass_mean": 0.6548224623507346,
+      "first_root_effective_action_fraction_mean": 0.999277898852733
+    },
+    "q02-20260924": {
+      "case_mean_pair_loss": 0.7992412356103972,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 1,
+      "q_winner": 0,
+      "q_loser": 0,
+      "q_tie": 1,
+      "terminal_value_visible_roots": 58,
+      "total_roots": 446,
+      "first_four_terminal_value_visible_roots": 13,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.9956946678800014,
+      "later_root_unvisited_target_mass_mean": 0.650118236379704,
+      "first_root_effective_action_fraction_mean": 0.9992671534959077
+    },
+    "q001-20260922": {
+      "case_mean_pair_loss": 0.6906730610794111,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 14,
+      "q_winner": 4,
+      "q_loser": 9,
+      "q_tie": 1,
+      "terminal_value_visible_roots": 54,
+      "total_roots": 427,
+      "first_four_terminal_value_visible_roots": 14,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.9941733582550302,
+      "later_root_unvisited_target_mass_mean": 0.6661108223801074,
+      "first_root_effective_action_fraction_mean": 0.9999113341418391
+    },
+    "q001-20260923": {
+      "case_mean_pair_loss": 0.6898706415354463,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 1,
+      "q_winner": 0,
+      "q_loser": 0,
+      "q_tie": 1,
+      "terminal_value_visible_roots": 67,
+      "total_roots": 436,
+      "first_four_terminal_value_visible_roots": 16,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.9941723437715078,
+      "later_root_unvisited_target_mass_mean": 0.6559688510991389,
+      "first_root_effective_action_fraction_mean": 0.999911324726938
+    },
+    "q001-20260924": {
+      "case_mean_pair_loss": 0.6899492307071152,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 1,
+      "q_winner": 0,
+      "q_loser": 0,
+      "q_tie": 1,
+      "terminal_value_visible_roots": 39,
+      "total_roots": 435,
+      "first_four_terminal_value_visible_roots": 10,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.9941710605737835,
+      "later_root_unvisited_target_mass_mean": 0.6571682445207478,
+      "first_root_effective_action_fraction_mean": 0.999911295574749
+    },
+    "anchor16-20260922": {
+      "case_mean_pair_loss": 1.4285949575104144,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 4,
+      "q_winner": 2,
+      "q_loser": 1,
+      "q_tie": 1,
+      "terminal_value_visible_roots": 83,
+      "total_roots": 449,
+      "first_four_terminal_value_visible_roots": 15,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.994768356152913,
+      "later_root_unvisited_target_mass_mean": 0.7378970599623842,
+      "first_root_effective_action_fraction_mean": 0.9940535825811352
+    },
+    "anchor16-20260923": {
+      "case_mean_pair_loss": 1.2369674828056987,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 4,
+      "q_winner": 2,
+      "q_loser": 2,
+      "q_tie": 0,
+      "terminal_value_visible_roots": 115,
+      "total_roots": 456,
+      "first_four_terminal_value_visible_roots": 11,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.9946933740871524,
+      "later_root_unvisited_target_mass_mean": 0.7299500229984442,
+      "first_root_effective_action_fraction_mean": 0.9938872725918074
+    },
+    "anchor16-20260924": {
+      "case_mean_pair_loss": 1.3398016296718718,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 4,
+      "q_winner": 0,
+      "q_loser": 3,
+      "q_tie": 1,
+      "terminal_value_visible_roots": 125,
+      "total_roots": 462,
+      "first_four_terminal_value_visible_roots": 16,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.9947611292541747,
+      "later_root_unvisited_target_mass_mean": 0.7060321456743978,
+      "first_root_effective_action_fraction_mean": 0.9940081169010955
+    },
+    "anchor0-20260922": {
+      "case_mean_pair_loss": 1.0516688995292183,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 14,
+      "q_winner": 8,
+      "q_loser": 6,
+      "q_tie": 0,
+      "terminal_value_visible_roots": 102,
+      "total_roots": 452,
+      "first_four_terminal_value_visible_roots": 18,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.9947185259537116,
+      "later_root_unvisited_target_mass_mean": 0.6491701926785659,
+      "first_root_effective_action_fraction_mean": 0.9937706001167457
+    },
+    "anchor0-20260923": {
+      "case_mean_pair_loss": 0.6855459133147777,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 0,
+      "q_winner": 0,
+      "q_loser": 0,
+      "q_tie": 0,
+      "terminal_value_visible_roots": 91,
+      "total_roots": 451,
+      "first_four_terminal_value_visible_roots": 16,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.9947550014365871,
+      "later_root_unvisited_target_mass_mean": 0.6618939624233654,
+      "first_root_effective_action_fraction_mean": 0.9937884765801965
+    },
+    "anchor0-20260924": {
+      "case_mean_pair_loss": 0.6902594018888021,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 0,
+      "q_winner": 0,
+      "q_loser": 0,
+      "q_tie": 0,
+      "terminal_value_visible_roots": 77,
+      "total_roots": 450,
+      "first_four_terminal_value_visible_roots": 14,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.9947236784041031,
+      "later_root_unvisited_target_mass_mean": 0.6597021181771324,
+      "first_root_effective_action_fraction_mean": 0.9937616815940398
+    },
+    "horizon12-20260922": {
+      "case_mean_pair_loss": 1.8834339013959862,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 14,
+      "q_winner": 4,
+      "q_loser": 9,
+      "q_tie": 1,
+      "terminal_value_visible_roots": 182,
+      "total_roots": 469,
+      "first_four_terminal_value_visible_roots": 61,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.9905709768530409,
+      "later_root_unvisited_target_mass_mean": 0.6222924171830134,
+      "first_root_effective_action_fraction_mean": 0.9812618449439864
+    },
+    "horizon12-20260923": {
+      "case_mean_pair_loss": 1.5663614758136855,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 1,
+      "q_winner": 0,
+      "q_loser": 0,
+      "q_tie": 1,
+      "terminal_value_visible_roots": 217,
+      "total_roots": 472,
+      "first_four_terminal_value_visible_roots": 62,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.9913765954821746,
+      "later_root_unvisited_target_mass_mean": 0.6307098879734967,
+      "first_root_effective_action_fraction_mean": 0.983741265018322
+    },
+    "horizon12-20260924": {
+      "case_mean_pair_loss": 1.4912582968788204,
+      "confirmed_cases": 22,
+      "confirmed_pairs": 66,
+      "both_visited_pairs": 1,
+      "q_winner": 0,
+      "q_loser": 0,
+      "q_tie": 1,
+      "terminal_value_visible_roots": 217,
+      "total_roots": 470,
+      "first_four_terminal_value_visible_roots": 67,
+      "first_four_roots": 192,
+      "first_root_unvisited_target_mass_mean": 0.9907690464266447,
+      "later_root_unvisited_target_mass_mean": 0.6198459071076208,
+      "first_root_effective_action_fraction_mean": 0.9818726615635439
+    }
+  },
+  "cases": [
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-6369",
+      "stream": "s1",
+      "success_masks": {
+        "base": 4,
+        "q02": 4,
+        "q001": 4,
+        "anchor16": 0,
+        "anchor0": 4,
+        "horizon12": 0
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 5,
+        "q001": 5,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 5
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-22498",
+      "stream": "s1",
+      "success_masks": {
+        "base": 0,
+        "q02": 2,
+        "q001": 2,
+        "anchor16": 5,
+        "anchor0": 0,
+        "horizon12": 6
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 5,
+        "q001": 5,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 4
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-17062",
+      "stream": "s1",
+      "success_masks": {
+        "base": 1,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 2,
+        "anchor0": 1,
+        "horizon12": 3
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 3
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-30191",
+      "stream": "s1",
+      "success_masks": {
+        "base": 1,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 4,
+        "anchor0": 1,
+        "horizon12": 1
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 6,
+        "q001": 6,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 7
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-3308",
+      "stream": "s1",
+      "success_masks": {
+        "base": 6,
+        "q02": 6,
+        "q001": 6,
+        "anchor16": 4,
+        "anchor0": 6,
+        "horizon12": 5
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 6,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 5
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-13586",
+      "stream": "s1",
+      "success_masks": {
+        "base": 2,
+        "q02": 2,
+        "q001": 2,
+        "anchor16": 6,
+        "anchor0": 2,
+        "horizon12": 7
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 2
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-9040",
+      "stream": "s1",
+      "success_masks": {
+        "base": 0,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 0,
+        "anchor0": 0,
+        "horizon12": 5
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 3,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 3
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-32031",
+      "stream": "s1",
+      "success_masks": {
+        "base": 0,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 4,
+        "anchor0": 0,
+        "horizon12": 1
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 5
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-26043",
+      "stream": "s1",
+      "success_masks": {
+        "base": 0,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 6,
+        "anchor0": 0,
+        "horizon12": 3
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 5
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-30481",
+      "stream": "s1",
+      "success_masks": {
+        "base": 4,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 0,
+        "anchor0": 4,
+        "horizon12": 7
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 1,
+        "q001": 1,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 0
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-32093",
+      "stream": "s1",
+      "success_masks": {
+        "base": 3,
+        "q02": 3,
+        "q001": 2,
+        "anchor16": 7,
+        "anchor0": 3,
+        "horizon12": 7
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 6,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 2
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-9932",
+      "stream": "s1",
+      "success_masks": {
+        "base": 2,
+        "q02": 1,
+        "q001": 1,
+        "anchor16": 6,
+        "anchor0": 2,
+        "horizon12": 6
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 2,
+        "q001": 2,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 1
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-15983",
+      "stream": "s1",
+      "success_masks": {
+        "base": 1,
+        "q02": 1,
+        "q001": 1,
+        "anchor16": 0,
+        "anchor0": 1,
+        "horizon12": 5
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 3
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-6903",
+      "stream": "s1",
+      "success_masks": {
+        "base": 1,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 6,
+        "anchor0": 1,
+        "horizon12": 7
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 3
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-4243",
+      "stream": "s1",
+      "success_masks": {
+        "base": 1,
+        "q02": 1,
+        "q001": 1,
+        "anchor16": 3,
+        "anchor0": 1,
+        "horizon12": 7
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 7
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-31246",
+      "stream": "s1",
+      "success_masks": {
+        "base": 2,
+        "q02": 1,
+        "q001": 0,
+        "anchor16": 3,
+        "anchor0": 2,
+        "horizon12": 0
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 1
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-23263",
+      "stream": "s2",
+      "success_masks": {
+        "base": 1,
+        "q02": 1,
+        "q001": 0,
+        "anchor16": 2,
+        "anchor0": 1,
+        "horizon12": 5
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 3,
+        "q001": 3,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 1
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-14990",
+      "stream": "s2",
+      "success_masks": {
+        "base": 0,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 3,
+        "anchor0": 0,
+        "horizon12": 6
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 1,
+        "anchor0": 7,
+        "horizon12": 5
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-15229",
+      "stream": "s2",
+      "success_masks": {
+        "base": 4,
+        "q02": 4,
+        "q001": 0,
+        "anchor16": 6,
+        "anchor0": 4,
+        "horizon12": 5
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 5
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-12488",
+      "stream": "s2",
+      "success_masks": {
+        "base": 0,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 0,
+        "anchor0": 0,
+        "horizon12": 2
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 3
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-9758",
+      "stream": "s2",
+      "success_masks": {
+        "base": 1,
+        "q02": 1,
+        "q001": 1,
+        "anchor16": 4,
+        "anchor0": 1,
+        "horizon12": 2
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 4
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-29442",
+      "stream": "s2",
+      "success_masks": {
+        "base": 0,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 6,
+        "anchor0": 0,
+        "horizon12": 4
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 5
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-14441",
+      "stream": "s2",
+      "success_masks": {
+        "base": 4,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 6,
+        "anchor0": 4,
+        "horizon12": 6
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 6,
+        "q001": 6,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 6
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-731",
+      "stream": "s2",
+      "success_masks": {
+        "base": 2,
+        "q02": 2,
+        "q001": 2,
+        "anchor16": 0,
+        "anchor0": 2,
+        "horizon12": 2
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 7
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-22421",
+      "stream": "s2",
+      "success_masks": {
+        "base": 6,
+        "q02": 6,
+        "q001": 4,
+        "anchor16": 0,
+        "anchor0": 6,
+        "horizon12": 3
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 2
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-5469",
+      "stream": "s2",
+      "success_masks": {
+        "base": 5,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 4,
+        "anchor0": 5,
+        "horizon12": 7
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 5
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-2818",
+      "stream": "s2",
+      "success_masks": {
+        "base": 7,
+        "q02": 6,
+        "q001": 6,
+        "anchor16": 5,
+        "anchor0": 7,
+        "horizon12": 7
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 1,
+        "q001": 1,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 7
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-5713",
+      "stream": "s2",
+      "success_masks": {
+        "base": 3,
+        "q02": 2,
+        "q001": 0,
+        "anchor16": 3,
+        "anchor0": 3,
+        "horizon12": 7
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 3
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-1821",
+      "stream": "s2",
+      "success_masks": {
+        "base": 0,
+        "q02": 2,
+        "q001": 0,
+        "anchor16": 1,
+        "anchor0": 0,
+        "horizon12": 2
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 5
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-5888",
+      "stream": "s2",
+      "success_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 0,
+        "anchor16": 1,
+        "anchor0": 7,
+        "horizon12": 7
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 6
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-17554",
+      "stream": "s2",
+      "success_masks": {
+        "base": 0,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 2,
+        "anchor0": 0,
+        "horizon12": 6
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 1
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-8504",
+      "stream": "s2",
+      "success_masks": {
+        "base": 5,
+        "q02": 7,
+        "q001": 3,
+        "anchor16": 5,
+        "anchor0": 5,
+        "horizon12": 6
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 4,
+        "q001": 4,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 0
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-83",
+      "stream": "s3",
+      "success_masks": {
+        "base": 6,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 0,
+        "anchor0": 6,
+        "horizon12": 5
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 4,
+        "q001": 4,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 0
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-25906",
+      "stream": "s3",
+      "success_masks": {
+        "base": 0,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 2,
+        "anchor0": 0,
+        "horizon12": 2
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 5,
+        "q001": 5,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 5
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-10903",
+      "stream": "s3",
+      "success_masks": {
+        "base": 2,
+        "q02": 2,
+        "q001": 0,
+        "anchor16": 7,
+        "anchor0": 2,
+        "horizon12": 2
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 5,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 7
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-242",
+      "stream": "s3",
+      "success_masks": {
+        "base": 0,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 0,
+        "anchor0": 0,
+        "horizon12": 2
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 5,
+        "q001": 5,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 7
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-3540",
+      "stream": "s3",
+      "success_masks": {
+        "base": 7,
+        "q02": 5,
+        "q001": 1,
+        "anchor16": 6,
+        "anchor0": 7,
+        "horizon12": 7
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 2,
+        "q001": 2,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 6
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-15857",
+      "stream": "s3",
+      "success_masks": {
+        "base": 2,
+        "q02": 6,
+        "q001": 2,
+        "anchor16": 4,
+        "anchor0": 2,
+        "horizon12": 2
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 3,
+        "q001": 3,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 4
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-8231",
+      "stream": "s3",
+      "success_masks": {
+        "base": 0,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 0,
+        "anchor0": 0,
+        "horizon12": 4
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 3,
+        "q001": 3,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 3
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-16226",
+      "stream": "s3",
+      "success_masks": {
+        "base": 4,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 1,
+        "anchor0": 4,
+        "horizon12": 2
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 2
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-3397",
+      "stream": "s3",
+      "success_masks": {
+        "base": 0,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 0,
+        "anchor0": 0,
+        "horizon12": 4
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 3,
+        "q001": 3,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 3
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-18600",
+      "stream": "s3",
+      "success_masks": {
+        "base": 2,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 2,
+        "anchor0": 2,
+        "horizon12": 4
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 1
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-14490",
+      "stream": "s3",
+      "success_masks": {
+        "base": 1,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 5,
+        "anchor0": 1,
+        "horizon12": 5
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 6,
+        "q001": 2,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 6
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-1731",
+      "stream": "s3",
+      "success_masks": {
+        "base": 0,
+        "q02": 2,
+        "q001": 2,
+        "anchor16": 0,
+        "anchor0": 0,
+        "horizon12": 0
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 5,
+        "q001": 5,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 7
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-2444",
+      "stream": "s3",
+      "success_masks": {
+        "base": 1,
+        "q02": 1,
+        "q001": 1,
+        "anchor16": 5,
+        "anchor0": 1,
+        "horizon12": 1
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 5
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-3284",
+      "stream": "s3",
+      "success_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 3,
+        "anchor16": 7,
+        "anchor0": 7,
+        "horizon12": 7
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 2,
+        "q001": 0,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 3
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-4981",
+      "stream": "s3",
+      "success_masks": {
+        "base": 1,
+        "q02": 0,
+        "q001": 0,
+        "anchor16": 0,
+        "anchor0": 1,
+        "horizon12": 5
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 7,
+        "q001": 7,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 7
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-29328",
+      "stream": "s3",
+      "success_masks": {
+        "base": 1,
+        "q02": 1,
+        "q001": 0,
+        "anchor16": 0,
+        "anchor0": 1,
+        "horizon12": 1
+      },
+      "first_action_equal_base_masks": {
+        "base": 7,
+        "q02": 4,
+        "q001": 4,
+        "anchor16": 0,
+        "anchor0": 7,
+        "horizon12": 2
+      }
+    }
+  ]
+}
