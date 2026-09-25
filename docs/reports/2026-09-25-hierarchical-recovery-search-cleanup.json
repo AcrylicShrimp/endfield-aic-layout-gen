@@ -1,0 +1,383 @@
+{
+  "schema": "aic-hierarchical-recovery-search-cleanup-v1",
+  "compact_sha256": "a2e272171025c08209226bb485e084f41a99070c237c594e1c86cc979baa78e4",
+  "retained_baseline_report_sha256": {
+    "s1": "6bbf87af319620f3bd37ec2a01cb328897730474b32b7e0f52b05e2f776baa66",
+    "s2": "85de2ed24c45f70403c4ce173ab35197f9e964fa3f6da7ae7b7b4304eebc794f",
+    "s3": "ab7b7f7ab673fd124a254a4648f2ac66487f4e343e7c55601e3085b39b219ae5"
+  },
+  "removed": [
+    {
+      "path": "artifacts/recovery-search-v2/raw/s1/q001-20260923.json",
+      "file_bytes": 56562084
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s1/anchor16-20260922.json",
+      "file_bytes": 64019554
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s1/base-20260924.json",
+      "file_bytes": 58080332
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s1/anchor16-20260923.json",
+      "file_bytes": 64316024
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s1/anchor16-20260924.json",
+      "file_bytes": 69323633
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s1/anchor0-20260924.json",
+      "file_bytes": 58080947
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s1/q02-20260924.json",
+      "file_bytes": 57149920
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s1/q02-20260923.json",
+      "file_bytes": 56423280
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s1/horizon12-20260924.json",
+      "file_bytes": 58452799
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s1/horizon12-20260923.json",
+      "file_bytes": 62352392
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s1/q02-20260922.json",
+      "file_bytes": 61064925
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s1/base-20260923.json",
+      "file_bytes": 58247143
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s1/q001-20260924.json",
+      "file_bytes": 58198024
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s1/anchor0-20260923.json",
+      "file_bytes": 58247154
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s1/q001-20260922.json",
+      "file_bytes": 58750864
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s1/anchor0-20260922.json",
+      "file_bytes": 62198859
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s1/horizon12-20260922.json",
+      "file_bytes": 64551257
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s2/q001-20260923.json",
+      "file_bytes": 60156957
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s2/anchor16-20260922.json",
+      "file_bytes": 65031227
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s2/base-20260924.json",
+      "file_bytes": 59209643
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s2/anchor16-20260923.json",
+      "file_bytes": 64773644
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s2/anchor16-20260924.json",
+      "file_bytes": 63706419
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s2/anchor0-20260924.json",
+      "file_bytes": 59209206
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s2/q02-20260924.json",
+      "file_bytes": 57912774
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s2/q02-20260923.json",
+      "file_bytes": 59780826
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s2/horizon12-20260924.json",
+      "file_bytes": 60399823
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s2/horizon12-20260923.json",
+      "file_bytes": 57987710
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s2/q02-20260922.json",
+      "file_bytes": 53271068
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s2/base-20260923.json",
+      "file_bytes": 59611282
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s2/q001-20260924.json",
+      "file_bytes": 57761645
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s2/anchor0-20260923.json",
+      "file_bytes": 59611706
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s2/q001-20260922.json",
+      "file_bytes": 52819032
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s2/anchor0-20260922.json",
+      "file_bytes": 54370933
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s2/horizon12-20260922.json",
+      "file_bytes": 56692409
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s3/q001-20260923.json",
+      "file_bytes": 60570905
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s3/anchor16-20260922.json",
+      "file_bytes": 63190533
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s3/base-20260924.json",
+      "file_bytes": 60020565
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s3/anchor16-20260923.json",
+      "file_bytes": 67336293
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s3/anchor16-20260924.json",
+      "file_bytes": 64962524
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s3/anchor0-20260924.json",
+      "file_bytes": 60020897
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s3/q02-20260924.json",
+      "file_bytes": 62288558
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s3/q02-20260923.json",
+      "file_bytes": 61356831
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s3/horizon12-20260924.json",
+      "file_bytes": 63655906
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s3/horizon12-20260923.json",
+      "file_bytes": 59127653
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s3/q02-20260922.json",
+      "file_bytes": 59643266
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s3/base-20260923.json",
+      "file_bytes": 59048143
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s3/q001-20260924.json",
+      "file_bytes": 62039441
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s3/anchor0-20260923.json",
+      "file_bytes": 59148929
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s3/q001-20260922.json",
+      "file_bytes": 58917129
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s3/anchor0-20260922.json",
+      "file_bytes": 59968303
+    },
+    {
+      "path": "artifacts/recovery-search-v2/raw/s3/horizon12-20260922.json",
+      "file_bytes": 58933977
+    },
+    {
+      "path": "artifacts/recovery-search-v2/transform-smoke",
+      "file_bytes": 62191304
+    },
+    {
+      "path": "artifacts/recovery-search-v2/logs",
+      "file_bytes": 15362
+    },
+    {
+      "path": "artifacts/recovery-search-v2/inputs/candidates",
+      "file_bytes": 1996900
+    },
+    {
+      "path": "artifacts/recovery-search-v2/inputs/models/outer-512",
+      "file_bytes": 121787
+    },
+    {
+      "path": "artifacts/recovery-search-v2/invalid-zero-cleanup.json",
+      "file_bytes": 549
+    },
+    {
+      "path": "artifacts/recovery-search-v2/models/q02-20260922",
+      "file_bytes": 1539
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/q02-20260922-search.json",
+      "file_bytes": 912
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/q02-20260922-outer.json",
+      "file_bytes": 1442
+    },
+    {
+      "path": "artifacts/recovery-search-v2/models/q02-20260923",
+      "file_bytes": 1539
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/q02-20260923-search.json",
+      "file_bytes": 912
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/q02-20260923-outer.json",
+      "file_bytes": 1442
+    },
+    {
+      "path": "artifacts/recovery-search-v2/models/q02-20260924",
+      "file_bytes": 1539
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/q02-20260924-search.json",
+      "file_bytes": 912
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/q02-20260924-outer.json",
+      "file_bytes": 1442
+    },
+    {
+      "path": "artifacts/recovery-search-v2/models/q001-20260922",
+      "file_bytes": 1540
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/q001-20260922-search.json",
+      "file_bytes": 913
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/q001-20260922-outer.json",
+      "file_bytes": 1443
+    },
+    {
+      "path": "artifacts/recovery-search-v2/models/q001-20260923",
+      "file_bytes": 1540
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/q001-20260923-search.json",
+      "file_bytes": 913
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/q001-20260923-outer.json",
+      "file_bytes": 1443
+    },
+    {
+      "path": "artifacts/recovery-search-v2/models/q001-20260924",
+      "file_bytes": 1540
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/q001-20260924-search.json",
+      "file_bytes": 913
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/q001-20260924-outer.json",
+      "file_bytes": 1443
+    },
+    {
+      "path": "artifacts/recovery-search-v2/models/anchor16-20260922",
+      "file_bytes": 1539
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/anchor16-20260922-search.json",
+      "file_bytes": 912
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/anchor16-20260922-outer.json",
+      "file_bytes": 1442
+    },
+    {
+      "path": "artifacts/recovery-search-v2/models/anchor16-20260923",
+      "file_bytes": 1539
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/anchor16-20260923-search.json",
+      "file_bytes": 912
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/anchor16-20260923-outer.json",
+      "file_bytes": 1442
+    },
+    {
+      "path": "artifacts/recovery-search-v2/models/anchor16-20260924",
+      "file_bytes": 1539
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/anchor16-20260924-search.json",
+      "file_bytes": 912
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/anchor16-20260924-outer.json",
+      "file_bytes": 1442
+    },
+    {
+      "path": "artifacts/recovery-search-v2/models/anchor0-20260922",
+      "file_bytes": 1538
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/anchor0-20260922-search.json",
+      "file_bytes": 911
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/anchor0-20260922-outer.json",
+      "file_bytes": 1441
+    },
+    {
+      "path": "artifacts/recovery-search-v2/models/anchor0-20260923",
+      "file_bytes": 1538
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/anchor0-20260923-search.json",
+      "file_bytes": 911
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/anchor0-20260923-outer.json",
+      "file_bytes": 1441
+    },
+    {
+      "path": "artifacts/recovery-search-v2/models/anchor0-20260924",
+      "file_bytes": 1538
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/anchor0-20260924-search.json",
+      "file_bytes": 911
+    },
+    {
+      "path": "artifacts/recovery-search-v2/configs/anchor0-20260924-outer.json",
+      "file_bytes": 1441
+    }
+  ],
+  "removed_file_bytes": 3132927966,
+  "free_before_bytes": 173317779456,
+  "free_after_bytes": 176451248128,
+  "retained_for": "fresh horizon confirmation and successful-action learner screen"
+}
