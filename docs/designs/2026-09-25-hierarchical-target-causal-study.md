@@ -79,17 +79,22 @@ continuation winners, entropy, prior divergence, mass on unvisited actions,
 and agreement across search budgets and seeds. Measure these at first roots
 and later roots separately; later roots have much smaller action sets.
 
-Only after the continuation comparison, choose at most one alternative by a
-predeclared rule favoring better outcome alignment without high seed
-sensitivity. If no alternative clears that bar, report that the teacher's
-action values or outcome proxy remain insufficiently established; do not
-manufacture a sharper target. Train paired current-target and selected-target
-arms from identical starting weights and frozen collections on fresh training
-streams. Keep search, lower model, optimizer updates, replay, and evaluation
-cases equal. Compare immediate gains/losses and at least three streams of
-multi-generation retention, including easy and hard strata. A lower training
-restart and untouched final held-out test are required before adopting a
-learner change for the curriculum.
+Use a pairwise logistic score on the clear continuation winners, conditioned
+on the tested action set, to select at most one alternative: require at least
+20 clear action pairs, an overall loss improvement of at least 0.05 nats over
+the current target, and improvement in at least two of the three panel
+streams. Break any tie in favor of 2x, then 4x, then half-visited. If none
+passes, use the half-visited target only as a prespecified stress contrast for
+the learner; label outcome alignment unresolved and do not promote it. First
+train paired current-target and contrast-target arms from identical starting
+weights on byte-identical frozen collections to isolate the target change.
+Then compare at least three streams of multi-generation retention using fresh
+on-policy collections for each arm and the same problem streams. Keep search,
+lower model, optimizer updates, replay, and evaluation cases equal. Compare
+immediate gains/losses and retention,
+including easy and hard strata. A lower training restart and untouched final
+held-out test are required before adopting a learner change for the
+curriculum.
 
 ## Controls and closeout
 
