@@ -203,7 +203,8 @@ def analyze(root):
                 for stream in STREAMS)
             if improvement >= 0.05 and better_streams >= 2:
                 eligible.append((candidate["case_mean_pair_loss"], name))
-    choice = min(eligible)[1] if eligible else "half-visited"
+    choice = min(eligible, key=lambda item: (item[0], VARIANTS.index(item[1])))[1] \
+        if eligible else "half-visited"
     choice_reason = "replicated-outcome-aligned" if eligible else "stress-contrast-only"
     output = {
         "schema": "aic-hierarchical-target-contrast-analysis-v1",
