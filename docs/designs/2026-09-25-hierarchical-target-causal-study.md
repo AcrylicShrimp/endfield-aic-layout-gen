@@ -73,6 +73,16 @@ with downstream seed, rerun only those unresolved first-action pairs with 512
 simulations per later move before judging coverage or Q ranking. Keep that
 escalation separate from the primary 128-simulation outcomes.
 
+An additional volatility control was declared after the first two baseline
+continuation seeds, before observing any second-seed alternative actions:
+20 of 48 cases changed final success despite the exact same forced first
+action and immediate state. After the primary matrix closes, rerun that one
+baseline first action per case at 512 simulations for each of the same three
+downstream seeds, with all other controls fixed. Compare case-level success,
+progress, and each pair of seeds' success disagreements at 128 versus 512.
+This checks whether a fourfold continuation budget reduces seed sensitivity;
+it is not an extra candidate-selection result or a production promotion gate.
+
 ## 3. Target construction and learner effect
 
 On the same frozen root records, compare the present full completed-Q target
