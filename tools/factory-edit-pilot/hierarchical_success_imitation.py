@@ -113,6 +113,8 @@ def prepare(root, commit):
         "experiment_commit": commit, "planned_records": 12,
         "runner_sha256": sha(Path(__file__)),
         "helper_sha256": sha(Path(__file__).with_name("hierarchical_target_learner.py")),
+        "tracking_sha256": sha(Path(__file__).with_name(
+            "hierarchical_target_learner_tracking.py")),
         "binary_sha256": sha(BINARY), "search_sha256": sha(SEARCH),
         "generation_sha256": sha(GENERATION),
         "generation_failed_off_sha256": sha(root / "configs/generation-failed-off.json"),
@@ -138,6 +140,8 @@ def validate(root):
             and protocol["runner_sha256"] == sha(Path(__file__))
             and protocol["helper_sha256"]
             == sha(Path(__file__).with_name("hierarchical_target_learner.py"))
+            and protocol["tracking_sha256"]
+            == sha(Path(__file__).with_name("hierarchical_target_learner_tracking.py"))
             and protocol["binary_sha256"] == sha(BINARY)
             and protocol["search_sha256"] == sha(SEARCH)
             and protocol["generation_sha256"] == sha(GENERATION)
