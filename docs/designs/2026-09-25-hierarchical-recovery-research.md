@@ -54,6 +54,18 @@ two seeds, and does not lose more than two baseline robust successes. Report
 all arms even if none passes. A new disjoint panel is required before changing
 the search contract.
 
+If `horizon12` passes the frozen screen, compare only it and `base` on a new,
+disjoint 64-case training-partition panel under the same three root seeds.
+Generate 512 candidate cases with seed 20262560 and namespace
+`hierarchical-recovery-horizon-confirm-v1`, excluding all 48 screen problem
+identities before taking the first 64. Preserve the generation-87 checkpoints
+and exact search configurations. Call horizon 12 independently confirmed only
+if its mean gain is at least four of 64, at least two seeds gain, and no more
+than three baseline robust successes (successful under at least two seeds)
+are lost. Keep the full gain/loss masks, first-action agreement, and runtime.
+This confirmation checks a frozen search setting; it is not evidence that the
+learner will retain its benefits across generations.
+
 As a mechanism check after the screen, compare each arm's first-root searched
 Q and improved-policy target with the previously independently confirmed
 first-action winner/loser pairs on these same cases. Count Q agreement only
