@@ -249,6 +249,18 @@ rejects promotion without the extra seed stage. A promising result still
 needs a same-search cross-evaluation to separate model transfer from search
 strength, then lower-training restoration and untouched held-out evaluation.
 
+If the seed-stress gate passes, complete the two missing cells of a paired
+two-by-two comparison for each stream on the same 64-case diagnostic and root
+seed 20260922: evaluate the horizon-six-trained final model with horizon-12
+search, and the horizon-12-trained final model with horizon-six search. Reuse
+the two diagonal cells already measured in the on-policy experiment. Change
+only the outer model's search contract when creating a shadow checkpoint;
+verify its weight hash matches the original. Report completion and loss of
+the 26 starting successes for all four cells, model differences within each
+search horizon, and search differences within each model origin. This stage
+explains which factor carries the measured gain; it does not replace the
+predeclared seed-stress gate or the later untouched held-out test.
+
 ## Continuity and closeout
 
 Reuse the existing CLI search harness, panel generator, generation trainer,
