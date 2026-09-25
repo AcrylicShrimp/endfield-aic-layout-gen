@@ -1,0 +1,2459 @@
+{
+  "schema": "aic-hierarchical-first-action-source-v1",
+  "stream": "s2",
+  "full_actions_sha256": "e9d7eb4e088ecee9f1f96bfdf9bfb67c3aefafed10945f1cd74b1f7813b52762",
+  "cases": [
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-23263",
+      "first_state_sha256": "60474845e351ed148b699526ad04bae4bb5729e46c56e1970fa6606f6ca392ce",
+      "candidates": [
+        {
+          "action_sha256": "862bf036a3e1d6ce20e86b23d582f6c12cd8ae9bbfa955fdcfc13818caadd946",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 12,
+                "y": 13
+              },
+              "rotation": 180
+            }
+          },
+          "reasons": [
+            "selected-c16-n128",
+            "selected-c32-n128",
+            "selected-c64-n128",
+            "selected-c16-n512",
+            "selected-c32-n512",
+            "selected-c64-n512",
+            "selected-c128-n512",
+            "highest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "5276f2a3ecc0a74cd4cdfdf0b3c443e4bf9a741af47956457bc930e50d5ba0df",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "lowest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "7a4ab54ec3f95475ccc34c9c6ecf15d92a7493a6f710f9d9131c718cdc30fa59",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-guaranteed-anchor"
+          ]
+        },
+        {
+          "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "1781404d47fc4bbfd0db56ffd8271780afd93ccdc8f2f66e93a20a883b39be97",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 11,
+                "y": 10
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "highest-mixed-prior-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "f81ce46adf0b01044278d520ba5b866fc86f82fbc21bdbb2e44dc0edfcbe6046",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 1,
+                "y": 9
+              },
+              "rotation": 180
+            }
+          },
+          "reasons": [
+            "highest-q-outside-16-in-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "3812732a3ac51400fa441b5e1d8ca16dbd29f54c3598174beaadf4ebeca1a224",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 5
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-14990",
+      "first_state_sha256": "87ab4f6a6b91b1fabdbe8acc9081cf4af478594e98b9a52ef5bc08c3554ec2a4",
+      "candidates": [
+        {
+          "action_sha256": "4d94aead2cdcd359648b9f6ea250988489a1dba7653fd0af94cca924428284cd",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 11
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "selected-c16-n128",
+            "selected-c32-n128",
+            "selected-c64-n128",
+            "selected-c16-n512",
+            "selected-c32-n512",
+            "selected-c64-n512",
+            "selected-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "2c5f02a43c32498a92b92c2551f36ea96233f31781a265194342fb40cbe55b5d",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 2,
+                "y": 3
+              },
+              "rotation": 180
+            }
+          },
+          "reasons": [
+            "highest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "5276f2a3ecc0a74cd4cdfdf0b3c443e4bf9a741af47956457bc930e50d5ba0df",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "lowest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "7a4ab54ec3f95475ccc34c9c6ecf15d92a7493a6f710f9d9131c718cdc30fa59",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-guaranteed-anchor"
+          ]
+        },
+        {
+          "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "bdcc60f8719dcc305087fe3555971eac4718e0ec75fe7eb5a3d49c0d99c55c77",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 11
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "highest-mixed-prior-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "6a79c89c6d7a96e983ee86b53d62df6a97154a9095a869066dffce365548adc5",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 0,
+                "y": 14
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "highest-q-outside-16-in-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "f95283a4a0c3cb04dcaa341dffa7a7bb7fc5482ed354acda86001541dde53593",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 15,
+                "y": 5
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-15229",
+      "first_state_sha256": "84042a56de8360e07669f28f5d432622ebe13314ee84329ab123a4c9decc71b3",
+      "candidates": [
+        {
+          "action_sha256": "14a91aa3b4fa2c34d465a7db0a1accaf816955e1742fdebf5272033b6a478c6a",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 5,
+                "y": 5
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "selected-c16-n128",
+            "selected-c32-n128",
+            "selected-c64-n128",
+            "selected-c16-n512",
+            "selected-c32-n512",
+            "selected-c64-n512",
+            "selected-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "80201ef7944b0de2a6f2ecaf61f297e8a30bb10fafff124502292e963d8680e9",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 5,
+                "y": 4
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "highest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "5276f2a3ecc0a74cd4cdfdf0b3c443e4bf9a741af47956457bc930e50d5ba0df",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "lowest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "7a4ab54ec3f95475ccc34c9c6ecf15d92a7493a6f710f9d9131c718cdc30fa59",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-guaranteed-anchor"
+          ]
+        },
+        {
+          "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "1781404d47fc4bbfd0db56ffd8271780afd93ccdc8f2f66e93a20a883b39be97",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 11,
+                "y": 10
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "highest-mixed-prior-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "63e32430da4135196ed87cd904624db821d02794f330a351dd4b201e86ec8848",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 6,
+                "y": 1
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "highest-q-outside-16-in-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "2328762a2c0b3793fab8683fbea561216384992b4e5acd6f128f7be872cad264",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 7,
+                "y": 6
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-12488",
+      "first_state_sha256": "1f8c4e65af068766e159406d5bf95c08538cc4ab011b8656af6cdfd419d54eeb",
+      "candidates": [
+        {
+          "action_sha256": "cfb396f34b37c3045649da3769b69574d4263c282aee2ad280efafc3e5a20418",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 2,
+                "y": 5
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "selected-c16-n128",
+            "selected-c32-n128",
+            "selected-c16-n512",
+            "selected-c32-n512",
+            "selected-c64-n512",
+            "selected-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "5eea8822add903c1ce334a3672391be45d0adc25900034c229ff79ad49ac0ec6",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 17,
+                "y": 15
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "selected-c64-n128",
+            "highest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "5276f2a3ecc0a74cd4cdfdf0b3c443e4bf9a741af47956457bc930e50d5ba0df",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "lowest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "7a4ab54ec3f95475ccc34c9c6ecf15d92a7493a6f710f9d9131c718cdc30fa59",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-guaranteed-anchor"
+          ]
+        },
+        {
+          "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "bdcc60f8719dcc305087fe3555971eac4718e0ec75fe7eb5a3d49c0d99c55c77",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 11
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "highest-mixed-prior-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "1fdd4c77308af68412889313e00357855a57690d4ab2f140c16442bf76380e42",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 9,
+                "y": 11
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "highest-q-outside-16-in-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "df2ec98b5d956826cd4d821aed2186981cd315de5925ae329f6572604dd09790",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place-terminal",
+              "terminal": "terminal-1",
+              "position": {
+                "x": 9,
+                "y": 0
+              }
+            }
+          },
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-9758",
+      "first_state_sha256": "75156309e23bfdda652c12743efba26fc72c1cefd0ff1ff595b7b20ce2576469",
+      "candidates": [
+        {
+          "action_sha256": "12e624097e83ee70ff0e14730341cf7d4c0f967976e57dfa2fbc8d413377c412",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 18,
+                "y": 2
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "selected-c16-n128",
+            "selected-c32-n128",
+            "selected-c64-n128",
+            "selected-c16-n512",
+            "selected-c32-n512",
+            "selected-c64-n512",
+            "selected-c128-n512",
+            "highest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "5276f2a3ecc0a74cd4cdfdf0b3c443e4bf9a741af47956457bc930e50d5ba0df",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "lowest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "7a4ab54ec3f95475ccc34c9c6ecf15d92a7493a6f710f9d9131c718cdc30fa59",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-guaranteed-anchor"
+          ]
+        },
+        {
+          "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "2d22f9dfe77ce7466f8fb5786c743c916299edc1c1f3b9499b0c7d1509b86cbe",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 9
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-mixed-prior-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "844e572dbc1e115465bb079cc619d9d21dd1349f8bcecd7c216eb6a1e1a59697",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 15,
+                "y": 13
+              },
+              "rotation": 180
+            }
+          },
+          "reasons": [
+            "highest-q-outside-16-in-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "edb7de8bd3963267fc7d4d33b9ac90400115a1fa5bd8e37ed66b809ffe4fc3d8",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place-terminal",
+              "terminal": "terminal-1",
+              "position": {
+                "x": 0,
+                "y": 15
+              }
+            }
+          },
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-29442",
+      "first_state_sha256": "d79472cb4bfab562131d1e083e7fc826c78df37505d8a9d9ddefa832b6c9d168",
+      "candidates": [
+        {
+          "action_sha256": "73a63afd3c042e11cd992590cd5b457829ec20f774bd4ffcfdc9b89e2c40e0fd",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 8,
+                "y": 9
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "selected-c16-n128",
+            "selected-c32-n128",
+            "selected-c64-n128",
+            "selected-c16-n512",
+            "selected-c32-n512",
+            "selected-c64-n512",
+            "selected-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "5c0d5a682b7531402347fd1f51440662e0e1d0c5e805e3c8ec5dd166b3654126",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 7,
+                "y": 0
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "highest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "5276f2a3ecc0a74cd4cdfdf0b3c443e4bf9a741af47956457bc930e50d5ba0df",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "lowest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "7a4ab54ec3f95475ccc34c9c6ecf15d92a7493a6f710f9d9131c718cdc30fa59",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-guaranteed-anchor"
+          ]
+        },
+        {
+          "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "126e0f4029063124ee8cab8cb7fad53afae78ada2f120f79029f00e64b4ab0db",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 9
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-mixed-prior-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "018b25129c376efd6dd339b1632248e74ca997375d02d64e8168b7243d9d439d",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 1
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-outside-16-in-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "2ff8766afccac067469384244788cc66ca1c4e62a7a42d6f755bbc9a1aef1c8e",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place-terminal",
+              "terminal": "terminal-3",
+              "position": {
+                "x": 0,
+                "y": 10
+              }
+            }
+          },
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-14441",
+      "first_state_sha256": "474f230c5fa29b45525a9392e6feab053c4875aa9062aaa90d7b27fcc2c75b31",
+      "candidates": [
+        {
+          "action_sha256": "9d36cfb5b8f9195a561d2a59326342c53eb302f44aab9cd3bd557a80147d5af6",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 17,
+                "y": 1
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "selected-c16-n128",
+            "highest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "c9953129bd79ad6d073ddea0416a32f599ea01299444c535c83bfe1e9066aa88",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 6,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "selected-c32-n128",
+            "selected-c64-n128",
+            "selected-c16-n512",
+            "selected-c32-n512",
+            "selected-c64-n512",
+            "selected-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "5276f2a3ecc0a74cd4cdfdf0b3c443e4bf9a741af47956457bc930e50d5ba0df",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "lowest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "7a4ab54ec3f95475ccc34c9c6ecf15d92a7493a6f710f9d9131c718cdc30fa59",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-guaranteed-anchor"
+          ]
+        },
+        {
+          "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "bdcc60f8719dcc305087fe3555971eac4718e0ec75fe7eb5a3d49c0d99c55c77",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 11
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "highest-mixed-prior-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "d054db8f315d663db26291ebf2dc608cf2f29ad70e6725a07995bb0680b978cc",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 7,
+                "y": 5
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "highest-q-outside-16-in-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "33fb25e93f4545815500de4af256c51738e795b94d8e3a14b60d0f3d518027fc",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 2,
+                "y": 14
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-731",
+      "first_state_sha256": "31354e7e08750587c3a31019e8115f2f52e1eea0d1f3748eabca53763008b544",
+      "candidates": [
+        {
+          "action_sha256": "7e2cfd3a408df4bf38fe7d47644226165d4e11b9e0d8312beeb8c38ec3e34ed4",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 13,
+                "y": 4
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "selected-c16-n128",
+            "selected-c32-n128",
+            "selected-c64-n128",
+            "selected-c16-n512",
+            "selected-c32-n512",
+            "selected-c64-n512",
+            "selected-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "a22276a9b89659b7bc0e6fb7ffdbefd7de6c1cb2f0c1981b665e825957fa5a27",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 5,
+                "y": 5
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "highest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "5276f2a3ecc0a74cd4cdfdf0b3c443e4bf9a741af47956457bc930e50d5ba0df",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "lowest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "7a4ab54ec3f95475ccc34c9c6ecf15d92a7493a6f710f9d9131c718cdc30fa59",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-guaranteed-anchor"
+          ]
+        },
+        {
+          "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "bdcc60f8719dcc305087fe3555971eac4718e0ec75fe7eb5a3d49c0d99c55c77",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 11
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "highest-mixed-prior-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "a59c613b07b5fc463ede1d4011d6a7ece413884558c96fad0e39187765b73e2c",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 15,
+                "y": 12
+              },
+              "rotation": 180
+            }
+          },
+          "reasons": [
+            "highest-q-outside-16-in-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "6c4a4a97531148277eca158958a1d92128f1ae2c70451ab0295b91c9e54740a7",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 7,
+                "y": 10
+              },
+              "rotation": 180
+            }
+          },
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-22421",
+      "first_state_sha256": "71176d00538b16c8693d49db88e8c9844ad7a72b95b2e19d91c297e7f798f9bc",
+      "candidates": [
+        {
+          "action_sha256": "81dfe7f966c19ed03656ad4a9ee825dce9bfbfbb552746df57b01642743aa988",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 1,
+                "y": 0
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "selected-c16-n128",
+            "selected-c32-n128",
+            "selected-c64-n128",
+            "selected-c16-n512",
+            "selected-c32-n512",
+            "selected-c64-n512",
+            "selected-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "1a4f57d8a8a0b26f1065e466ebb954b2603d8451c9e9c8abfe7178300ecc834e",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 12
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "5276f2a3ecc0a74cd4cdfdf0b3c443e4bf9a741af47956457bc930e50d5ba0df",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "lowest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "7a4ab54ec3f95475ccc34c9c6ecf15d92a7493a6f710f9d9131c718cdc30fa59",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-guaranteed-anchor"
+          ]
+        },
+        {
+          "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "bdcc60f8719dcc305087fe3555971eac4718e0ec75fe7eb5a3d49c0d99c55c77",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 11
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "highest-mixed-prior-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "a8bf66288ac76f35c7d38ced66cfa448cdb46d569bfca40863689813778acdbd",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 5,
+                "y": 7
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-outside-16-in-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "0884ee0d18b94d8d1caea335a35e399044ae31ee019a4169e969d0a0d4940526",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 4,
+                "y": 14
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-5469",
+      "first_state_sha256": "928d817dd11c88defe678de679e344d1481f89c0ca1460e91e65be52accafd46",
+      "candidates": [
+        {
+          "action_sha256": "80e689c474a35842555c6821ddd7f374cdcf3b85a7deb6f5b34b581f63b4e1f0",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 0,
+                "y": 11
+              },
+              "rotation": 180
+            }
+          },
+          "reasons": [
+            "selected-c16-n128",
+            "selected-c32-n128",
+            "selected-c64-n128",
+            "selected-c16-n512",
+            "selected-c32-n512",
+            "selected-c64-n512",
+            "selected-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "d05eb9b3b3ca12917cf4d2e71dc2336ae45e267a75a9ec09d30f9dff5df4972b",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 14,
+                "y": 2
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "highest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "5276f2a3ecc0a74cd4cdfdf0b3c443e4bf9a741af47956457bc930e50d5ba0df",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "lowest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "7a4ab54ec3f95475ccc34c9c6ecf15d92a7493a6f710f9d9131c718cdc30fa59",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-guaranteed-anchor"
+          ]
+        },
+        {
+          "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "ac96c8e82b54febc579680ad70688747c7f2cad319fa3e589c65b25a057113e5",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 11,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "highest-mixed-prior-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "31404c2ce8513602f84c7c922912adbb348428cc1e920b6b89c5d06812aa061a",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place-terminal",
+              "terminal": "terminal-1",
+              "position": {
+                "x": 0,
+                "y": 13
+              }
+            }
+          },
+          "reasons": [
+            "highest-q-outside-16-in-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "32220155c245301e7f6cd7eb54c71f712e9e3889c32d66e575727374794a37c7",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 2,
+                "y": 7
+              },
+              "rotation": 180
+            }
+          },
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-2818",
+      "first_state_sha256": "c9a55530f04d53cea382349c8557f79e0094e9cfc5cdde3b1a3e9e319e58cc1a",
+      "candidates": [
+        {
+          "action_sha256": "f1536bce40da01524bce32ac93ee56924bcba979dc3399b491c6dfc6ad40a7ee",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place-terminal",
+              "terminal": "terminal-0",
+              "position": {
+                "x": 15,
+                "y": 0
+              }
+            }
+          },
+          "reasons": [
+            "selected-c16-n128",
+            "selected-c32-n128",
+            "selected-c64-n128",
+            "selected-c16-n512",
+            "selected-c32-n512",
+            "selected-c64-n512",
+            "selected-c128-n512",
+            "highest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "5276f2a3ecc0a74cd4cdfdf0b3c443e4bf9a741af47956457bc930e50d5ba0df",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "lowest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "7a4ab54ec3f95475ccc34c9c6ecf15d92a7493a6f710f9d9131c718cdc30fa59",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-guaranteed-anchor"
+          ]
+        },
+        {
+          "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "622eaf46ab32cf616db9fd250ad52f921c3baa91f5bfe58672dbdeb5e53e1f67",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 11,
+                "y": 10
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "highest-mixed-prior-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "c4bcea43207bf5c366ed86b7d8a1e028199d346253b68ca359124cb627cad635",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 6,
+                "y": 3
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-outside-16-in-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "a87ed25b59a2bf35be81ddaa8ee16a521649de133fa3fd4e7e783955bed50b44",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 2,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-5713",
+      "first_state_sha256": "e8e8c0b6888a8ed8c3ab3d601f6f2a90a4e571fe54f674f3927c618ccf155c27",
+      "candidates": [
+        {
+          "action_sha256": "4efa7fc3c3f77fc3b70d77c35fc72de92eb134c72d2517354a423857af7a88a2",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 8,
+                "y": 13
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "selected-c16-n128",
+            "selected-c32-n128",
+            "selected-c64-n128",
+            "selected-c16-n512",
+            "selected-c32-n512",
+            "selected-c64-n512",
+            "selected-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "1159dd63114f6e3af4d44d0a5e6b2e256de7047fb82a8a001846570924f3f1d8",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 6,
+                "y": 4
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "highest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "5276f2a3ecc0a74cd4cdfdf0b3c443e4bf9a741af47956457bc930e50d5ba0df",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "lowest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "7a4ab54ec3f95475ccc34c9c6ecf15d92a7493a6f710f9d9131c718cdc30fa59",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-guaranteed-anchor"
+          ]
+        },
+        {
+          "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "ac96c8e82b54febc579680ad70688747c7f2cad319fa3e589c65b25a057113e5",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 11,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "highest-mixed-prior-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "92165663a3252bce1465a18af792747b645fea516a0886a5a9f975d423f78aea",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 7,
+                "y": 9
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-outside-16-in-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "0d89bbf14722dc3a78c7d64f7723634e7df5ccf3016d03b52278fd470fda8a91",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 18,
+                "y": 9
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-1821",
+      "first_state_sha256": "b1868c3608ef1b9b6a08f48ce0b13fc24e32964964e995838d2395c90382410b",
+      "candidates": [
+        {
+          "action_sha256": "307bca7772f2d86e9a25263f9185771c437d46cbf3fac8535fd9faa7b733d7ec",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 2,
+                "y": 0
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "selected-c16-n128",
+            "selected-c32-n128",
+            "selected-c64-n128"
+          ]
+        },
+        {
+          "action_sha256": "ef84b49cf4043c65c6d8e43c9274603bb1f2c445ef11bfb044bdee92932c854a",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place-terminal",
+              "terminal": "terminal-4",
+              "position": {
+                "x": 20,
+                "y": 12
+              }
+            }
+          },
+          "reasons": [
+            "selected-c16-n512",
+            "selected-c32-n512",
+            "selected-c64-n512",
+            "selected-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "754bdc0df770b765720dfaa9efc2a3c2dab61cd0471a0727a9b2f88e8d4867ea",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place-terminal",
+              "terminal": "terminal-1",
+              "position": {
+                "x": 4,
+                "y": 0
+              }
+            }
+          },
+          "reasons": [
+            "highest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "5276f2a3ecc0a74cd4cdfdf0b3c443e4bf9a741af47956457bc930e50d5ba0df",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "lowest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "7a4ab54ec3f95475ccc34c9c6ecf15d92a7493a6f710f9d9131c718cdc30fa59",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-guaranteed-anchor"
+          ]
+        },
+        {
+          "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "eda4704bab926c4a5e9d99501f501e89e725002ccba7a21448c8db9fbe8f0e6c",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 9
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "highest-mixed-prior-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "265d6a2f24c467acc9d1e3fe147a6dfe0a63fd1e900dc2730874d2d5e1d245e6",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 6,
+                "y": 12
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "highest-q-outside-16-in-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "49baf769563082ce525b5ac44832cecb2747c4ee8c8b4d4230886a7cca11ab26",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place-terminal",
+              "terminal": "terminal-1",
+              "position": {
+                "x": 1,
+                "y": 0
+              }
+            }
+          },
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-5888",
+      "first_state_sha256": "8d0df82eef693a126f2c0b208a7b07a1f2d465c27975af6f0c6204903c0c4c27",
+      "candidates": [
+        {
+          "action_sha256": "bffd0ff449499374b7d13ff92b47af723e783a4b3bfb9651b7382bfaedb3dc2a",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 8,
+                "y": 9
+              },
+              "rotation": 180
+            }
+          },
+          "reasons": [
+            "selected-c16-n128",
+            "selected-c32-n128",
+            "selected-c64-n128",
+            "selected-c16-n512",
+            "selected-c32-n512",
+            "selected-c64-n512",
+            "selected-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "a17f91cfb0cb4cbd536a2eb47503e89d8a3cb80e01a422849c8d7414675d2f4c",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place-terminal",
+              "terminal": "terminal-0",
+              "position": {
+                "x": 17,
+                "y": 20
+              }
+            }
+          },
+          "reasons": [
+            "highest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "5276f2a3ecc0a74cd4cdfdf0b3c443e4bf9a741af47956457bc930e50d5ba0df",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "lowest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "7a4ab54ec3f95475ccc34c9c6ecf15d92a7493a6f710f9d9131c718cdc30fa59",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-guaranteed-anchor"
+          ]
+        },
+        {
+          "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "7448414c8d3fb9120ce088b4ede742a6da02e7a3b026c421befba4f6b7c2ba7a",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place-terminal",
+              "terminal": "terminal-1",
+              "position": {
+                "x": 0,
+                "y": 0
+              }
+            }
+          },
+          "reasons": [
+            "highest-mixed-prior-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "97afd27293dfc51852d9939c389a507c7d59e6507094e295aabd651ec30a0050",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 3,
+                "y": 1
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-outside-16-in-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "cacfdb07e6b59da202dcd9d74755de3d1d538ab5db3a0ecadb6eed0a7b1fa95f",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 14,
+                "y": 4
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-17554",
+      "first_state_sha256": "4e412978b17606b75f0d95e4db8753720d977a8a4d0c8018b62c276f8676b579",
+      "candidates": [
+        {
+          "action_sha256": "5913b3bc1719d814f0098a06f6e29ea128d01945175fc66312414ca3cdbdf72a",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 1,
+                "y": 7
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "selected-c16-n128",
+            "selected-c32-n128",
+            "selected-c64-n128",
+            "selected-c16-n512",
+            "selected-c32-n512",
+            "selected-c64-n512",
+            "selected-c128-n512",
+            "highest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "5276f2a3ecc0a74cd4cdfdf0b3c443e4bf9a741af47956457bc930e50d5ba0df",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "lowest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "7a4ab54ec3f95475ccc34c9c6ecf15d92a7493a6f710f9d9131c718cdc30fa59",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-guaranteed-anchor"
+          ]
+        },
+        {
+          "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "1781404d47fc4bbfd0db56ffd8271780afd93ccdc8f2f66e93a20a883b39be97",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 11,
+                "y": 10
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "highest-mixed-prior-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "9f7b6fec25ea64a41037c8064ad25bdd7a6ae5b0426b4836f89a22f2c691f450",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 9,
+                "y": 12
+              },
+              "rotation": 180
+            }
+          },
+          "reasons": [
+            "highest-q-outside-16-in-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "d468aa5615adef9ca65b07426d6d974f4ace1a563ac6bb6f0c250df14cc235dd",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 11,
+                "y": 13
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-8504",
+      "first_state_sha256": "2854f7862a685b91f991a961171118f6b537da769f66e1ba5ef6cdbbcea56a16",
+      "candidates": [
+        {
+          "action_sha256": "0d59737936b463206973afc99a68364b3129c688fc63fda3f05bc71f4d17a262",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 8,
+                "y": 4
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "selected-c16-n128",
+            "selected-c32-n128",
+            "selected-c64-n128",
+            "highest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "3881f8ad5af6a5e7e35a68aea45d42f0e146ef41e932b4a2dcfb64113278828e",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 3,
+                "y": 11
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "selected-c16-n512",
+            "selected-c32-n512",
+            "selected-c64-n512"
+          ]
+        },
+        {
+          "action_sha256": "59a5b78ecabac9f6f4e0b9ce2704e3528d7fd4c5e311d0cb9147fdadc02fd3a5",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 8,
+                "y": 10
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "selected-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "5276f2a3ecc0a74cd4cdfdf0b3c443e4bf9a741af47956457bc930e50d5ba0df",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-0",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          },
+          "reasons": [
+            "lowest-q-16"
+          ]
+        },
+        {
+          "action_sha256": "7a4ab54ec3f95475ccc34c9c6ecf15d92a7493a6f710f9d9131c718cdc30fa59",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 10,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-q-guaranteed-anchor"
+          ]
+        },
+        {
+          "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 90
+            }
+          },
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "9a99911de2153364264bf0c60885543e8cd510f48d0dea742c77ff66c8956c33",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 270
+            }
+          },
+          "reasons": [
+            "highest-mixed-prior-outside-16"
+          ]
+        },
+        {
+          "action_sha256": "66dcc6db2ba28454c45b16e8b2830671fbbcb562747340d9aecc66a3823f90db",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 6,
+                "y": 10
+              },
+              "rotation": 180
+            }
+          },
+          "reasons": [
+            "highest-q-outside-16-in-c128-n512"
+          ]
+        },
+        {
+          "action_sha256": "8556966bf10382db3da2cced81e286c5547f4e5cd9da7d54b24ef3ec9d3d629a",
+          "action": {
+            "kind": "command",
+            "value": {
+              "kind": "place",
+              "block": "block-1",
+              "position": {
+                "x": 15,
+                "y": 6
+              },
+              "rotation": 180
+            }
+          },
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "schema": "aic-hierarchical-candidate-width-protocol-v1",
+  "experiment_commit": "dc12943",
+  "binary_sha256": "e594b5425074a03731524d8c91991126232d840ef44a86e8b0630e1f16800fdf",
+  "panels": {
+    "s1": "a1bae05c58a35d468f509517c6d148710a189cb2686fcc432dde5d411ec27b66",
+    "s2": "989c891cb1ef3c2de10a2833ca985cc04af89ddc753374b34436956079d9640d",
+    "s3": "bf2465b8a1b8b7459237316d403e6206d1217828fd9adaba67d8975f64413871"
+  },
+  "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+  "outer_checkpoint_sha256": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520",
+  "configs": {
+    "c16-n128": {
+      "search": "8e93eabedac15f81adbb27bd9ca0a3f05f985d339bc9e84e647f87b60c06e48d",
+      "outer": "d3226611ef6d36008b104db96e4bb6746cad99f35909b51fd174bf5fda825b47",
+      "model_config": "d3226611ef6d36008b104db96e4bb6746cad99f35909b51fd174bf5fda825b47"
+    },
+    "c32-n128": {
+      "search": "a802ebf66625e843a2aa3a3f64b081ddcd3c5f62e46cbe67abefed811fe4739f",
+      "outer": "87ac7aa23b6a1cf746c454773d9318d78f60938109b2376fb6df3c3a57440c6c",
+      "model_config": "87ac7aa23b6a1cf746c454773d9318d78f60938109b2376fb6df3c3a57440c6c"
+    },
+    "c64-n128": {
+      "search": "833189f7eef6dcfee8523cdc8c0991c614f56aeb2fc5dd00643a183a93f9d99d",
+      "outer": "f1a4aebe33077cd76a2ab4657befc63831a0354e09d1a0fca1f886f7bef80862",
+      "model_config": "f1a4aebe33077cd76a2ab4657befc63831a0354e09d1a0fca1f886f7bef80862"
+    },
+    "c16-n512": {
+      "search": "da70e73cf44ab8f62c8d5b96b5b88086c732388346e4f3fdb2ca5b95e1b1f6c9",
+      "outer": "55a0f4428bc446cea1f6e75c34b2a40c2ebbc749d444568ad2a2604a2b677d16",
+      "model_config": "55a0f4428bc446cea1f6e75c34b2a40c2ebbc749d444568ad2a2604a2b677d16"
+    },
+    "c32-n512": {
+      "search": "3c38c85353a6fe104f9111b44eff2a5144e198217248f6f182ab1f40b5c33073",
+      "outer": "d5ba646a826ef07732d20043dcf26410138242569bee557f0d78b3967abdfea6",
+      "model_config": "d5ba646a826ef07732d20043dcf26410138242569bee557f0d78b3967abdfea6"
+    },
+    "c64-n512": {
+      "search": "d010cc547d096f6033ed237284ae9696ee63e890392a82925de64cb728bdff2d",
+      "outer": "91878af1853a7489a7971baaaa2de913acd73b1d24281e66f4f34389f03ccd49",
+      "model_config": "91878af1853a7489a7971baaaa2de913acd73b1d24281e66f4f34389f03ccd49"
+    },
+    "c128-n512": {
+      "search": "ee06ce70f01e812e6b122fafc5d15233b447b9c5651dc5db766edbca26cd98b7",
+      "outer": "7cee8ddde0686d9b3337520c856c7dfd148f75ac7dd496ea75cb0c43e4640696",
+      "model_config": "7cee8ddde0686d9b3337520c856c7dfd148f75ac7dd496ea75cb0c43e4640696"
+    }
+  },
+  "planned_cells": 21
+}

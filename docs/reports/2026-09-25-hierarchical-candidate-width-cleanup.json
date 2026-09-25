@@ -1,0 +1,222 @@
+{
+  "schema": "aic-hierarchical-candidate-width-cleanup-v1",
+  "protocol_sha256": "70555c32be0833a5b4907890b8423c8e43906084423097d2ff6e0a8ad73cfebf",
+  "progress_sha256": "cd29b5d76f65455fa7274547037cf2fdbdea798d0f14c3b5c0bc0f5564d685bf",
+  "summary_sha256": "d0c286c847f662f8e71740213061bfb4cbede67b0406b400d91326beafe10d00",
+  "continuation_actions_sha256": "e9d7eb4e088ecee9f1f96bfdf9bfb67c3aefafed10945f1cd74b1f7813b52762",
+  "removed": [
+    {
+      "path": "artifacts/target-causal-study/raw/s1/c32-n128.json",
+      "file_bytes": 60941651
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/s1/c64-n128.json",
+      "file_bytes": 58192516
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/s1/c16-n512.json",
+      "file_bytes": 59611980
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/s1/c32-n512.json",
+      "file_bytes": 59753024
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/s1/c64-n512.json",
+      "file_bytes": 59131739
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/s1/c128-n512.json",
+      "file_bytes": 61475415
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/s2/c32-n128.json",
+      "file_bytes": 53871304
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/s2/c64-n128.json",
+      "file_bytes": 54000976
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/s2/c16-n512.json",
+      "file_bytes": 55803696
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/s2/c32-n512.json",
+      "file_bytes": 55660802
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/s2/c64-n512.json",
+      "file_bytes": 55202500
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/s2/c128-n512.json",
+      "file_bytes": 55404558
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/s3/c32-n128.json",
+      "file_bytes": 59934278
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/s3/c64-n128.json",
+      "file_bytes": 60246629
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/s3/c16-n512.json",
+      "file_bytes": 59856187
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/s3/c32-n512.json",
+      "file_bytes": 59538823
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/s3/c64-n512.json",
+      "file_bytes": 59827708
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/s3/c128-n512.json",
+      "file_bytes": 59753573
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s1-c128-n512.log",
+      "file_bytes": 291
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s1-c16-n128.log",
+      "file_bytes": 289
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s1-c16-n512.log",
+      "file_bytes": 289
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s1-c32-n128.log",
+      "file_bytes": 290
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s1-c32-n512.log",
+      "file_bytes": 290
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s1-c64-n128.log",
+      "file_bytes": 290
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s1-c64-n512.log",
+      "file_bytes": 290
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s2-c128-n512.log",
+      "file_bytes": 290
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s2-c16-n128.log",
+      "file_bytes": 290
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s2-c16-n512.log",
+      "file_bytes": 289
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s2-c32-n128.log",
+      "file_bytes": 290
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s2-c32-n512.log",
+      "file_bytes": 289
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s2-c64-n128.log",
+      "file_bytes": 290
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s2-c64-n512.log",
+      "file_bytes": 289
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s3-c128-n512.log",
+      "file_bytes": 290
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s3-c16-n128.log",
+      "file_bytes": 289
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s3-c16-n512.log",
+      "file_bytes": 290
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s3-c32-n128.log",
+      "file_bytes": 290
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s3-c32-n512.log",
+      "file_bytes": 290
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s3-c64-n128.log",
+      "file_bytes": 289
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/s3-c64-n512.log",
+      "file_bytes": 289
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/candidates",
+      "file_bytes": 1996900
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-c16-n128",
+      "file_bytes": 1441
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-c32-n128",
+      "file_bytes": 1441
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-c64-n128",
+      "file_bytes": 1441
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-c16-n512",
+      "file_bytes": 1441
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-c32-n512",
+      "file_bytes": 1441
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-c64-n512",
+      "file_bytes": 1441
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-c128-n512",
+      "file_bytes": 1442
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-512",
+      "file_bytes": 121787
+    }
+  ],
+  "removed_file_bytes": 1050342217,
+  "free_bytes_before": 175398916096,
+  "free_bytes_after": 176449462272,
+  "retained_raw_reports": [
+    {
+      "stream": "s1",
+      "arm": "c16-n128",
+      "sha256": "a5c2e29a319ef6887f331d91c060e7daa7afd2239535eaaa48d88ebd4acc6a44"
+    },
+    {
+      "stream": "s2",
+      "arm": "c16-n128",
+      "sha256": "8dc05ad4ccbeb78ad1e265d1a238ac5a306b3c7c681fd69c168eb967ed5e6cbc"
+    },
+    {
+      "stream": "s3",
+      "arm": "c16-n128",
+      "sha256": "10028b831d5226771e43397c84f2a4ea2e45bb2a8b289ce5a7e908a0ded26df4"
+    }
+  ],
+  "retention_reason": "Baseline search records remain needed for target contrast analysis."
+}
