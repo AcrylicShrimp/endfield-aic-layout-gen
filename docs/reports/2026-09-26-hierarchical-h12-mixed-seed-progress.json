@@ -1,0 +1,61 @@
+{
+  "schema": "aic-hierarchical-horizon-mixed-seed-progress-v1",
+  "protocol_sha256": "e7711e325b6ec6f6925846fcc7d5c0c249f5757492f2ddfdf1425013bfcd6b41",
+  "status": "complete",
+  "records": [
+    {
+      "case_success": "1111111110011110110011001111100110010100100001111011001110011111",
+      "completed": 41,
+      "name": "s1-h6-model-h12-search-20260923",
+      "stream": "s1",
+      "seed": 20260923,
+      "report_sha256": "0c47233a1ac915326a9e2c59563a4ea7a10290a3664a8eef02ea22eadccb0006",
+      "evaluation_seconds": 210.5489255499997
+    },
+    {
+      "case_success": "1101101111110101001010100110001000111010111101111000011110111111",
+      "completed": 40,
+      "name": "s2-h6-model-h12-search-20260923",
+      "stream": "s2",
+      "seed": 20260923,
+      "report_sha256": "c3b0a749140f52d6dc90398268895f21bdcc95d7b94402faa97575572a12c855",
+      "evaluation_seconds": 203.16535636299523
+    },
+    {
+      "case_success": "1110111001110101111110010010001110011101100011101111001101111110",
+      "completed": 41,
+      "name": "s3-h6-model-h12-search-20260923",
+      "stream": "s3",
+      "seed": 20260923,
+      "report_sha256": "5f6cf8648c71056184f5d1ed884315ec0dfd24fe8b04f87d5cc4d9bb626f00d7",
+      "evaluation_seconds": 202.04384956500144
+    },
+    {
+      "case_success": "1110110100111110011111110110000001111001011010111111110111011011",
+      "completed": 43,
+      "name": "s1-h6-model-h12-search-20260924",
+      "stream": "s1",
+      "seed": 20260924,
+      "report_sha256": "7669e4a8e9748b71a067dcc9a19fb307332fe36e63c6363a4961afc9ad26ee24",
+      "evaluation_seconds": 214.56557074500597
+    },
+    {
+      "case_success": "1100100001111101100100111011011111011111111110101100001100111011",
+      "completed": 41,
+      "name": "s2-h6-model-h12-search-20260924",
+      "stream": "s2",
+      "seed": 20260924,
+      "report_sha256": "80dbedf07960fb6b112619c2cfb9753168e864b458eb7d6b7875d280da488871",
+      "evaluation_seconds": 199.05202198200277
+    },
+    {
+      "case_success": "0110101001101110001100101011110000011101001001001101011100111011",
+      "completed": 34,
+      "name": "s3-h6-model-h12-search-20260924",
+      "stream": "s3",
+      "seed": 20260924,
+      "report_sha256": "1b6081e363c3944b721982bd20079b853c7b703a8ebea2499af5b9f8fe0ad9ff",
+      "evaluation_seconds": 199.3969307189982
+    }
+  ]
+}

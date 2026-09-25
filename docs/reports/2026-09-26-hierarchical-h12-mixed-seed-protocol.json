@@ -1,0 +1,44 @@
+{
+  "schema": "aic-hierarchical-horizon-mixed-seed-protocol-v1",
+  "runner_sha256": "bccd05b8c83ad3be17c78ba813d028cf6d5996f4d820cfd0d824ef7128e4d28f",
+  "cross_protocol_sha256": "6ec4f7b15c9b77ca4be874bf3c783af386c5b7fb41f6eac0b14e3e2da750f345",
+  "cross_progress_sha256": "1f35175f4b71c9bd2a05bbd59966c6e559be78a8f16df3ce5849fb0341dd635b",
+  "cross_summary_sha256": "b1119e965c95effdd75f467ab116a323d9ce317939d007ae1d56247f1cbc72cd",
+  "stress_protocol_sha256": "62d9fb65004428b3215749bbee4d7a0d2bbe6884c8b955a115589ca4eb43a822",
+  "stress_progress_sha256": "3a3f15c3ba7313e4939d39793e5d61afdaee58db5c67ceecbd3838d8aba5e3bd",
+  "stress_summary_sha256": "af62d64875f4deca39623d7c01f345826938409022103a6835e096af493ff6f0",
+  "binary_sha256": "66f72a2dbdf45aadbc50e4dfe8f3634012ef5f5a76d8159c698de20f85d7a4fa",
+  "lower_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+  "panel_sha256": "136a4c23daff9750255360e0a4d9451f9b618b38c1011237b3f5360812629998",
+  "new_seeds": [
+    20260923,
+    20260924
+  ],
+  "model_sha256": {
+    "s1": "d84b39f18b6a3714e5044a88eb4cd4aaeb63a0a7487b8625b0680d0f77b9ee24",
+    "s2": "55ba9fcf74151b6657f039bfc935253b03654e7f3f98113363cb0eb7389a178f",
+    "s3": "baafd7dc56553736d813dfdcc46d258d49d499ca8c3fe788ee335d62be43cd94"
+  },
+  "parameter_order_sha256": {
+    "s1": "b1ab40000e0d20955ca9fcb4e0137710c31729e9e7b5c7aecc5c7e1c648bdfa5",
+    "s2": "b1ab40000e0d20955ca9fcb4e0137710c31729e9e7b5c7aecc5c7e1c648bdfa5",
+    "s3": "b1ab40000e0d20955ca9fcb4e0137710c31729e9e7b5c7aecc5c7e1c648bdfa5"
+  },
+  "shadow_config_sha256": {
+    "s1-h6-model-h12-search-20260923": "3bf1f3dc4ad3046fc957dd9ef2dbcc6b763d8d277bfe8c576adeb8d75a4bd800",
+    "s1-h6-model-h12-search-20260924": "f77e40d7ecb15a25772969ac973c761b3d72bc20f5682595e24391f516655cc8",
+    "s2-h6-model-h12-search-20260923": "3bf1f3dc4ad3046fc957dd9ef2dbcc6b763d8d277bfe8c576adeb8d75a4bd800",
+    "s2-h6-model-h12-search-20260924": "f77e40d7ecb15a25772969ac973c761b3d72bc20f5682595e24391f516655cc8",
+    "s3-h6-model-h12-search-20260923": "3bf1f3dc4ad3046fc957dd9ef2dbcc6b763d8d277bfe8c576adeb8d75a4bd800",
+    "s3-h6-model-h12-search-20260924": "f77e40d7ecb15a25772969ac973c761b3d72bc20f5682595e24391f516655cc8"
+  },
+  "gate": {
+    "mean_gain_vs_h6": 4,
+    "positive_seed_means_vs_h6": 2,
+    "mean_fewer_lost_vs_h6": 3,
+    "minimum_mean_difference_vs_h12": -2,
+    "minimum_each_seed_mean_vs_h12": -2,
+    "minimum_mean_fewer_lost_vs_h12": 0
+  },
+  "planned_records": 6
+}
