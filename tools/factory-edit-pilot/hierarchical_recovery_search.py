@@ -76,6 +76,7 @@ def prepare(root, commit):
             and base_search["root_selection"]["candidates"] == 16
             and base_search["simulations_per_move"] == 128,
             "accepted baseline contract differs")
+    (root / "configs").mkdir(parents=True, exist_ok=True)
     configs = {}
     for arm in ARMS:
         for seed in SEEDS:
