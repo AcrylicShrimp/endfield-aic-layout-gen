@@ -84,7 +84,11 @@ identify the executable method. The case-level conditional-quality analysis
 was expanded in commit `c3d1150e` without changing searches or confirmations.
 Thirty integrated cells took 2,935 seconds
 and produced 1,704,127,658 raw report bytes. This bounded diagnostic did not
-need W&B tracking.
+need W&B tracking. After the package was verified and committed, the
+[cleanup manifest](2026-09-25-hierarchical-continuation-replication-cleanup.json)
+recorded 1,704,964,234 removed file bytes and server free space rising from
+174,742,609,920 to 176,447,840,256 bytes. The full primary action and
+outcome summary remains temporarily for target analysis.
 
 The immediate first-action evidence is strongest for three cases with missed
 outside actions and for poor Q/completion alignment within the sampled confirmed

@@ -1,0 +1,304 @@
+{
+  "schema": "aic-hierarchical-continuation-replication-cleanup-v1",
+  "progress_sha256": "77f48ee223b5d0ad6a36610d6b50a24ca1e39305126a7682821621cfcb5bda6d",
+  "summary_sha256": "b68ff1b09e83b4c46d5788dc1d9be25376b5529f27984ac02a7b226b0c14e8bb",
+  "analysis_sha256": "aef2d7b8ce0d0eb48d5de715e39f3ddb861ed8ed711aa0a34238e2d9a2789693",
+  "removed": [
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260925/rank-0.json",
+      "file_bytes": 69058930
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260925/rank-1.json",
+      "file_bytes": 72587357
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260925/rank-2.json",
+      "file_bytes": 67848254
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260925/rank-3.json",
+      "file_bytes": 68364786
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260925/rank-4.json",
+      "file_bytes": 71672075
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260925/rank-5.json",
+      "file_bytes": 65873612
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260925/rank-6.json",
+      "file_bytes": 75140469
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260925/rank-7.json",
+      "file_bytes": 59349358
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260925/rank-8.json",
+      "file_bytes": 9791792
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260925/rank-9.json",
+      "file_bytes": 1875176
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260926/rank-0.json",
+      "file_bytes": 74586985
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260926/rank-1.json",
+      "file_bytes": 70316791
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260926/rank-2.json",
+      "file_bytes": 69715327
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260926/rank-3.json",
+      "file_bytes": 66766197
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260926/rank-4.json",
+      "file_bytes": 70355507
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260926/rank-5.json",
+      "file_bytes": 70186018
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260926/rank-6.json",
+      "file_bytes": 81576795
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260926/rank-7.json",
+      "file_bytes": 58053098
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260926/rank-8.json",
+      "file_bytes": 8383443
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260926/rank-9.json",
+      "file_bytes": 1667864
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260927/rank-0.json",
+      "file_bytes": 71492728
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260927/rank-1.json",
+      "file_bytes": 69391868
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260927/rank-2.json",
+      "file_bytes": 72126742
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260927/rank-3.json",
+      "file_bytes": 70147265
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260927/rank-4.json",
+      "file_bytes": 67984093
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260927/rank-5.json",
+      "file_bytes": 69496550
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260927/rank-6.json",
+      "file_bytes": 79270572
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260927/rank-7.json",
+      "file_bytes": 60810837
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260927/rank-8.json",
+      "file_bytes": 8374982
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/replication/20260927/rank-9.json",
+      "file_bytes": 1862187
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260925-rank-0.log",
+      "file_bytes": 306
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260925-rank-1.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260925-rank-2.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260925-rank-3.log",
+      "file_bytes": 306
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260925-rank-4.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260925-rank-5.log",
+      "file_bytes": 305
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260925-rank-6.log",
+      "file_bytes": 305
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260925-rank-7.log",
+      "file_bytes": 305
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260925-rank-8.log",
+      "file_bytes": 304
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260925-rank-9.log",
+      "file_bytes": 305
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260926-rank-0.log",
+      "file_bytes": 304
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260926-rank-1.log",
+      "file_bytes": 306
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260926-rank-2.log",
+      "file_bytes": 306
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260926-rank-3.log",
+      "file_bytes": 306
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260926-rank-4.log",
+      "file_bytes": 306
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260926-rank-5.log",
+      "file_bytes": 305
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260926-rank-6.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260926-rank-7.log",
+      "file_bytes": 306
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260926-rank-8.log",
+      "file_bytes": 305
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260926-rank-9.log",
+      "file_bytes": 304
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260927-rank-0.log",
+      "file_bytes": 306
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260927-rank-1.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260927-rank-2.log",
+      "file_bytes": 306
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260927-rank-3.log",
+      "file_bytes": 306
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260927-rank-4.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260927-rank-5.log",
+      "file_bytes": 306
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260927-rank-6.log",
+      "file_bytes": 306
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260927-rank-7.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260927-rank-8.log",
+      "file_bytes": 305
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/replication-20260927-rank-9.log",
+      "file_bytes": 304
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/replication-panels/rank-0.json",
+      "file_bytes": 103880
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/replication-panels/rank-1.json",
+      "file_bytes": 103890
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/replication-panels/rank-2.json",
+      "file_bytes": 103912
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/replication-panels/rank-3.json",
+      "file_bytes": 103934
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/replication-panels/rank-4.json",
+      "file_bytes": 103930
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/replication-panels/rank-5.json",
+      "file_bytes": 103951
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/replication-panels/rank-6.json",
+      "file_bytes": 103861
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/replication-panels/rank-7.json",
+      "file_bytes": 78354
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/replication-panels/rank-8.json",
+      "file_bytes": 14329
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/replication-panels/rank-9.json",
+      "file_bytes": 3040
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-replication-20260925",
+      "file_bytes": 1441
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-replication-20260926",
+      "file_bytes": 1441
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-replication-20260927",
+      "file_bytes": 1441
+    }
+  ],
+  "removed_file_bytes": 1704964234,
+  "free_bytes_before": 174742609920,
+  "free_bytes_after": 176447840256,
+  "retention_reason": "Compact confirmed-pair summaries, the primary action manifest and baseline search collections remain needed for target analysis."
+}
