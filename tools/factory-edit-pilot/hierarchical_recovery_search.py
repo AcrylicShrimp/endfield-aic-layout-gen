@@ -13,7 +13,7 @@ from ppo_harness_state import read, sha, write
 
 STREAMS = ("s1", "s2", "s3")
 SEEDS = (20260922, 20260923, 20260924)
-ARMS = ("base", "q02", "q0", "anchor16", "anchor0", "horizon12")
+ARMS = ("base", "q02", "q001", "anchor16", "anchor0", "horizon12")
 BASE = Path("docs/benchmarks/hierarchical-target-causal")
 PREVIOUS = Path("docs/reports/2026-09-25-hierarchical-target-quality-protocol.json")
 BINARY = Path("target/release/aic-cli")
@@ -45,8 +45,8 @@ def make_config(search, arm, seed):
     config["root_selection"]["seed"] = seed
     if arm == "q02":
         config["root_selection"]["value_scale"] = 0.02
-    elif arm == "q0":
-        config["root_selection"]["value_scale"] = 0.0
+    elif arm == "q001":
+        config["root_selection"]["value_scale"] = 0.001
     elif arm == "anchor16":
         config["root_selection"]["anchor_candidates"] = 16
     elif arm == "anchor0":

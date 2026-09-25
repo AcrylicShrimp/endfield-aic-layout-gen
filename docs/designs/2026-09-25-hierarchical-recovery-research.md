@@ -17,7 +17,9 @@ are bounded failures; they do not establish global infeasibility.
 The next tests distinguish:
 
 1. Root selection may overuse the short-horizon Q scale. Compare the accepted
-   scale `0.1` with `0.02` and `0`, with all other search controls fixed.
+   scale `0.1` with `0.02` and `0.001`, with all other search controls fixed.
+   The initial exact-zero proposal was rejected by the existing positive-scale
+   configuration boundary before it could produce a search result.
 2. The eight guaranteed anchor candidates may be too few or may displace
    useful model-proposed candidates. Compare 16 and zero anchors to eight.
 3. The six-move horizon may truncate important consequences. Compare horizon
@@ -40,8 +42,8 @@ regenerated with the recorded panel preparation and checked against retained
 panel hashes. Keep model bytes, lower model, game data, 128 simulations, 24
 maximum moves, and all unmentioned settings equal. Use root seeds 20260922,
 20260923, and 20260924 for each configuration. Search arms are `base`,
-`q02`, `q0`, `anchor16`, `anchor0`, and `horizon12`. `q02` and `q0` set
-`value_scale` to 0.02 and 0. `anchor16` and `anchor0` set guaranteed
+`q02`, `q001`, `anchor16`, `anchor0`, and `horizon12`. `q02` and `q001` set
+`value_scale` to 0.02 and 0.001. `anchor16` and `anchor0` set guaranteed
 `anchor_candidates` to 16 and zero. `horizon12` sets `horizon` to 12.
 Compare validated completion per 48-case seed, cases successful under at
 least two seeds, failed-to-success and success-to-failed transitions against
