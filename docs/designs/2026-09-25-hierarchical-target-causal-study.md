@@ -87,7 +87,11 @@ streams. Break any tie in favor of 2x, then 4x, then half-visited. If none
 passes, use the half-visited target only as a prespecified stress contrast for
 the learner; label outcome alignment unresolved and do not promote it. First
 train paired current-target and contrast-target arms from identical starting
-weights on byte-identical frozen collections to isolate the target change.
+weights on byte-identical frozen search collections to isolate the target
+change. Materialize each research contrast by rewriting only the
+`policy_target` fields, with the source and transformed report hashes recorded
+outside the search report. Compare first-root-only and all-root transforms in
+this one-generation probe before choosing the scope for continued training.
 Then compare at least three streams of multi-generation retention using fresh
 on-policy collections for each arm and the same problem streams. Keep search,
 lower model, optimizer updates, replay, and evaluation cases equal. Compare
