@@ -1,0 +1,2543 @@
+{
+  "schema": "aic-hierarchical-horizon-confirmation-summary-v1",
+  "protocol_sha256": "f6800c88aba136e10b378010631135abd41e1f27286f561d6ae1065f77034dcf",
+  "progress_sha256": "c652f2fbfd3a768b1a1e34f1fbf5d3be5c68b7b9f2819f20980d605c9e1cf421",
+  "completed_per_seed": {
+    "base": [
+      22,
+      24,
+      19
+    ],
+    "horizon12": [
+      34,
+      38,
+      33
+    ]
+  },
+  "paired_gains_per_seed": [
+    18,
+    17,
+    17
+  ],
+  "paired_losses_per_seed": [
+    6,
+    3,
+    3
+  ],
+  "delta_per_seed": [
+    12,
+    14,
+    14
+  ],
+  "mean_delta": 13.333333333333334,
+  "baseline_robust_successes": 18,
+  "lost_baseline_robust_successes": 2,
+  "first_actions_equal_base_per_seed": [
+    39,
+    44,
+    41
+  ],
+  "wall_seconds_by_arm": {
+    "base": 606.4132516030004,
+    "horizon12": 636.7251559629949
+  },
+  "passes_gate": true,
+  "cases": [
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-4389",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "e51f32de065fe0baddda402aabd2d1f157965dd14ea1c7e8374f2408cc41312e"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "a0c7c65918e7893eedc98da7e719e98bbdf29a8197a620dd16c30cc1c1c045a5"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "34437a9ee7d9edea1a673011375bbff37af28f566406078fa0133ab1ab2e7cd8"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "e51f32de065fe0baddda402aabd2d1f157965dd14ea1c7e8374f2408cc41312e"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "5962f238c4a9eaeed46e792bc8291b9934cd7239867dc134105842b23bd0bfe7"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "784657dc3ab6a93b71c0d922df912807c23d5078c07eafc4aebbeb082e2389c6"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-55921",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "25a1bd78ab138a7d401c65f39b24c720d3cf4876db5aa0dd2a1fc08d2ff6aeef"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "a89f5c64c100958b550dcf69e44b7878911cf90cc036d79dd4ee6d5ec20d6e77"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "e10f5c402b3c74e5040ab2a04dd5bc0beb0dd7db5a91cf437c7839b06748e221"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "d08b298966f393f95e28e6964590c356268635427f956537e6e0fa5b1d9b56d7"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "502f02e9e743ad7043af3dc66adac85a23d60bac2117a80784e065de8da5efd4"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "e10f5c402b3c74e5040ab2a04dd5bc0beb0dd7db5a91cf437c7839b06748e221"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-56756",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "c0561cfc78294a1d07d9cea1601cbaecb22ccc94024d8907b561bc8a96f8840e"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "ab0a98368768b918a983797304da3953a209b445d374b9dca82e3f4acb6a9d4e"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "239781efb83cf819c60799d66be02d3109aca0369abaa6d01eed2db5734bb4af"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "af280b8cb50b8172410d9bb46567439b00852881270f594d5631a0df3aead23e"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "d207d88e4d873305c751dc3657c021677179e3d32f66f0d14fbe94f749ae5f46"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "239781efb83cf819c60799d66be02d3109aca0369abaa6d01eed2db5734bb4af"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-14079",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "4a8f0be25fa2852f07e09f0e3052f2aad130a210d2f45d9ed5d7304028900e4c"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "3d83453b28bccb848a3849e4b76facc0ebd6656d2695f4eab7a6450ea04fa56a"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "001c9e0e401263a642a9adf1feb19ddc5a20e4e432218967f0b773c06f084bf2"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "4a8f0be25fa2852f07e09f0e3052f2aad130a210d2f45d9ed5d7304028900e4c"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "5f4ebe0deae580db0b44e6ee211c9626cca35bef5fe6ed69aa0eea6f1aba2578"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "001c9e0e401263a642a9adf1feb19ddc5a20e4e432218967f0b773c06f084bf2"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-20947",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "1fa76e370f94215b3a643c94dcbf0230d03dd6c5396fb49669b22db6be6ff069"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "68b5225a2473b635c34cf7cbd273de7a60324f44922c4fb835fce3f7df0ee3ab"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "fed2521160257a6ef47ce0f9fc27c387570e7297dcb2eee085cbd97e9a7c37d8"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "27fa00cd2efcec4c737d331942320e88c946df413deb94ad66cc5e242e06f812"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "68b5225a2473b635c34cf7cbd273de7a60324f44922c4fb835fce3f7df0ee3ab"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "5276dce34487e4b4e1e35dcc83340650a1c4de3b23d1fb53a14aa6f295dd3ca3"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-55856",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "3ef9fa8d3438472f54d3f08708a136efdb3995824e8a7fc0987376fdf445c71d"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "3403a47f183b1a8f282e712e4b7a34db88d038f5ece2f5bd2abb50283970f59b"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "11a21c6173afed1f563645bac1e35949d6951165839970074bcd1aab8e0e2881"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "5d8b91bcf8201bd674384b2a8ef0b15ee5d8e849ce75a4d665c4f1cfde81c9e3"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "3403a47f183b1a8f282e712e4b7a34db88d038f5ece2f5bd2abb50283970f59b"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "854fe0bef0fc4ee94e9cef149b02fcd01506f17374e4b1cb6d23a0fa506b5528"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-12843",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "b7a219ac359714f6bd0dcee79c374660bb9d254c4219d1c0c6342b98eb41fe98"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "3227d7db927c134a1cf80fab64ddbe07373aa5c8063bcb31201f40ae2f21198f"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "7a233680cc2a87851b66d4497e93e088148789ed6d77e2af0bd480d16dfb2166"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "b7a219ac359714f6bd0dcee79c374660bb9d254c4219d1c0c6342b98eb41fe98"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "3227d7db927c134a1cf80fab64ddbe07373aa5c8063bcb31201f40ae2f21198f"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "7a233680cc2a87851b66d4497e93e088148789ed6d77e2af0bd480d16dfb2166"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-39799",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "4618ae7f8e39991c2a26bee8fc892d0a801abc6a5c4da04681e925c70179b0bd"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "17b4415f050716bc077e11ffff5e7e92da9024937a341562cc8f0cf751561d51"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "4b41da2b9f5877d127b0fd6c34a29840574b1e65eac959affc8803ad0eb911db"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "4618ae7f8e39991c2a26bee8fc892d0a801abc6a5c4da04681e925c70179b0bd"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "17b4415f050716bc077e11ffff5e7e92da9024937a341562cc8f0cf751561d51"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "4b41da2b9f5877d127b0fd6c34a29840574b1e65eac959affc8803ad0eb911db"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-15383",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "70e5bd648d8f4ace1dbbff116f259526c6d066f45671dcf152086b013717e655"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "9f788ea1e4a9b421ef0adaeef4fd5a79d06d3db4430348fa5acae661d9dc1695"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "2c3a5adbb3782d554b82e35b1623824ab054fc8f90bd86e82f1999c3fd2a527a"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "70e5bd648d8f4ace1dbbff116f259526c6d066f45671dcf152086b013717e655"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "9f788ea1e4a9b421ef0adaeef4fd5a79d06d3db4430348fa5acae661d9dc1695"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "2c3a5adbb3782d554b82e35b1623824ab054fc8f90bd86e82f1999c3fd2a527a"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-39599",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "1eab226c20db24bf0ebf42f9b633c4655334a76437e26611235469e5cfc85b9a"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "2c34e7913329182536981ac31c6d7a894989db1b17453535768d844e016e67d2"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "549646ab6510cc34b9846750d1ec44eaf5a512dd110ed3e91686299e218b2469"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "1eab226c20db24bf0ebf42f9b633c4655334a76437e26611235469e5cfc85b9a"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "fedeb62e3cf859a22c959e62d6453fb3be9179e130ecd94beb224d072e2fb7ab"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "549646ab6510cc34b9846750d1ec44eaf5a512dd110ed3e91686299e218b2469"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-63435",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "0a9f395427ae2422bb2129c51a159e29edcdb7fa2bbc3ffe21bdb8ea663feb6c"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "5b93bb129db22435b07b20ff2843da749b6de4ab374b60ac083804be83cce7c9"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "1b7dbb8d86022abe1cf62af6e4d7a878858b87fa65974f4f4fc499226a9dbb88"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "0a9f395427ae2422bb2129c51a159e29edcdb7fa2bbc3ffe21bdb8ea663feb6c"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "f21722da984b25687f9f338656d6a0ef031bc8295874fe8224f597e00ceab033"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "1b7dbb8d86022abe1cf62af6e4d7a878858b87fa65974f4f4fc499226a9dbb88"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-27929",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "11a21c6173afed1f563645bac1e35949d6951165839970074bcd1aab8e0e2881"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "a27b8822b04d53713178c99076e58f3863a85ac0413b50ca1adcdbe2a09abf95"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "0177542d38e94f5d3bcbbf27d7e26ba85cf4408f6942753292b11da84d6f48a5"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "11754b7b54937ce613a99612d4cbfeee7879bec72a2550de39354c2c6e3ccbca"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "a27b8822b04d53713178c99076e58f3863a85ac0413b50ca1adcdbe2a09abf95"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "0177542d38e94f5d3bcbbf27d7e26ba85cf4408f6942753292b11da84d6f48a5"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-25535",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "891e1a0f0266e5fc4c7d7be89596ff12db36083bd381d89ffa15f1cdff7d4a6b"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "ad34f08d1e709fbce4ca64f17a18c853232e4cb0ebbb0aa38a5a28486e382d80"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "4462ca393ed9199982a2fadf9a8ab221693be011d52bf41f7020140b1dae0231"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "891e1a0f0266e5fc4c7d7be89596ff12db36083bd381d89ffa15f1cdff7d4a6b"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "ad34f08d1e709fbce4ca64f17a18c853232e4cb0ebbb0aa38a5a28486e382d80"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "12d7c61758e764a21ea8df2ae012903cd2f4f1b273dc4112c257fa3f8ec427b9"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-47055",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "dce3033a312574c39253b39f66c6610991b06d7556ecccb8b6a523c01248e85a"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "56f5aa2a7444026356f6ad2b1acfad7318fc4911db41e44df94bdab1bcfec477"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "f2365623162f8c250c0ede6ab8d7e07261ce0528340a4eb0a46343055a269029"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "84c16d86db8a3613ee8c270191e3aed98a0f4b47a186dd1d4a433da69ba74506"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "56f5aa2a7444026356f6ad2b1acfad7318fc4911db41e44df94bdab1bcfec477"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "f2365623162f8c250c0ede6ab8d7e07261ce0528340a4eb0a46343055a269029"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-7572",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "9bd84a8c626d0fc0ac2506593c502b53ea7c9814a58799ccc2eddc6ac59267d6"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "71c544805887d1d206246a822cab82511e043e50b5bac917ec90a5b343368798"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "4618ae7f8e39991c2a26bee8fc892d0a801abc6a5c4da04681e925c70179b0bd"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "1f96b469fd7c719cd22df25db9e90a85b5a61c8679ec22d736ee4363d2ddec8d"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "71c544805887d1d206246a822cab82511e043e50b5bac917ec90a5b343368798"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "4618ae7f8e39991c2a26bee8fc892d0a801abc6a5c4da04681e925c70179b0bd"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-11881",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "13790c296aa9c70f3a9f6990d9acfd21252a13e9634191e1a2e4809de44dbe0a"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "e8ae808cb7328dcf869b665a2ced72ed280bc63b9203340a0f5b0a79cd70a052"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "12d7c61758e764a21ea8df2ae012903cd2f4f1b273dc4112c257fa3f8ec427b9"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "13790c296aa9c70f3a9f6990d9acfd21252a13e9634191e1a2e4809de44dbe0a"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "c524c3e9640cf7a7352d3dac8ef64a90721d942464c41f1749b328df9ca94616"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "12d7c61758e764a21ea8df2ae012903cd2f4f1b273dc4112c257fa3f8ec427b9"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-33911",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "4e761dfdcc91eff026ddb72377e32135867bc70cda9df65d69016cf91b424264"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "5e181462648abe7095e2886effd4c85a96dfa4c05ba08044f1af7f9664947e99"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "04546ec3f038084793e06b1e2555f1790676121bf1e628ab902f8cc6b7bd6a2c"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "4e761dfdcc91eff026ddb72377e32135867bc70cda9df65d69016cf91b424264"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "5e181462648abe7095e2886effd4c85a96dfa4c05ba08044f1af7f9664947e99"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "04546ec3f038084793e06b1e2555f1790676121bf1e628ab902f8cc6b7bd6a2c"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-3036",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "454d0155ce69b8e10b24c44fd88b43ce49efa1c796c4012bc01f811f9c59240d"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "3403a47f183b1a8f282e712e4b7a34db88d038f5ece2f5bd2abb50283970f59b"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "e0cded32348ec58b4df9985073ac15cf59fa5f67c1b9c038d527ec56dbecdd0e"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "454d0155ce69b8e10b24c44fd88b43ce49efa1c796c4012bc01f811f9c59240d"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "3403a47f183b1a8f282e712e4b7a34db88d038f5ece2f5bd2abb50283970f59b"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "e0cded32348ec58b4df9985073ac15cf59fa5f67c1b9c038d527ec56dbecdd0e"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-36838",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "c1cccc25318f35d9d82ff0780638e1a4a5e30d89bc28261642fad39b3c73c222"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "7ba49fad1540cd92a535b28444f031a632e7c109b370dc7e417eefe43ec13f62"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "be5dc1e07d6c2cfc416ed281d6303db873b53e42a834beaa0fd4f21456ad852a"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "c1cccc25318f35d9d82ff0780638e1a4a5e30d89bc28261642fad39b3c73c222"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "7ba49fad1540cd92a535b28444f031a632e7c109b370dc7e417eefe43ec13f62"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "fc270eec62824e95a3da1da55f8b359d016a2965a44b0628dd063b3252cdfad6"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-3933",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "763dd0fa661e0672b1fd76ecc5b8012526e5a129e5c9757dd5adffaee14abd60"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "fb99cb415dfcd1dc98801475bd3c07da5a7d223565bbbc01c6680cb548c81412"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "45e9c3a3ebaa17df08c583bebe98e8212b8b72e3ccc40e3f91b31d30a44e97cb"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "763dd0fa661e0672b1fd76ecc5b8012526e5a129e5c9757dd5adffaee14abd60"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "eaa21cdd899f9e6c35a1cbc895af825ef316e94f1cafc835610a9ec3740aa3e9"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "feaa3305d070178f12219d0c44002355ccaaad9e55baa9f68bf9106d62a0ba3b"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-39082",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "1bcd9948051584ad3edc511e71df1f9f7a61230bae1b30db8160f377ad6bce1c"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "b360511ec44fa77abd23b50c9d47edf585ae97c70a314425ba7120fd27cd8d16"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "a21ea05b17b3064260bb466fe933d94a2fafa22eac7f36f6e9eb7bcad8d1174f"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "96dc15e1e22626b3acaeb3f9690c7782ba96212ad2bb0c6bcfd628d2e5e4807b"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "b360511ec44fa77abd23b50c9d47edf585ae97c70a314425ba7120fd27cd8d16"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "a21ea05b17b3064260bb466fe933d94a2fafa22eac7f36f6e9eb7bcad8d1174f"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-15780",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "1a10b6aa4a1c568bf7206e095b6ac30621cd881835e13dca0b2c96b864a2624b"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "43d1e42abeec9b1176df3964eb15b59372fd3e8b6b34de3ee62b2925bd6e9468"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "0a779b212eb872f3eb6c06e07520a932005a6235d8f00fd5e47acf50259451b0"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "1a10b6aa4a1c568bf7206e095b6ac30621cd881835e13dca0b2c96b864a2624b"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "43d1e42abeec9b1176df3964eb15b59372fd3e8b6b34de3ee62b2925bd6e9468"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "0a779b212eb872f3eb6c06e07520a932005a6235d8f00fd5e47acf50259451b0"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-49023",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "04dae905e7b1d9a3138a8b88c3b4e84776db5e428daffc9143034f846f00bd6f"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "a1a1357c081830b8c79c3d4acb01a293d93f87ffca904ebf46961b141dc5556b"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "cf93f72224fee9dcd4a7135fb69780b2d21485862aa66fc053f5484be720488d"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "04dae905e7b1d9a3138a8b88c3b4e84776db5e428daffc9143034f846f00bd6f"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "a1a1357c081830b8c79c3d4acb01a293d93f87ffca904ebf46961b141dc5556b"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "ad1fd41dbd22bfb8e7ccf137157b5977fdce19bc8e0ea9a53778024e0b5013a8"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-13242",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "798ee63d326c3d5b779c82345982e09fd820266e7675c17ef86523f2e3bda783"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "a17f91cfb0cb4cbd536a2eb47503e89d8a3cb80e01a422849c8d7414675d2f4c"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "aee1cf54633004873d8573511d38e1428b84437949803cdb7af0e2eac2b6fa58"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "798ee63d326c3d5b779c82345982e09fd820266e7675c17ef86523f2e3bda783"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "a17f91cfb0cb4cbd536a2eb47503e89d8a3cb80e01a422849c8d7414675d2f4c"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "aee1cf54633004873d8573511d38e1428b84437949803cdb7af0e2eac2b6fa58"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-22573",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "779243861c947692df5ec4eb1199f8b2ec2d6a83ac18efd208e200c8670efe20"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "0eb4bbebfefd298ef9787e89c90cd94520da159eb17808105bbdcde7583d741a"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "df2ec98b5d956826cd4d821aed2186981cd315de5925ae329f6572604dd09790"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "779243861c947692df5ec4eb1199f8b2ec2d6a83ac18efd208e200c8670efe20"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "0eb4bbebfefd298ef9787e89c90cd94520da159eb17808105bbdcde7583d741a"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "df2ec98b5d956826cd4d821aed2186981cd315de5925ae329f6572604dd09790"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-54085",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "34e732909f64b2698dc5bc9df62a011b9d51885d694f125d539274f28b437121"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "a166fe9972dc7afc448fc06438e2e7bfcf226154b1771f3e8167d8a3b8297a41"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "47a90252d3a62576348ba8683103fb74976291eaa11a9f1db3199da218dcf219"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "34e732909f64b2698dc5bc9df62a011b9d51885d694f125d539274f28b437121"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "a166fe9972dc7afc448fc06438e2e7bfcf226154b1771f3e8167d8a3b8297a41"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "47a90252d3a62576348ba8683103fb74976291eaa11a9f1db3199da218dcf219"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-4846",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "fa1aa177f13973af104abe8abed64c86bf05d0a614e9c935c80d7ffae8c7c98a"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "d9da68d33e8c1d185793a587590d8937a9ae99adb06d42c376b94b69bd2d9dc8"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "821a5e93387e0d45939e17eacfbc6c1a66bba1e08106a5659de9c984016883ac"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "fa1aa177f13973af104abe8abed64c86bf05d0a614e9c935c80d7ffae8c7c98a"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "d9da68d33e8c1d185793a587590d8937a9ae99adb06d42c376b94b69bd2d9dc8"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "c8cd7216de0748d4498cee1c79739874ff65641a9df3bfd508e2f362f75dfc80"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-42699",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "4253410321af3267c3888c2837180128bd5aaaa60fa8cf4d5c43b8941f337234"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "61e343a52cf3acf964b9d404ddd4aa1927c69afa1d7a8cec89d844b09ea2e795"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "239781efb83cf819c60799d66be02d3109aca0369abaa6d01eed2db5734bb4af"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "4253410321af3267c3888c2837180128bd5aaaa60fa8cf4d5c43b8941f337234"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "61e343a52cf3acf964b9d404ddd4aa1927c69afa1d7a8cec89d844b09ea2e795"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "239781efb83cf819c60799d66be02d3109aca0369abaa6d01eed2db5734bb4af"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-63421",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "511202d220973d934e70ed5a9f374fc4aacc48755fa2aa5ff867561922852ed7"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "cbe0155bf7f1c2c256ceb87e878a41ac3c7204183ccdf1bc54c7b5097ed43acf"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "d66e23bee1c5deba1b2ef3e0f64d698191ef38432fa36a30a9ce6bf32f5d764b"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "924203101da33674c25dbb12148ddb20c35d529f247f9ceb5f4fce6cd6d3858a"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "cbe0155bf7f1c2c256ceb87e878a41ac3c7204183ccdf1bc54c7b5097ed43acf"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "d66e23bee1c5deba1b2ef3e0f64d698191ef38432fa36a30a9ce6bf32f5d764b"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-818",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "2c3a5adbb3782d554b82e35b1623824ab054fc8f90bd86e82f1999c3fd2a527a"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "9a47c1224bc22b0e8f6840cbb611b2180f5ed5f8c770daa1a630aadc6e7ebbf9"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "8df85a62dddfff2b2804d006d006726c663f19139474a098cb0a978bfd9ede97"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "9f7512b1055997fce59780a684546e34f39c406383f7b5f46283c06f6bcf082b"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "6ac5a563bc89bb9fd3b3f30e9c54e85b1fe2d107600d94169f8fd643a75c0adc"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "8df85a62dddfff2b2804d006d006726c663f19139474a098cb0a978bfd9ede97"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-40191",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "84da18d5bf70b75f324484b4d46ddd8cbd805083c667feea7970d55beb2088fe"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "a138a041f449def28812ab6901d3b1d78a179328fb4c873b547517b09e5db2c9"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "880b6be3775e0ff08584a053b0e922e2df0a055c817a2bde2f6af327a13b4b7b"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "84da18d5bf70b75f324484b4d46ddd8cbd805083c667feea7970d55beb2088fe"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "0231c70901cb121e4161ef2cf476813bba2f3c8b4a721c32d17cc2ba89c17c84"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "880b6be3775e0ff08584a053b0e922e2df0a055c817a2bde2f6af327a13b4b7b"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-33574",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "c9953129bd79ad6d073ddea0416a32f599ea01299444c535c83bfe1e9066aa88"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "27f97be994e5d16e0c88c2cee8a7f65c5cbfa0b8c4413fb73577d7ea62b38837"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "c3d4b42d38110467227d5a6b8aadb34e99b62364405d3c2748271b93c23668c1"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "ac6c14794cd24fc69eca8e696add33299afbd3ebe322a375ef7ea2312b9687d1"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "27f97be994e5d16e0c88c2cee8a7f65c5cbfa0b8c4413fb73577d7ea62b38837"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "95a3a866c90eb45c9de5b720d836a424cea6c0bbc5a129627d5a4efae9479d7c"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-2132",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "7b5a8e1daa9dc081de18dc3cff02500b54350f986d1e87bc32af10f2fe7e4235"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "8edf8012572857dc1d413272e55a2e290bae13798174a7342da2cade8baf086e"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "b39017cada5dcbf1c0dc5d63aea4bf54bb0b55942189896b3f57e803112652da"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "7b5a8e1daa9dc081de18dc3cff02500b54350f986d1e87bc32af10f2fe7e4235"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "8edf8012572857dc1d413272e55a2e290bae13798174a7342da2cade8baf086e"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "b39017cada5dcbf1c0dc5d63aea4bf54bb0b55942189896b3f57e803112652da"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-5970",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "e590fbc6bc089cb04e0dbb697fb54b800744ae7114bf195b61a36601eed90507"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "ce2994f622ccdd9d4edc8d12299c665a17b86c60586ca1a055ac86b49da6015c"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "1338764c1c8dcbb99971f7d30aea0b55ee44e093dd17ee08110da05ce74ba581"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "e590fbc6bc089cb04e0dbb697fb54b800744ae7114bf195b61a36601eed90507"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "ce2994f622ccdd9d4edc8d12299c665a17b86c60586ca1a055ac86b49da6015c"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "1338764c1c8dcbb99971f7d30aea0b55ee44e093dd17ee08110da05ce74ba581"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-20975",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "c00d56f79ab4d3e6d620257bfeeff4fa5634d0ff90c86e6cf8731254243360f5"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "ab2b7b722e52f374bfe13e6294c8a0cccf9cdf88dfd9bb24dc6cdea146df716e"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "b360511ec44fa77abd23b50c9d47edf585ae97c70a314425ba7120fd27cd8d16"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "c00d56f79ab4d3e6d620257bfeeff4fa5634d0ff90c86e6cf8731254243360f5"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "ab2b7b722e52f374bfe13e6294c8a0cccf9cdf88dfd9bb24dc6cdea146df716e"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "667d1e7b6d0b0abd9c14d24f277b97e046bb8fa121782aa5d99e86079af89e76"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-3483",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "2020f7408600b9eb1f20e084f2509a9e5f4b4b3f15cff19d53925b42e80e7b1f"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "679359f6a6fc33b89b7f10d6fd42280005b73402c507ca48d3331ac2486f5470"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "f68e49ac98e30591b869795cb65723f551e7c7094d9d4ff979215d7ab83c3cf6"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "4e9b57d7659e76f2093017612de91eaa6e3ccab8f88e2c1677a96391be460db9"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "7f17cb26f17bb2c4e6eb23015e85d4b89b9de2ce9dfc98b2636928c55e0c8780"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "450073187d1401ca204387c6add97393d51c55fd2d8097f98ffb46e7565ff794"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-31341",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "c997608587bcb754c9d2fbe31298b3fb3c9da0206ecc1fe455e6038d53bc8df7"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "6494ab3de37f5e29e44e8177d69dfb315cb7c30386c96e1c244cc59067054bf6"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "b279dcc78bdf29af4b19f8b7c1e209fd2258b9236ccdc46a3c21066e9df29ff0"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "c997608587bcb754c9d2fbe31298b3fb3c9da0206ecc1fe455e6038d53bc8df7"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "4db64f9e03fa167a16dab0ad212f2deadca5d16fc5a4cc190e5d5f36ff38b43b"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "6f2a59106c1568948fb4525b987086fe4faec50c112ca7300a9134e38850e642"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-54628",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "9bd84a8c626d0fc0ac2506593c502b53ea7c9814a58799ccc2eddc6ac59267d6"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "e3e438436e1bcecf251190284dbde29beb4c741ffd60694b76e8710f9f820024"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "d9056963580ee90629531748c368760df4be941ec6642d29cbcaa6367f778a39"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "5dd259c530ff3e66dcaf394af705bc5a12c5473e87a05c9aeb5310bc6d5dbd18"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "9ca9dea60fc2d3eb41dd43bfc5b287323d75ae721e1d85158a4fc2d0750cefa5"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "d9056963580ee90629531748c368760df4be941ec6642d29cbcaa6367f778a39"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-27022",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "7f4387a6c57387dc05e9a0abfe87f6aa1ccf4514c7967a4c0e377b1cead57680"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "7c5fdc863fa6aaaa2ac1b26ba04e7668613f3a5982f0e04c126975e98bc1d112"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "0879e1d690dbaf12d42ae29afcfd9b58ce32fb5be2300cf1c028b021387b72a9"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "a963080549cf2a1f3b765eee2f86f3020de1f3d92633d8d3ccbb48032208b818"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "1a0769705e36d2940feedeb7013043583999c1abbdcdaf21614bc7016cfb00a5"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "0879e1d690dbaf12d42ae29afcfd9b58ce32fb5be2300cf1c028b021387b72a9"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-21391",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "f61d70e21fd4038bcd57292132ebad1a08253672a3b8464bfa0aef399486e751"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "46558ed50172afc1c1169c9ea88a3952f384b0ad131b50af6b9f5cf9620cc2f0"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "3cb175b6e661e4c70eee8c82c2b91fc09fe847ccb45196c7b33b88293bdc599c"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "9935cd7e813bcdc54466701e4c5000a676fa5295a21ffc8fd6c3c6ed8b313006"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "46558ed50172afc1c1169c9ea88a3952f384b0ad131b50af6b9f5cf9620cc2f0"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "d207d88e4d873305c751dc3657c021677179e3d32f66f0d14fbe94f749ae5f46"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-44619",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "844e572dbc1e115465bb079cc619d9d21dd1349f8bcecd7c216eb6a1e1a59697"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "d8da7b27d38969a992cf302434b08f41bebefcb2d899ddd24ec76f375a299012"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "a4497f0f98ba0a63acde7517f88d664a619220fe50141e1d9939f3c63623cf8c"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "844e572dbc1e115465bb079cc619d9d21dd1349f8bcecd7c216eb6a1e1a59697"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "c0e4f5ff3b300b3708c2a710636f564f8595028bc2d848472c5e9d281c735910"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "a4497f0f98ba0a63acde7517f88d664a619220fe50141e1d9939f3c63623cf8c"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-6570",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "767ef3a31021019685ab602228c5d1660573e46ab550aa5dceeb7e9d9d5c655f"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "6cc5aedb86151b459954f259e03f016218d7ea32cb1fb36925a8818b0980f05c"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "e133dd30496706075c56bad673a71fb8461d6abe82b360de7608d7a38e340314"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "767ef3a31021019685ab602228c5d1660573e46ab550aa5dceeb7e9d9d5c655f"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "6cc5aedb86151b459954f259e03f016218d7ea32cb1fb36925a8818b0980f05c"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "e133dd30496706075c56bad673a71fb8461d6abe82b360de7608d7a38e340314"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-985",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "d9a4e75935da082589044c809ce1e1f701b3bdc22e6724b935d93a845e056245"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "f98be9c6f881d45befe52ae3554475ed54ecc4dbf3aee462905ab6c87fde218f"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "c84ca721c73267bafcb49641ebac06f17b4822c5ea1a052fabba7742af39ba0a"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "d9a4e75935da082589044c809ce1e1f701b3bdc22e6724b935d93a845e056245"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "f98be9c6f881d45befe52ae3554475ed54ecc4dbf3aee462905ab6c87fde218f"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "c84ca721c73267bafcb49641ebac06f17b4822c5ea1a052fabba7742af39ba0a"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-53098",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "443c1ede166bbe3bf6984f3cb054789790ec81bcf855c0b038f4dd59e0f2bc59"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "e21fd0092b9479ac26b7bfaf3be59e1b930d81d7c02eee9f3ce5800fd693c24c"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "138457031ac2984e1e3e2393e614c2a1251dad72d8c2b5984d3e7d0fc4514a11"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "a963080549cf2a1f3b765eee2f86f3020de1f3d92633d8d3ccbb48032208b818"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "e21fd0092b9479ac26b7bfaf3be59e1b930d81d7c02eee9f3ce5800fd693c24c"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "4ca34f0c7e18cfb0a93625835befccb4b81733d6977669697c85b95acb702678"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-7592",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "e50971f8fc0f8a299bce3e30dfbbdefe24d32cdcd8200fd8cfd2614b483c772e"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "c9babd8ec9f981fac84dadd6cc8c6dea904be6a3e69f1da559085e4ff2cfa7ff"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "b8811b174931c017bef7b43191b3b2d4db080e22f6b66b732bdbcff3f441fbfb"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "e50971f8fc0f8a299bce3e30dfbbdefe24d32cdcd8200fd8cfd2614b483c772e"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "7302832ffd7a4a6b1a3a212044dce37eb7e6bc39bbaa9dd9c8ba3b68c63fcedc"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "b8811b174931c017bef7b43191b3b2d4db080e22f6b66b732bdbcff3f441fbfb"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-21172",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "72c9bed384b003b2efbdaf3fbbf16b57fd92b626cde283da416b96708eaf5f22"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "627e1bb1af24b8e597d1ef09b43291196b12387f83199aa68b049cad7a58641f"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "e4a9a0a9ea310737279386745c163337912c8827f68f9ac4f54aa9b66dee4661"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "6e66656753a7caeba349f3c0f3ec92a3bbc1504f130e49b43719745cabe2a693"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "627e1bb1af24b8e597d1ef09b43291196b12387f83199aa68b049cad7a58641f"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "cf7af1526a947d6e4ab136ed535fbe4518789c716488ed535ba5362ff461e64b"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-20398",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "43c416dd5f6e7147b5e195681d2432ea526b91863fa1cd37c35811fb8aff6e62"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "34e732909f64b2698dc5bc9df62a011b9d51885d694f125d539274f28b437121"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "5733744dea5665f6d228ee3c88c4758f9580131cfe4a997107b1ff527d335d1e"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "43c416dd5f6e7147b5e195681d2432ea526b91863fa1cd37c35811fb8aff6e62"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "34e732909f64b2698dc5bc9df62a011b9d51885d694f125d539274f28b437121"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "60d791fdc1b6ab02303e8e4eaef98ff1f5affdca2719d6651bd6659b092b5fc3"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-31164",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "8d4196b18af180659c8e3a2b171b60eb2b48b419241a3539abe0aeb80f3e3027"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "66dcc6db2ba28454c45b16e8b2830671fbbcb562747340d9aecc66a3823f90db"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "23f9527ddec6f991a2d4eb5b26eb8d1da3dab72a1f7079a2c761d6979d2e2de9"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "8d4196b18af180659c8e3a2b171b60eb2b48b419241a3539abe0aeb80f3e3027"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "66dcc6db2ba28454c45b16e8b2830671fbbcb562747340d9aecc66a3823f90db"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "23f9527ddec6f991a2d4eb5b26eb8d1da3dab72a1f7079a2c761d6979d2e2de9"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-37747",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "48c31483bd808a7b3a9990f6b4bdea8b5d6c7e40dd55076b064a0dec0c20e2b2"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "002a6c92aaf20f4bbc063c8a4a2047d0250bc111bae19c1e93d83dcaa4068b73"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "bd61f3c522ce5d6ac01e0266999f3946de398d6a6b4daf9a0c7fa67c04ed4cd5"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "e61da23f752004f05675b4906f2a2aea47a436cd6568457c675b56e566f1535d"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "0df39f04418bfa2b330b15c1af62f079aebdf67ad8611ff6b428fc0b40715063"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "dababaf75d45c18b6211ead0a9b1974bf661288ccd7574d9b1df0b2c81f106b8"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-40447",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "2c663be163ab6394232cef5084e16fd638bc45499851c8caf0d2b255eb7c868f"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "d9a4e75935da082589044c809ce1e1f701b3bdc22e6724b935d93a845e056245"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "0a545ae222bbba56aff7dd2d0545977b3e29c311bdf126a18b67c79f954f1457"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "e738b8ee43e5cdb5a761cac9c5bb0d6f087e4f95150557dfd075da4f86146e74"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "3f32f4c6420c7c4a28d82091178c616e62cf0c6e5a62f08b8844c62647813f5f"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "0a545ae222bbba56aff7dd2d0545977b3e29c311bdf126a18b67c79f954f1457"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-51766",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "6c3a2bfd74b8831c276b63ce1e334ad135ff9d181a40b5cd36293190385fd4a8"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "e78933f536c84c0d2537933b0fbf8dc8a02a790b370764894981b62337ab6252"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "7dcb54439dd894d81f779885ed4046ccdef7695631f0504d4fb102ea853fa84d"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "6c3a2bfd74b8831c276b63ce1e334ad135ff9d181a40b5cd36293190385fd4a8"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "e78933f536c84c0d2537933b0fbf8dc8a02a790b370764894981b62337ab6252"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "02e083d82b0f0ea07182ebe1c5e045bb145a960730cfbeae3037975762b86332"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-24930",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "1be83959547f9dfb7e314f1577bd3112583a7fc545c5763846d5b113874fac85"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "fafeb9f89158cac242ed0a00e6eed91d9ff12a6a25fed5ce42f14e4e8e2e30fc"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "aa75e821a796a6208ddcc43d8744dade121d637e22463cc220a2455576a91b8f"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "1be83959547f9dfb7e314f1577bd3112583a7fc545c5763846d5b113874fac85"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "fafeb9f89158cac242ed0a00e6eed91d9ff12a6a25fed5ce42f14e4e8e2e30fc"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "aa75e821a796a6208ddcc43d8744dade121d637e22463cc220a2455576a91b8f"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-18111",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "ee5cfef54e61b7e9781f397feaded4dcc2eed7189e7a3d4e1880af7f38eabfba"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "f6c43cfba5e061a21a084ec227ec6d592c3e7d37daf1ebb91aca62d46934d386"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "81dfe7f966c19ed03656ad4a9ee825dce9bfbfbb552746df57b01642743aa988"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "ee5cfef54e61b7e9781f397feaded4dcc2eed7189e7a3d4e1880af7f38eabfba"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "61e343a52cf3acf964b9d404ddd4aa1927c69afa1d7a8cec89d844b09ea2e795"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "0a53cb3ecc3f6799f3ef75e090949f17ccc003383231eddc04802d54310d5d9d"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-1035",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "a9e4a5f5fe406f97c86cd34342545cdbab92d78fce44b1989125d0fcdf6b06a0"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "c06716727a4876afa9a227061af6339adbeb4edcdaf7d6e38f74c5b24bde39a1"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "c85c619ad9759565a87aeabe5dabad314ad69e5d540e89f7246b711896437255"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "54871851ad9a3b5bf4bc1afb846b7c857ea1f1cd48088c8173c39dda1872df6c"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "c06716727a4876afa9a227061af6339adbeb4edcdaf7d6e38f74c5b24bde39a1"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "c85c619ad9759565a87aeabe5dabad314ad69e5d540e89f7246b711896437255"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-16059",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "cac92a292d740013299bf5e2aca72cfb9a29bed0a5c4bc85197966695355c152"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "f70eaccb5ebbf92c21eda0ae02a771357486193d9b1519948574277752db4b47"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "433ea7a3d6ca33fb18d67fddb3414504e6ce73a16e6d18662a83638728215af7"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "67c1fda76d135bee8fd3c300b964b735e4f63eb1ee34d301c010150ea1290a79"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "f70eaccb5ebbf92c21eda0ae02a771357486193d9b1519948574277752db4b47"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "433ea7a3d6ca33fb18d67fddb3414504e6ce73a16e6d18662a83638728215af7"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-61068",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "83a53a12a3570fc7de5b7f6b0ac1a211ea2c215dd06ebdb3e3619ac6f7f1e845"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "bb3aa233433ddea428026d541097538e2e84c2f5e8678a4dcc3c78afb50d97d0"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "cac90921950f76cffb2f62bec6abb6589c306ab3b20a19cf85d3bf5e68e15a69"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "ed3597c908c452b44747bb8c218217468ba0c9dcc477fc1c9bbe4af7e97c56e8"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "bb3aa233433ddea428026d541097538e2e84c2f5e8678a4dcc3c78afb50d97d0"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "bce6c78f8b57615f4e704f35d84a0424ca5a262a426db099a9cb3d4f96c98889"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-48866",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "efb03ec7077331132e6b9f60fac8bf7d0d0a417fa7da18f2fdf789416f90feff"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "50a705658c5760e2390967d6fc52251f09172c33ff3cbcca8011360804ddb028"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "276c5fae7e53d51613de6aefcb33bcf1745fb3386e1c661673334ea8dc4cc133"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "efb03ec7077331132e6b9f60fac8bf7d0d0a417fa7da18f2fdf789416f90feff"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "50a705658c5760e2390967d6fc52251f09172c33ff3cbcca8011360804ddb028"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "276c5fae7e53d51613de6aefcb33bcf1745fb3386e1c661673334ea8dc4cc133"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-12613",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "088214671db97f3ec0866f0d244db2286366dcb84f8ebe6b4b1b197aa58cbb1c"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "35bfcaca91192254584a70b7cea809a753fc554ce3cf324d9f4f5b0b8ee5775d"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "6b70f0d81b7dda6c78c75682cce0d196c78db5ea295d7684a0af23a53de2e96a"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "1f5e085e8ccd0b690393e17dfb1392677408d4398aa137cf63f2b3f9e53f712e"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "35bfcaca91192254584a70b7cea809a753fc554ce3cf324d9f4f5b0b8ee5775d"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "6b70f0d81b7dda6c78c75682cce0d196c78db5ea295d7684a0af23a53de2e96a"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-13017",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "a7313a010a06cb4d225ce468f00a07eea06e54b4830e7ea9ecad6bcba3edbeed"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "4b06986158ff9b92ecc9fd310a12e81928fce28403b154313998d4ba97b0e3b8"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "cb702d07e394a8046668021806eab5fd4beb3a9b869556c655ff12d1a6d7f269"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "a7313a010a06cb4d225ce468f00a07eea06e54b4830e7ea9ecad6bcba3edbeed"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "4b06986158ff9b92ecc9fd310a12e81928fce28403b154313998d4ba97b0e3b8"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "cb702d07e394a8046668021806eab5fd4beb3a9b869556c655ff12d1a6d7f269"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-51617",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "072cec64b4a60be4ae214acca535787f94331656d6214e37b3266b09449c2e7b"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "dae4418e982d982dfb36023f3d3c594e8d7349ad232cb3e2025a676f44dff687"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "dfb97b20e99465a03f9b4cfac3adc26d96e6ccde7425489bf87bc2fb030fb8b1"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "072cec64b4a60be4ae214acca535787f94331656d6214e37b3266b09449c2e7b"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "dae4418e982d982dfb36023f3d3c594e8d7349ad232cb3e2025a676f44dff687"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "02a33163af32df54483cea81bbf7dd50df8fb86f076b2ed3b0ce2898e98bebb2"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-29573",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "9ad1747520614901de8215ce4cd63189fc11594022fd784b149a6851634e8d08"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "94af79a5ff77a39f144fcec023b3c1f9001345f38fadca35dd98006c1289f57a"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "452625f90d8bdf2637e8c7214a40297f9c08dadabaadc60ef062202a6ac1555a"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "02e083d82b0f0ea07182ebe1c5e045bb145a960730cfbeae3037975762b86332"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "94af79a5ff77a39f144fcec023b3c1f9001345f38fadca35dd98006c1289f57a"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "fe0c2d5c2fbee14d4e51ba0006f9f25ba67a3553f66cf83745a2dfa4d9318434"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-59960",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "8b24ac365ecce46ae692f5fea70c8e3de52ad12e20113d92d846256a59c2136c"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "3d39a5f9bc81252c4035feb61ee495e26b9df2705845692c5e22c6b8b9d46050"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "46b3372fb228150bfb317d184590490b130f4be7e29861fd6aae7d250f746d43"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "8ef56f93e52bea73c4cde15657bc8cbe33cc5df26983bb8918b06d070b035eb7"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "3d39a5f9bc81252c4035feb61ee495e26b9df2705845692c5e22c6b8b9d46050"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "46b3372fb228150bfb317d184590490b130f4be7e29861fd6aae7d250f746d43"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-53163",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "9436050db70ad1ab95bca3a3213a9558504f9a14b50936a0f3cfde6453032864"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "89da937f3613b77dfee62c4e78f71bdc4ca3972604b772a6bfbb5ee64cddbaae"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "e3703ba0e1d1544bfa7f3ac18200c158d98a3796d5645ebdb43ebb1571d4554a"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "9436050db70ad1ab95bca3a3213a9558504f9a14b50936a0f3cfde6453032864"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "cace6f0fa609231f19cc14c4ceae4d002b7d41115e2cd9d45be5bde07905a0e9"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "e3703ba0e1d1544bfa7f3ac18200c158d98a3796d5645ebdb43ebb1571d4554a"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-recovery-horizon-confirm-v1-23893",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "cd0f3ee784ea88611b2ee7a2be01b8769e2b441ef1e1518b17331ef781476b4b"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "6c508b978daf3bed411bc3cdfb30d3960fa63a270b772ef62461ab8d8235b2f5"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "9562c0070636a02c48f42b86eb1b6d12a6f526606f6eba34916b15d4986815ff"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "cd0f3ee784ea88611b2ee7a2be01b8769e2b441ef1e1518b17331ef781476b4b"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "6c508b978daf3bed411bc3cdfb30d3960fa63a270b772ef62461ab8d8235b2f5"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "1378f6240c68c3795173b6a57a27ea0257040f62491ff8e1300104f50ff5487e"
+          }
+        }
+      }
+    }
+  ]
+}

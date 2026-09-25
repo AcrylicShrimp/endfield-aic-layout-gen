@@ -5,6 +5,14 @@ and preservation of previously solved cases, not a favorable single run.
 Production search and training remain at their accepted settings until an
 independent confirmation passes.
 
+The frozen horizon-12 search passed the 48-case screen and the declared
+64-case confirmation. A panel-helper namespace deviation was closed
+separately. The declared namespace and the helper namespace produce identical
+ordered problem graphs but different case IDs; because Gumbel noise hashes
+case ID, their absolute completion counts differ substantially. See the
+paired [namespace result](../reports/2026-09-25-hierarchical-horizon-strict-result.md).
+Learner retention and untouched held-out performance remain open.
+
 ## Evidence and hypotheses
 
 The preceding causal study found seed-sensitive root candidates, short-horizon

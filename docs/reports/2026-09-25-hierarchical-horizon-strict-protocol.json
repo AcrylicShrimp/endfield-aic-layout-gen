@@ -1,0 +1,42 @@
+{
+  "schema": "aic-hierarchical-horizon-confirmation-protocol-v1",
+  "experiment_commit": "d0e63510",
+  "runner_sha256": "1fe3a77e276cdcb0dcdefd31c0799c237d0afd5ab6c57788cca6d3e50f41773c",
+  "screen_summary_sha256": "819f6541b15f5d76da89337325fff340d99001fec6b21cdece5203d7256d6ac1",
+  "binary_sha256": "e594b5425074a03731524d8c91991126232d840ef44a86e8b0630e1f16800fdf",
+  "sampling_sha256": "69c9fe638fc23af815c00ca4698d47d6e448fb15616e1235ef3c3e993a627fc6",
+  "panel_sha256": "c0fb64fe4ac227aca3659188361f6e1f27cfd48737d66c7861120131af3b58e8",
+  "panel_namespace": "hierarchical-recovery-horizon-confirm-v1",
+  "reference_panel": "artifacts/recovery-horizon-confirm/panels/confirmation.json",
+  "reference_panel_sha256": "c37fa5273843504b17035f8245c608c239f22a1b40f3ab84a2801df2378f600c",
+  "matching_reference_problem_graphs": 64,
+  "lower_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+  "outer_sha256": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520",
+  "configs": {
+    "base-20260922": {
+      "search": "8e93eabedac15f81adbb27bd9ca0a3f05f985d339bc9e84e647f87b60c06e48d",
+      "model_config": "d3226611ef6d36008b104db96e4bb6746cad99f35909b51fd174bf5fda825b47"
+    },
+    "horizon12-20260922": {
+      "search": "190fc4ce63ac481dbb25a5d662454817fb73242a5f03da3cecb304b3b9619551",
+      "model_config": "e79aea019734906cb42a6694c1e65520aa87cda7ae137f9e6836a222cc2f12f0"
+    },
+    "base-20260923": {
+      "search": "870d6cca04b9a517e4ade2835ccaca45ca9a4c61e86baac294efe1a5642a3ba8",
+      "model_config": "1ef2463bb01e70e2d47c53e6773d74e9b72472df4da8f4df473032a6b37c4dcb"
+    },
+    "horizon12-20260923": {
+      "search": "45a63e4952646635d2846f5417045e3587ffe0e798d4dfecd37ca6c85ded7f9c",
+      "model_config": "3bf1f3dc4ad3046fc957dd9ef2dbcc6b763d8d277bfe8c576adeb8d75a4bd800"
+    },
+    "base-20260924": {
+      "search": "a7a108f2a249f59185cdbce565a9afeb91aaf2a225056a4fd9b92485293f3785",
+      "model_config": "fa2c37fde320bf5ab8709f8371ea438f78b5e44ce0055d1b095aa6f417b12561"
+    },
+    "horizon12-20260924": {
+      "search": "9c2fe6de11f4e34f6449a05a67564b32b534ea550fe662225f9ef4494e9cf6aa",
+      "model_config": "f77e40d7ecb15a25772969ac973c761b3d72bc20f5682595e24391f516655cc8"
+    }
+  },
+  "planned_cells": 6
+}
