@@ -183,6 +183,9 @@ def outcomes(report, order, easy):
         "validated_footprint_mean": statistics.mean(
             by_id[key]["footprint_area"] for key in order if by_id[key]["fully_validated"])
             if any(success) else None,
+        "validated_transport_mean": statistics.mean(
+            by_id[key]["transport_cells"] for key in order if by_id[key]["fully_validated"])
+            if any(success) else None,
     }
 
 
@@ -259,7 +262,11 @@ def screen(root, max_records):
                 f"frozen collection changed: {stream}")
         for arm in ("current", "contrast-first", "contrast-all"):
             name = f"{stream}-{arm}"
-            if any(row["name"] == name for row in progress["records"]):
+            retained = next((row for row in progress["records"] if row["name"] == name), None)
+            if retained is not None:
+                require(sha(directory / "training" / name / "outer/state.safetensors")
+                        == retained["outer_checkpoint_sha256"],
+                        f"retained screen model changed: {name}")
                 continue
             if max_records is not None and added >= max_records:
                 return
@@ -295,6 +302,10 @@ def choose_scope(root):
     progress = read(directory / "progress.json")
     require(progress["status"] == "complete" and len(progress["records"]) == 9,
             "screen incomplete")
+    observer = read(directory / "wandb-observer.json")
+    require(observer["status"] == "finished"
+            and observer["remote_confirmed_step"] >= 9,
+            "screen W&B closeout is incomplete")
     by = {(row["stream"], row["arm"]): row for row in progress["records"]}
     calculations = {}
     eligible = []
@@ -364,12 +375,22 @@ def confirmation(root, max_records):
             panel_path = learner / "panels" / f"retention-{stream}-g{generation}.json"
             for arm in ("current", "contrast"):
                 name = f"{stream}-g{generation}-{arm}"
-                if any(row["name"] == name for row in progress["records"]):
+                retained = next((row for row in progress["records"] if row["name"] == name), None)
+                if retained is not None:
+                    require(sha(directory / "training" / name / "outer/state.safetensors")
+                            == retained["outer_checkpoint_sha256"],
+                            f"retained confirmation model changed: {name}")
                     continue
                 if max_records is not None and added >= max_records:
                     return
                 outer = initial if generation == 0 else (directory / "training" /
                     f"{stream}-g{generation-1}-{arm}" / "outer")
+                if generation > 0:
+                    previous = next(row for row in progress["records"]
+                                    if row["name"] == f"{stream}-g{generation-1}-{arm}")
+                    require(sha(outer / "state.safetensors")
+                            == previous["outer_checkpoint_sha256"],
+                            f"previous model changed: {stream}/{generation}/{arm}")
                 source = directory / "collections" / f"{stream}-g{generation}-{arm}-source.json"
                 if generation == 0 and arm == "contrast":
                     source = directory / "collections" / f"{stream}-g0-current-source.json"
