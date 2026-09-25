@@ -12,6 +12,10 @@ ordered problem graphs but different case IDs; because Gumbel noise hashes
 case ID, their absolute completion counts differ substantially. See the
 paired [namespace result](../reports/2026-09-25-hierarchical-horizon-strict-result.md).
 Learner retention and untouched held-out performance remain open.
+The frozen-collection learner screen later found that successful-action
+imitation alone passed its predeclared three-stream retention/completion gate;
+see the [screen result](../reports/2026-09-25-hierarchical-success-imitation-result.md).
+This is a candidate for fresh on-policy confirmation, not a production change.
 
 ## Evidence and hypotheses
 

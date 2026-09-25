@@ -1,0 +1,67 @@
+{
+  "schema": "aic-hierarchical-success-imitation-summary-v1",
+  "protocol_sha256": "983864baf2f82efde44a9d0448f2457577a860cd232c7025a56fc1d9b8689a90",
+  "progress_sha256": "988857249277a7036f198da98bf0561bcec4562048b614a783a88c6dc0f0773e",
+  "comparisons": {
+    "failed-off-vs-current": {
+      "retention_differences": [
+        3,
+        4,
+        1
+      ],
+      "completion_differences": [
+        -5,
+        3,
+        -1
+      ],
+      "mean_retention_difference": 2.6666666666666665,
+      "mean_completion_difference": -1,
+      "passes_gate": false
+    },
+    "success-on-vs-current": {
+      "retention_differences": [
+        3,
+        4,
+        2
+      ],
+      "completion_differences": [
+        -1,
+        8,
+        3
+      ],
+      "mean_retention_difference": 3,
+      "mean_completion_difference": 3.3333333333333335,
+      "passes_gate": true
+    },
+    "success-off-vs-failed-off": {
+      "retention_differences": [
+        -3,
+        -3,
+        -3
+      ],
+      "completion_differences": [
+        -1,
+        -7,
+        2
+      ],
+      "mean_retention_difference": -3,
+      "mean_completion_difference": -2,
+      "passes_gate": false
+    },
+    "success-off-vs-current": {
+      "retention_differences": [
+        0,
+        1,
+        -2
+      ],
+      "completion_differences": [
+        -6,
+        -4,
+        1
+      ],
+      "mean_retention_difference": -0.3333333333333333,
+      "mean_completion_difference": -3,
+      "passes_gate": false
+    }
+  }
+}
