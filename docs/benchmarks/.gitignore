@@ -114,6 +114,12 @@
 !/hierarchical-target-causal/c64-n128-search.json
 !/hierarchical-target-causal/c64-n512-outer.json
 !/hierarchical-target-causal/c64-n512-search.json
+!/hierarchical-target-causal/continuation-20260922-outer.json
+!/hierarchical-target-causal/continuation-20260922-search.json
+!/hierarchical-target-causal/continuation-20260923-outer.json
+!/hierarchical-target-causal/continuation-20260923-search.json
+!/hierarchical-target-causal/continuation-20260924-outer.json
+!/hierarchical-target-causal/continuation-20260924-search.json
 !/hierarchical-target-quality/outer-512.json
 !/hierarchical-target-quality/search-512.json
 !/hierarchical-update-budget/generation-100.json

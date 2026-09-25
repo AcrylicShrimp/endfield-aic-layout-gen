@@ -42,10 +42,12 @@ before interpreting the matrix.
 For each case where the 16/128 and a wider arm select distinct first actions,
 compare both actions by applying their exact recorded macro witnesses to the
 same frozen prefix, then continuing with the same subsequent search contract.
-Include one nonselected high-anchor or high-prior action when it was outside
-the original 16 and differs from both selections. Keep the original case ID;
-use several predeclared downstream root seeds and the same remaining move
-budget for every action. Run variants as panel batches to reuse model loading
+Include the highest- and lowest-Q actions among the original 16 to test value
+ranking, plus the highest-anchor and highest-mixed-prior actions outside the
+original 16. Deduplicate exact action witnesses. Keep the original case ID;
+use downstream root seeds 20260922, 20260923, and 20260924 and 23 remaining
+macro moves for every forced first action. Run variants as panel batches to
+reuse model loading
 and compiled inference. Verify every prefix through native session replay and
 match its resulting state to the recorded action witness. First-root action
 selection is not rerun in these continuations.
@@ -55,7 +57,11 @@ conditional layout quality per paired action and seed. Separate wider actions
 that were outside the original 16 from changed choices inside it. This is a
 bounded continuation comparison, not an optimal-action oracle: later search
 can still fail and action-dependent state hashes change later Gumbel draws.
-Use repeated seeds and paired case summaries to expose that uncertainty.
+Use repeated seeds and paired case summaries to expose that uncertainty. Call
+one action a *clear continuation winner* over another only if its completion
+count exceeds the other's by at least two of the three seeds; equal or
+one-seed differences remain unresolved. Report all outcomes regardless of this
+label.
 
 ## 3. Target construction and learner effect
 
