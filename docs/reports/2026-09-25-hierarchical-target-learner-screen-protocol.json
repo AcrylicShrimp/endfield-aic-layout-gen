@@ -1,0 +1,43 @@
+{
+  "schema": "aic-hierarchical-target-learner-protocol-v1",
+  "phase": "screen",
+  "experiment_commit": "a50383b5",
+  "contrast": "half-visited",
+  "selection_reason": "stress-contrast-only",
+  "contrast_analysis_sha256": "e74deb02ec00aafe7e5fed11d4828297dd26eacecf67d59bd0ce36dece4774b9",
+  "continuation_summary_sha256": "36ca705c7fab33d7918a2922d64b64a884486542486fd5be1c485b429ee5be55",
+  "binary_sha256": "e594b5425074a03731524d8c91991126232d840ef44a86e8b0630e1f16800fdf",
+  "search_sha256": "8e93eabedac15f81adbb27bd9ca0a3f05f985d339bc9e84e647f87b60c06e48d",
+  "runner_sha256": "274f53b2c0febb071109d218c2de4e4e5c7128edb5cfb546b065dc3271655ef9",
+  "transform_sha256": "f7a3e467b574d170592207c65ba687daad8ca4cc5da0e6199e07602d971d27b2",
+  "target_analysis_sha256": "c6e0963ec3013fc2ebe72cb20d2c3b993fa06a2671d0af3d0ee8328566fc5b81",
+  "tracking_sha256": "8defe5cb00e861b1fb6c1ab2bc86f55c56adb3ed1508e377bd7b53bc67d478ef",
+  "generation_sha256": "dc81cdbc9e5ab0798881d5f24ea22d975fa41fed449372a9d7139e60827d8a48",
+  "sampling_sha256": "69c9fe638fc23af815c00ca4698d47d6e448fb15616e1235ef3c3e993a627fc6",
+  "lower_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+  "outer_sha256": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520",
+  "source_panel_sha256": {
+    "s1": "a1bae05c58a35d468f509517c6d148710a189cb2686fcc432dde5d411ec27b66",
+    "s2": "989c891cb1ef3c2de10a2833ca985cc04af89ddc753374b34436956079d9640d",
+    "s3": "bf2465b8a1b8b7459237316d403e6206d1217828fd9adaba67d8975f64413871"
+  },
+  "baseline_collection_sha256": {
+    "s1": "a5c2e29a319ef6887f331d91c060e7daa7afd2239535eaaa48d88ebd4acc6a44",
+    "s2": "8dc05ad4ccbeb78ad1e265d1a238ac5a306b3c7c681fd69c168eb967ed5e6cbc",
+    "s3": "10028b831d5226771e43397c84f2a4ea2e45bb2a8b289ce5a7e908a0ded26df4"
+  },
+  "panels": {
+    "retention-s1-g0": "9f8df9e25943c7b621d2173649523e1eb3058bd0c71216d614faee84862bf09d",
+    "retention-s1-g1": "2f8cf42ece7faa20c395fc2a2251c21f33fb17c5a978f279111ade27465ff56c",
+    "retention-s1-g2": "0fc036a156752bbec976e1ee87d0688ea7b4ccd4ac5671231df15165ca6e9043",
+    "retention-s2-g0": "bdcaa9fa4fa4aee3721061846d019154933edad081864489d5ba18ea24e2a19b",
+    "retention-s2-g1": "30742dca96f5b775a91a358141c0d945c39eed95b7d601005f4575c006daf192",
+    "retention-s2-g2": "395bfba7e604e9f2efd31a5edb1691087cf15c4df01021510129084a6c4798a4",
+    "retention-s3-g0": "f0af7f4a0e763176cdba2b45eaa9613d7197f8a526c3bf8a23a22dd0f26cc8bc",
+    "retention-s3-g1": "63dc011502e102c32337af97eef90d3dc4f54dbabda9ebfc71f5d8d90ab9488d",
+    "retention-s3-g2": "8cd1090c006c597bfade3563b90b269334e266c8fbe84bf6818842caf7721424",
+    "screen-diagnostic": "7d23be2155bd42d19ac4ab505f9909fe2766e931da60e80d9d77288634f963fe",
+    "retention-diagnostic": "eebaa30d2e7694e9c743c38870daba72fb2d0526e7098430e7ed6d24f3172b3c"
+  },
+  "planned_records": 9
+}
