@@ -278,6 +278,39 @@ each seed mean to be at least minus two, and its mean number of starting
 successes lost to be no greater. Report every paired gained and lost case;
 these thresholds do not turn the reused diagnostic into an untouched test.
 
+## Restored-lower integrated check
+
+The mixed-seed gate selects the single horizon-12 promotion candidate for an
+independent restart: H6-trained weights with H12 search if all mixed checks
+pass, otherwise H12-trained weights with H12 search. Build fresh, disjoint
+training and diagnostic panels and reserve a separate 128-case held-out panel
+before any integrated training. From the same generation-87 lower and outer
+weights, run three streams of three generations with `train_lower=true` for
+both H6 and H12 collection/training trajectories. Keep the original policy
+target, 100 epochs, optimizer settings, 128 simulations, 16 candidates,
+eight anchors, root seed 20260922, paired 32-case generation panels and the
+same 64-case diagnostic. The H6-trained/H12-search mixed evaluation reuses
+the H6-trained lower and outer checkpoints, changing only the outer search
+contract; it requires no third training trajectory. Evaluate all three
+setups after every generation to preserve the retention trajectory, but
+apply the numeric promotion gate only to the candidate fixed by the mixed
+seed result.
+
+At generation three, require the selected candidate versus H6/H6 to gain
+at least four completions on average across streams, win at least two
+streams, lose at least three fewer successes from the H6 starting-model
+diagnostic mask on average, and improve retention in at least two streams.
+Its mean completion advantage over generations two and three must be
+nonnegative. If this gate fails, do not consume the reserved held-out panel.
+If it passes, evaluate the H6 starting weights, H6/H6 control finals, and
+selected candidate finals on that panel under seeds 20260922/23/24, without
+using the held-out outcomes to alter the candidate. Require mean candidate
+gain at least eight of 128 across the nine final stream-seed pairs, positive
+stream-averaged gain for at least two seeds, mean six fewer lost starting
+successes, and positive seed-averaged retention for at least two seeds.
+Only a candidate passing this integrated held-out gate warrants a production
+setup proposal; report the full case masks and conditional layout quality.
+
 ## Continuity and closeout
 
 Reuse the existing CLI search harness, panel generator, generation trainer,
