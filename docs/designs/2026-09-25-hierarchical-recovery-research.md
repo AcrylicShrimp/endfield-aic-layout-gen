@@ -120,6 +120,29 @@ those outcomes. If the initial treatments fail, inspect the observed failure
 mode and test another concrete mechanism rather than claiming that all
 policy learning is ineffective.
 
+The `success-on` treatment passed that screen and is the sole learner arm
+advanced to on-policy confirmation. Compare it to `current` for three
+generations in each of three streams. Each generation uses a shared 32-case
+training panel; generation 1 shares the collected report, and later
+generations collect separately with each arm's own current model. Keep lower
+frozen, the accepted 16-candidate/128-simulation/horizon-6 search, 100 epochs,
+and the same 80% successful selected-action target. Exclude all prior 48
+source problems and the 64-case frozen-screen diagnostic from the new panels.
+Use a new 64-case diagnostic panel disjoint from every generation panel.
+
+For the three-generation gate, compare both arms on that paired diagnostic
+panel after generation 3. Require at least four more completed cases on
+average across streams, wins in at least two streams, at least three fewer
+starting successes lost on average, and positive retention in at least two
+streams. Also require the candidate's mean completion advantage across
+generations 2 and 3 to be nonnegative, so a final isolated rebound is not
+enough. Confirm final checkpoints and starting model under search seeds
+20260922, 20260923, and 20260924; the mean advantage across the nine
+stream-seed pairs must remain at least four completed cases and be positive
+for at least two seeds after averaging streams. Treat any failed condition as
+failure to confirm. Passing this stage would still require lower-training
+restoration and untouched held-out evaluation before production adoption.
+
 ## Continuity and closeout
 
 Reuse the existing CLI search harness, panel generator, generation trainer,
