@@ -1,0 +1,14 @@
+{
+  "schema": "aic-hierarchical-target-contrast-cleanup-v1",
+  "analysis_sha256": "e74deb02ec00aafe7e5fed11d4828297dd26eacecf67d59bd0ce36dece4774b9",
+  "removed": [
+    {
+      "path": "artifacts/target-causal-study/logs/target-contrast-analysis.log",
+      "file_bytes": 10360
+    }
+  ],
+  "removed_file_bytes": 10360,
+  "free_bytes_before": 176447393792,
+  "free_bytes_after": 176447406080,
+  "retention_reason": "Analysis JSON and three frozen source search reports remain required for the learner screen."
+}
