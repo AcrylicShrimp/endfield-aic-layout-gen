@@ -311,6 +311,24 @@ successes, and positive seed-averaged retention for at least two seeds.
 Only a candidate passing this integrated held-out gate warrants a production
 setup proposal; report the full case masks and conditional layout quality.
 
+## Conditional lower/outer attribution
+
+The restored-lower run also records H6-trained checkpoints evaluated under
+H12 search. If the selected H12/H12 setup fails its primary gate, close out
+that experiment before another substantial run. Then use the retained final
+checkpoints and the same 64-case diagnostic for a bounded mechanism check:
+evaluate the two missing H12-search combinations, H6-trained lower with
+H12-trained outer and H12-trained lower with H6-trained outer, for each
+stream. The existing mixed and H12/H12 evaluations supply the other two
+cells. Keep the root seed, case IDs, search controls, and model bytes fixed;
+change only the paired lower/outer checkpoint origins. Record paired success
+masks, retention relative to the starting H6 mask, and runtime. This separates
+the lower-model effect, outer-model effect, and their interaction on the
+diagnostic, but it cannot select a production recipe from that reused panel.
+Any promising combination needs a fresh on-policy comparison and an untouched
+held-out gate. Audit target concentration across all completed collections
+before deciding whether a target intervention is warranted.
+
 ## Continuity and closeout
 
 Reuse the existing CLI search harness, panel generator, generation trainer,
