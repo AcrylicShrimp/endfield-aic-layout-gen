@@ -1,6 +1,8 @@
 """Test whether confirmed horizon-12 search transfers through on-policy training."""
 
 import argparse
+import hashlib
+import json
 from pathlib import Path
 import shutil
 import statistics
@@ -34,6 +36,13 @@ def checkpoint(root, stream, generation):
 
 def search_config(root):
     return root / "configs/search-h12.json"
+
+
+def semantic_search_sha256(root):
+    # The search report hashes the parsed Rust config serialized compactly,
+    # while the protocol records the source file's exact bytes separately.
+    encoded = json.dumps(read(search_config(root)), separators=(",", ":"))
+    return hashlib.sha256(encoded.encode()).hexdigest()
 
 
 def control():
@@ -208,7 +217,7 @@ def search(root, name, source_panel, lower, outer, output):
     report = read(output)
     require(report["status"] == "complete"
             and report["panel_sha256"] == sha(source_panel)
-            and report["search_config_sha256"] == sha(search_config(root))
+            and report["search_config_sha256"] == semantic_search_sha256(root)
             and report["lower_checkpoint_sha256"] == sha(lower / "state.safetensors")
             and report["outer_checkpoint_sha256"] == sha(outer / "state.safetensors"),
             f"search lineage differs: {name}")
