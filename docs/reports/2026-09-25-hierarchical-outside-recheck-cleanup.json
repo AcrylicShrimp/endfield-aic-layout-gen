@@ -1,0 +1,115 @@
+{
+  "schema": "aic-hierarchical-outside-budget-recheck-cleanup-v1",
+  "progress_sha256": "0991adfc4b25ac1d024254591a95380f5229d69f7041054d63fc1b5b33d1d2d3",
+  "summary_sha256": "c93cde8aa9b8817f5978f00a14e2e2cff5db09c5bb7712353f248c1161d84ea9",
+  "removed": [
+    {
+      "path": "artifacts/target-causal-study/raw/outside-recheck",
+      "file_bytes": 108508248
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/outside-budget-panels",
+      "file_bytes": 57749
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260925-rank-0.log",
+      "file_bytes": 309
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260925-rank-3.log",
+      "file_bytes": 309
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260925-rank-4.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260925-rank-5.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260925-rank-6.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260925-rank-7.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260926-rank-0.log",
+      "file_bytes": 309
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260926-rank-3.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260926-rank-4.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260926-rank-5.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260926-rank-6.log",
+      "file_bytes": 309
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260926-rank-7.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260927-rank-0.log",
+      "file_bytes": 309
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260927-rank-3.log",
+      "file_bytes": 309
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260927-rank-4.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260927-rank-5.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260927-rank-6.log",
+      "file_bytes": 309
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-recheck-20260927-rank-7.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-outside-recheck-20260925",
+      "file_bytes": 1504
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-outside-recheck-20260926",
+      "file_bytes": 1504
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-outside-recheck-20260927",
+      "file_bytes": 1504
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-budget-512-20260922",
+      "file_bytes": 1504
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-budget-512-20260923",
+      "file_bytes": 1504
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-budget-512-20260924",
+      "file_bytes": 1504
+    }
+  ],
+  "removed_file_bytes": 108580572,
+  "free_bytes_before": 176338911232,
+  "free_bytes_after": 176447668224,
+  "retention_reason": "Stage 2 outside-action budget comparisons are closed; original frozen baseline reports, panels, and checkpoints remain for target analysis and learner screen."
+}
