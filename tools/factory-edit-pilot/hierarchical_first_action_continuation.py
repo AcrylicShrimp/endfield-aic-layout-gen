@@ -118,6 +118,12 @@ def candidate_manifest(root):
                 "hash-sampled-outside-16")
             baseline_selected = action_key(first["actions"][first["selected_action"]])
             next_root = baseline_case["mcts"]["root_records"][1:2]
+            arm_actions = {}
+            for candidates, simulations in ARMS:
+                arm = label(candidates, simulations)
+                root_record = reports[arm]["cases"][index]["mcts"]["root_records"][0]
+                arm_actions[arm] = {action_key(action): action
+                                    for action in root_record["actions"]}
             results.append({
                 "stream": stream, "case_id": case_id,
                 "baseline_first_state_sha256": first["state_sha256"],
@@ -132,7 +138,13 @@ def candidate_manifest(root):
                      "baseline_q": actions[key]["q"],
                      "baseline_policy_target": actions[key]["policy_target"],
                      "baseline_prior": actions[key]["prior"],
-                     "baseline_anchor_prior": actions[key]["anchor_prior"]}
+                     "baseline_anchor_prior": actions[key]["anchor_prior"],
+                     "search_evidence": {
+                         arm: {"visits": witnesses[key]["visits"],
+                               "q": witnesses[key]["q"],
+                               "policy_target": witnesses[key]["policy_target"]}
+                         for arm, witnesses in arm_actions.items()
+                     }}
                     for key in selected
                 ],
             })
@@ -331,6 +343,7 @@ def summarize(root):
                 "reasons": candidate["reasons"],
                 "baseline_visits": candidate["baseline_visits"],
                 "baseline_q": candidate["baseline_q"],
+                "search_evidence": candidate["search_evidence"],
                 "completion_count": sum(trial["completed"] for trial in trials),
                 "mean_completed_connections": statistics.mean(
                     trial["completed_connections"] for trial in trials),
@@ -338,13 +351,46 @@ def summarize(root):
             })
         compact.append({"stream": case["stream"], "case_id": case["case_id"],
                         "variants": variants})
+    q_ranking = {}
+    for candidates, simulations in ARMS:
+        arm = label(candidates, simulations)
+        pairs = 0
+        concordant = 0
+        tied = 0
+        outside_winners = 0
+        cases_with_pairs = 0
+        for case in compact:
+            variants = case["variants"]
+            count_here = 0
+            for left in range(len(variants)):
+                for right in range(left + 1, len(variants)):
+                    difference = (variants[left]["completion_count"]
+                                  - variants[right]["completion_count"])
+                    if abs(difference) < 2:
+                        continue
+                    winner, loser = (variants[left], variants[right]) if difference > 0 \
+                        else (variants[right], variants[left])
+                    wq, lq = winner["search_evidence"][arm], loser["search_evidence"][arm]
+                    if wq["visits"] == 0 or lq["visits"] == 0:
+                        continue
+                    pairs += 1
+                    count_here += 1
+                    concordant += wq["q"] > lq["q"]
+                    tied += wq["q"] == lq["q"]
+                    outside_winners += winner["baseline_visits"] == 0
+            cases_with_pairs += count_here > 0
+        q_ranking[arm] = {"clear_pairs_both_visited": pairs,
+                          "cases_with_pairs": cases_with_pairs,
+                          "q_concordant": concordant, "q_tied": tied,
+                          "outside_baseline_winners": outside_winners}
     write(root / "continuation-summary.json", {
         "schema": "aic-hierarchical-first-action-summary-v1",
         "protocol_sha256": sha(root / "continuation-protocol.json"),
         "progress_sha256": sha(root / "continuation-progress.json"),
-        "cases": compact,
+        "cases": compact, "q_ranking": q_ranking,
     })
     print(f"summarized_cases={len(compact)} variants={sum(len(c['variants']) for c in compact)}")
+    print(json.dumps(q_ranking, indent=2))
 
 
 def main():
