@@ -1,0 +1,52 @@
+{
+  "schema": "aic-hierarchical-target-learner-screen-cleanup-v1",
+  "protocol_sha256": "28fb1af9cb3ceae3b7a5ecf8f9eb02685b30744314a1088ac1f88caa372c32fa",
+  "progress_sha256": "cf787d2846aada310c6b592b83fbd2bf830ccff9c7d35379ca5cf1546fd33fc4",
+  "wandb_status_sha256": "db69faecb5ac66a3d62f063098c12022c41f393d88685671e3e0b39f019c421a",
+  "removed": [
+    {
+      "path": "artifacts/target-causal-study/learner/screen/collections",
+      "file_bytes": 353187111
+    },
+    {
+      "path": "artifacts/target-causal-study/learner/screen/manifests",
+      "file_bytes": 5496
+    },
+    {
+      "path": "artifacts/target-causal-study/learner/screen/training",
+      "file_bytes": 9584504
+    },
+    {
+      "path": "artifacts/target-causal-study/learner/screen/evaluations",
+      "file_bytes": 2401332422
+    },
+    {
+      "path": "artifacts/target-causal-study/learner/screen/logs",
+      "file_bytes": 7523
+    },
+    {
+      "path": "artifacts/target-causal-study/learner/screen/wandb-telemetry",
+      "file_bytes": 214099
+    },
+    {
+      "path": "artifacts/target-causal-study/learner/screen/.wandb-observer.lock",
+      "file_bytes": 0
+    },
+    {
+      "path": "artifacts/target-causal-study/learner/candidate-panels",
+      "file_bytes": 8724463
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/learner-preflight-error.log",
+      "file_bytes": 138
+    },
+    {
+      "path": "artifacts/target-causal-study/check-target-transform.py",
+      "file_bytes": 1167
+    }
+  ],
+  "removed_file_bytes": 2773056923,
+  "free_bytes_before": 173672263680,
+  "free_bytes_after": 176446115840,
+  "retention_reason": "Screen case masks, full protocol, remote W&B acknowledgement and 11 new final panels remain; screen models have no continuation requirement."
+}
