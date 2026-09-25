@@ -1,0 +1,12 @@
+{
+  "schema": "aic-hierarchical-target-learner-wandb-v1",
+  "protocol_sha256": "4ee058cefb436a4a40a883ef8883011ec5eaf25384aec8d63edb43b4afcae513",
+  "run_id": "cac127bc20c14ba0a0de5021",
+  "status": "detached",
+  "pid": 75011,
+  "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/cac127bc20c14ba0a0de5021",
+  "remote_confirmed_step": 0,
+  "exported_records": 0,
+  "source_status": "prepared",
+  "finished_epoch": 1790353661.3028471
+}

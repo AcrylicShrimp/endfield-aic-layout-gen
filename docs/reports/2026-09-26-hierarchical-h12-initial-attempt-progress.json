@@ -1,0 +1,21 @@
+{
+  "schema": "aic-hierarchical-horizon-onpolicy-progress-v1",
+  "protocol_sha256": "4ee058cefb436a4a40a883ef8883011ec5eaf25384aec8d63edb43b4afcae513",
+  "status": "prepared",
+  "baseline": {
+    "case_success": "0100100111001100010001011001111000010100010001100001101101010000",
+    "completed": 26,
+    "easy_completed": 9,
+    "hard_completed": 17,
+    "termination_counts": {
+      "fully-validated": 26,
+      "no-macro-actions": 38
+    },
+    "completed_connection_sum": 254,
+    "validated_footprint_mean": 329.61538461538464,
+    "validated_transport_mean": 88.57692307692308,
+    "report_sha256": "4b5b7c01e0c2ee0cc3a32b379a48e4e38563fa97b8c96efcc1139afa1379121d",
+    "evaluation_seconds": 203.47554894199857
+  },
+  "records": []
+}

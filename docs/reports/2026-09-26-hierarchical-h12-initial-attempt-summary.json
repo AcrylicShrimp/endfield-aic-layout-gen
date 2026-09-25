@@ -1,0 +1,18 @@
+{
+  "schema": "aic-hierarchical-horizon-onpolicy-stopped-pretraining-v1",
+  "source_commit": "3a210375",
+  "reason": "Runner compared raw search-config file SHA-256 with the report semantic search-config SHA-256. The CLI search completed and all other input hashes matched.",
+  "protocol_sha256": "4ee058cefb436a4a40a883ef8883011ec5eaf25384aec8d63edb43b4afcae513",
+  "progress_sha256": "6428e15727da8c7bebea97a87d8d38310394930f783c5a024df657a70932d2fa",
+  "report_sha256": "73998a7cd4d116b447812a315c6c49edfacf70f60afc2a14dc9e5b509a5e8b8e",
+  "panel_sha256": "136a4c23daff9750255360e0a4d9451f9b618b38c1011237b3f5360812629998",
+  "search_config_semantic_sha256": "daa2d6a04214ba5a356723264e54b3bb76dbcbff536d7c2226c929a0b2dd0a17",
+  "h6_initial_completed": 26,
+  "h12_initial_completed": 33,
+  "h12_initial_case_success": "0100100011011110011000000110100110010110111010100100111111011001",
+  "gained_from_h6_initial": 16,
+  "lost_from_h6_initial": 9,
+  "case_elapsed_seconds_sum": 207.239630847,
+  "training_records": 0,
+  "observer_status": "detached"
+}

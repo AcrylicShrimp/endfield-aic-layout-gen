@@ -1,0 +1,76 @@
+{
+  "schema": "aic-experiment-cleanup-v1",
+  "experiment": "hierarchical-horizon-onpolicy-stopped-initial-attempt",
+  "remote_root": "~/Srv/aic-target-causal-20260925/artifacts/recovery-horizon-onpolicy",
+  "before_bytes": 250743594,
+  "after_bytes": 0,
+  "filesystem_free_before_bytes": 166255792128,
+  "filesystem_free_after_bytes": 166506737664,
+  "removed": [
+    {
+      "path": ".wandb-observer.lock",
+      "bytes_before": 0
+    },
+    {
+      "path": "attempt-summary.json",
+      "bytes_before": 1054
+    },
+    {
+      "path": "candidate-panels",
+      "bytes_before": 14872934
+    },
+    {
+      "path": "configs",
+      "bytes_before": 912
+    },
+    {
+      "path": "evaluations",
+      "bytes_before": 233221709
+    },
+    {
+      "path": "inputs",
+      "bytes_before": 121788
+    },
+    {
+      "path": "logs",
+      "bytes_before": 6044
+    },
+    {
+      "path": "panels",
+      "bytes_before": 939049
+    },
+    {
+      "path": "progress.json",
+      "bytes_before": 742
+    },
+    {
+      "path": "protocol.json",
+      "bytes_before": 3101
+    },
+    {
+      "path": "reference",
+      "bytes_before": 1528683
+    },
+    {
+      "path": "wandb-observer.json",
+      "bytes_before": 460
+    },
+    {
+      "path": "wandb-observer.log",
+      "bytes_before": 1717
+    },
+    {
+      "path": "wandb-telemetry",
+      "bytes_before": 45401
+    }
+  ],
+  "retained_elsewhere": [
+    "docs/reports/2026-09-26-hierarchical-h12-initial-attempt-result.md",
+    "docs/reports/2026-09-26-hierarchical-h12-initial-attempt-protocol.json",
+    "docs/reports/2026-09-26-hierarchical-h12-initial-attempt-progress.json",
+    "docs/reports/2026-09-26-hierarchical-h12-initial-attempt-summary.json",
+    "docs/reports/2026-09-26-hierarchical-h12-initial-attempt-wandb-observer.json",
+    "~/Srv/aic-target-causal-20260925/artifacts/recovery-horizon-initial-reuse/start-h12.json"
+  ],
+  "recovery_requirement": "The copied initial diagnostic report is retained only to avoid repeating the same 64-case search in the corrected run; remove after corrected progress records it."
+}
