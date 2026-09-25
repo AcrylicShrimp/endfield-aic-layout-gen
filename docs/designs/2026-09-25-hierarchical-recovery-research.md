@@ -72,6 +72,14 @@ model pair shared only 8/16 visited candidates (the anchors); the
 action-keyed counterfactual shared 15.81/16 initial candidates on average.
 The same pattern held on 64 disjoint diagnostic cases: 8.02/16 versus
 15.97/16 shared candidates, with all 128 actual candidate sets reconstructed.
+The action batch is assembled before the outer model scores and sorts edges.
+When the lower guidance model and state are fixed, retaining that pre-sort
+ordinal on each edge may provide stable Gumbel assignment with only one
+integer per edge and no per-action serialization. Verify the ordinal/action
+correspondence across paired models and after placement-page widening before
+using it. An action-identity hash remains the robust comparison if candidate
+generation itself changes when lower training is restored. Measure runtime
+and memory for either variant before a longer training run.
 
 ## Search screen
 
