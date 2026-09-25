@@ -83,7 +83,12 @@ release executable SHA-256 is
 `e594b5425074a03731524d8c91991126232d840ef44a86e8b0630e1f16800fdf`.
 The 30 integrated searches took 3,755 seconds and wrote 2,291,753,859 raw
 report bytes. This bounded diagnostic did not train a model, so W&B tracking
-was not required.
+was not required. After this package was committed, the
+[cleanup manifest](2026-09-25-hierarchical-first-action-cleanup.json) recorded
+1,996,085,063 removed file bytes and server free space rising from
+174,156,128,256 to 176,152,453,120 bytes. Three rank-zero raw reports remain
+temporarily for the 512-simulation volatility control; the full summary and
+candidate panels remain for independent replication and target analysis.
 
 The large seed variation triggered an [independent replication rule](../designs/2026-09-25-hierarchical-target-causal-study.md)
 before the remaining alternative-action results were inspected. There are

@@ -1,0 +1,256 @@
+{
+  "schema": "aic-hierarchical-first-action-cleanup-v1",
+  "progress_sha256": "4143f9126ffde348985aeb8b053b31e57b1cc91628ab7a57a4f8ab7bc8fe437e",
+  "summary_sha256": "36ca705c7fab33d7918a2922d64b64a884486542486fd5be1c485b429ee5be55",
+  "removed": [
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260922/rank-1.json",
+      "file_bytes": 94294434
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260922/rank-2.json",
+      "file_bytes": 97967632
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260922/rank-3.json",
+      "file_bytes": 92845434
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260922/rank-4.json",
+      "file_bytes": 92373095
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260922/rank-5.json",
+      "file_bytes": 94034380
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260922/rank-6.json",
+      "file_bytes": 103478275
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260922/rank-7.json",
+      "file_bytes": 76478512
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260922/rank-8.json",
+      "file_bytes": 15168857
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260922/rank-9.json",
+      "file_bytes": 1662936
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260923/rank-1.json",
+      "file_bytes": 98544765
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260923/rank-2.json",
+      "file_bytes": 94277096
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260923/rank-3.json",
+      "file_bytes": 90107844
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260923/rank-4.json",
+      "file_bytes": 92387608
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260923/rank-5.json",
+      "file_bytes": 94645334
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260923/rank-6.json",
+      "file_bytes": 101587353
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260923/rank-7.json",
+      "file_bytes": 74561830
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260923/rank-8.json",
+      "file_bytes": 11354542
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260923/rank-9.json",
+      "file_bytes": 1708374
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260924/rank-1.json",
+      "file_bytes": 93984193
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260924/rank-2.json",
+      "file_bytes": 94539486
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260924/rank-3.json",
+      "file_bytes": 91970689
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260924/rank-4.json",
+      "file_bytes": 97914166
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260924/rank-5.json",
+      "file_bytes": 94074520
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260924/rank-6.json",
+      "file_bytes": 104310919
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260924/rank-7.json",
+      "file_bytes": 77280177
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260924/rank-8.json",
+      "file_bytes": 12622182
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260924/rank-9.json",
+      "file_bytes": 1896896
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260922-rank-0.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260922-rank-1.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260922-rank-2.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260922-rank-3.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260922-rank-4.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260922-rank-5.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260922-rank-6.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260922-rank-7.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260922-rank-8.log",
+      "file_bytes": 305
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260922-rank-9.log",
+      "file_bytes": 305
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260923-rank-0.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260923-rank-1.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260923-rank-2.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260923-rank-3.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260923-rank-4.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260923-rank-5.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260923-rank-6.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260923-rank-7.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260923-rank-8.log",
+      "file_bytes": 306
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260923-rank-9.log",
+      "file_bytes": 306
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260924-rank-0.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260924-rank-1.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260924-rank-2.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260924-rank-3.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260924-rank-4.log",
+      "file_bytes": 306
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260924-rank-5.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260924-rank-6.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260924-rank-7.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260924-rank-8.log",
+      "file_bytes": 306
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/continuation-20260924-rank-9.log",
+      "file_bytes": 305
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-continuation-20260922",
+      "file_bytes": 1441
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-continuation-20260923",
+      "file_bytes": 1441
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-continuation-20260924",
+      "file_bytes": 1441
+    }
+  ],
+  "removed_file_bytes": 1996085063,
+  "free_bytes_before": 174156128256,
+  "free_bytes_after": 176152453120,
+  "retained_raw_rank_zero": {
+    "20260922": "f2b1123121f90fbd1f7e46a6d121c7eb2cade0b63493e14a1e08419fcbf19d98",
+    "20260923": "39189369730bc3a3e42c6fa2b0caea63c77f4ee4301a52fdae4b69b47c7c6586",
+    "20260924": "fa6db04b1d2e340033a2b4f33e6108350da75b0d41505cda597a86838c8b2f18"
+  },
+  "retention_reason": "Rank-zero reports remain needed for the 512-simulation seed-volatility control; the full summary and candidate panels remain needed for independent replication and target analysis."
+}
