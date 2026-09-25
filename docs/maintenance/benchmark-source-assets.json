@@ -94,6 +94,8 @@
     "hierarchical-route-guidance/training-panel.json",
     "hierarchical-search/config.json",
     "hierarchical-search/panel.json",
+    "hierarchical-target-quality/outer-512.json",
+    "hierarchical-target-quality/search-512.json",
     "hierarchical-update-budget/generation-100.json",
     "hierarchical-update-budget/generation-200.json",
     "hierarchical-update-budget/generation-25.json",
