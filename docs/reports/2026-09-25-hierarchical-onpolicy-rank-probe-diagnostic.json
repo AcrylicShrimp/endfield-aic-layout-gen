@@ -1,0 +1,913 @@
+{
+  "schema": "aic-hierarchical-gumbel-rank-probe-v1",
+  "case_count": 64,
+  "mean_action_count": 2682.1875,
+  "mean_exact_position_fraction": 0.002252904461438481,
+  "mean_spearman_rank_correlation": 0.8002442293860521,
+  "mean_median_absolute_rank_shift": 270.6640625,
+  "equal_first_actions": 0,
+  "reconstructed_roots": 128,
+  "mean_rank_candidate_overlap": 8.015625,
+  "mean_action_key_candidate_overlap": 15.96875,
+  "rows": [
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-128075",
+      "action_count": 2624,
+      "exact_position_fraction": 0.0007621951219512195,
+      "spearman_rank_correlation": 0.8736451120548459,
+      "median_absolute_rank_shift": 197.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-18771",
+      "action_count": 2548,
+      "exact_position_fraction": 0.003532182103610675,
+      "spearman_rank_correlation": 0.8237636387052704,
+      "median_absolute_rank_shift": 238.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-86977",
+      "action_count": 2624,
+      "exact_position_fraction": 0.0019054878048780487,
+      "spearman_rank_correlation": 0.8491273072166482,
+      "median_absolute_rank_shift": 267.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-52923",
+      "action_count": 2624,
+      "exact_position_fraction": 0.0022865853658536584,
+      "spearman_rank_correlation": 0.8386268661970427,
+      "median_absolute_rank_shift": 300.5,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-28172",
+      "action_count": 3048,
+      "exact_position_fraction": 0.00032808398950131233,
+      "spearman_rank_correlation": 0.4829062791109512,
+      "median_absolute_rank_shift": 593.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-63743",
+      "action_count": 2784,
+      "exact_position_fraction": 0.005747126436781609,
+      "spearman_rank_correlation": 0.9679484268949105,
+      "median_absolute_rank_shift": 104.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-71533",
+      "action_count": 2624,
+      "exact_position_fraction": 0.00038109756097560977,
+      "spearman_rank_correlation": 0.6469968922729912,
+      "median_absolute_rank_shift": 383.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-72284",
+      "action_count": 2704,
+      "exact_position_fraction": 0.0025887573964497044,
+      "spearman_rank_correlation": 0.9276143170062797,
+      "median_absolute_rank_shift": 215.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-102967",
+      "action_count": 2624,
+      "exact_position_fraction": 0.00038109756097560977,
+      "spearman_rank_correlation": 0.6469968922729912,
+      "median_absolute_rank_shift": 383.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-5053",
+      "action_count": 2624,
+      "exact_position_fraction": 0.0007621951219512195,
+      "spearman_rank_correlation": 0.8736451120548459,
+      "median_absolute_rank_shift": 197.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-1574",
+      "action_count": 2624,
+      "exact_position_fraction": 0.0038109756097560975,
+      "spearman_rank_correlation": 0.8453527306685299,
+      "median_absolute_rank_shift": 205.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-31367",
+      "action_count": 2836,
+      "exact_position_fraction": 0.0021156558533145277,
+      "spearman_rank_correlation": 0.8697234917967103,
+      "median_absolute_rank_shift": 217.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 9,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-18427",
+      "action_count": 2628,
+      "exact_position_fraction": 0.001902587519025875,
+      "spearman_rank_correlation": 0.8479981297851436,
+      "median_absolute_rank_shift": 207.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-20599",
+      "action_count": 2624,
+      "exact_position_fraction": 0.00038109756097560977,
+      "spearman_rank_correlation": 0.6469968922729912,
+      "median_absolute_rank_shift": 383.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 15,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-18587",
+      "action_count": 3208,
+      "exact_position_fraction": 0.0046758104738154616,
+      "spearman_rank_correlation": 0.9704616197835488,
+      "median_absolute_rank_shift": 104.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-84057",
+      "action_count": 2624,
+      "exact_position_fraction": 0.0038109756097560975,
+      "spearman_rank_correlation": 0.8453527306685299,
+      "median_absolute_rank_shift": 205.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-9558",
+      "action_count": 2836,
+      "exact_position_fraction": 0.002468265162200282,
+      "spearman_rank_correlation": 0.8290162545070364,
+      "median_absolute_rank_shift": 318.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-119664",
+      "action_count": 2624,
+      "exact_position_fraction": 0.0022865853658536584,
+      "spearman_rank_correlation": 0.8386268661970427,
+      "median_absolute_rank_shift": 300.5,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-50145",
+      "action_count": 2560,
+      "exact_position_fraction": 0.00078125,
+      "spearman_rank_correlation": 0.605661104827668,
+      "median_absolute_rank_shift": 393.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-68190",
+      "action_count": 2784,
+      "exact_position_fraction": 0.005747126436781609,
+      "spearman_rank_correlation": 0.9679484268949105,
+      "median_absolute_rank_shift": 104.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-7236",
+      "action_count": 2784,
+      "exact_position_fraction": 0.0028735632183908046,
+      "spearman_rank_correlation": 0.9308340291773783,
+      "median_absolute_rank_shift": 178.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-76565",
+      "action_count": 2624,
+      "exact_position_fraction": 0.001524390243902439,
+      "spearman_rank_correlation": 0.931106269784445,
+      "median_absolute_rank_shift": 180.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-57515",
+      "action_count": 2784,
+      "exact_position_fraction": 0.004310344827586207,
+      "spearman_rank_correlation": 0.9012884044572073,
+      "median_absolute_rank_shift": 190.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-96264",
+      "action_count": 2624,
+      "exact_position_fraction": 0.0022865853658536584,
+      "spearman_rank_correlation": 0.8386268661970427,
+      "median_absolute_rank_shift": 300.5,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-83625",
+      "action_count": 2624,
+      "exact_position_fraction": 0.003429878048780488,
+      "spearman_rank_correlation": 0.8068951243422897,
+      "median_absolute_rank_shift": 215.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-44600",
+      "action_count": 2628,
+      "exact_position_fraction": 0.004185692541856925,
+      "spearman_rank_correlation": 0.9449972490771305,
+      "median_absolute_rank_shift": 143.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-1548",
+      "action_count": 3048,
+      "exact_position_fraction": 0.0032808398950131233,
+      "spearman_rank_correlation": 0.7719920852771726,
+      "median_absolute_rank_shift": 328.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-65711",
+      "action_count": 2836,
+      "exact_position_fraction": 0.001763046544428773,
+      "spearman_rank_correlation": 0.8329525337193004,
+      "median_absolute_rank_shift": 369.5,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-8390",
+      "action_count": 2784,
+      "exact_position_fraction": 0.005747126436781609,
+      "spearman_rank_correlation": 0.9679484268949105,
+      "median_absolute_rank_shift": 104.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-68815",
+      "action_count": 2640,
+      "exact_position_fraction": 0.005681818181818182,
+      "spearman_rank_correlation": 0.5241348012078796,
+      "median_absolute_rank_shift": 547.5,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-4889",
+      "action_count": 2624,
+      "exact_position_fraction": 0.003429878048780488,
+      "spearman_rank_correlation": 0.8068951243422897,
+      "median_absolute_rank_shift": 215.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-127702",
+      "action_count": 2624,
+      "exact_position_fraction": 0.0007621951219512195,
+      "spearman_rank_correlation": 0.8736451120548459,
+      "median_absolute_rank_shift": 197.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-88456",
+      "action_count": 2624,
+      "exact_position_fraction": 0.0022865853658536584,
+      "spearman_rank_correlation": 0.8386268661970427,
+      "median_absolute_rank_shift": 300.5,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-115911",
+      "action_count": 2624,
+      "exact_position_fraction": 0.0038109756097560975,
+      "spearman_rank_correlation": 0.8453527306685299,
+      "median_absolute_rank_shift": 205.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-74221",
+      "action_count": 2624,
+      "exact_position_fraction": 0.00038109756097560977,
+      "spearman_rank_correlation": 0.6469968922729912,
+      "median_absolute_rank_shift": 383.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-15777",
+      "action_count": 2472,
+      "exact_position_fraction": 0.0024271844660194173,
+      "spearman_rank_correlation": 0.7667240199490174,
+      "median_absolute_rank_shift": 226.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-78136",
+      "action_count": 2624,
+      "exact_position_fraction": 0.0007621951219512195,
+      "spearman_rank_correlation": 0.8736451120548459,
+      "median_absolute_rank_shift": 197.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-108378",
+      "action_count": 2548,
+      "exact_position_fraction": 0.0015698587127158557,
+      "spearman_rank_correlation": 0.39129001005073993,
+      "median_absolute_rank_shift": 504.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-41893",
+      "action_count": 2784,
+      "exact_position_fraction": 0.005747126436781609,
+      "spearman_rank_correlation": 0.9679484268949105,
+      "median_absolute_rank_shift": 104.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 15,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-16165",
+      "action_count": 2784,
+      "exact_position_fraction": 0.005747126436781609,
+      "spearman_rank_correlation": 0.9679484268949105,
+      "median_absolute_rank_shift": 104.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-81407",
+      "action_count": 2624,
+      "exact_position_fraction": 0.0022865853658536584,
+      "spearman_rank_correlation": 0.8386268661970427,
+      "median_absolute_rank_shift": 300.5,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-101190",
+      "action_count": 2624,
+      "exact_position_fraction": 0.0007621951219512195,
+      "spearman_rank_correlation": 0.8736451120548459,
+      "median_absolute_rank_shift": 197.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-20513",
+      "action_count": 2624,
+      "exact_position_fraction": 0.00038109756097560977,
+      "spearman_rank_correlation": 0.6469968922729912,
+      "median_absolute_rank_shift": 383.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-12531",
+      "action_count": 2640,
+      "exact_position_fraction": 0.0022727272727272726,
+      "spearman_rank_correlation": 0.791073990835706,
+      "median_absolute_rank_shift": 247.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-30786",
+      "action_count": 2784,
+      "exact_position_fraction": 0.0028735632183908046,
+      "spearman_rank_correlation": 0.9308340291773783,
+      "median_absolute_rank_shift": 178.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-18651",
+      "action_count": 2624,
+      "exact_position_fraction": 0.00038109756097560977,
+      "spearman_rank_correlation": 0.6469968922729912,
+      "median_absolute_rank_shift": 383.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-30605",
+      "action_count": 2624,
+      "exact_position_fraction": 0.0022865853658536584,
+      "spearman_rank_correlation": 0.7877133067038965,
+      "median_absolute_rank_shift": 291.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-93157",
+      "action_count": 2624,
+      "exact_position_fraction": 0.003429878048780488,
+      "spearman_rank_correlation": 0.8068951243422897,
+      "median_absolute_rank_shift": 215.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-91663",
+      "action_count": 2624,
+      "exact_position_fraction": 0.00038109756097560977,
+      "spearman_rank_correlation": 0.6469968922729912,
+      "median_absolute_rank_shift": 383.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-15660",
+      "action_count": 2624,
+      "exact_position_fraction": 0.00038109756097560977,
+      "spearman_rank_correlation": 0.6469968922729912,
+      "median_absolute_rank_shift": 383.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-23742",
+      "action_count": 2624,
+      "exact_position_fraction": 0.00038109756097560977,
+      "spearman_rank_correlation": 0.6469968922729912,
+      "median_absolute_rank_shift": 383.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-118139",
+      "action_count": 2836,
+      "exact_position_fraction": 0.0010578279266572638,
+      "spearman_rank_correlation": 0.8862484585701814,
+      "median_absolute_rank_shift": 302.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-31857",
+      "action_count": 2624,
+      "exact_position_fraction": 0.003048780487804878,
+      "spearman_rank_correlation": 0.8926801671358034,
+      "median_absolute_rank_shift": 221.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-118135",
+      "action_count": 2624,
+      "exact_position_fraction": 0.00038109756097560977,
+      "spearman_rank_correlation": 0.6469968922729912,
+      "median_absolute_rank_shift": 383.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-75369",
+      "action_count": 2624,
+      "exact_position_fraction": 0.00038109756097560977,
+      "spearman_rank_correlation": 0.6469968922729912,
+      "median_absolute_rank_shift": 383.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-99340",
+      "action_count": 2548,
+      "exact_position_fraction": 0.0011773940345368916,
+      "spearman_rank_correlation": 0.5722756563816465,
+      "median_absolute_rank_shift": 442.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-32126",
+      "action_count": 2624,
+      "exact_position_fraction": 0.00038109756097560977,
+      "spearman_rank_correlation": 0.6469968922729912,
+      "median_absolute_rank_shift": 383.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-118664",
+      "action_count": 2836,
+      "exact_position_fraction": 0.0003526093088857546,
+      "spearman_rank_correlation": 0.7832405787763983,
+      "median_absolute_rank_shift": 306.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-97299",
+      "action_count": 2624,
+      "exact_position_fraction": 0.0022865853658536584,
+      "spearman_rank_correlation": 0.8386268661970427,
+      "median_absolute_rank_shift": 300.5,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-97431",
+      "action_count": 2548,
+      "exact_position_fraction": 0.0019623233908948193,
+      "spearman_rank_correlation": 0.8217928470690637,
+      "median_absolute_rank_shift": 199.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-101171",
+      "action_count": 2472,
+      "exact_position_fraction": 0.0024271844660194173,
+      "spearman_rank_correlation": 0.9015227394095139,
+      "median_absolute_rank_shift": 189.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-33855",
+      "action_count": 2916,
+      "exact_position_fraction": 0.00102880658436214,
+      "spearman_rank_correlation": 0.9112423711242607,
+      "median_absolute_rank_shift": 204.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-100001",
+      "action_count": 2624,
+      "exact_position_fraction": 0.0038109756097560975,
+      "spearman_rank_correlation": 0.8453527306685299,
+      "median_absolute_rank_shift": 205.0,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-recovery-onpolicy-diagnostic-v1-101519",
+      "action_count": 2836,
+      "exact_position_fraction": 0.0014104372355430183,
+      "spearman_rank_correlation": 0.9296270951760347,
+      "median_absolute_rank_shift": 156.5,
+      "first_action_equal": false,
+      "rank_candidate_overlap": 8,
+      "action_key_candidate_overlap": 16,
+      "rank_reconstruction_matches_visits": [
+        true,
+        true
+      ]
+    }
+  ],
+  "current_sha256": "ccf62b449d7066cc0e81c8ad18a4bdd86156885143d2a747e4307a93d9831bc7",
+  "candidate_sha256": "9d4ae2b0e3a201a6624fc33079905cb526cc8758fd4b1b6f68de5b852fbc2ff2",
+  "search_config_sha256": "8e93eabedac15f81adbb27bd9ca0a3f05f985d339bc9e84e647f87b60c06e48d"
+}

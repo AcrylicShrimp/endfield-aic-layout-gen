@@ -70,6 +70,8 @@ The bounded [rank-coupling probe](../reports/2026-09-25-hierarchical-onpolicy-ra
 subsequently reconstructed all 64 actual candidate sets. The current
 model pair shared only 8/16 visited candidates (the anchors); the
 action-keyed counterfactual shared 15.81/16 initial candidates on average.
+The same pattern held on 64 disjoint diagnostic cases: 8.02/16 versus
+15.97/16 shared candidates, with all 128 actual candidate sets reconstructed.
 
 ## Search screen
 

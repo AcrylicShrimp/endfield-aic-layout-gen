@@ -30,6 +30,14 @@ the counterfactual initial sets share 15.81/16 candidates on average (range
 15–16). Thus the current assignment nearly replaces the entire stochastic
 half of the candidate set when the policy reorders actions.
 
+A second probe on the separate 64-case on-policy diagnostic panel, comparing
+the two models after their first generation, reproduces all 128 actually
+visited candidate sets. The current rank-index assignment shares 8.02/16
+candidates on average; the action-keyed counterfactual shares 15.97/16.
+The first selected action again matches in 0/64 cases. This corroborates the
+candidate-remapping mechanism on a larger, disjoint panel, while still not
+testing completed-layout performance under the counterfactual algorithm.
+
 ## Interpretation and limit
 
 In `hierarchical_search.rs`, edges are sorted by learned prior before the
@@ -51,5 +59,12 @@ before changing the algorithm.
   `python3 tools/factory-edit-pilot/hierarchical_gumbel_rank_probe.py --current artifacts/recovery-success-onpolicy/collections/s1-g1-current-source.json --candidate artifacts/recovery-success-onpolicy/collections/s1-g1-success-on-source.json --search-config docs/benchmarks/hierarchical-target-causal/c16-n128-search.json --output artifacts/recovery-success-onpolicy/diagnostics/s1-g1-rank-probe.json`.
 - The compact [case-level result](2026-09-25-hierarchical-onpolicy-rank-probe.json)
   records both source report hashes, search config hash, all 32 per-case
-  measurements and the 64/64 reconstruction check. The raw reports are part
-  of the still-active on-policy experiment and will be closed with it.
+  measurements and the 64/64 reconstruction check. The
+  [diagnostic-panel result](2026-09-25-hierarchical-onpolicy-rank-probe-diagnostic.json)
+  retains the same measurements and 128/128 reconstruction for 64 fresh
+  problems. For the second probe, use the same command with `--current`
+  `artifacts/recovery-success-onpolicy/evaluations/s1-g0-current.json`,
+  `--candidate` `artifacts/recovery-success-onpolicy/evaluations/s1-g0-success-on.json`,
+  and `--output` `artifacts/recovery-success-onpolicy/diagnostics/s1-g0-diagnostic-rank-probe.json`.
+  The raw reports are part of the still-active on-policy experiment and will
+  be closed with it.
