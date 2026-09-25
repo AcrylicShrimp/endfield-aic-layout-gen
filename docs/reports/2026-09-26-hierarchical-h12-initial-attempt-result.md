@@ -46,3 +46,6 @@ initial CLI search returns.
 The [cleanup record](2026-09-26-hierarchical-h12-initial-attempt-cleanup.json)
 removes 250,743,594 bytes of stopped preparation state after the diagnostic
 report's temporary continuation copy and compact closeout were verified.
+The corrected runner then accepted that report as its initial diagnostic;
+the [reuse cleanup](2026-09-26-hierarchical-h12-initial-reuse-cleanup.json)
+records removal of the temporary second copy.

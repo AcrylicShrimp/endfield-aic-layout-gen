@@ -1,0 +1,24 @@
+{
+  "schema": "aic-experiment-cleanup-v1",
+  "experiment": "hierarchical-horizon-initial-diagnostic-temporary-reuse",
+  "remote_root": "~/Srv/aic-target-causal-20260925/artifacts/recovery-horizon-initial-reuse",
+  "before_bytes": 233224208,
+  "after_bytes": 0,
+  "filesystem_free_before_bytes": 166255792128,
+  "filesystem_free_after_bytes": 166489030656,
+  "removed": [
+    {
+      "path": "start-h12.json",
+      "bytes_before": 233221709
+    },
+    {
+      "path": "manifest.json and stopped-attempt-cleanup.json",
+      "bytes_before": 2499
+    }
+  ],
+  "retained_elsewhere": [
+    "docs/reports/2026-09-26-hierarchical-h12-initial-attempt-result.md",
+    "~/Srv/aic-target-causal-20260925/artifacts/recovery-horizon-onpolicy-v2/evaluations/start-h12.json"
+  ],
+  "recovery_requirement": "None; corrected progress has a verified initial diagnostic record and the corrected experiment keeps the report until its closeout."
+}
