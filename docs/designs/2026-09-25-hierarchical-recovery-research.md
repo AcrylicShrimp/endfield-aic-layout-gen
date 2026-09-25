@@ -80,6 +80,12 @@ correspondence across paired models and after placement-page widening before
 using it. An action-identity hash remains the robust comparison if candidate
 generation itself changes when lower training is restored. Measure runtime
 and memory for either variant before a longer training run.
+The [consecutive-generation probe](../reports/2026-09-26-hierarchical-onpolicy-generation-rank-probe-result.md)
+then reproduced all 512 candidate sets on the shared 64-case diagnostic.
+Even `current` generation 1→2, with mean rank correlation 0.979, retained
+only 8.14/16 candidates under rank-index Gumbels versus 16/16 under the
+action-keyed counterfactual. This supports a candidate-churn mechanism, not
+yet a measured performance repair.
 
 ## Search screen
 
