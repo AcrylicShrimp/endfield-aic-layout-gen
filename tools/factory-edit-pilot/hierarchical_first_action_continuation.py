@@ -54,7 +54,10 @@ def candidate_manifest(root):
     original_cases = {}
     for stream in STREAMS:
         panel = read(root / "inputs" / "panels" / f"{stream}.json")
-        original_cases.update({case["id"]: (stream, case) for case in panel["cases"]})
+        for case in panel["cases"]:
+            require(case["id"] not in original_cases,
+                    f"duplicate case ID across streams: {case['id']}")
+            original_cases[case["id"]] = (stream, case)
         reports = {}
         for candidates, simulations in ARMS:
             arm = label(candidates, simulations)
@@ -103,6 +106,16 @@ def candidate_manifest(root):
             add(max(outside, key=lambda item:
                     (item[1]["prior"] + item[1]["anchor_prior"], item[0]))[0],
                 "highest-mixed-prior-outside-16")
+            wide_record = reports["c128-n512"]["cases"][index]["mcts"]["root_records"][0]
+            wide_actions = {action_key(action): action for action in wide_record["actions"]}
+            wide_outside = [(key, wide_actions[key]) for key, _ in outside
+                            if wide_actions[key]["visits"] > 0]
+            require(wide_outside, f"wide cell visited no outside actions: {case_id}")
+            add(max(wide_outside, key=lambda item: (item[1]["q"], item[0]))[0],
+                "highest-q-outside-16-in-c128-n512")
+            add(min(outside, key=lambda item: hashlib.sha256(
+                (case_id + "\0" + item[0]).encode()).digest())[0],
+                "hash-sampled-outside-16")
             baseline_selected = action_key(first["actions"][first["selected_action"]])
             next_root = baseline_case["mcts"]["root_records"][1:2]
             results.append({

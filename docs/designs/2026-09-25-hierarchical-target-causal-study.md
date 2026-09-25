@@ -43,12 +43,14 @@ For each case where the 16/128 and a wider arm select distinct first actions,
 compare both actions by applying their exact recorded macro witnesses to the
 same frozen prefix, then continuing with the same subsequent search contract.
 Include the highest- and lowest-Q actions among the original 16 to test value
-ranking, plus the highest-anchor and highest-mixed-prior actions outside the
-original 16. Deduplicate exact action witnesses. Keep the original case ID;
+ranking. Outside the original 16, include the highest-anchor action, the
+highest-mixed-prior action, the highest-Q visited action in the
+128-candidate/512-simulation cell, and one deterministically hashed action as
+a base-rate control. Deduplicate exact witnesses. Keep the original case ID;
 use downstream root seeds 20260922, 20260923, and 20260924 and 23 remaining
 macro moves for every forced first action. Run variants as panel batches to
-reuse model loading
-and compiled inference. Verify every prefix through native session replay and
+reuse model loading and compiled inference. Verify every prefix through native
+session replay and
 match its resulting state to the recorded action witness. First-root action
 selection is not rerun in these continuations.
 
