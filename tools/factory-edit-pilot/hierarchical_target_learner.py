@@ -226,6 +226,11 @@ def trained(root, directory, name, panel_path, collection, lower, outer):
 def transformed(directory, name, source, contrast, scope):
     output = directory / "collections" / f"{name}.json"
     manifest = directory / "manifests" / f"{name}.json"
+    if output.exists() != manifest.exists():
+        # An interrupted rewrite has no committed source/output pair. Both
+        # files are regenerated from the unchanged frozen search report.
+        output.unlink(missing_ok=True)
+        manifest.unlink(missing_ok=True)
     if not output.exists() and not manifest.exists():
         transform(source, output, manifest, contrast, scope)
     record = read(manifest)
