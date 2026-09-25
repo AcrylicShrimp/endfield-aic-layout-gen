@@ -47,6 +47,26 @@ These are initial hypotheses, not an exhaustive model of the failure. A
 surprising result should trigger a narrow check of the relevant code path and
 case witnesses before another expensive matrix.
 
+An on-policy diagnostic exposed another candidate mechanism while the
+three-generation confirmation was still running. For the 32 shared `s1-g1`
+collection graphs, the `current` and `success-on` models produced exactly the
+same first-root action sets, but only 0.23% of actions kept the same array
+position on average; mean Spearman rank correlation was 0.74 and the mean
+median absolute rank shift was 325 positions. The first selected action
+matched in 0/32 cases. `hierarchical_search.rs` sorts edges by learned prior
+before assigning deterministic Gumbel values by action-array index. Thus the
+same case ID and root seed do not give the same random perturbation to a
+physical action after its rank moves. This is preliminary mechanism evidence,
+not proof that remapping caused the performance loss: the learned prior and
+search values changed too. After closing the on-policy experiment, test a
+stable action-identity Gumbel assignment on paired graphs and models, first
+with a bounded root-level comparison and runtime check, then with full
+multi-seed search only if the mechanism remains plausible. Preserve the
+prior-sorted edge order needed for progressive widening. A stable assignment
+has the same marginal independent Gumbel distribution; its proposed benefit
+is reduced sensitivity to incidental action order, not a guaranteed increase
+in expected search strength.
+
 ## Search screen
 
 Reuse the 48 generation-87 frozen training-source cases from the causal study,
