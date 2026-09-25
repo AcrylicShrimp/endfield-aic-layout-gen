@@ -1,0 +1,60 @@
+{
+  "schema": "aic-hierarchical-continuation-budget-cleanup-v1",
+  "budget_progress_sha256": "44707a9dc4e7c7eafaed070bf0ef245d120cce5bea03b2daf6f6ad11040d7939",
+  "budget_summary_sha256": "3b9ff7c6ea41952316ec4b7775ba4e5681b72b96a40117e78742aa3939033164",
+  "primary_progress_sha256": "4143f9126ffde348985aeb8b053b31e57b1cc91628ab7a57a4f8ab7bc8fe437e",
+  "removed": [
+    {
+      "path": "artifacts/target-causal-study/raw/budget-control/20260922/rank-0.json",
+      "file_bytes": 96817244
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/budget-control/20260923/rank-0.json",
+      "file_bytes": 99901277
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/budget-control/20260924/rank-0.json",
+      "file_bytes": 98523803
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260922/rank-0.json",
+      "file_bytes": 96864588
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260923/rank-0.json",
+      "file_bytes": 98710334
+    },
+    {
+      "path": "artifacts/target-causal-study/raw/continuation/20260924/rank-0.json",
+      "file_bytes": 100107408
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/budget-control-20260922.log",
+      "file_bytes": 310
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/budget-control-20260923.log",
+      "file_bytes": 310
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/budget-control-20260924.log",
+      "file_bytes": 309
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-budget-512-20260922",
+      "file_bytes": 1441
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-budget-512-20260923",
+      "file_bytes": 1441
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-budget-512-20260924",
+      "file_bytes": 1441
+    }
+  ],
+  "removed_file_bytes": 590929906,
+  "free_bytes_before": 175857012736,
+  "free_bytes_after": 176447995904,
+  "retention_reason": "The full primary continuation summary, candidate witness panels and frozen checkpoint remain needed for independent-seed replication and target analysis."
+}

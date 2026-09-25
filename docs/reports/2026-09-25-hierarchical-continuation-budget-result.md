@@ -62,6 +62,12 @@ protocol, release binary SHA-256
 and tracked per-seed search and outer configurations identify the executable
 method. Three integrated searches took 1,191 seconds and wrote 295,242,324
 raw report bytes. No training occurred, so W&B tracking was not required.
+After the package was verified and committed, the
+[cleanup manifest](2026-09-25-hierarchical-continuation-budget-cleanup.json)
+recorded 590,929,906 removed file bytes, including the now unneeded three
+primary rank-zero reports, and server free space rising from 175,857,012,736
+to 176,447,995,904 bytes. The full primary summary and candidate panels
+remain temporarily for independent replication and target analysis.
 
 From the closed primary continuation inputs under `~/Srv`:
 
