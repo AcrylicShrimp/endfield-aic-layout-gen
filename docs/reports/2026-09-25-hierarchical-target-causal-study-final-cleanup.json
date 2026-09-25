@@ -1,0 +1,212 @@
+{
+  "schema": "aic-hierarchical-target-causal-study-final-cleanup-v1",
+  "source_report_commit": "789386b8",
+  "retained_original_checkpoints": [
+    {
+      "kind": "lower",
+      "retained_original_path": "/home/ashrimp/Srv/aic-gumbel-curriculum-20260922/artifacts/hierarchical-curriculum-v1/generations/000087/training/lower/state.safetensors",
+      "sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+      "file_bytes": 306432
+    },
+    {
+      "kind": "outer",
+      "retained_original_path": "/home/ashrimp/Srv/aic-gumbel-curriculum-20260922/artifacts/hierarchical-curriculum-v1/generations/000087/training/outer/state.safetensors",
+      "sha256": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520",
+      "file_bytes": 119380
+    }
+  ],
+  "removed": [
+    {
+      "path": "artifacts/target-causal-study/budget-control-cleanup.json",
+      "file_bytes": 2155
+    },
+    {
+      "path": "artifacts/target-causal-study/budget-control-progress.json",
+      "file_bytes": 801
+    },
+    {
+      "path": "artifacts/target-causal-study/budget-control-protocol.json",
+      "file_bytes": 1665
+    },
+    {
+      "path": "artifacts/target-causal-study/budget-control-summary.json",
+      "file_bytes": 13668
+    },
+    {
+      "path": "artifacts/target-causal-study/continuation-actions-s1-source.json",
+      "file_bytes": 68176
+    },
+    {
+      "path": "artifacts/target-causal-study/continuation-actions-s2-source.json",
+      "file_bytes": 66834
+    },
+    {
+      "path": "artifacts/target-causal-study/continuation-actions-s3-source.json",
+      "file_bytes": 66027
+    },
+    {
+      "path": "artifacts/target-causal-study/continuation-actions-source.json",
+      "file_bytes": 302051
+    },
+    {
+      "path": "artifacts/target-causal-study/continuation-actions.json",
+      "file_bytes": 727342
+    },
+    {
+      "path": "artifacts/target-causal-study/continuation-analysis.json",
+      "file_bytes": 217436
+    },
+    {
+      "path": "artifacts/target-causal-study/continuation-cleanup.json",
+      "file_bytes": 8326
+    },
+    {
+      "path": "artifacts/target-causal-study/continuation-progress.json",
+      "file_bytes": 6721
+    },
+    {
+      "path": "artifacts/target-causal-study/continuation-protocol.json",
+      "file_bytes": 2806
+    },
+    {
+      "path": "artifacts/target-causal-study/continuation-summary.json",
+      "file_bytes": 1079848
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs",
+      "file_bytes": 1654684
+    },
+    {
+      "path": "artifacts/target-causal-study/learner",
+      "file_bytes": 1168937
+    },
+    {
+      "path": "artifacts/target-causal-study/learner-confirmation-analysis.json",
+      "file_bytes": 5469
+    },
+    {
+      "path": "artifacts/target-causal-study/learner-confirmation-cleanup.json",
+      "file_bytes": 1571
+    },
+    {
+      "path": "artifacts/target-causal-study/learner-feedback-analysis.json",
+      "file_bytes": 75394
+    },
+    {
+      "path": "artifacts/target-causal-study/learner-screen-cleanup.json",
+      "file_bytes": 1772
+    },
+    {
+      "path": "artifacts/target-causal-study/logs",
+      "file_bytes": 0
+    },
+    {
+      "path": "artifacts/target-causal-study/outside-budget-cleanup.json",
+      "file_bytes": 2850
+    },
+    {
+      "path": "artifacts/target-causal-study/outside-budget-progress.json",
+      "file_bytes": 4092
+    },
+    {
+      "path": "artifacts/target-causal-study/outside-budget-protocol.json",
+      "file_bytes": 8314
+    },
+    {
+      "path": "artifacts/target-causal-study/outside-budget-summary.json",
+      "file_bytes": 21901
+    },
+    {
+      "path": "artifacts/target-causal-study/outside-recheck-cleanup.json",
+      "file_bytes": 3797
+    },
+    {
+      "path": "artifacts/target-causal-study/outside-recheck-progress.json",
+      "file_bytes": 4100
+    },
+    {
+      "path": "artifacts/target-causal-study/outside-recheck-protocol.json",
+      "file_bytes": 8363
+    },
+    {
+      "path": "artifacts/target-causal-study/outside-recheck-summary.json",
+      "file_bytes": 20452
+    },
+    {
+      "path": "artifacts/target-causal-study/progress.json",
+      "file_bytes": 4893
+    },
+    {
+      "path": "artifacts/target-causal-study/protocol.json",
+      "file_bytes": 2640
+    },
+    {
+      "path": "artifacts/target-causal-study/raw",
+      "file_bytes": 176529968
+    },
+    {
+      "path": "artifacts/target-causal-study/replication-analysis.json",
+      "file_bytes": 20570
+    },
+    {
+      "path": "artifacts/target-causal-study/replication-cleanup.json",
+      "file_bytes": 9647
+    },
+    {
+      "path": "artifacts/target-causal-study/replication-progress.json",
+      "file_bytes": 6726
+    },
+    {
+      "path": "artifacts/target-causal-study/replication-protocol.json",
+      "file_bytes": 4598
+    },
+    {
+      "path": "artifacts/target-causal-study/replication-summary.json",
+      "file_bytes": 13915
+    },
+    {
+      "path": "artifacts/target-causal-study/summary.json",
+      "file_bytes": 717909
+    },
+    {
+      "path": "artifacts/target-causal-study/target-contrast-analysis.json",
+      "file_bytes": 87691
+    },
+    {
+      "path": "artifacts/target-causal-study/target-contrast-cleanup.json",
+      "file_bytes": 512
+    },
+    {
+      "path": "artifacts/target-causal-study/target-seed-cleanup.json",
+      "file_bytes": 1451
+    },
+    {
+      "path": "artifacts/target-causal-study/target-seed-progress.json",
+      "file_bytes": 793
+    },
+    {
+      "path": "artifacts/target-causal-study/target-seed-protocol.json",
+      "file_bytes": 2250
+    },
+    {
+      "path": "artifacts/target-causal-study/target-seed-summary.json",
+      "file_bytes": 72644
+    },
+    {
+      "path": "artifacts/target-causal-study/width-cleanup.json",
+      "file_bytes": 6318
+    },
+    {
+      "path": "artifacts/target-causal-study/width-compact.json",
+      "file_bytes": 49454
+    },
+    {
+      "path": "artifacts/target-causal-study/width-summary.log",
+      "file_bytes": 5205
+    }
+  ],
+  "removed_file_bytes": 183082736,
+  "free_bytes_before": 176445902848,
+  "free_bytes_after": 176629362688,
+  "retention_reason": "All questions, methods, exact code/configuration hashes, compact case-level outcomes, verdicts, W&B acknowledgements, and stage cleanup packages are committed under docs/reports; no learner treatment was promoted or has an active continuation requirement."
+}
