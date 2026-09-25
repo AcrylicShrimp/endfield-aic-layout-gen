@@ -192,6 +192,8 @@ def paired_case(stream, left, right):
             f"invalid target distribution: {stream}/{left['id']}")
     top_p = max(range(len(keys)), key=lambda index: p[index])
     top_q = max(range(len(keys)), key=lambda index: q[index])
+    entropy_p = entropy(p)
+    entropy_q = entropy(q)
     selected_high = action_key(b["actions"][b["selected_action"]])
     selected_low = action_key(a["actions"][a["selected_action"]])
     high_index = keys.index(selected_high)
@@ -203,9 +205,14 @@ def paired_case(stream, left, right):
         "visited_512": sum(right_actions[key]["visits"] > 0 for key in keys),
         "unvisited_target_mass_128": sum(p[index] for index, key in enumerate(keys)
                                          if left_actions[key]["visits"] == 0),
+        "uniform_unvisited_mass_128": (len(keys) - sum(left_actions[key]["visits"] > 0
+                                                        for key in keys)) / len(keys),
         "top_target_unvisited_128": left_actions[keys[top_p]]["visits"] == 0,
-        "target_entropy_128": entropy(p),
-        "target_entropy_512": entropy(q),
+        "top_target_probability_128": p[top_p],
+        "target_entropy_128": entropy_p,
+        "target_entropy_512": entropy_q,
+        "effective_actions_128": math.exp(entropy_p),
+        "effective_actions_512": math.exp(entropy_q),
         "top_target_same": keys[top_p] == keys[top_q],
         "selected_action_same": selected_low == selected_high,
         "mass_128_on_selected_512": p[high_index],
@@ -253,6 +260,13 @@ def summarize(root):
                                                      for row in covered]),
             "mean_visited_actions_128": mean([row["visited_128"] for row in covered]),
             "mean_visited_actions_512": mean([row["visited_512"] for row in covered]),
+            "mean_action_count": mean([row["actions"] for row in covered]),
+            "mean_effective_actions_128": mean([row["effective_actions_128"]
+                                                for row in covered]),
+            "mean_effective_actions_512": mean([row["effective_actions_512"]
+                                                for row in covered]),
+            "mean_uniform_unvisited_mass_128": mean([row["uniform_unvisited_mass_128"]
+                                                     for row in covered]),
             "top_target_unvisited_128": sum(row["top_target_unvisited_128"]
                                             for row in covered),
             "top1_disagreement": sum(not row["top_target_same"] for row in covered),
