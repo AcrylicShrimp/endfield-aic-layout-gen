@@ -281,8 +281,6 @@ def summarize(root):
                                             for row in covered),
             "top1_disagreement": sum(not row["top_target_same"] for row in covered),
             "mean_js_divergence_bits": mean([row["js_divergence_bits"] for row in covered]),
-            "mean_js_target_vs_mixed_prior_128_bits": mean([
-                row["js_target_vs_mixed_prior_128_bits"] for row in covered]),
             "successful_128": {
                 "covered": sum(row["completed_128"] for row in covered),
                 "mean_unvisited_target_mass": mean([row["unvisited_target_mass_128"]
@@ -317,6 +315,8 @@ def summarize(root):
             "median_rank_128_of_selected_512": statistics.median(
                 row["rank_128_of_selected_512"] for row in covered),
             "mean_js_divergence_bits": mean([row["js_divergence_bits"] for row in covered]),
+            "mean_js_target_vs_mixed_prior_128_bits": mean([
+                row["js_target_vs_mixed_prior_128_bits"] for row in covered]),
         },
         "predeclared_signals": {
             "weakly_grounded": weak,
