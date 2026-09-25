@@ -1,0 +1,38 @@
+{
+  "schema": "aic-hierarchical-action-key-eight-protocol-v1",
+  "question": "Does physical-action Gumbel assignment reduce candidate churn across case-ID namespaces without a large integrated runtime regression?",
+  "source_commit": "6607de12",
+  "binary_sha256": "66f72a2dbdf45aadbc50e4dfe8f3634012ef5f5a76d8159c698de20f85d7a4fa",
+  "rust_source_sha256": "7d64ab8017fb7f1e268157185ab213838bef58616b556834a32db9aad82148b5",
+  "source_panel_sha256": "a1bae05c58a35d468f509517c6d148710a189cb2686fcc432dde5d411ec27b66",
+  "panel_original_sha256": "61027befcd96fc1c6d4c97bbb5e83bfb790cfa6706c99a36cd000608ad3116ab",
+  "panel_renamed_sha256": "657062f0295ba061629f1c44972ce28d4a36930d61b6d63f2973a6513e823954",
+  "rank_search_sha256": "8e93eabedac15f81adbb27bd9ca0a3f05f985d339bc9e84e647f87b60c06e48d",
+  "key_search_sha256": "6df4be0c52477713c0931b4e9da38ba76b9678a970e181d414c118cb8c5acdfe",
+  "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+  "outer_checkpoint_sha256": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520",
+  "outer_key_config_sha256": "15a6fe0b8dfeb25d769fa256134eb222a1fb66b9c5141bc0e81b376a63e3cbaf",
+  "runs": [
+    "rank-original",
+    "rank-repeat",
+    "rank-renamed",
+    "key-original",
+    "key-repeat",
+    "key-renamed"
+  ],
+  "cases": 8,
+  "partition": "training",
+  "diagnostic_only": true,
+  "metrics": [
+    "physical first action agreement",
+    "visited candidate overlap",
+    "completion",
+    "wall seconds",
+    "maximum resident memory"
+  ],
+  "search_seed": 20260922,
+  "simulations_per_move": 128,
+  "horizon": 6,
+  "max_moves": 24,
+  "runner_sha256": "e9fedbae7a55f02796fcdc8111865e4f1ffb592a61c736520a84c3c9adfb8840"
+}

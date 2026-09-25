@@ -1,0 +1,218 @@
+{
+  "schema": "aic-hierarchical-action-key-eight-summary-v1",
+  "protocol_sha256": "2de304ecf9ec65bf969841623c6d2f12dce4cca0603b9a64af33383ac1272c69",
+  "runs": [
+    {
+      "name": "rank-original",
+      "report_sha256": "a7370d36baad6e2479dc4ac0f13000f2705afb3959bcd3f8eec9d02ea95f6716",
+      "case_success": "00110000",
+      "completed": 2,
+      "root_records": 78,
+      "generated_macro_samples": 187116,
+      "wall_seconds": 28.193808912008535,
+      "maximum_rss_kib": 1754552
+    },
+    {
+      "name": "rank-repeat",
+      "report_sha256": "abc918c122dee2f512a4d9e9771ede97ba0d11724de8aa28e3d9d56721cfbfd1",
+      "case_success": "00110000",
+      "completed": 2,
+      "root_records": 78,
+      "generated_macro_samples": 187116,
+      "wall_seconds": 28.393969570999616,
+      "maximum_rss_kib": 1754640
+    },
+    {
+      "name": "rank-renamed",
+      "report_sha256": "feaed41bcec03658ecd576ba586d8e0465dc67983c2ee162d50ab14cdca4435c",
+      "case_success": "11100100",
+      "completed": 4,
+      "root_records": 79,
+      "generated_macro_samples": 185714,
+      "wall_seconds": 31.30612373900658,
+      "maximum_rss_kib": 1746300
+    },
+    {
+      "name": "key-original",
+      "report_sha256": "aebc00c8d64401b6ba9e17f19ff552b25c95cde78c5e3d8809b13b2085a2d0ce",
+      "case_success": "01000000",
+      "completed": 1,
+      "root_records": 76,
+      "generated_macro_samples": 173362,
+      "wall_seconds": 34.76706741999078,
+      "maximum_rss_kib": 1746196
+    },
+    {
+      "name": "key-repeat",
+      "report_sha256": "3216addef540652574a901c025955cac5fd08a456b91f48052124c8af7230cf4",
+      "case_success": "01000000",
+      "completed": 1,
+      "root_records": 76,
+      "generated_macro_samples": 173362,
+      "wall_seconds": 34.17685547101428,
+      "maximum_rss_kib": 1747976
+    },
+    {
+      "name": "key-renamed",
+      "report_sha256": "e25fca47e84e1e642d2f0144eecf448b8d22bf9a09324e54b1934cd029f25e5d",
+      "case_success": "01000000",
+      "completed": 1,
+      "root_records": 76,
+      "generated_macro_samples": 173362,
+      "wall_seconds": 34.09016901999712,
+      "maximum_rss_kib": 1753064
+    }
+  ],
+  "pairs": [
+    {
+      "left": "rank-original",
+      "right": "rank-repeat",
+      "first_root_visited_overlap": [
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16
+      ],
+      "first_root_mean_visited_overlap": 16,
+      "first_root_all_action_overlap": [
+        2624,
+        2548,
+        2628,
+        2784,
+        2624,
+        2548,
+        2784,
+        2624
+      ],
+      "same_first_physical_action": 8,
+      "same_full_physical_path": 8,
+      "same_completion": 8,
+      "completion_gains": 0,
+      "completion_losses": 0
+    },
+    {
+      "left": "rank-original",
+      "right": "rank-renamed",
+      "first_root_visited_overlap": [
+        8,
+        8,
+        8,
+        9,
+        8,
+        8,
+        8,
+        8
+      ],
+      "first_root_mean_visited_overlap": 8.125,
+      "first_root_all_action_overlap": [
+        2624,
+        2548,
+        2628,
+        2784,
+        2624,
+        2548,
+        2784,
+        2624
+      ],
+      "same_first_physical_action": 0,
+      "same_full_physical_path": 0,
+      "same_completion": 4,
+      "completion_gains": 3,
+      "completion_losses": 1
+    },
+    {
+      "left": "key-original",
+      "right": "key-repeat",
+      "first_root_visited_overlap": [
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16
+      ],
+      "first_root_mean_visited_overlap": 16,
+      "first_root_all_action_overlap": [
+        2624,
+        2548,
+        2628,
+        2784,
+        2624,
+        2548,
+        2784,
+        2624
+      ],
+      "same_first_physical_action": 8,
+      "same_full_physical_path": 8,
+      "same_completion": 8,
+      "completion_gains": 0,
+      "completion_losses": 0
+    },
+    {
+      "left": "key-original",
+      "right": "key-renamed",
+      "first_root_visited_overlap": [
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16
+      ],
+      "first_root_mean_visited_overlap": 16,
+      "first_root_all_action_overlap": [
+        2624,
+        2548,
+        2628,
+        2784,
+        2624,
+        2548,
+        2784,
+        2624
+      ],
+      "same_first_physical_action": 8,
+      "same_full_physical_path": 8,
+      "same_completion": 8,
+      "completion_gains": 0,
+      "completion_losses": 0
+    },
+    {
+      "left": "rank-original",
+      "right": "key-original",
+      "first_root_visited_overlap": [
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8
+      ],
+      "first_root_mean_visited_overlap": 8,
+      "first_root_all_action_overlap": [
+        2624,
+        2548,
+        2628,
+        2784,
+        2624,
+        2548,
+        2784,
+        2624
+      ],
+      "same_first_physical_action": 0,
+      "same_full_physical_path": 0,
+      "same_completion": 5,
+      "completion_gains": 1,
+      "completion_losses": 2
+    }
+  ]
+}

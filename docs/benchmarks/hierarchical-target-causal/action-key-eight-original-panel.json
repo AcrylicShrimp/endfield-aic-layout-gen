@@ -1,0 +1,834 @@
+{
+  "schema": "aic-hierarchical-search-panel-v1",
+  "partition": "training",
+  "limits": {
+    "max_turns": 10000,
+    "max_extension": 32
+  },
+  "preparation": {
+    "sampling_sha256": "69c9fe638fc23af815c00ca4698d47d6e448fb15616e1235ef3c3e993a627fc6",
+    "seed": 20261410,
+    "namespace": "hierarchical-target-quality-s1-v1",
+    "source_partition": "train",
+    "min_facilities": 2,
+    "max_facilities": 2,
+    "max_terminals": 6,
+    "max_connections": 6,
+    "sampling_stats": {
+      "accepted_candidates": 916,
+      "attempts": 32768,
+      "duplicate_graphs": 1283,
+      "facility_guard_rejections": 33,
+      "facility_range_rejections": 12390,
+      "flow_failures": 18082,
+      "graph_range_rejections": 64,
+      "source_failures": 0
+    }
+  },
+  "cases": [
+    {
+      "id": "train-hierarchical-target-quality-s1-v1-6369",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "filling-powder-mc-1-mode-liquid"
+          },
+          {
+            "id": "block-1",
+            "facility": "dismantler-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-iron-enr-bottle",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-fbottle-copperenr-copper",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-copper-enr-bottle",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-3",
+            "direction": "output",
+            "commodity": "item-fbottle-ironenr-copper",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-iron-enr-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-1",
+            "commodity": "item-fbottle-copperenr-copper",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-1",
+            "target": "block-0",
+            "commodity": "item-liquid-copper",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-3",
+            "source": "block-1",
+            "target": "terminal-2",
+            "commodity": "item-copper-enr-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-4",
+            "source": "block-0",
+            "target": "terminal-3",
+            "commodity": "item-fbottle-ironenr-copper",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-target-quality-s1-v1-22498",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "filling-powder-mc-1-mode-liquid"
+          },
+          {
+            "id": "block-1",
+            "facility": "transmuter-1-mode-liquidtrans"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-copper-bottle",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-gas-water",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-fbottle-copper-water",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-copper-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-1",
+            "commodity": "item-gas-water",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-1",
+            "target": "block-0",
+            "commodity": "item-liquid-water",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          },
+          {
+            "id": "connection-3",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-fbottle-copper-water",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-target-quality-s1-v1-17062",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "xiranite-oven-1-mode-gasliquid"
+          },
+          {
+            "id": "block-1",
+            "facility": "dismantler-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-carbon-mtl",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-fbottle-ironenr-water",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-iron-enr-bottle",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-3",
+            "direction": "output",
+            "commodity": "item-xiranite-powder",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-carbon-mtl",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-1",
+            "commodity": "item-fbottle-ironenr-water",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-1",
+            "target": "block-0",
+            "commodity": "item-liquid-water",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-3",
+            "source": "block-1",
+            "target": "terminal-2",
+            "commodity": "item-iron-enr-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-4",
+            "source": "block-0",
+            "target": "terminal-3",
+            "commodity": "item-xiranite-powder",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-target-quality-s1-v1-30191",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "dismantler-1-mode-liquid"
+          },
+          {
+            "id": "block-1",
+            "facility": "dismantler-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-fbottle-ironenr-xiranite-enr",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-fbottle-ironenr-xiranite-enr",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-liquid-xiranite-enr",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-3",
+            "direction": "output",
+            "commodity": "item-iron-enr-bottle",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-4",
+            "direction": "output",
+            "commodity": "item-liquid-xiranite-enr",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-5",
+            "direction": "output",
+            "commodity": "item-iron-enr-bottle",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-fbottle-ironenr-xiranite-enr",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-1",
+            "commodity": "item-fbottle-ironenr-xiranite-enr",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-liquid-xiranite-enr",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-3",
+            "source": "block-0",
+            "target": "terminal-3",
+            "commodity": "item-iron-enr-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-4",
+            "source": "block-1",
+            "target": "terminal-4",
+            "commodity": "item-liquid-xiranite-enr",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-5",
+            "source": "block-1",
+            "target": "terminal-5",
+            "commodity": "item-iron-enr-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-target-quality-s1-v1-3308",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "filling-powder-mc-1-mode-liquid"
+          },
+          {
+            "id": "block-1",
+            "facility": "dismantler-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-fbottle-copperenr-grass-2",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-liquid-copper-enr",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-liquid-plant-grass-2",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-3",
+            "direction": "output",
+            "commodity": "item-fbottle-copperenr-copper-enr",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-1",
+            "commodity": "item-fbottle-copperenr-grass-2",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-0",
+            "commodity": "item-liquid-copper-enr",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-1",
+            "target": "block-0",
+            "commodity": "item-copper-enr-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          },
+          {
+            "id": "connection-3",
+            "source": "block-1",
+            "target": "terminal-2",
+            "commodity": "item-liquid-plant-grass-2",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          },
+          {
+            "id": "connection-4",
+            "source": "block-0",
+            "target": "terminal-3",
+            "commodity": "item-fbottle-copperenr-copper-enr",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 8
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-target-quality-s1-v1-13586",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "transmuter-1-mode-gastrans"
+          },
+          {
+            "id": "block-1",
+            "facility": "dismantler-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-fbottle-copper-acid",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "output",
+            "commodity": "item-copper-bottle",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-gas-acid",
+            "transport": "pipe"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-1",
+            "commodity": "item-fbottle-copper-acid",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "block-1",
+            "target": "block-0",
+            "commodity": "item-liquid-acid",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-1",
+            "target": "terminal-1",
+            "commodity": "item-copper-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-3",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-gas-acid",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-target-quality-s1-v1-9040",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "dismantler-1-mode-liquid"
+          },
+          {
+            "id": "block-1",
+            "facility": "dismantler-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-fbottle-glass-copper",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-fbottle-glass-copper",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-liquid-copper",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-3",
+            "direction": "output",
+            "commodity": "item-glass-bottle",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-4",
+            "direction": "output",
+            "commodity": "item-liquid-copper",
+            "transport": "pipe"
+          },
+          {
+            "id": "terminal-5",
+            "direction": "output",
+            "commodity": "item-glass-bottle",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-fbottle-glass-copper",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-1",
+            "commodity": "item-fbottle-glass-copper",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-0",
+            "target": "terminal-2",
+            "commodity": "item-liquid-copper",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-3",
+            "source": "block-0",
+            "target": "terminal-3",
+            "commodity": "item-glass-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-4",
+            "source": "block-1",
+            "target": "terminal-4",
+            "commodity": "item-liquid-copper",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "connection-5",
+            "source": "block-1",
+            "target": "terminal-5",
+            "commodity": "item-glass-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": []
+    },
+    {
+      "id": "train-hierarchical-target-quality-s1-v1-32031",
+      "problem": {
+        "blocks": [
+          {
+            "id": "block-0",
+            "facility": "filling-powder-mc-1-mode-liquid"
+          },
+          {
+            "id": "block-1",
+            "facility": "dismantler-1-mode-liquid"
+          }
+        ],
+        "terminals": [
+          {
+            "id": "terminal-0",
+            "direction": "input",
+            "commodity": "item-glass-bottle",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-1",
+            "direction": "input",
+            "commodity": "item-fbottle-iron-water",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-2",
+            "direction": "output",
+            "commodity": "item-iron-bottle",
+            "transport": "belt"
+          },
+          {
+            "id": "terminal-3",
+            "direction": "output",
+            "commodity": "item-fbottle-glass-water",
+            "transport": "belt"
+          }
+        ],
+        "connections": [
+          {
+            "id": "connection-0",
+            "source": "terminal-0",
+            "target": "block-0",
+            "commodity": "item-glass-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-1",
+            "source": "terminal-1",
+            "target": "block-1",
+            "commodity": "item-fbottle-iron-water",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-2",
+            "source": "block-1",
+            "target": "block-0",
+            "commodity": "item-liquid-water",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-3",
+            "source": "block-1",
+            "target": "terminal-2",
+            "commodity": "item-iron-bottle",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          },
+          {
+            "id": "connection-4",
+            "source": "block-0",
+            "target": "terminal-3",
+            "commodity": "item-fbottle-glass-water",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 4
+            }
+          }
+        ]
+      },
+      "prefix": []
+    }
+  ]
+}

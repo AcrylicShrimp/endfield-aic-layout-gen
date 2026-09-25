@@ -1,0 +1,123 @@
+{
+  "schema": "aic-experiment-cleanup-v1",
+  "experiment": "hierarchical-physical-action-key-eight-case-probe",
+  "remote_root": "~/Srv/aic-target-causal-20260925/artifacts/gumbel-action-key-eight",
+  "before_bytes": 179143381,
+  "after_bytes": 0,
+  "filesystem_free_before_bytes": 166560829440,
+  "filesystem_free_after_bytes": 166740066304,
+  "removed": [
+    {
+      "path": "metrics-key-original.json",
+      "bytes_before": 183
+    },
+    {
+      "path": "metrics-key-renamed.json",
+      "bytes_before": 182
+    },
+    {
+      "path": "metrics-key-repeat.json",
+      "bytes_before": 181
+    },
+    {
+      "path": "metrics-rank-original.json",
+      "bytes_before": 185
+    },
+    {
+      "path": "metrics-rank-renamed.json",
+      "bytes_before": 183
+    },
+    {
+      "path": "metrics-rank-repeat.json",
+      "bytes_before": 183
+    },
+    {
+      "path": "outer-key",
+      "bytes_before": 121833
+    },
+    {
+      "path": "panel-original.json",
+      "bytes_before": 22509
+    },
+    {
+      "path": "panel-renamed.json",
+      "bytes_before": 22573
+    },
+    {
+      "path": "protocol.json",
+      "bytes_before": 1723
+    },
+    {
+      "path": "report-key-original.json",
+      "bytes_before": 28689381
+    },
+    {
+      "path": "report-key-renamed.json",
+      "bytes_before": 28689399
+    },
+    {
+      "path": "report-key-repeat.json",
+      "bytes_before": 28689464
+    },
+    {
+      "path": "report-rank-original.json",
+      "bytes_before": 31971230
+    },
+    {
+      "path": "report-rank-renamed.json",
+      "bytes_before": 28952797
+    },
+    {
+      "path": "report-rank-repeat.json",
+      "bytes_before": 31971205
+    },
+    {
+      "path": "run-key-original.log",
+      "bytes_before": 296
+    },
+    {
+      "path": "run-key-renamed.log",
+      "bytes_before": 296
+    },
+    {
+      "path": "run-key-repeat.log",
+      "bytes_before": 294
+    },
+    {
+      "path": "run-rank-original.log",
+      "bytes_before": 298
+    },
+    {
+      "path": "run-rank-renamed.log",
+      "bytes_before": 297
+    },
+    {
+      "path": "run-rank-repeat.log",
+      "bytes_before": 296
+    },
+    {
+      "path": "run.py",
+      "bytes_before": 2368
+    },
+    {
+      "path": "search-key.json",
+      "bytes_before": 955
+    },
+    {
+      "path": "summary.json",
+      "bytes_before": 5070
+    }
+  ],
+  "retained_elsewhere": [
+    "docs/reports/2026-09-26-hierarchical-action-key-eight-result.md",
+    "docs/reports/2026-09-26-hierarchical-action-key-eight-protocol.json",
+    "docs/reports/2026-09-26-hierarchical-action-key-eight-summary.json",
+    "docs/benchmarks/hierarchical-target-causal/action-key-eight-original-panel.json",
+    "docs/benchmarks/hierarchical-target-causal/action-key-eight-renamed-panel.json",
+    "docs/benchmarks/hierarchical-target-causal/action-key-eight-search.json",
+    "docs/benchmarks/hierarchical-target-causal/action-key-eight-outer.json",
+    "tools/factory-edit-pilot/hierarchical_action_key_eight_run.py",
+    "tools/factory-edit-pilot/hierarchical_action_key_eight_summary.py"
+  ],
+  "recovery_requirement": "None for this probe; retained generation-87 checkpoints remain an input to later frozen comparisons."
+}
