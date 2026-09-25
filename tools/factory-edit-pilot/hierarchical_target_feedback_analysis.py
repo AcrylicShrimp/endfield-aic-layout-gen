@@ -38,10 +38,12 @@ def analyze(root):
                 and len(order) == 32 and set(cases) == set(order),
                 f"source panel differs: {record['name']}")
         selected = []
+        states = []
         succeeded = []
         for case_id in order:
             case = cases[case_id]
             first = case["mcts"]["root_records"][0]
+            states.append(first["state_sha256"])
             action = first["actions"][first["selected_action"]]
             selected.append(hashlib.sha256(action_key(action).encode()).hexdigest())
             succeeded.append(bool(case["mcts"]["fully_validated"]))
@@ -50,6 +52,7 @@ def analyze(root):
             "source_collection_sha256": sha(source),
             "source_outer_checkpoint_sha256": report["outer_checkpoint_sha256"],
             "case_ids": order, "source_search_completed": sum(succeeded),
+            "first_state_sha256": states,
             "source_search_case_success": "".join("1" if x else "0" for x in succeeded),
             "selected_first_action_sha256": selected,
         }
@@ -60,6 +63,8 @@ def analyze(root):
             contrast = rows[(stream, generation, "contrast")]
             require(current["case_ids"] == contrast["case_ids"],
                     f"pair panel differs: {stream}/{generation}")
+            require(current["first_state_sha256"] == contrast["first_state_sha256"],
+                    f"paired first states differ: {stream}/{generation}")
             current_mask = current["source_search_case_success"]
             contrast_mask = contrast["source_search_case_success"]
             same_source = (current["source_collection_sha256"]
@@ -67,7 +72,7 @@ def analyze(root):
             require(generation != 0 or same_source,
                     f"shared first-generation source differs: {stream}")
             pairs.append({"stream": stream, "generation": generation + 1,
-                "case_ids": current["case_ids"],
+                "case_ids": current["case_ids"], "matching_first_states": 32,
                 "same_source_report": same_source,
                 "same_selected_first_actions": sum(a == b for a, b in zip(
                     current["selected_first_action_sha256"],
@@ -81,7 +86,8 @@ def analyze(root):
     output = {"schema": "aic-hierarchical-target-feedback-analysis-v1",
         "confirmation_protocol_sha256": sha(directory / "protocol.json"),
         "confirmation_progress_sha256": sha(directory / "progress.json"),
-        "rows": [{key: value for key, value in row.items() if key != "case_ids"}
+        "rows": [{key: value for key, value in row.items()
+                  if key not in ("case_ids", "first_state_sha256")}
                  for row in rows.values()], "pairs": pairs}
     write(root / "learner-feedback-analysis.json", output)
     print(json.dumps(pairs, indent=2))
