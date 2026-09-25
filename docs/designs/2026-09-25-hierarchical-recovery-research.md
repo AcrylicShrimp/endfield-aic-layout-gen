@@ -217,6 +217,38 @@ for at least two seeds after averaging streams. Treat any failed condition as
 failure to confirm. Passing this stage would still require lower-training
 restoration and untouched held-out evaluation before production adoption.
 
+## Horizon-12 on-policy transfer
+
+The successful-action target failed that confirmation. The independently
+confirmed frozen-search improvement from horizon 12 is now the stronger
+candidate for a training/search setup. Reuse the exact nine 32-case training
+panels and the 64-case diagnostic panel from the completed on-policy study,
+regenerating them and checking their hashes against its retained protocol.
+Reuse its three `current` horizon-six trajectories as the control. Start
+three new horizon-12 trajectories from the same generation-87 model weights,
+with lower frozen, the original policy target and 100-epoch/1600-update
+training. Change only the search horizon from six to 12 and the outer model's
+matching search contract. Use 128 simulations, 16 candidates, eight anchors,
+rank-index Gumbels and seed 20260922. Each horizon-12 trajectory collects
+its own later generations. Evaluate both setups on the same diagnostic IDs;
+the new candidate is the combined horizon-12 search and the model trained
+from its collections.
+
+Compare every horizon-12 generation with the already retained horizon-six
+`current` record for the same stream and generation. Use the original
+horizon-six starting checkpoint's 26 successful diagnostic cases for paired
+retention on both arms. The predeclared primary gate after generation three
+is mean completion gain at least four of 64, at least two winning streams,
+mean three fewer lost starting successes, and positive retention in at least
+two streams. The mean completion advantage across generations two and three
+must be nonnegative. If all primary conditions pass, evaluate final models
+and the starting checkpoint under root seeds 20260922/23/24; require mean
+final gain at least four across the nine stream-seed pairs and positive
+stream-averaged gain for at least two seeds. A failed primary condition
+rejects promotion without the extra seed stage. A promising result still
+needs a same-search cross-evaluation to separate model transfer from search
+strength, then lower-training restoration and untouched held-out evaluation.
+
 ## Continuity and closeout
 
 Reuse the existing CLI search harness, panel generator, generation trainer,
