@@ -1,0 +1,15 @@
+{
+  "schema": "aic-experiment-cleanup-v1",
+  "status": "complete",
+  "experiment": "hierarchical-lower-restored-preparation-v1",
+  "removed_paths": [
+    {
+      "path": "~/Srv/aic-target-causal-20260925/artifacts/recovery-lower-restored-v1",
+      "bytes": 15934485,
+      "reason": "failed, regenerable panel preparation; no protocol, checkpoint, or outcome"
+    }
+  ],
+  "available_bytes_before": 163247267840,
+  "available_bytes_after": 163263324160,
+  "retained_report": "docs/reports/2026-09-26-hierarchical-lower-restored-preparation-failure.md"
+}

@@ -71,7 +71,7 @@ def reserve_heldout(root, seen):
     cli(root, f"prepare-{name}", [
         "prepare-hierarchical-panel", "--sampling", SAMPLING,
         "--catalog-root", "data/game/normalized", "--output", draft,
-        "--partition", "held-out", "--cases", 2048,
+        "--partition", "held-out", "--cases", 512,
         "--seed", 20264250, "--namespace", "hierarchical-lower-restored-heldout-v1",
         "--min-facilities", 2, "--max-facilities", 2,
         "--max-terminals", 6, "--max-connections", 6,
