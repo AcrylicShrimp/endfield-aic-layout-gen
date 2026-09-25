@@ -1,0 +1,31 @@
+{
+  "schema": "aic-experiment-cleanup-v1",
+  "experiment": "hierarchical-success-imitation-frozen-screen",
+  "remote_root": "~/Srv/aic-target-causal-20260925/artifacts/recovery-success-imitation",
+  "before_bytes": 3199524144,
+  "after_bytes": 0,
+  "removed": [
+    {"path": "training", "bytes_before": 12779392},
+    {"path": "evaluations", "bytes_before": 3008378730},
+    {"path": "collections", "bytes_before": 176532801},
+    {"path": "manifests", "bytes_before": 1647},
+    {"path": "panels", "bytes_before": 168021},
+    {"path": "candidate-panels", "bytes_before": 1360080},
+    {"path": "logs", "bytes_before": 10266},
+    {"path": "wandb-telemetry", "bytes_before": 272273},
+    {"path": "configs", "bytes_before": 394},
+    {"path": "remaining root files and directories", "bytes_before": null}
+  ],
+  "retained_elsewhere": [
+    "docs/reports/2026-09-25-hierarchical-success-imitation-result.md",
+    "docs/reports/2026-09-25-hierarchical-success-imitation-protocol.json",
+    "docs/reports/2026-09-25-hierarchical-success-imitation-progress.json",
+    "docs/reports/2026-09-25-hierarchical-success-imitation-summary.json",
+    "docs/reports/2026-09-25-hierarchical-success-imitation-s1-transform.json",
+    "docs/reports/2026-09-25-hierarchical-success-imitation-s2-transform.json",
+    "docs/reports/2026-09-25-hierarchical-success-imitation-s3-transform.json",
+    "docs/reports/2026-09-25-hierarchical-success-imitation-wandb-observer.json",
+    "docs/benchmarks/hierarchical-target-causal/success-imitation-failed-off-generation.json"
+  ],
+  "recovery_requirement": "None: the on-policy confirmation starts from retained generation-87 checkpoints and new collections, not from these frozen-screen checkpoints."
+}
