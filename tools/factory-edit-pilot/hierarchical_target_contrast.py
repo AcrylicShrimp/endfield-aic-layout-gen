@@ -103,6 +103,9 @@ def analyze(root):
                                               if not flag),
                         "effective_fraction": math.exp(entropy(dist)) / len(actions),
                         "max_probability": max(dist),
+                        "target_prior_kl_nats": sum(
+                            target * math.log(target / max(base, 1e-300))
+                            for target, base in zip(dist, prior) if target > 0),
                     })
                 if move == 0:
                     first_targets, first_actions = alternatives, actions
@@ -132,6 +135,10 @@ def analyze(root):
             scores = {}
             for name in VARIANTS:
                 dist = first_targets[name]
+                ranks = [0] * len(dist)
+                for rank, position in enumerate(sorted(range(len(dist)),
+                                                       key=lambda i: (-dist[i], i))):
+                    ranks[position] = rank
                 scores[name] = {
                     "mean_pair_loss": statistics.mean(pair_loss(
                         math.log(max(dist[indices[winner]], 1e-300))
@@ -141,6 +148,15 @@ def analyze(root):
                         dist[indices[winner]] > dist[indices[loser]]
                         for winner, loser in clear_pairs) if clear_pairs else None,
                     "tested_action_mass": sum(dist[index] for index in indices),
+                    "mean_confirmed_winner_mass": statistics.mean(
+                        dist[indices[winner]] for winner, _ in clear_pairs)
+                        if clear_pairs else None,
+                    "mean_confirmed_winner_rank_fraction": statistics.mean(
+                        ranks[indices[winner]] / max(1, len(dist) - 1)
+                        for winner, _ in clear_pairs) if clear_pairs else None,
+                    "mean_confirmed_loser_rank_fraction": statistics.mean(
+                        ranks[indices[loser]] / max(1, len(dist) - 1)
+                        for _, loser in clear_pairs) if clear_pairs else None,
                 }
             case_evidence.append({
                 "stream": stream, "case_id": case_id,
@@ -177,15 +193,24 @@ def analyze(root):
             "case_mean_pair_loss": statistics.mean(
                 row["scores"][name]["mean_pair_loss"] for row in all_rows)
             if all_rows else None,
+            "case_mean_confirmed_winner_mass": statistics.mean(
+                row["scores"][name]["mean_confirmed_winner_mass"]
+                for row in all_rows) if all_rows else None,
+            "case_mean_confirmed_winner_rank_fraction": statistics.mean(
+                row["scores"][name]["mean_confirmed_winner_rank_fraction"]
+                for row in all_rows) if all_rows else None,
+            "case_mean_confirmed_loser_rank_fraction": statistics.mean(
+                row["scores"][name]["mean_confirmed_loser_rank_fraction"]
+                for row in all_rows) if all_rows else None,
             "first_roots": {
                 field: statistics.mean(row[field] for row in root_metrics[name]["first"])
                 for field in ("actions", "visited", "unvisited_mass", "effective_fraction",
-                              "max_probability")
+                              "max_probability", "target_prior_kl_nats")
             },
             "later_roots": {
                 field: statistics.mean(row[field] for row in root_metrics[name]["later"])
                 for field in ("actions", "visited", "unvisited_mass", "effective_fraction",
-                              "max_probability")
+                              "max_probability", "target_prior_kl_nats")
             },
             "later_root_count": len(root_metrics[name]["later"]),
         }
