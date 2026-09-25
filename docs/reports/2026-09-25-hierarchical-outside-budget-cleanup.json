@@ -1,0 +1,87 @@
+{
+  "schema": "aic-hierarchical-outside-budget-cleanup-v1",
+  "progress_sha256": "94fcffe78fd66e7ad9f193053c3cc7de723bb1917637564b9cbbc819e4a8800f",
+  "summary_sha256": "7edb7a1a260f386752c95460185e3094c13afa08a40e38754ba5873ad4b6ca4a",
+  "removed": [
+    {
+      "path": "artifacts/target-causal-study/raw/outside-budget",
+      "file_bytes": 111882652
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260922-rank-0.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260922-rank-3.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260922-rank-4.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260922-rank-5.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260922-rank-6.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260922-rank-7.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260923-rank-0.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260923-rank-3.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260923-rank-4.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260923-rank-5.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260923-rank-6.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260923-rank-7.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260924-rank-0.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260924-rank-3.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260924-rank-4.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260924-rank-5.log",
+      "file_bytes": 307
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260924-rank-6.log",
+      "file_bytes": 308
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/outside-budget-20260924-rank-7.log",
+      "file_bytes": 307
+    }
+  ],
+  "removed_file_bytes": 111888186,
+  "free_bytes_before": 176335646720,
+  "free_bytes_after": 176447651840,
+  "retention_reason": "Selected action panels and model configurations remain for the explicitly declared independent 512-simulation recheck."
+}
