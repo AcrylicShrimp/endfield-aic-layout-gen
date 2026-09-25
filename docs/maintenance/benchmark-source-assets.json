@@ -148,6 +148,7 @@
     "hierarchical-target-causal/target-seed-20260924-search.json",
     "hierarchical-target-quality/outer-512.json",
     "hierarchical-target-quality/search-512.json",
+    "hierarchical-update-budget/generation-100-lower.json",
     "hierarchical-update-budget/generation-100.json",
     "hierarchical-update-budget/generation-200.json",
     "hierarchical-update-budget/generation-25.json",
