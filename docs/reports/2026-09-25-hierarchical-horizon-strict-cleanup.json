@@ -1,0 +1,15 @@
+{
+  "schema": "aic-experiment-cleanup-v1",
+  "experiment": "hierarchical-horizon-confirmation-declared-namespace",
+  "remote_root": "~/Srv/aic-target-causal-20260925/artifacts/recovery-horizon-strict",
+  "before_bytes": 1408600829,
+  "after_bytes": 95641,
+  "removed": [
+    {"path": "raw", "bytes_before": 1406996422},
+    {"path": "logs", "bytes_before": 2368},
+    {"path": "candidate-panels", "bytes_before": 1337201},
+    {"path": "panels", "bytes_before": 169197}
+  ],
+  "retained": ["protocol.json", "progress.json", "summary.json"],
+  "reason_retained": "Compact evidence is committed under docs/reports; the declared panel is replayable from the committed seed, namespace, helper, and source panel."
+}
