@@ -261,6 +261,23 @@ search horizon, and search differences within each model origin. This stage
 explains which factor carries the measured gain; it does not replace the
 predeclared seed-stress gate or the later untouched held-out test.
 
+The completed cross-evaluation selected a narrower follow-up: keep the
+horizon-six `current` final model weights but use horizon-12 search. The
+seed-20260922 cross cells are selection evidence, so confirm this mixed setup
+on the other two prespecified root seeds, 20260923 and 20260924, without
+changing the diagnostic panel, lower weights, search controls or case IDs.
+For each of three streams and both seeds, compare the new mixed report with
+the retained H6-model/H6-search and H12-model/H12-search reports. Use the
+H6-search starting-model success mask for that seed as the common retention
+baseline. Before seeing mixed outcomes on these seeds, require the mixed
+setup versus H6/H6 to gain at least four completions on average across six
+pairs, to win both seed-averaged completion comparisons, and to lose at least
+three fewer starting successes on average. To prefer mixed over H12/H12,
+also require its mean completion difference to be at least minus two cases,
+each seed mean to be at least minus two, and its mean number of starting
+successes lost to be no greater. Report every paired gained and lost case;
+these thresholds do not turn the reused diagnostic into an untouched test.
+
 ## Continuity and closeout
 
 Reuse the existing CLI search harness, panel generator, generation trainer,
