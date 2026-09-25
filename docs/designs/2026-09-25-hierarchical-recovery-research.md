@@ -72,6 +72,11 @@ first-action winner/loser pairs on these same cases. Count Q agreement only
 when both actions were visited, and compare target pair loss on the common
 set of pairs by case. This is a diagnostic reuse of previously selected
 action pairs, not a fresh estimate of action quality or a promotion gate.
+After the first S1 seed suggested a large horizon effect, also count roots
+whose visited Q exceeds one, including the first four roots per episode. In
+this search, the unfinished-state heuristic and model completion value are at
+most one, so Q above one witnesses at least one completed-layout leaf. This
+post-hoc mechanism count does not enter selection.
 
 ## Learner screen and confirmation
 

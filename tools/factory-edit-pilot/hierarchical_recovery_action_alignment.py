@@ -40,6 +40,8 @@ def analyze(root):
     for arm in ARMS:
         for seed in SEEDS:
             rows = []
+            total_roots = visible_roots = 0
+            early_roots = early_visible_roots = 0
             for stream in STREAMS:
                 path = root / "raw" / stream / f"{name(arm, seed)}.json"
                 record = next(row for row in progress["records"]
@@ -48,6 +50,14 @@ def analyze(root):
                 require(sha(path) == record["report_sha256"], "search report changed")
                 report = read(path)
                 for case in report["cases"]:
+                    roots = case["mcts"]["root_records"]
+                    total_roots += len(roots)
+                    early_roots += min(4, len(roots))
+                    for index, record in enumerate(roots):
+                        visible = any(action["visits"] > 0 and action["q"] > 1.0
+                                      for action in record["actions"])
+                        visible_roots += visible
+                        early_visible_roots += visible if index < 4 else 0
                     if case["id"] not in confirmed:
                         continue
                     root_record = case["mcts"]["root_records"][0]
@@ -93,6 +103,10 @@ def analyze(root):
                 "q_winner": sum(row["q_winner"] for row in rows),
                 "q_loser": sum(row["q_loser"] for row in rows),
                 "q_tie": sum(row["q_tie"] for row in rows),
+                "terminal_value_visible_roots": visible_roots,
+                "total_roots": total_roots,
+                "first_four_terminal_value_visible_roots": early_visible_roots,
+                "first_four_roots": early_roots,
                 "case_rows": rows,
             }
     output = {
