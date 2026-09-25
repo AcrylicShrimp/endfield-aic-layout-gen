@@ -44,7 +44,8 @@ For each case where the 16/128 and a wider arm select distinct first actions,
 compare both actions by applying their exact recorded macro witnesses to the
 same frozen prefix, then continuing with the same subsequent search contract.
 Include the highest- and lowest-Q actions among the original 16 to test value
-ranking. Outside the original 16, include the highest-anchor action, the
+ranking, and the highest-Q action among the eight guaranteed anchor actions.
+Outside the original 16, include the highest-anchor action, the
 highest-mixed-prior action, the highest-Q visited action in the
 128-candidate/512-simulation cell, and one deterministically hashed action as
 a base-rate control. Deduplicate exact witnesses. Keep the original case ID;

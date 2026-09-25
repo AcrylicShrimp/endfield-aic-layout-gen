@@ -101,6 +101,15 @@ def candidate_manifest(root):
                     f"unexpected baseline coverage: {case_id}")
             add(max(visited, key=lambda item: (item[1]["q"], item[0]))[0], "highest-q-16")
             add(min(visited, key=lambda item: (item[1]["q"], item[0]))[0], "lowest-q-16")
+            anchor_eight = [
+                (action_key(action), action)
+                for _, action in sorted(enumerate(first["actions"]),
+                                        key=lambda pair: (-pair[1]["anchor_prior"], pair[0]))[:8]
+            ]
+            require(all(action["visits"] > 0 for _, action in anchor_eight),
+                    f"guaranteed anchor action was not visited: {case_id}")
+            add(max(anchor_eight, key=lambda item: (item[1]["q"], item[0]))[0],
+                "highest-q-guaranteed-anchor")
             add(max(outside, key=lambda item: (item[1]["anchor_prior"], item[0]))[0],
                 "highest-anchor-outside-16")
             add(max(outside, key=lambda item:
