@@ -1,0 +1,49 @@
+{
+  "schema": "aic-hierarchical-horizon-confirmation-progress-v1",
+  "protocol_sha256": "1f078c40d0a310eab37f3b3df20bb6df367a89e3e90a44b152700f2bb8942dc2",
+  "status": "complete",
+  "records": [
+    {
+      "arm": "base",
+      "seed": 20260922,
+      "report_sha256": "03466c581665dafd4873c4efea6849e539ae4aca3d8107117feb7e775e84c65d",
+      "report_bytes": 242428693,
+      "wall_seconds": 195.08364754800277
+    },
+    {
+      "arm": "horizon12",
+      "seed": 20260922,
+      "report_sha256": "7c7fd177b986db4db0363ef3cfc6a00c0454d1af4c7dfcd2a282c78fb95b45ba",
+      "report_bytes": 242642310,
+      "wall_seconds": 211.3798702790009
+    },
+    {
+      "arm": "base",
+      "seed": 20260923,
+      "report_sha256": "75f8b3e3d80660674d567fbd57be5751107d11ac2c646189584b2283d633452a",
+      "report_bytes": 233929405,
+      "wall_seconds": 203.91910001700307
+    },
+    {
+      "arm": "horizon12",
+      "seed": 20260923,
+      "report_sha256": "4b06f82c7a362b2ff4908cb0dcfa27b353ccc3ebe8772e1c328eacfe1ed354cb",
+      "report_bytes": 242585839,
+      "wall_seconds": 216.31618159700156
+    },
+    {
+      "arm": "base",
+      "seed": 20260924,
+      "report_sha256": "77e4d8b0c6a3a91e48b750f90d0645deb6218cc69fb2f2303ea7a74c3eaec558",
+      "report_bytes": 234976905,
+      "wall_seconds": 205.06277228899853
+    },
+    {
+      "arm": "horizon12",
+      "seed": 20260924,
+      "report_sha256": "6f47fd1c632d50c2537da39a2d9e493283fb23c9c58533b9ff4deae0d9d0a083",
+      "report_bytes": 237771057,
+      "wall_seconds": 210.9201089729977
+    }
+  ]
+}

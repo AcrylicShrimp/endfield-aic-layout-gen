@@ -1,0 +1,2543 @@
+{
+  "schema": "aic-hierarchical-horizon-confirmation-summary-v1",
+  "protocol_sha256": "1f078c40d0a310eab37f3b3df20bb6df367a89e3e90a44b152700f2bb8942dc2",
+  "progress_sha256": "cb281b0fb07969268893a8e67ae2cda51895b826915d5d052cce5dba2cb7285d",
+  "completed_per_seed": {
+    "base": [
+      25,
+      21,
+      32
+    ],
+    "horizon12": [
+      35,
+      37,
+      38
+    ]
+  },
+  "paired_gains_per_seed": [
+    17,
+    17,
+    12
+  ],
+  "paired_losses_per_seed": [
+    7,
+    1,
+    6
+  ],
+  "delta_per_seed": [
+    10,
+    16,
+    6
+  ],
+  "mean_delta": 10.666666666666666,
+  "baseline_robust_successes": 25,
+  "lost_baseline_robust_successes": 3,
+  "first_actions_equal_base_per_seed": [
+    37,
+    33,
+    36
+  ],
+  "wall_seconds_by_arm": {
+    "base": 604.0655198540044,
+    "horizon12": 638.6161608490002
+  },
+  "passes_gate": true,
+  "cases": [
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-4389",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "7b3d854ee35cf09c694577537592b0f2e63576cbec1c77ac8f1991b47265db46"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "b7d707e2655e983f0e69aea0c5c298c786efae53e6405a3d9dfca695e315e5cd"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "13871a260308378555946722f21b8d75d008b4a9895f0e513ac34959ab5bc684"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "60345d342517c276b25e5cd95e863be8d96cb43fe6b429fb7e117d5eab3705bc"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "9436050db70ad1ab95bca3a3213a9558504f9a14b50936a0f3cfde6453032864"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "13c3291a62a80710583ec810b2b0442f622742e1836af051251e0b6c741e34f3"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-55921",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "059e6e7cf3c1c736776e0429b06f2339f18a7c5b718d58f205ff91d0bd8f1e2e"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "99f6a8537eea63ffb00fc72f60cbc31447720095728557314fd84c23fb8204a6"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "1f317b07ef887a2434242f865524b2992031f863c699bb3177a412658c4a8340"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "059e6e7cf3c1c736776e0429b06f2339f18a7c5b718d58f205ff91d0bd8f1e2e"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "d207d88e4d873305c751dc3657c021677179e3d32f66f0d14fbe94f749ae5f46"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "2630fe0b7c8ff35ec07f95ae526cecb308b5a7d15b8dc80225cb6cb5923250f8"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-56756",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "82942f34f896edd1317951d73cf378fd2027a5bc4414b09abbe1512759135919"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "915b51cec8ede70946eb16ced409ad298b53427f1e04f163e3abded13f7e58d8"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "b21d7bfd3f7e753b81de2454c86552201cec3f82931b40e13524603e82099d2b"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "c82bd3c8d916bf93b72e34b2823372f70b9867827fab6ee1ef6a2c0639674623"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "31fface30f3b1709004170957f026a9880d9fe7c0c62094a6e39162bda43d9f1"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "4df11af97b4fd1ac276e519e5598146b63d9ddca8aadeaf93128db7bd2d9598e"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-14079",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "6f7c60b8b92490c9efd5e38e4aa65a77322ca69e763e8f33cb17acc2b05a5a58"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "10b55aa38c3d5bf583bdba0b3d3a59c4bda01f8c437e61a5cd25d5be0298f386"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "04533bd31e2bf04e6e19c5916deabfaf84965516c0b67d4da39c3cf048d046e7"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "3a60004f903d890563007733ee0434c55b8f1c376243b1abb1d80a092e8a9d88"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "10b55aa38c3d5bf583bdba0b3d3a59c4bda01f8c437e61a5cd25d5be0298f386"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "b59949f83d37fc18d9dd526b2d72432f37b346b52a20de68a76526670625bc7d"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-20947",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "84997bed3441fde1e8879f4f28c6f75685157ab84f4084455a5b645cdab55e0c"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "51d45793b8131d23ef7f3d158eb56c01f9d9279268ebecee4ce92a865d816683"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "9ff7fb4e66d8f75854ad6d6520d78495cf6c2099f965758af61598ff648bd6e6"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "84997bed3441fde1e8879f4f28c6f75685157ab84f4084455a5b645cdab55e0c"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "51d45793b8131d23ef7f3d158eb56c01f9d9279268ebecee4ce92a865d816683"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "f484026078a6330aef5bf740e02c414f0103270cc75c8cf21033639d17f91d60"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-55856",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "695ae7adc953762d9f0cd37e149e52c2e5518b988df99dd7c7d47fb3dfb48fc3"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "20ad44f14d921623768a06638d9adfb89deb4d55075a9b13dd2dd08b83e271b3"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "7b9ab9c8a2b4454e970c0df01a103256f4c1f2be26d792e8f37aa5dd72e4a1f3"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "695ae7adc953762d9f0cd37e149e52c2e5518b988df99dd7c7d47fb3dfb48fc3"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "ccdbcf10d4a88890ed0087cd5e164222483114c244f464d11d328cd51f1957b9"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "7b9ab9c8a2b4454e970c0df01a103256f4c1f2be26d792e8f37aa5dd72e4a1f3"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-12843",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "415d3f2bf6d93688016dca947f3b745942a4c06ca72e0cdf48eb62051102b453"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "8db6a25ffd42fbb6fe20789525188056d4e3b0ecf0c80a1a3e1c1ff1f8637e72"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "0ee076890ba7d25303893bf4843a0284ef496f8369adcab1311af73f56e76783"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "415d3f2bf6d93688016dca947f3b745942a4c06ca72e0cdf48eb62051102b453"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "8db6a25ffd42fbb6fe20789525188056d4e3b0ecf0c80a1a3e1c1ff1f8637e72"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "0ee076890ba7d25303893bf4843a0284ef496f8369adcab1311af73f56e76783"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-39799",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "52008fde3e81be6cf2464e7ed61585d11626005aaf482d2b5d65c7fd4a16b277"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "6c883ba677163de13291ed903fbe780637de9e32cbcf71fc4baeec1121c97b94"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "321f30e50c6f7ef27281fde5c9675185ecdd8f0e47d1e52598ed07a621827afd"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "52008fde3e81be6cf2464e7ed61585d11626005aaf482d2b5d65c7fd4a16b277"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "6c883ba677163de13291ed903fbe780637de9e32cbcf71fc4baeec1121c97b94"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "321f30e50c6f7ef27281fde5c9675185ecdd8f0e47d1e52598ed07a621827afd"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-15383",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "2e366cee979a4826411694801af4c910df74d23dda0e843614db1295ab769104"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "f909ddb0f666f7dfc53de1450b28ea46fc03e03aa62aa0832bd576649deacad9"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "4b2ebc349d0bd834785577528220af5348cb5f03c2ce44cfacc3de08be33854b"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "6e5a8332c052da58598517f0176c9516a5962aa2410030c110aed0561b1a4159"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "84cfaf1456a3f8e0e75048a3dbbf4b62ed9fc8efac27e8ae360a18a2658aa472"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "4b2ebc349d0bd834785577528220af5348cb5f03c2ce44cfacc3de08be33854b"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-39599",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "55b7483c97560b1fef80450f2ae8909d43e587b699ca2a6792d8ad0b475c2b9f"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "9163429ce9e1d3ee15dd4e597bc2bfcd7c9cd96640cd7a59bdd3dfbb7557553b"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "2e6f3f7a513b6f1bd50f6f0cafc9b050592b7148f0a28f4a5a99872c8af7119d"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "bdcc60f8719dcc305087fe3555971eac4718e0ec75fe7eb5a3d49c0d99c55c77"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "8fbdd6ee644a9d2ad0d9750872b22baf0a8f87d318ef2750fd53e373d1e3bf38"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "b462e2f6d1b13af09d7b97af99680e994de9e8f161da0e0f0cd336e0270e7bb5"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-63435",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "f11ae6360332bb206047ddfbfd1c289360789b97e813f317d1298003c5d2c677"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "7e767e463da60b752b20af214426997ea5ace4ffb6fce918b154dd6d87a4c020"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "50343db2b612b14f4f75cc2ed6214a6fe74c7d6015bb115000262bdae9ff79f9"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "f11ae6360332bb206047ddfbfd1c289360789b97e813f317d1298003c5d2c677"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "7e767e463da60b752b20af214426997ea5ace4ffb6fce918b154dd6d87a4c020"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "50343db2b612b14f4f75cc2ed6214a6fe74c7d6015bb115000262bdae9ff79f9"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-27929",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "f3bc0ff90ea245134c675bab72265329b3f7cf34f1fcf0a8eeca0b5ad821da4a"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "fb6bdcd0cba409797769f64ec6efbf76d22b1eac757f1fba9442fcc3ddf47ae5"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "f98be9c6f881d45befe52ae3554475ed54ecc4dbf3aee462905ab6c87fde218f"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "f3bc0ff90ea245134c675bab72265329b3f7cf34f1fcf0a8eeca0b5ad821da4a"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "fb6bdcd0cba409797769f64ec6efbf76d22b1eac757f1fba9442fcc3ddf47ae5"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "f98be9c6f881d45befe52ae3554475ed54ecc4dbf3aee462905ab6c87fde218f"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-25535",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "c46fa7e1999b7f9588f1215c27dbbfc18b5637f71004fc3ef765c1075d568a18"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "667d1e7b6d0b0abd9c14d24f277b97e046bb8fa121782aa5d99e86079af89e76"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "d4f47b702c82f15a5d2a20d753e570c8842922ae89f67a37d71d0d14f3eb0f13"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "e488e98b12003d0afaccd7bae3b345e2f4e0b533a2d0a93959e12f037e4f77e1"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "667d1e7b6d0b0abd9c14d24f277b97e046bb8fa121782aa5d99e86079af89e76"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "ea999b207d7b7b7d9bfc716803c53047246ceabf0eafdfb34fce858d71fdcce4"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-47055",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "97afd27293dfc51852d9939c389a507c7d59e6507094e295aabd651ec30a0050"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "9bd84a8c626d0fc0ac2506593c502b53ea7c9814a58799ccc2eddc6ac59267d6"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "f0ccf001ab9f8455b2b2ae9c4239d6923c2ab0fa44b1c61856e68c2b4fa13e32"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "97afd27293dfc51852d9939c389a507c7d59e6507094e295aabd651ec30a0050"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "f068878ef70c7a113ede412c24aa4c11cc75c6654d83d81ad293e036b14b7ac4"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "1055553673683fb9b09e51f33b741c0f87416ff22d5e8d3143ef6f4bb5a1ea25"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-7572",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "1a0769705e36d2940feedeb7013043583999c1abbdcdaf21614bc7016cfb00a5"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "ded12018a6c0403b67e7675961041e396ad7a8a38b3dc99c5a8055262ceb779f"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "55a1962826cb619a148170f2e66f5cc074337ecd8adb599a1289f0eed7ddb6d9"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "1a0769705e36d2940feedeb7013043583999c1abbdcdaf21614bc7016cfb00a5"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "833093ae8ceaf56d46b952ef8f1cc2f52f971140f9abcad63451474418939bcf"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "796f4673562a09194e61c09d2080c8fff345bcefdd17b8c11e06f9a3e3168db2"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-11881",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "50a705658c5760e2390967d6fc52251f09172c33ff3cbcca8011360804ddb028"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "dc84281f7ac991044cf1678cd39e5b438a6ca41f06e2ff2bc78441db16a60f97"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "419ed91f59ff9e3cdd6fb4067a0c643bffb16bbe910601601a3d4854bbf96cc7"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "239781efb83cf819c60799d66be02d3109aca0369abaa6d01eed2db5734bb4af"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "dc84281f7ac991044cf1678cd39e5b438a6ca41f06e2ff2bc78441db16a60f97"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "419ed91f59ff9e3cdd6fb4067a0c643bffb16bbe910601601a3d4854bbf96cc7"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-33911",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "8942fc0007cdb6a76550e3064a00dc792998926ef9853c4b815d25b9af3c2d5c"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "d207d88e4d873305c751dc3657c021677179e3d32f66f0d14fbe94f749ae5f46"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "f95283a4a0c3cb04dcaa341dffa7a7bb7fc5482ed354acda86001541dde53593"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "8942fc0007cdb6a76550e3064a00dc792998926ef9853c4b815d25b9af3c2d5c"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "d207d88e4d873305c751dc3657c021677179e3d32f66f0d14fbe94f749ae5f46"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "f95283a4a0c3cb04dcaa341dffa7a7bb7fc5482ed354acda86001541dde53593"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-3036",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "d254bf34433a5e37b8e1f0f9e46693523f1332dca99ff324d67a497b14f9acd5"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "7bd2ae81921388dbb1dfaa17ce54327c12603a39ee3c52bbbf7b6f3f5cab1e44"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "5235ef3f90350242631d3bf352ea79f0d13e2ddb5e36e4eba909ceeab04111b5"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "d254bf34433a5e37b8e1f0f9e46693523f1332dca99ff324d67a497b14f9acd5"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "7bd2ae81921388dbb1dfaa17ce54327c12603a39ee3c52bbbf7b6f3f5cab1e44"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "5235ef3f90350242631d3bf352ea79f0d13e2ddb5e36e4eba909ceeab04111b5"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-36838",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "a28fbb45aab00b90180468ee3328cd1e6b0193f59ee5a2157a72a5e5d51d4939"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "9d14d5613547fa4a287ce203b8f7d6dd7e3e15e7cb086eea88a7e825480baba1"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "fb16bf8f4e10fd6aa8d62d692f9d7c6270fd6946ecda81a10dc6df8d47c560ba"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "758bb9f0a85632ea308142312aec486b62a77c831ff1fb55f1a0eab8f301b091"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "d7267a0cef4d83763edb27886cf31f4163756742ce26e5eb1b388850750d65d9"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "29ea48135b89afae1658c894a8f7728510ffa1b7513f46c270abb50667260fc7"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-3933",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "87c0c3b9d92f4e0837bb8d0f52612efa44ae1d43c4ad595cd51814d20d2c1ad4"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "2be2a15ea2990a973013a66c54308e5a3198b7b09231153272257c494b395a8f"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "42fe17ae95de86332f42a72eab5a96f8dde5417d5afac1864970a7b65f180b45"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "67c1fda76d135bee8fd3c300b964b735e4f63eb1ee34d301c010150ea1290a79"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "2be2a15ea2990a973013a66c54308e5a3198b7b09231153272257c494b395a8f"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "42fe17ae95de86332f42a72eab5a96f8dde5417d5afac1864970a7b65f180b45"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-39082",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "3a7d97e296ad45eb2e695837f39368d4bcda08a8e5bf0d23038d502ea3107e14"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "aee1cf54633004873d8573511d38e1428b84437949803cdb7af0e2eac2b6fa58"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "d65191b57757df8fc70a82c4f0512357c7ddd464986d2c1f59f6fb3ee7e8d8eb"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "cfb396f34b37c3045649da3769b69574d4263c282aee2ad280efafc3e5a20418"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "5301add479e808e79492162e080d434c15d811c9b3715a63c15d876339f313bb"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "32220155c245301e7f6cd7eb54c71f712e9e3889c32d66e575727374794a37c7"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-15780",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "9d633f090b912358e72e971c791b168175b9c623b2a54dc3f5b7d07b641a1f9b"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "897253c8710afba7df4ae981c93e486b01764234cb68a2d0169a762bf4e84055"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "3cc37c63c7fd42242681507c6e6e9edeb667b7620adbf06fa762689c0ad291a4"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "4b2b889316a069eac129dcd6f089e8ec3e5679c18599f916229db38747074cde"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "897253c8710afba7df4ae981c93e486b01764234cb68a2d0169a762bf4e84055"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "3cc37c63c7fd42242681507c6e6e9edeb667b7620adbf06fa762689c0ad291a4"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-49023",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "168419460626d1ec336551b3d046a6cd05d5a67a18df99fb4474cdf014d3de22"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "53c85826b4bf835e579db6393ee78c2a44152f6691bbc791d877a6da600c3067"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "e108895ce3b0bb3c755950ee903f0f93541dea7af11b65dfbbf2f3698a22aecc"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "a4bc1ccbce285acb643f3a56093255c95657089b8b6343ddc0469316d5caba2b"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "a9e4a5f5fe406f97c86cd34342545cdbab92d78fce44b1989125d0fcdf6b06a0"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "e108895ce3b0bb3c755950ee903f0f93541dea7af11b65dfbbf2f3698a22aecc"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-13242",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "6c883ba677163de13291ed903fbe780637de9e32cbcf71fc4baeec1121c97b94"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "063dc7b1a54d068686bc8aa7b9c2657e198bc88fc46a9e4a98c5932ce04d6402"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "c0561cfc78294a1d07d9cea1601cbaecb22ccc94024d8907b561bc8a96f8840e"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "6c883ba677163de13291ed903fbe780637de9e32cbcf71fc4baeec1121c97b94"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "fd2137b2619c58767337f8905c09b8e89a6278e9c51ea4727b2daa0a5abc90d2"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "0a779b212eb872f3eb6c06e07520a932005a6235d8f00fd5e47acf50259451b0"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-22573",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "970ac16064c577998fe59cac6383688d0733359f198b9e441c7d4b75e8d48031"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "92bd420ec859b884ebd7407476a644c3752e3ac7c62e242065b6bc5fcd679f81"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "ab162a505d340d421bcb268bd3b80a48b91a700e009822941dd8c4cbb468b9d2"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "970ac16064c577998fe59cac6383688d0733359f198b9e441c7d4b75e8d48031"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "92bd420ec859b884ebd7407476a644c3752e3ac7c62e242065b6bc5fcd679f81"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "ab162a505d340d421bcb268bd3b80a48b91a700e009822941dd8c4cbb468b9d2"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-54085",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "e285b7ebb7f2e18b7f29236dce70c8c0788a60f97de3191e255e67e9c05f7991"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "ae3916853791ce58fb6966cf9d45ec7687b855347bf5fb996b6957c0d0167fd8"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "c8cd7216de0748d4498cee1c79739874ff65641a9df3bfd508e2f362f75dfc80"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "e285b7ebb7f2e18b7f29236dce70c8c0788a60f97de3191e255e67e9c05f7991"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "ae3916853791ce58fb6966cf9d45ec7687b855347bf5fb996b6957c0d0167fd8"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "c8cd7216de0748d4498cee1c79739874ff65641a9df3bfd508e2f362f75dfc80"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-4846",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "d207d88e4d873305c751dc3657c021677179e3d32f66f0d14fbe94f749ae5f46"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "62b615421ce92400995970272e5f222df15722957bc2914fa54d8bd960358724"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "f61d70e21fd4038bcd57292132ebad1a08253672a3b8464bfa0aef399486e751"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "e5e7b506df083d71481b0313fdcf1e7a902ec4ef894da4be60f85b4b9fc34263"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "bd6ab7a143805a2c3e6695a14dcbd321ad3e2bda501f2d436bee61e0481e609e"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "f61d70e21fd4038bcd57292132ebad1a08253672a3b8464bfa0aef399486e751"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-42699",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "e8ae808cb7328dcf869b665a2ced72ed280bc63b9203340a0f5b0a79cd70a052"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "9b56d28206fc4ce10dc450cfc297ce4c22635a541d9962addf40d838389f4b76"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "b107c0f694abcbe5865e0df94c97ee405b8ecb89e4413e0dcd01d8223b0bd6be"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "1b0d4aeb70718666bce8d4bce415283cc7a1b14d3d7cd021d031d109a8ab0e75"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "9b56d28206fc4ce10dc450cfc297ce4c22635a541d9962addf40d838389f4b76"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "079f300fb7d7262992666fbe62acd88b95d2d3d62a7ec10d14061c7e29c788ec"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-63421",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "eb9be5cdc26c0df34ea177e1108af005885abf5170d134851eebd4bc0f35eefa"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "d5810a53de5b9555c470c5e837f7def77ba8f7c87656cadd6ffa9f78ca71b87a"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "c7f143e4b38b9a4cb22ce703f57de1831fa6e7e97751a005c47e8189b35aa4f0"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "eb9be5cdc26c0df34ea177e1108af005885abf5170d134851eebd4bc0f35eefa"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "d7267a0cef4d83763edb27886cf31f4163756742ce26e5eb1b388850750d65d9"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "7fb2c4a302c2f0f36d8be07b60cef185e11d20d8223183c1fb58178591987a91"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-818",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "c690d743ce3b97cdc6311dfecf5c3a3e7931b261dddfe5ac1c09806783f0499a"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "e21fd0092b9479ac26b7bfaf3be59e1b930d81d7c02eee9f3ce5800fd693c24c"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "f71fdb9c10f2d0a776a39f984c947369d0496e11dd4e86d023732ecbd806a9d3"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "a18476b74441935d11f3db5d5beafbc3db4e9e40045f06b959f0e07fbcd39199"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "e21fd0092b9479ac26b7bfaf3be59e1b930d81d7c02eee9f3ce5800fd693c24c"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "269ae8ddb79c3c6a2860c47b34231198f22ae6c748357f811b60b4d70e3c5a11"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-40191",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "53c85826b4bf835e579db6393ee78c2a44152f6691bbc791d877a6da600c3067"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "6414f19a1144e6312c89ccd0793b085c8f0bbcbc7c7912c90c5a0d93de885188"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "27da9fea61a09caee78e64418de117c91bccb54c3f28ad6511dd5f0d9dfffe34"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "a22276a9b89659b7bc0e6fb7ffdbefd7de6c1cb2f0c1981b665e825957fa5a27"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "6414f19a1144e6312c89ccd0793b085c8f0bbcbc7c7912c90c5a0d93de885188"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "27da9fea61a09caee78e64418de117c91bccb54c3f28ad6511dd5f0d9dfffe34"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-33574",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "4a9595b3a5446e8d2d7d30f7b4ce6540ecafcb03522d8602bf688a756b51c2af"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "4df333a0c75ff865755c0598433e14562b0f08b185548b9dfea338760235ea0e"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "f61d70e21fd4038bcd57292132ebad1a08253672a3b8464bfa0aef399486e751"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "4a9595b3a5446e8d2d7d30f7b4ce6540ecafcb03522d8602bf688a756b51c2af"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "4df333a0c75ff865755c0598433e14562b0f08b185548b9dfea338760235ea0e"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "f61d70e21fd4038bcd57292132ebad1a08253672a3b8464bfa0aef399486e751"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-2132",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "6c240e478378f232ac3660a2e8d2ef311b1ba17972c97541b48e43c266e8d374"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "ca51538d03f44962ca4c376e01a3947e007b6cd5891d3fd3778f831d8a9590a6"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "1dc31bacbcc4cef09bc402ed559e3597af17deb6d85ae3a1cac41bee2e48171d"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "ca37e1bf4d474786bba71a22f02b023a305dd9a4531772222237065acc818c71"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "29e4d2ff6679c39ad0c15ab9d34ce2b119134feaa4720c1375ec65677bceb8e9"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "1dc31bacbcc4cef09bc402ed559e3597af17deb6d85ae3a1cac41bee2e48171d"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-5970",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "cf99dfa3a01cfe6095ed934bfc35d631469a183795c34651b03bcfa447118440"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "1390b30d52db131fad63dce99ec52c42fa4029efc6b996bc9361c020f408c161"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "126e0f4029063124ee8cab8cb7fad53afae78ada2f120f79029f00e64b4ab0db"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "cf99dfa3a01cfe6095ed934bfc35d631469a183795c34651b03bcfa447118440"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "9b70677951cbc3bf1bba167b07b5fd4a99253f7673884c00b7ad202ab5fc86f0"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "fe5f5c6f93c6bced891b37d927ce3c16bcd67aea8b486582e285b14c9bf8a389"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-20975",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "e805f1b0dc63c3da681d29e1f246f2b38acd1cf8c5fea0803668c55982643343"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "cfd01b54aa06b3289632e2213b13e0a5ba7ced6b22c7ffff745c21e654dde857"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "3227d7db927c134a1cf80fab64ddbe07373aa5c8063bcb31201f40ae2f21198f"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "e805f1b0dc63c3da681d29e1f246f2b38acd1cf8c5fea0803668c55982643343"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "11754b7b54937ce613a99612d4cbfeee7879bec72a2550de39354c2c6e3ccbca"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "7b4bb5867dad322058e0f28c7cb388c97e4272bb8962d82e25f1860ed3913994"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-3483",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "0a1c6b0f4d44293de7dd2f4b718daef854b3e394b2af0335c4374361647ed06c"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "7ff24407c935a69055ab9faa513ee8be9c0436f17c65d772c84aa193cee0989a"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "d847dda4dcd82bf0b0d122f8c44f914ff2d5d6c8c0344073b559dfeb748bd966"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "556121ba82443822d28a0a3446d5494a91fab02e070aae5b6e8e90aefd4962d3"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "7ff24407c935a69055ab9faa513ee8be9c0436f17c65d772c84aa193cee0989a"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "d847dda4dcd82bf0b0d122f8c44f914ff2d5d6c8c0344073b559dfeb748bd966"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-31341",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "de47356d66df122beefbce930c13e3e7f5e485b6c0d48d52f419d7a45b2b59e9"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "6822703d17fa2ebedb299b86f5f3b18a463125c436d89a2f9e6ee09b9be7c3ef"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "54871851ad9a3b5bf4bc1afb846b7c857ea1f1cd48088c8173c39dda1872df6c"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "de47356d66df122beefbce930c13e3e7f5e485b6c0d48d52f419d7a45b2b59e9"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "1055553673683fb9b09e51f33b741c0f87416ff22d5e8d3143ef6f4bb5a1ea25"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "54871851ad9a3b5bf4bc1afb846b7c857ea1f1cd48088c8173c39dda1872df6c"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-54628",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "b8c98d2ca466db6657c5aff78e080927bd16836b2ee65f7c3aecd0f8ce4a95c4"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "97afd27293dfc51852d9939c389a507c7d59e6507094e295aabd651ec30a0050"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "94b8015bd4817624c841583874f1761383872da32ad25b70f7a9bc2b5d44a671"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "b8c98d2ca466db6657c5aff78e080927bd16836b2ee65f7c3aecd0f8ce4a95c4"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "97afd27293dfc51852d9939c389a507c7d59e6507094e295aabd651ec30a0050"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "94b8015bd4817624c841583874f1761383872da32ad25b70f7a9bc2b5d44a671"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-27022",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "fd21e1d98897792001a34c85eaa47744f2cd20c4b92024fa666607d4186a3f57"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "8655dbae18b0dba52bbb4141eb66e416b1dfe5f642d4c100e40176aa8943f112"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "d8da7b27d38969a992cf302434b08f41bebefcb2d899ddd24ec76f375a299012"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "e9040b437fc79ca4dc6d922463a44c383a8ecacff44ee06c82715a49187fba2c"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "5b28d8083cf59a79a873c5c09796edcc8b099fd6b7f33952e9544847f91d5814"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "d8da7b27d38969a992cf302434b08f41bebefcb2d899ddd24ec76f375a299012"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-21391",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "088d4bf0903a1ecd8e13253b7ff1d90c43b7349b955de7a5f8c09ae1cea1be29"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "46540aa4dc854fc15f954b6106b9547b9ffd45849e9115bfcdb6b4599f3a7dfd"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "f181595709b5f8902ca5a98ae74aa557f96707bef92aef13b9d78c29560ab7c1"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "e51f32de065fe0baddda402aabd2d1f157965dd14ea1c7e8374f2408cc41312e"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "c114807ca510b59028f7469cb802cbfdaf8de73438d448aceca9371317ac0d4f"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "f181595709b5f8902ca5a98ae74aa557f96707bef92aef13b9d78c29560ab7c1"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-44619",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "9774645e6a07b6030d0acf22af4d3ab72e257a6e12048e02d238aa3e22b21a13"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "85fd104ab8a020e0e102f26440a60e982ca245221be0b7a5c36d4c026fa23d1a"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "32eb5a783207e6e77f5f752d9613c0f6348296aec4bf33cd73cc242883d8a9a8"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "9774645e6a07b6030d0acf22af4d3ab72e257a6e12048e02d238aa3e22b21a13"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "85fd104ab8a020e0e102f26440a60e982ca245221be0b7a5c36d4c026fa23d1a"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "32eb5a783207e6e77f5f752d9613c0f6348296aec4bf33cd73cc242883d8a9a8"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-6570",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "6aa7c0b04ed80c7faa4dbc3578c1ef254af51e27f2314bfb30a770e7aeb6fd00"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "0a1c6b0f4d44293de7dd2f4b718daef854b3e394b2af0335c4374361647ed06c"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "8795a0547966928243f181540a98160184bf79f2be0aea6428402a848c5cbd95"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "6aa7c0b04ed80c7faa4dbc3578c1ef254af51e27f2314bfb30a770e7aeb6fd00"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "489ec7c409b9b8a4e204f1cd148232c92f59012205ef3c8bf92a2c3c83cee0ab"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "e03689c6b7acdc7d218b768d51f6fffd3c3d4160243765b5e27212b39ff24cec"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-985",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "595dc1561df13eb46826ed97067793cee0e3c3cf579c59e06702407b6d087475"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "a8943e648d67b834317a906f5cb4bdfdc509123de81a031f6acb9a961ca2291f"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "304e3937cf5f19214ff800f296bbaabc72dedf5ea45aa223516ce284e8701a00"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "1b4f3da353b25632ad73ac5e172ad198ef3db36aef9ada30789406bfbd0b4b87"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "a8943e648d67b834317a906f5cb4bdfdc509123de81a031f6acb9a961ca2291f"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "d0891655619909575b9cb7064c0449eb52ccbdc2619012ad503172fbe5db168b"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-53098",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "331a05e910800fe5d5b5044bd15475035d675846825c9332f9b3cba5ba03e2db"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "1390b30d52db131fad63dce99ec52c42fa4029efc6b996bc9361c020f408c161"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "f2365623162f8c250c0ede6ab8d7e07261ce0528340a4eb0a46343055a269029"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "331a05e910800fe5d5b5044bd15475035d675846825c9332f9b3cba5ba03e2db"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "ea91a39cad7c3d372d3349d5c55a0f619f7f284c1715aa1e8f687434a303c22b"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "134963b7f4344e73d3b5da6a2d89ad4e92cd5adf3f11309174831abc2e1edfaa"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-7592",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "9095b43ab532deefd9836c8ecae574b5f31c7072e97f16b4b1b7f3c2d86692cc"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "dfb97b20e99465a03f9b4cfac3adc26d96e6ccde7425489bf87bc2fb030fb8b1"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "b9caea6d60b0e1d5f6e79c4f18e4ade9464f195d4a861251d0f2d2f54bb4e9f4"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "9095b43ab532deefd9836c8ecae574b5f31c7072e97f16b4b1b7f3c2d86692cc"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "dfb97b20e99465a03f9b4cfac3adc26d96e6ccde7425489bf87bc2fb030fb8b1"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "77c88605e72eca7f8f76efe8518c44cda1c9d464430e391e35778a46f09b7905"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-21172",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "636c0522a3c0d838a7659c00ed45f816ed136ae7739084798252490bf38c1065"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "8bab4f2231bb69c17f36669a03819e449c50378525410984e1eaac07f7689686"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "a9f0eb3cc2ef09982ff416e1991f4a5a98c250d871d3f778689f24920c4369c9"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "636c0522a3c0d838a7659c00ed45f816ed136ae7739084798252490bf38c1065"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "0d59737936b463206973afc99a68364b3129c688fc63fda3f05bc71f4d17a262"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "a9f0eb3cc2ef09982ff416e1991f4a5a98c250d871d3f778689f24920c4369c9"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-20398",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "bdcc60f8719dcc305087fe3555971eac4718e0ec75fe7eb5a3d49c0d99c55c77"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "65cc30f2aa550f84dffa1970603c9f679f8415194f3a6653bffb0fdc2fcb5e50"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "f813ce9ef6fa8a4197c06258e523389acfdfc3974ae96f2aa075111bfb02b469"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "bdcc60f8719dcc305087fe3555971eac4718e0ec75fe7eb5a3d49c0d99c55c77"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "6072326c85e338eaac108a8108af301f364dcdebc110ed7d8d8d53d768642ad7"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "1e660a3a3f2a811488ef07043a0023be1813377c37f67b3f53b7c2f65fc862d2"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-31164",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "9d1728a54e24aac90274ffb57957ca1fb41d2918877851fe6405f23bfa42dd8e"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "2d6f3e99da24ff626c05833f32ca1daa2307cd55fdca69fb15efab3bba5acb6b"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "7ab924a8eb08e22479360cec4745c0185260e08485d90681a0f9e07c5a50256c"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "6d0428b6876fa39c0c5fc3098141990d31bdff7b8b9e255f8730f0e399832ba4"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "2d6f3e99da24ff626c05833f32ca1daa2307cd55fdca69fb15efab3bba5acb6b"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "66ae56083b6c253c45bf4f10823815ddab0236780b10b588e4f03564b8435e22"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-37747",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "31fface30f3b1709004170957f026a9880d9fe7c0c62094a6e39162bda43d9f1"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "39d94b0f7f7d8c87e63dec67551626cb7abbe902cf904e31d6256319e975d225"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "0e30b9f402b6adfc90d0d2409cdde52617716b81e707399eea53980028658e1c"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "31fface30f3b1709004170957f026a9880d9fe7c0c62094a6e39162bda43d9f1"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "915b51cec8ede70946eb16ced409ad298b53427f1e04f163e3abded13f7e58d8"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 3,
+            "first_action_sha256": "0e30b9f402b6adfc90d0d2409cdde52617716b81e707399eea53980028658e1c"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-40447",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "1851dcfa4d07bb182337c5c70dfc87568114f8e226f1142794c04ae397402d5a"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "efba0c52a69a3d3811c4b6d9952539db2709d040effac7c71519ee177e0aef2d"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "864c462599854544d517d632ca6e4f3ac722422fcc4dcd5a15b463e2ea9dcc0b"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "f53d18b22ff8f71f0467beb2cfc03d443d679e9eb8960a376ced127e1e28c111"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "efba0c52a69a3d3811c4b6d9952539db2709d040effac7c71519ee177e0aef2d"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "97c0d762d07509bc60ef3300ef2887f6dd437d4f669e82813455865979247bf2"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-51766",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "855b310a6ee54c5609ad423c826ec05485c94c305f7623fc7c8a8bd2346ccdd7"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "06df38989657133537d428171ec9b0de063b9364d48d5034198483c941316f90"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "afcb73fcd7ff7fd266c89a243bca6f975f9907e9e0b67950fd585e8654d12274"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "855b310a6ee54c5609ad423c826ec05485c94c305f7623fc7c8a8bd2346ccdd7"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "06df38989657133537d428171ec9b0de063b9364d48d5034198483c941316f90"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "afcb73fcd7ff7fd266c89a243bca6f975f9907e9e0b67950fd585e8654d12274"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-24930",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "6b1c59e6c97ba7c9e9e65aa54706823e6999167fefbcb32803c334e410da9b9e"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "a559d0fa16b1b118639f3540306f6fd745abec5153ef4e490365741abd07c527"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "7f517764822a3d24218e419fbbe30d3abd5736acf0ea6037ae58e6c1971d982e"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "6b1c59e6c97ba7c9e9e65aa54706823e6999167fefbcb32803c334e410da9b9e"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "a559d0fa16b1b118639f3540306f6fd745abec5153ef4e490365741abd07c527"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "7f517764822a3d24218e419fbbe30d3abd5736acf0ea6037ae58e6c1971d982e"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-18111",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "53b55ddddc3cc19dd134fe9a52522e6d01bdf7f4d853763ffccff1a150d77cf7"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "83d3450451255636e824d9f83bf5f0c38662c0b63e9b194986a9930e2808705e"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "b17ee29dc0534979877f8d18e2a327625db02f5da6b89a51e765746c132d76bc"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "53b55ddddc3cc19dd134fe9a52522e6d01bdf7f4d853763ffccff1a150d77cf7"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "5c078d064a687a66729e9875a981f7c5129a21ba50bd1d3e1b3d621be390e66c"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "b17ee29dc0534979877f8d18e2a327625db02f5da6b89a51e765746c132d76bc"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-1035",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "5734ee5e6157c9f8992b95f063e4d9eca7574844bca5dfc831575216ddf7a402"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "e78933f536c84c0d2537933b0fbf8dc8a02a790b370764894981b62337ab6252"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "fd1db83fd2987273d6507146fe3b8e496a8165d1dd7f994223bcbd4975bf4bcd"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "5734ee5e6157c9f8992b95f063e4d9eca7574844bca5dfc831575216ddf7a402"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "9430f48a74eba38dc088c996a8cddcfaf2be8e03f12d73af39c53f1a5047937a"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "fd1db83fd2987273d6507146fe3b8e496a8165d1dd7f994223bcbd4975bf4bcd"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-16059",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "6c4a4a97531148277eca158958a1d92128f1ae2c70451ab0295b91c9e54740a7"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "51d45793b8131d23ef7f3d158eb56c01f9d9279268ebecee4ce92a865d816683"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "6a7d5b3128d30b21a21ae54b5aa6a2af71388c41032b2c94a2c44e1773038bd8"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "6c4a4a97531148277eca158958a1d92128f1ae2c70451ab0295b91c9e54740a7"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "51d45793b8131d23ef7f3d158eb56c01f9d9279268ebecee4ce92a865d816683"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "6a7d5b3128d30b21a21ae54b5aa6a2af71388c41032b2c94a2c44e1773038bd8"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-61068",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "112d3301a278daee1f805004a244546addf120ec5bc0ad5c377f23457ca9f7b7"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "85fd104ab8a020e0e102f26440a60e982ca245221be0b7a5c36d4c026fa23d1a"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "4d339f7bedb3454263285afe80fb94407a032fe7f5a2c02f54ee2df5dbfdbd37"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "112d3301a278daee1f805004a244546addf120ec5bc0ad5c377f23457ca9f7b7"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "eb917ed881091575c4e8558b3802f4d9dfe7682c33ada662b3ff9bc6af9c0a37"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "4d339f7bedb3454263285afe80fb94407a032fe7f5a2c02f54ee2df5dbfdbd37"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-48866",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "33abcfe2bce361057cb3118e74ae128b16894fce883a3b57f5568e630b6ba403"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "4a7d205af08ac2c24117f607cb4d8c99074176eb455b1a050d94135783d4f3f5"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "78dbe6db9823e1069a568d984581dd7a10c3a318713d95bc2ddd5cfa9b578630"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "6a4d2884d5a1c204b8c266720fb38d9ee2815f83f1fe51d9930df3ddf00e1e92"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "4a7d205af08ac2c24117f607cb4d8c99074176eb455b1a050d94135783d4f3f5"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "7eef68d7c393ddcae2ccbe5652e7c8bef8ebd7d807bd025645f8d7473832f2d6"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-12613",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "2dc94d7cc14b087b3d82911f0d16fd6a074ac2f82caec9237510d10e152ebd3c"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 2,
+            "first_action_sha256": "7a1157f332bdf5f14a219195f368e62a22a2e14496ad2e69088df21507dd8b32"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "ae5e459f63dea9a8af143bb3e7e6c11431349a1abdd07dd9dce34ef469cd0b23"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "f81ce46adf0b01044278d520ba5b866fc86f82fbc21bdbb2e44dc0edfcbe6046"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "b8c800accee91bf8d5c2d9f37e4999b154bf6ddefc52b46c18e2f4601b8e2599"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 4,
+            "first_action_sha256": "ae5e459f63dea9a8af143bb3e7e6c11431349a1abdd07dd9dce34ef469cd0b23"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-13017",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "eadd8a55275bab3bd808041a9771d06ddb81865281a8b8253c6f1347e29af565"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "5f11bcf71494092e088f1e7f0b0ea38c515cbb22b0f9743d180a302e00edcf80"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "fd72228b8134d26a5e720629a331c667f178d247ea854889e9b7489dec883fa3"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "eadd8a55275bab3bd808041a9771d06ddb81865281a8b8253c6f1347e29af565"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "5f11bcf71494092e088f1e7f0b0ea38c515cbb22b0f9743d180a302e00edcf80"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "fd72228b8134d26a5e720629a331c667f178d247ea854889e9b7489dec883fa3"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-51617",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "e384bf2c78e4fa0b100f385b78fec1f9b7f49b1d9b2d6904bd015aa3dc820f19"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "96dc15e1e22626b3acaeb3f9690c7782ba96212ad2bb0c6bcfd628d2e5e4807b"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "57b6da57106f5496bc9f3ec01c45d384e11b7544241e71abedcb44d4ca3b3e26"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "e384bf2c78e4fa0b100f385b78fec1f9b7f49b1d9b2d6904bd015aa3dc820f19"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "96dc15e1e22626b3acaeb3f9690c7782ba96212ad2bb0c6bcfd628d2e5e4807b"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "57b6da57106f5496bc9f3ec01c45d384e11b7544241e71abedcb44d4ca3b3e26"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-29573",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "898d5ff9fc5ef72fb223b5e2c55afc89334c29a934d06544220731eb8d292b98"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "490a46d2bf3dca98c821422b5cc3040d4c33bd1b67895ac33cfba40a50585fdd"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "321f30e50c6f7ef27281fde5c9675185ecdd8f0e47d1e52598ed07a621827afd"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "898d5ff9fc5ef72fb223b5e2c55afc89334c29a934d06544220731eb8d292b98"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "7da774c47f0a314471f7cd431ba847f0755c1da81990ccffb4661febe6f51559"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "321f30e50c6f7ef27281fde5c9675185ecdd8f0e47d1e52598ed07a621827afd"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-59960",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "e33b44ef9a3bcee2b58306e0c0223317638ee4b33dba896b6a8292234e08a8c0"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "c1cb5f915d007021cab8f88ae00f6e53f5858de28a9e764339b73d2b61039129"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "13c3291a62a80710583ec810b2b0442f622742e1836af051251e0b6c741e34f3"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "e33b44ef9a3bcee2b58306e0c0223317638ee4b33dba896b6a8292234e08a8c0"
+          },
+          "20260923": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "c1cb5f915d007021cab8f88ae00f6e53f5858de28a9e764339b73d2b61039129"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "37cc79f8b2773d496384e15e34032c675ba1c791a49fa7ac7b72634f1aed3dcf"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-53163",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "16be635b9bb1a22d9b29f367b2a1ec6e9f0075577b1b0c832b997ae60de08e8e"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "d52388f0c2a0105abe6e1b0ccd595ad8f103d8d55ea1d8ca056a59d22a433c52"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "6aa7c0b04ed80c7faa4dbc3578c1ef254af51e27f2314bfb30a770e7aeb6fd00"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 5,
+            "first_action_sha256": "0530a5f548554eb6aecc2325f575564774301bab01f3b9bad217618ca10cff7c"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "d52388f0c2a0105abe6e1b0ccd595ad8f103d8d55ea1d8ca056a59d22a433c52"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 6,
+            "first_action_sha256": "abdea9d9693f707d28b9f3e1f4e16643087d909def8c8c6f83837d117946a8ca"
+          }
+        }
+      }
+    },
+    {
+      "case_id": "train-hierarchical-target-learner-confirmation-v1-23893",
+      "arms": {
+        "base": {
+          "20260922": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "3024334be60aa89b773d2c5eed293018dfaf90d91efcf24896dfb9e7848c4d54"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "cfc37c831728c5ae65ce0d9dfe8c2317f903f9fc780e0a279c4dc1cf8b4cf884"
+          },
+          "20260924": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "db77f59a033c8ea700bdfa34521eb5f2c513aa76112012c44c388389234a5a17"
+          }
+        },
+        "horizon12": {
+          "20260922": {
+            "success": false,
+            "completed_connections": 4,
+            "first_action_sha256": "88b1e82f626ec8bf3340d7266682031c731617fdf13da54d178d6e9264f702c0"
+          },
+          "20260923": {
+            "success": false,
+            "completed_connections": 3,
+            "first_action_sha256": "7d9b86a1a14f93870e3bc0ef0a7dea780e4db94982c5481a9ed756a85e46fc04"
+          },
+          "20260924": {
+            "success": true,
+            "completed_connections": 5,
+            "first_action_sha256": "5b28d8083cf59a79a873c5c09796edcc8b099fd6b7f33952e9544847f91d5814"
+          }
+        }
+      }
+    }
+  ]
+}
