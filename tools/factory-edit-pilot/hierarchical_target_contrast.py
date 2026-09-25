@@ -7,7 +7,7 @@ import math
 from pathlib import Path
 import statistics
 
-from hierarchical_candidate_width import STREAMS, action_key
+from hierarchical_candidate_width import ARMS, STREAMS, action_key, label
 from ppo_harness_state import read, sha, write
 
 
@@ -60,6 +60,22 @@ def pair_loss(log_odds):
     return math.log1p(math.exp(-abs(log_odds))) + max(0.0, -log_odds)
 
 
+def conditional_budget_scores(candidate, arm, visited_mass):
+    evidence = candidate["search_evidence"][arm]
+    prior = 0.5 * (candidate["baseline_prior"] + candidate["baseline_anchor_prior"])
+    target = evidence["policy_target"]
+    require(prior > 0 and target > 0 and visited_mass > 0,
+            f"invalid conditional budget score: {arm}")
+    ratio = math.log(target) - math.log(prior)
+    return {
+        "current": math.log(target),
+        "q2": math.log(prior) + 2 * ratio,
+        "q4": math.log(prior) + 4 * ratio,
+        "half-visited": 0.5 * prior
+        + (0.5 * target / visited_mass if evidence["visits"] > 0 else 0),
+    }
+
+
 def analyze(root):
     width = read(root / "progress.json")
     continuation = read(root / "continuation-summary.json")
@@ -76,9 +92,21 @@ def analyze(root):
             "prerequisite searches are incomplete")
     outcomes = {case["case_id"]: case for case in continuation["cases"]}
     replicated = {case["case_id"]: case for case in replication["cases"]}
+    width_summary = read(root / "summary.json")
+    manifest = read(root / "continuation-actions.json")
+    require(width_summary["progress_sha256"] == sha(root / "progress.json")
+            and manifest["candidate_width_summary_sha256"] == sha(root / "summary.json")
+            and read(root / "continuation-protocol.json")["actions_sha256"]
+            == sha(root / "continuation-actions.json"),
+            "candidate-width or action evidence changed")
+    width_cases = {case["case_id"]: case for case in width_summary["cases"]}
+    action_cases = {case["case_id"]: case for case in manifest["cases"]}
     require(len(outcomes) == 48, "missing continuation cases")
     case_evidence = []
     root_metrics = {name: {"first": [], "later": []} for name in VARIANTS}
+    arm_labels = [label(candidates, simulations) for candidates, simulations in ARMS]
+    budget_agreement = {name: {arm: [] for arm in arm_labels if arm != "c16-n128"}
+                        for name in VARIANTS}
     for stream in STREAMS:
         path = root / "raw" / stream / "c16-n128.json"
         record = next(row for row in width["records"]
@@ -116,6 +144,38 @@ def analyze(root):
                     f"duplicate baseline action: {case_id}")
             variants = outcomes[case_id]["variants"]
             indices = [by_hash[variant["action_sha256"]] for variant in variants]
+            action_case = action_cases[case_id]
+            width_case = width_cases[case_id]
+            require([row["action_sha256"] for row in action_case["candidates"]]
+                    == [row["action_sha256"] for row in variants],
+                    f"candidate order changed: {case_id}")
+            conditional = {name: {} for name in VARIANTS}
+            for arm in arm_labels:
+                visited_mass = 1 - width_case["arms"][arm]["unvisited_target_mass"]
+                arm_scores = [conditional_budget_scores(candidate, arm, visited_mass)
+                              for candidate in action_case["candidates"]]
+                for name in VARIANTS:
+                    conditional[name][arm] = [row[name] for row in arm_scores]
+            for name in VARIANTS:
+                original_scores = conditional[name]["c16-n128"]
+                for arm in budget_agreement[name]:
+                    other_scores = conditional[name][arm]
+                    concordant = discordant = tied = 0
+                    for left in range(len(variants)):
+                        for right in range(left + 1, len(variants)):
+                            first = ((original_scores[left] > original_scores[right])
+                                     - (original_scores[left] < original_scores[right]))
+                            second = ((other_scores[left] > other_scores[right])
+                                      - (other_scores[left] < other_scores[right]))
+                            if first == 0 or second == 0:
+                                tied += 1
+                            elif first == second:
+                                concordant += 1
+                            else:
+                                discordant += 1
+                    budget_agreement[name][arm].append({
+                        "concordant": concordant, "discordant": discordant,
+                        "tied": tied})
             primary_clear_pairs = []
             for left in range(len(variants)):
                 for right in range(left + 1, len(variants)):
@@ -213,6 +273,14 @@ def analyze(root):
                               "max_probability", "target_prior_kl_nats")
             },
             "later_root_count": len(root_metrics[name]["later"]),
+            "budget_conditional_rank_agreement": {
+                arm: {"tested_action_pairs": sum(
+                          row["concordant"] + row["discordant"] + row["tied"]
+                          for row in budget_agreement[name][arm]),
+                      "concordant": sum(row["concordant"] for row in budget_agreement[name][arm]),
+                      "discordant": sum(row["discordant"] for row in budget_agreement[name][arm]),
+                      "tied": sum(row["tied"] for row in budget_agreement[name][arm])}
+                for arm in budget_agreement[name]},
         }
     current = summary["current"]
     eligible = []
