@@ -20,6 +20,9 @@ outcomes were seen.
 
 The [protocol](2026-09-26-hierarchical-lower-restored-protocol.json) fixes the
 source, input hashes, disjoint panels, candidate, and numeric gate. The
+[horizon-12 search configuration](../benchmarks/hierarchical-target-causal/horizon-12-search.json)
+is the hashed input used by the candidate; it differs from the horizon-six
+configuration only in `horizon`. The
 [progress](2026-09-26-hierarchical-lower-restored-progress.json) retains all
 27 diagnostic masks and collection, checkpoint, training-report, and
 evaluation hashes. Source runner commit `ad28ad04`; the source was not changed
