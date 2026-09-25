@@ -1,0 +1,120 @@
+{
+  "schema": "aic-research-cleanup-v1",
+  "phase": "hierarchical-lower-restored-primary",
+  "status": "complete",
+  "retained_final_checkpoints": [
+    "artifacts/recovery-lower-restored-v2/training/s1-g2-h6/lower/state.safetensors",
+    "artifacts/recovery-lower-restored-v2/training/s1-g2-h6/outer/state.safetensors",
+    "artifacts/recovery-lower-restored-v2/training/s1-g2-h12/lower/state.safetensors",
+    "artifacts/recovery-lower-restored-v2/training/s1-g2-h12/outer/state.safetensors",
+    "artifacts/recovery-lower-restored-v2/training/s2-g2-h6/lower/state.safetensors",
+    "artifacts/recovery-lower-restored-v2/training/s2-g2-h6/outer/state.safetensors",
+    "artifacts/recovery-lower-restored-v2/training/s2-g2-h12/lower/state.safetensors",
+    "artifacts/recovery-lower-restored-v2/training/s2-g2-h12/outer/state.safetensors",
+    "artifacts/recovery-lower-restored-v2/training/s3-g2-h6/lower/state.safetensors",
+    "artifacts/recovery-lower-restored-v2/training/s3-g2-h6/outer/state.safetensors",
+    "artifacts/recovery-lower-restored-v2/training/s3-g2-h12/lower/state.safetensors",
+    "artifacts/recovery-lower-restored-v2/training/s3-g2-h12/outer/state.safetensors"
+  ],
+  "retained_panels": "artifacts/recovery-lower-restored-v2/panels",
+  "retained_compact_evidence": [
+    "protocol.json",
+    "progress.json",
+    "primary-summary.json",
+    "target-quality-summary.json",
+    "wandb-observer.json"
+  ],
+  "removed": [
+    {
+      "path": "artifacts/recovery-lower-restored-v2/candidate-panels",
+      "bytes": 16205306
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/collections",
+      "bytes": 2137562012
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/evaluations",
+      "bytes": 6794377404
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/logs",
+      "bytes": 29096
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/mixed-outer",
+      "bytes": 1096092
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/wandb-telemetry",
+      "bytes": 872975
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/run-main.log",
+      "bytes": 1273
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/run-smoke.log",
+      "bytes": 48
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/wandb-observer.log",
+      "bytes": 2976
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/.wandb-observer.lock",
+      "bytes": 0
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/training/s1-g0-h6",
+      "bytes": 1636938
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/training/s1-g0-h12",
+      "bytes": 1636927
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/training/s1-g1-h6",
+      "bytes": 1636934
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/training/s1-g1-h12",
+      "bytes": 1636935
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/training/s2-g0-h6",
+      "bytes": 1636933
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/training/s2-g0-h12",
+      "bytes": 1636937
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/training/s2-g1-h6",
+      "bytes": 1636935
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/training/s2-g1-h12",
+      "bytes": 1636935
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/training/s3-g0-h6",
+      "bytes": 1636938
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/training/s3-g0-h12",
+      "bytes": 1636936
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/training/s3-g1-h6",
+      "bytes": 1636934
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/training/s3-g1-h12",
+      "bytes": 1636937
+    }
+  ],
+  "removed_bytes": 8969790401,
+  "free_bytes_before": 154280497152,
+  "free_bytes_after": 163251535872
+}

@@ -1,0 +1,35 @@
+{
+  "schema": "aic-hierarchical-lower-restored-primary-summary-v1",
+  "protocol_sha256": "3efacbb43923eb60a34e3e84f4a3e2182e63c02b578572c0d5d97ea012139b40",
+  "progress_sha256": "21796bd960cb942723bd3ff27f542681a307ea925f102cbb425eaedfe037c072",
+  "selected_candidate": "h12",
+  "initial_h6_completed": 29,
+  "initial_h12_completed": 41,
+  "final_completion_differences": [
+    4,
+    20,
+    6
+  ],
+  "final_retention_differences": [
+    0,
+    9,
+    4
+  ],
+  "later_completion_differences": [
+    10,
+    4,
+    26,
+    20,
+    15,
+    6
+  ],
+  "primary_checks": {
+    "final_mean_completion_gain": true,
+    "final_stream_wins": true,
+    "final_mean_fewer_lost_start_successes": true,
+    "final_positive_retention_streams": true,
+    "generation_2_3_mean_completion_gain": true
+  },
+  "passes_primary_gate": true,
+  "heldout_required_for_final_gate": true
+}
