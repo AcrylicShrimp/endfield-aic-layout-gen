@@ -78,7 +78,8 @@ and paired retention are the decision metrics.
   then `run` and `summarize` with the same `--output`.
 - [Protocol](2026-09-25-hierarchical-success-imitation-protocol.json) holds
   exact source, binary, search, model, configuration, helper and diagnostic
-  hashes. [Progress](2026-09-25-hierarchical-success-imitation-progress.json)
+  hashes. The generated [failed-off configuration](../benchmarks/hierarchical-target-causal/success-imitation-failed-off-generation.json)
+  is retained as a benchmark source asset. [Progress](2026-09-25-hierarchical-success-imitation-progress.json)
   holds all 12 outcomes, per-case starting-success masks, report and checkpoint
   hashes. [Summary](2026-09-25-hierarchical-success-imitation-summary.json)
   applies the fixed gate. Per-stream target manifests:
