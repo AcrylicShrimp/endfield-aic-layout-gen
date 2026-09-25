@@ -128,6 +128,13 @@ def prepare(root, commit):
         "contrast_analysis_sha256": sha(root / "target-contrast-analysis.json"),
         "continuation_summary_sha256": sha(root / "continuation-summary.json"),
         "binary_sha256": sha(BINARY), "search_sha256": sha(SEARCH),
+        "runner_sha256": sha(Path(__file__)),
+        "transform_sha256": sha(Path(__file__).with_name(
+            "transform_hierarchical_policy_target.py")),
+        "target_analysis_sha256": sha(Path(__file__).with_name(
+            "hierarchical_target_contrast.py")),
+        "tracking_sha256": sha(Path(__file__).with_name(
+            "hierarchical_target_learner_tracking.py")),
         "generation_sha256": sha(GENERATION), "sampling_sha256": sha(SAMPLING),
         "lower_sha256": sha(root / "inputs/models/lower/state.safetensors"),
         "outer_sha256": sha(root / "inputs/models/outer-128/state.safetensors"),
@@ -155,12 +162,24 @@ def validated(root, phase):
             and protocol["binary_sha256"] == sha(BINARY)
             and protocol["search_sha256"] == sha(SEARCH)
             and protocol["generation_sha256"] == sha(GENERATION)
+            and protocol["sampling_sha256"] == sha(SAMPLING)
+            and protocol["runner_sha256"] == sha(Path(__file__))
+            and protocol["transform_sha256"] == sha(Path(__file__).with_name(
+                "transform_hierarchical_policy_target.py"))
+            and protocol["target_analysis_sha256"] == sha(Path(__file__).with_name(
+                "hierarchical_target_contrast.py"))
+            and protocol["tracking_sha256"] == sha(Path(__file__).with_name(
+                "hierarchical_target_learner_tracking.py"))
             and protocol["lower_sha256"] == sha(root / "inputs/models/lower/state.safetensors")
             and protocol["outer_sha256"] == sha(root / "inputs/models/outer-128/state.safetensors"),
             "protocol input changed")
     for name, expected in protocol["panels"].items():
         require(sha(learner / "panels" / f"{name}.json") == expected,
                 f"panel changed: {name}")
+    if phase == "screen":
+        for stream, expected in protocol["source_panel_sha256"].items():
+            require(sha(root / "inputs/panels" / f"{stream}.json") == expected,
+                    f"source panel changed: {stream}")
     observer = read(directory / "wandb-observer.json")
     require(observer["protocol_sha256"] == sha(directory / "protocol.json")
             and observer["status"] in ("ready", "running")
@@ -348,6 +367,14 @@ def prepare_confirmation(root, commit):
         "selection_reason": reason, "scope_calculations": calculations,
         "screen_progress_sha256": sha(learner / "screen/progress.json"),
         "binary_sha256": sha(BINARY), "search_sha256": sha(SEARCH),
+        "sampling_sha256": sha(SAMPLING),
+        "runner_sha256": sha(Path(__file__)),
+        "transform_sha256": sha(Path(__file__).with_name(
+            "transform_hierarchical_policy_target.py")),
+        "target_analysis_sha256": sha(Path(__file__).with_name(
+            "hierarchical_target_contrast.py")),
+        "tracking_sha256": sha(Path(__file__).with_name(
+            "hierarchical_target_learner_tracking.py")),
         "generation_sha256": sha(GENERATION),
         "lower_sha256": screen_protocol["lower_sha256"],
         "outer_sha256": screen_protocol["outer_sha256"],

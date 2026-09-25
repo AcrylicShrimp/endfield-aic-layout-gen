@@ -91,6 +91,7 @@ def prepare(root, experiment_commit):
         "triggered_case_ids": sorted(triggered),
         "panels": panels, "configs": hashes,
         "binary_sha256": sha(Path("target/release/aic-cli")),
+        "runner_sha256": sha(Path(__file__)),
         "lower_checkpoint_sha256": sha(root / "inputs/models/lower/state.safetensors"),
         "outer_checkpoint_sha256": sha(root / "inputs/models/outer-128/state.safetensors"),
         "planned_cells": len(SEEDS) * len(panels),
@@ -109,7 +110,8 @@ def run(root, max_cells):
     progress = read(root / "replication-progress.json")
     require(progress["protocol_sha256"] == sha(root / "replication-protocol.json")
             and protocol["primary_summary_sha256"] == sha(root / "continuation-summary.json")
-            and protocol["binary_sha256"] == sha(Path("target/release/aic-cli")),
+            and protocol["binary_sha256"] == sha(Path("target/release/aic-cli"))
+            and protocol["runner_sha256"] == sha(Path(__file__)),
             "replication protocol changed")
     for rank, info in protocol["panels"].items():
         require(sha(root / "inputs/replication-panels" / f"rank-{rank}.json")

@@ -75,6 +75,7 @@ def prepare(root, experiment_commit):
         "primary_summary_sha256": sha(root / "continuation-summary.json"),
         "panel_sha256": sha(root / "inputs/continuation-panels/rank-0.json"),
         "binary_sha256": sha(Path("target/release/aic-cli")),
+        "runner_sha256": sha(Path(__file__)),
         "lower_checkpoint_sha256": sha(lower),
         "outer_checkpoint_sha256": sha(outer),
         "configs": hashes, "planned_cells": len(SEEDS),
@@ -97,7 +98,8 @@ def run(root, max_cells):
             == sha(root / "continuation-summary.json")
             and protocol["panel_sha256"]
             == sha(root / "inputs/continuation-panels/rank-0.json")
-            and protocol["binary_sha256"] == sha(Path("target/release/aic-cli")),
+            and protocol["binary_sha256"] == sha(Path("target/release/aic-cli"))
+            and protocol["runner_sha256"] == sha(Path(__file__)),
             "protocol inputs changed")
     progress["status"] = "running"
     write(root / "budget-control-progress.json", progress)
