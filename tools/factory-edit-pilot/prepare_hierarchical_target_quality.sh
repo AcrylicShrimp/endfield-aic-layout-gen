@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Prepare three frozen target-audit panels and the two search contracts.
 set -euo pipefail
-if [[ $# != 1 ]]; then
-  echo "usage: $0 AIC_CLI" >&2
+if [[ $# -lt 1 || $# -gt 2 ]]; then
+  echo "usage: $0 AIC_CLI [OUTPUT_ROOT]" >&2
   exit 2
 fi
 cli=$1
 repo=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$repo"
-root=artifacts/target-quality-audit
+root=${2:-artifacts/target-quality-audit}
 if [[ -e "$root" ]]; then
   echo "refusing existing audit root: $root" >&2
   exit 1
