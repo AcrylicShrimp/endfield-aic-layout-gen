@@ -1,0 +1,49 @@
+{
+  "schema": "aic-hierarchical-search-config-v2",
+  "bounds": {
+    "minX": 0,
+    "minY": 0,
+    "maxX": 20,
+    "maxY": 20
+  },
+  "extension_lengths": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32
+  ],
+  "candidate": {
+    "bounds": {
+      "minX": 0,
+      "minY": 0,
+      "maxX": 20,
+      "maxY": 20
+    },
+    "max_candidates": 6,
+    "max_searches": 48,
+    "work_per_search": 20000,
+    "max_expanded": 400000,
+    "overlap_penalty": 8
+  },
+  "cpu_threads": 8,
+  "placement_page": 16,
+  "beam_width": 8,
+  "run_beam": false,
+  "simulations_per_move": 128,
+  "horizon": 6,
+  "max_moves": 23,
+  "exploration": 1.25,
+  "root_selection": {
+    "algorithm": "gumbel-sequential-halving",
+    "candidates": 16,
+    "anchor_candidates": 8,
+    "anchor_policy_mass": 0.5,
+    "seed": 20260927,
+    "value_scale": 0.1,
+    "max_visit_init": 50.0
+  },
+  "anchor_prior_mass": 0.25,
+  "compiled_inference": false
+}

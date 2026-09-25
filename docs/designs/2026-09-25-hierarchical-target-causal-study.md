@@ -83,6 +83,22 @@ progress, and each pair of seeds' success disagreements at 128 versus 512.
 This checks whether a fourfold continuation budget reduces seed sensitivity;
 it is not an extra candidate-selection result or a production promotion gate.
 
+The same initial two seeds changed final success in 16/48 cases for the second
+forced-action rank while its immediate states still matched. Consequently,
+the three-seed *clear winner* label above is a screening rule rather than
+statistical certainty. Before using such a pair to judge Q ranking or choose
+a target transform, independently repeat **all prespecified actions** for
+every case with at least one primary clear pair under root seeds 20260925,
+20260926, and 20260927, at the same 128-simulation/23-move continuation
+contract. Keep all other cases in the primary descriptive summary. Confirm a
+pair only when the same action wins by at least two of three completions in
+both the primary and independent triplets. Otherwise classify it unresolved.
+Use confirmed pairs for the target-selection gate; a small confirmed sample
+forces the stress-contrast path. This replication rule was recorded while the
+primary run had completed only the first two ranks of its second seed, before
+the remaining alternative-action outcomes were inspected. Keep its runtime
+and inputs separate from the primary matrix and the 512-simulation control.
+
 ## 3. Target construction and learner effect
 
 On the same frozen root records, compare the present full completed-Q target

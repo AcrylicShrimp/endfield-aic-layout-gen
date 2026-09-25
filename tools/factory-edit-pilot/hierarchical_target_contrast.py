@@ -64,11 +64,18 @@ def analyze(root):
     width = read(root / "progress.json")
     continuation = read(root / "continuation-summary.json")
     continuation_progress = read(root / "continuation-progress.json")
+    replication = read(root / "replication-summary.json")
+    replication_progress = read(root / "replication-progress.json")
     require(width["status"] == "complete"
             and continuation["progress_sha256"] == sha(root / "continuation-progress.json")
-            and continuation_progress["status"] == "complete",
+            and continuation_progress["status"] == "complete"
+            and replication["progress_sha256"] == sha(root / "replication-progress.json")
+            and replication_progress["status"] == "complete"
+            and read(root / "replication-protocol.json")["primary_summary_sha256"]
+            == sha(root / "continuation-summary.json"),
             "prerequisite searches are incomplete")
     outcomes = {case["case_id"]: case for case in continuation["cases"]}
+    replicated = {case["case_id"]: case for case in replication["cases"]}
     require(len(outcomes) == 48, "missing continuation cases")
     case_evidence = []
     root_metrics = {name: {"first": [], "later": []} for name in VARIANTS}
@@ -106,7 +113,7 @@ def analyze(root):
                     f"duplicate baseline action: {case_id}")
             variants = outcomes[case_id]["variants"]
             indices = [by_hash[variant["action_sha256"]] for variant in variants]
-            clear_pairs = []
+            primary_clear_pairs = []
             for left in range(len(variants)):
                 for right in range(left + 1, len(variants)):
                     difference = (variants[left]["completion_count"]
@@ -114,7 +121,14 @@ def analyze(root):
                     if abs(difference) < 2:
                         continue
                     winner, loser = (left, right) if difference > 0 else (right, left)
-                    clear_pairs.append((winner, loser))
+                    primary_clear_pairs.append((winner, loser))
+            replication_case = replicated.get(case_id)
+            require((replication_case is not None) == bool(primary_clear_pairs),
+                    f"replication case selection differs: {case_id}")
+            clear_pairs = [tuple(pair) for pair in replication_case["confirmed_pairs"]] \
+                if replication_case else []
+            require(all(pair in primary_clear_pairs for pair in clear_pairs),
+                    f"confirmed pair was not primary clear: {case_id}")
             scores = {}
             for name in VARIANTS:
                 dist = first_targets[name]
@@ -130,6 +144,7 @@ def analyze(root):
                 }
             case_evidence.append({
                 "stream": stream, "case_id": case_id,
+                "primary_clear_pairs": len(primary_clear_pairs),
                 "clear_pairs": len(clear_pairs),
                 "clear_pairs_winner_visited": sum(
                     first_actions[indices[winner]]["visits"] > 0
@@ -189,11 +204,12 @@ def analyze(root):
             if improvement >= 0.05 and better_streams >= 2:
                 eligible.append((candidate["case_mean_pair_loss"], name))
     choice = min(eligible)[1] if eligible else "half-visited"
-    choice_reason = "outcome-aligned" if eligible else "stress-contrast-only"
+    choice_reason = "replicated-outcome-aligned" if eligible else "stress-contrast-only"
     output = {
         "schema": "aic-hierarchical-target-contrast-analysis-v1",
         "width_progress_sha256": sha(root / "progress.json"),
         "continuation_summary_sha256": sha(root / "continuation-summary.json"),
+        "replication_summary_sha256": sha(root / "replication-summary.json"),
         "cases": case_evidence, "variants": summary,
         "selected_contrast": choice,
         "selection_reason": choice_reason,

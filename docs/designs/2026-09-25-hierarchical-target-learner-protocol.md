@@ -2,7 +2,8 @@
 
 Status: frozen before the first learner comparison. This specifies the learner
 part of the [causal study](2026-09-25-hierarchical-target-causal-study.md).
-The contrast label is filled by the study's prespecified continuation gate;
+The contrast label is filled by the study's independently replicated
+continuation gate;
 no downstream diagnostic result may change it.
 
 ## Common controls
