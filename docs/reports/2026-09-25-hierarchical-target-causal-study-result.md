@@ -92,3 +92,11 @@ case-level masks, W&B acknowledgements, and byte-precise cleanup records
 are retained in the linked stage protocols and reports. The release binary
 for frozen-search stages had SHA-256
 `e594b5425074a03731524d8c91991126232d840ef44a86e8b0630e1f16800fdf`.
+Final [server cleanup](2026-09-25-hierarchical-target-causal-study-final-cleanup.json)
+and [local cleanup](2026-09-25-hierarchical-target-causal-study-local-cleanup.json)
+record removed copies and free space; the generation-87 source checkpoints
+remain at the previous curriculum experiment path with hashes verified before
+duplicate removal. `cargo check --workspace`, `cargo test --workspace`, and
+the tracked-file worktree/index checks passed after the research code and
+documentation were committed. The synthesis and stage reports have no
+missing local links.
