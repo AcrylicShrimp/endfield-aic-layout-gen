@@ -1,0 +1,12 @@
+{
+  "schema": "aic-hierarchical-recovery-invalid-zero-cleanup-v1",
+  "removed_path": "artifacts/recovery-search",
+  "removed_file_bytes": 128178723,
+  "free_before_bytes": 176376668160,
+  "free_after_bytes": 176503033856,
+  "retained_report_sha256": {
+    "base-20260922.json": "6bbf87af319620f3bd37ec2a01cb328897730474b32b7e0f52b05e2f776baa66",
+    "q02-20260922.json": "e846acd64730d67ff2bfc1c7846081a2d33b9e5a94fb469da41cb3db83e83345"
+  },
+  "reason": "valid reports migrated and verified in revised screen; rejected control created no report"
+}
