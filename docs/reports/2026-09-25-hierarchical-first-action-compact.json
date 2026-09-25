@@ -1,0 +1,1452 @@
+{
+  "schema": "aic-hierarchical-first-action-compact-v1",
+  "protocol_sha256": "a792686e3a318fdae5681b72a4808f4dec2eb57407ce80d7d998d047e5cf8648",
+  "progress_sha256": "4143f9126ffde348985aeb8b053b31e57b1cc91628ab7a57a4f8ab7bc8fe437e",
+  "full_summary_sha256": "36ca705c7fab33d7918a2922d64b64a884486542486fd5be1c485b429ee5be55",
+  "full_analysis_sha256": "84e96c5a22689b36edf0af055f7d7ba44f340fce588262d4c85b376e86490648",
+  "cases": [
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-6369",
+      "baseline_successes": 0,
+      "successes_by_candidate_rank": [
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0
+      ],
+      "mean_completed_connections_by_rank": [
+        3.6666666666666665,
+        4,
+        4,
+        4.333333333333333,
+        4,
+        4,
+        3.3333333333333335
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-22498",
+      "baseline_successes": 1,
+      "successes_by_candidate_rank": [
+        1,
+        2,
+        2,
+        0,
+        3,
+        3,
+        0,
+        2
+      ],
+      "mean_completed_connections_by_rank": [
+        3.3333333333333335,
+        3.6666666666666665,
+        3.6666666666666665,
+        3,
+        4,
+        4,
+        2.3333333333333335,
+        3.6666666666666665
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-17062",
+      "baseline_successes": 2,
+      "successes_by_candidate_rank": [
+        2,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0
+      ],
+      "mean_completed_connections_by_rank": [
+        4.666666666666667,
+        3.3333333333333335,
+        4,
+        3.6666666666666665,
+        4,
+        4.333333333333333,
+        4,
+        3.3333333333333335
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-30191",
+      "baseline_successes": 1,
+      "successes_by_candidate_rank": [
+        1,
+        0,
+        1,
+        3,
+        0,
+        1,
+        2,
+        2,
+        0
+      ],
+      "mean_completed_connections_by_rank": [
+        4.666666666666667,
+        4,
+        4.666666666666667,
+        6,
+        3.3333333333333335,
+        4,
+        5.333333333333333,
+        5.333333333333333,
+        2
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-3308",
+      "baseline_successes": 2,
+      "successes_by_candidate_rank": [
+        2,
+        0,
+        1,
+        1,
+        1,
+        2,
+        3,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        4.666666666666667,
+        3.3333333333333335,
+        4,
+        4.333333333333333,
+        4.333333333333333,
+        4.666666666666667,
+        5,
+        4
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-13586",
+      "baseline_successes": 2,
+      "successes_by_candidate_rank": [
+        2,
+        2,
+        1,
+        1,
+        3,
+        2,
+        3,
+        2
+      ],
+      "mean_completed_connections_by_rank": [
+        3.6666666666666665,
+        3.6666666666666665,
+        3.3333333333333335,
+        3.3333333333333335,
+        4,
+        3.6666666666666665,
+        4,
+        3.6666666666666665
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-9040",
+      "baseline_successes": 1,
+      "successes_by_candidate_rank": [
+        1,
+        3,
+        0,
+        3,
+        0,
+        2,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        4.666666666666667,
+        6,
+        4,
+        6,
+        4,
+        5.333333333333333,
+        4.666666666666667
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-32031",
+      "baseline_successes": 1,
+      "successes_by_candidate_rank": [
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        2,
+        0
+      ],
+      "mean_completed_connections_by_rank": [
+        4.333333333333333,
+        3.3333333333333335,
+        3.6666666666666665,
+        3.6666666666666665,
+        4.333333333333333,
+        3.6666666666666665,
+        4.666666666666667,
+        3.6666666666666665
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-26043",
+      "baseline_successes": 0,
+      "successes_by_candidate_rank": [
+        0,
+        1,
+        0,
+        1,
+        3,
+        1,
+        0,
+        0
+      ],
+      "mean_completed_connections_by_rank": [
+        3.6666666666666665,
+        4.333333333333333,
+        4,
+        4.333333333333333,
+        5,
+        4.333333333333333,
+        3.6666666666666665,
+        3.6666666666666665
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-30481",
+      "baseline_successes": 1,
+      "successes_by_candidate_rank": [
+        1,
+        3,
+        0,
+        2,
+        0,
+        1,
+        3
+      ],
+      "mean_completed_connections_by_rank": [
+        4.666666666666667,
+        6,
+        4,
+        5.333333333333333,
+        4,
+        4,
+        6
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-32093",
+      "baseline_successes": 3,
+      "successes_by_candidate_rank": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        0,
+        2
+      ],
+      "mean_completed_connections_by_rank": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        2,
+        2.6666666666666665
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-9932",
+      "baseline_successes": 0,
+      "successes_by_candidate_rank": [
+        0,
+        2,
+        2,
+        1,
+        2,
+        0,
+        1,
+        1,
+        0,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        2.6666666666666665,
+        4.666666666666667,
+        4.666666666666667,
+        4.333333333333333,
+        4.666666666666667,
+        4,
+        4.333333333333333,
+        4.333333333333333,
+        3,
+        4.333333333333333
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-15983",
+      "baseline_successes": 3,
+      "successes_by_candidate_rank": [
+        3,
+        0,
+        0,
+        2,
+        2,
+        2,
+        1,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        5,
+        3.3333333333333335,
+        3.6666666666666665,
+        4.666666666666667,
+        4.333333333333333,
+        4.666666666666667,
+        4.333333333333333,
+        4
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-6903",
+      "baseline_successes": 3,
+      "successes_by_candidate_rank": [
+        3,
+        2,
+        3,
+        3,
+        3,
+        2,
+        2,
+        3
+      ],
+      "mean_completed_connections_by_rank": [
+        6,
+        4.666666666666667,
+        6,
+        6,
+        6,
+        5.333333333333333,
+        4.666666666666667,
+        6
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-4243",
+      "baseline_successes": 1,
+      "successes_by_candidate_rank": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2
+      ],
+      "mean_completed_connections_by_rank": [
+        4.333333333333333,
+        4.333333333333333,
+        4.333333333333333,
+        4,
+        4.333333333333333,
+        4.666666666666667,
+        4.666666666666667,
+        4.666666666666667
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-31246",
+      "baseline_successes": 0,
+      "successes_by_candidate_rank": [
+        0,
+        0,
+        2,
+        2,
+        1,
+        1,
+        1,
+        2
+      ],
+      "mean_completed_connections_by_rank": [
+        3.6666666666666665,
+        4,
+        4.666666666666667,
+        4.333333333333333,
+        3.6666666666666665,
+        4.333333333333333,
+        4.333333333333333,
+        4.333333333333333
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-23263",
+      "baseline_successes": 2,
+      "successes_by_candidate_rank": [
+        2,
+        2,
+        0,
+        1,
+        2,
+        1,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        4.666666666666667,
+        4.666666666666667,
+        3.6666666666666665,
+        4.333333333333333,
+        4.333333333333333,
+        4.333333333333333,
+        4.333333333333333
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-14990",
+      "baseline_successes": 2,
+      "successes_by_candidate_rank": [
+        2,
+        1,
+        3,
+        1,
+        2,
+        2,
+        0,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        4.333333333333333,
+        4.333333333333333,
+        5,
+        4.333333333333333,
+        4.666666666666667,
+        4.666666666666667,
+        3,
+        4.333333333333333
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-15229",
+      "baseline_successes": 1,
+      "successes_by_candidate_rank": [
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        0,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        4,
+        4.666666666666667,
+        4,
+        3.3333333333333335,
+        4.333333333333333,
+        4.333333333333333,
+        3.3333333333333335,
+        4
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-12488",
+      "baseline_successes": 2,
+      "successes_by_candidate_rank": [
+        2,
+        0,
+        1,
+        1,
+        2,
+        2,
+        0,
+        2
+      ],
+      "mean_completed_connections_by_rank": [
+        4.666666666666667,
+        2.6666666666666665,
+        4,
+        4.333333333333333,
+        4.666666666666667,
+        4.666666666666667,
+        3.6666666666666665,
+        4.666666666666667
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-9758",
+      "baseline_successes": 2,
+      "successes_by_candidate_rank": [
+        2,
+        2,
+        3,
+        3,
+        2,
+        2,
+        2
+      ],
+      "mean_completed_connections_by_rank": [
+        3.3333333333333335,
+        3.6666666666666665,
+        4,
+        4,
+        3.6666666666666665,
+        3.6666666666666665,
+        3.6666666666666665
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-29442",
+      "baseline_successes": 0,
+      "successes_by_candidate_rank": [
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        3.6666666666666665,
+        3,
+        3.6666666666666665,
+        4.666666666666667,
+        3.3333333333333335,
+        3,
+        4,
+        4.333333333333333
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-14441",
+      "baseline_successes": 0,
+      "successes_by_candidate_rank": [
+        0,
+        1,
+        1,
+        0,
+        3,
+        1,
+        2,
+        2
+      ],
+      "mean_completed_connections_by_rank": [
+        2.6666666666666665,
+        4,
+        4,
+        4,
+        5,
+        4.333333333333333,
+        4.666666666666667,
+        4.666666666666667
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-731",
+      "baseline_successes": 2,
+      "successes_by_candidate_rank": [
+        2,
+        0,
+        2,
+        3,
+        3,
+        1,
+        0,
+        2
+      ],
+      "mean_completed_connections_by_rank": [
+        4.666666666666667,
+        4,
+        4.666666666666667,
+        5,
+        5,
+        4.333333333333333,
+        3,
+        4.666666666666667
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-22421",
+      "baseline_successes": 0,
+      "successes_by_candidate_rank": [
+        0,
+        2,
+        2,
+        3,
+        1,
+        0,
+        1,
+        0
+      ],
+      "mean_completed_connections_by_rank": [
+        2.3333333333333335,
+        4.666666666666667,
+        4.666666666666667,
+        5,
+        4,
+        4,
+        4,
+        4
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-5469",
+      "baseline_successes": 2,
+      "successes_by_candidate_rank": [
+        2,
+        2,
+        3,
+        3,
+        3,
+        2,
+        2,
+        3
+      ],
+      "mean_completed_connections_by_rank": [
+        3.3333333333333335,
+        3.3333333333333335,
+        4,
+        4,
+        4,
+        3.3333333333333335,
+        3.3333333333333335,
+        4
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-2818",
+      "baseline_successes": 3,
+      "successes_by_candidate_rank": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mean_completed_connections_by_rank": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-5713",
+      "baseline_successes": 3,
+      "successes_by_candidate_rank": [
+        3,
+        2,
+        2,
+        3,
+        3,
+        2,
+        3,
+        3
+      ],
+      "mean_completed_connections_by_rank": [
+        4,
+        3.3333333333333335,
+        3.3333333333333335,
+        4,
+        4,
+        3.3333333333333335,
+        4,
+        4
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-1821",
+      "baseline_successes": 0,
+      "successes_by_candidate_rank": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        4.333333333333333,
+        3.6666666666666665,
+        4.666666666666667,
+        4,
+        5.333333333333333,
+        5,
+        4,
+        4.666666666666667,
+        4.666666666666667
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-5888",
+      "baseline_successes": 2,
+      "successes_by_candidate_rank": [
+        2,
+        3,
+        3,
+        3,
+        2,
+        3,
+        3,
+        3
+      ],
+      "mean_completed_connections_by_rank": [
+        3.3333333333333335,
+        4,
+        4,
+        4,
+        3.3333333333333335,
+        4,
+        4,
+        4
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-17554",
+      "baseline_successes": 0,
+      "successes_by_candidate_rank": [
+        0,
+        0,
+        0,
+        0,
+        3,
+        1,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        2.3333333333333335,
+        3.3333333333333335,
+        3.3333333333333335,
+        3.3333333333333335,
+        5,
+        4.333333333333333,
+        4.333333333333333
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-8504",
+      "baseline_successes": 3,
+      "successes_by_candidate_rank": [
+        3,
+        1,
+        3,
+        3,
+        2,
+        2,
+        2,
+        1,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        4,
+        3.3333333333333335,
+        4,
+        4,
+        3.6666666666666665,
+        3.6666666666666665,
+        3.6666666666666665,
+        3,
+        3.3333333333333335
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-83",
+      "baseline_successes": 2,
+      "successes_by_candidate_rank": [
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        0
+      ],
+      "mean_completed_connections_by_rank": [
+        3.3333333333333335,
+        4,
+        3.3333333333333335,
+        4,
+        3.3333333333333335,
+        4,
+        3.3333333333333335,
+        2
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-25906",
+      "baseline_successes": 1,
+      "successes_by_candidate_rank": [
+        1,
+        2,
+        2,
+        1,
+        1,
+        1,
+        2,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        4.333333333333333,
+        4.333333333333333,
+        4.666666666666667,
+        4,
+        4.333333333333333,
+        4.333333333333333,
+        4.333333333333333,
+        4.333333333333333
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-10903",
+      "baseline_successes": 0,
+      "successes_by_candidate_rank": [
+        0,
+        2,
+        1,
+        2,
+        1,
+        1,
+        0
+      ],
+      "mean_completed_connections_by_rank": [
+        3.3333333333333335,
+        4.666666666666667,
+        4.333333333333333,
+        4.333333333333333,
+        4.333333333333333,
+        4,
+        3.3333333333333335
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-242",
+      "baseline_successes": 2,
+      "successes_by_candidate_rank": [
+        2,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0
+      ],
+      "mean_completed_connections_by_rank": [
+        5.333333333333333,
+        4,
+        4.666666666666667,
+        4,
+        2.6666666666666665,
+        4,
+        4
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-3540",
+      "baseline_successes": 2,
+      "successes_by_candidate_rank": [
+        2,
+        2,
+        3,
+        2,
+        2,
+        3,
+        3
+      ],
+      "mean_completed_connections_by_rank": [
+        3.3333333333333335,
+        3.3333333333333335,
+        4,
+        3.3333333333333335,
+        3.3333333333333335,
+        4,
+        4
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-15857",
+      "baseline_successes": 0,
+      "successes_by_candidate_rank": [
+        0,
+        0,
+        0,
+        2,
+        1,
+        2,
+        1,
+        0
+      ],
+      "mean_completed_connections_by_rank": [
+        3.3333333333333335,
+        4,
+        4,
+        5.333333333333333,
+        4,
+        5.333333333333333,
+        4,
+        3.3333333333333335
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-8231",
+      "baseline_successes": 0,
+      "successes_by_candidate_rank": [
+        0,
+        0,
+        2,
+        1,
+        0,
+        1,
+        0,
+        0
+      ],
+      "mean_completed_connections_by_rank": [
+        4.666666666666667,
+        5,
+        5.333333333333333,
+        5,
+        4.666666666666667,
+        5.333333333333333,
+        3.6666666666666665,
+        4.666666666666667
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-16226",
+      "baseline_successes": 0,
+      "successes_by_candidate_rank": [
+        0,
+        2,
+        1,
+        2,
+        1,
+        1,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        3.6666666666666665,
+        4.666666666666667,
+        4.333333333333333,
+        4.666666666666667,
+        4.333333333333333,
+        4.333333333333333,
+        3.6666666666666665
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-3397",
+      "baseline_successes": 2,
+      "successes_by_candidate_rank": [
+        2,
+        2,
+        2,
+        3,
+        3,
+        2,
+        1,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        4.333333333333333,
+        4.666666666666667,
+        4.666666666666667,
+        5,
+        5,
+        4.666666666666667,
+        4.333333333333333,
+        3.6666666666666665
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-18600",
+      "baseline_successes": 0,
+      "successes_by_candidate_rank": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        3.3333333333333335,
+        3.3333333333333335,
+        4,
+        3,
+        4,
+        4,
+        4.333333333333333,
+        4
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-14490",
+      "baseline_successes": 1,
+      "successes_by_candidate_rank": [
+        1,
+        2,
+        2,
+        3,
+        0,
+        1,
+        1,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        3.6666666666666665,
+        4.666666666666667,
+        4.333333333333333,
+        5,
+        3.6666666666666665,
+        4,
+        4.333333333333333,
+        4.333333333333333
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-1731",
+      "baseline_successes": 0,
+      "successes_by_candidate_rank": [
+        0,
+        1,
+        1,
+        3,
+        0,
+        2,
+        0,
+        0
+      ],
+      "mean_completed_connections_by_rank": [
+        2.6666666666666665,
+        4,
+        4.666666666666667,
+        6,
+        2,
+        5.333333333333333,
+        3.3333333333333335,
+        1.3333333333333333
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-2444",
+      "baseline_successes": 2,
+      "successes_by_candidate_rank": [
+        2,
+        0,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        5.333333333333333,
+        4,
+        4.666666666666667,
+        5.333333333333333,
+        4.666666666666667,
+        4.666666666666667,
+        4.666666666666667,
+        4.666666666666667
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-3284",
+      "baseline_successes": 3,
+      "successes_by_candidate_rank": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mean_completed_connections_by_rank": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-4981",
+      "baseline_successes": 2,
+      "successes_by_candidate_rank": [
+        2,
+        0,
+        1,
+        2,
+        2,
+        0,
+        1
+      ],
+      "mean_completed_connections_by_rank": [
+        4.666666666666667,
+        4,
+        4.666666666666667,
+        4.666666666666667,
+        5.333333333333333,
+        3.3333333333333335,
+        4.666666666666667
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-29328",
+      "baseline_successes": 2,
+      "successes_by_candidate_rank": [
+        2,
+        0,
+        2,
+        1,
+        1,
+        0,
+        2,
+        2,
+        0
+      ],
+      "mean_completed_connections_by_rank": [
+        5.333333333333333,
+        4,
+        5.333333333333333,
+        4.666666666666667,
+        4.666666666666667,
+        3.3333333333333335,
+        5.333333333333333,
+        5.333333333333333,
+        3.3333333333333335
+      ]
+    }
+  ],
+  "groups": {
+    "inside": {
+      "candidates": 139,
+      "cases": 48,
+      "better_clear": 18,
+      "worse_clear": 14,
+      "unresolved": 107,
+      "mean_completion_difference_of_three": 0.08633093525179857,
+      "mean_progress_difference": 0.20143884892086333,
+      "paired_success_both": 111,
+      "paired_footprint_difference_mean": 30.10810810810811,
+      "paired_transport_difference_mean": 9.08108108108108
+    },
+    "outside": {
+      "candidates": 192,
+      "cases": 48,
+      "better_clear": 14,
+      "worse_clear": 17,
+      "unresolved": 161,
+      "mean_completion_difference_of_three": 0.078125,
+      "mean_progress_difference": 0.12326388888888885,
+      "paired_success_both": 157,
+      "paired_footprint_difference_mean": 10.802547770700636,
+      "paired_transport_difference_mean": 1.2292993630573248
+    },
+    "reason:hash-sampled-outside-16": {
+      "candidates": 48,
+      "cases": 48,
+      "better_clear": 3,
+      "worse_clear": 6,
+      "unresolved": 39,
+      "mean_completion_difference_of_three": -0.08333333333333333,
+      "mean_progress_difference": -0.0138888888888889,
+      "paired_success_both": 33,
+      "paired_footprint_difference_mean": 18.575757575757574,
+      "paired_transport_difference_mean": -4.333333333333333
+    },
+    "reason:highest-anchor-outside-16": {
+      "candidates": 48,
+      "cases": 48,
+      "better_clear": 6,
+      "worse_clear": 1,
+      "unresolved": 41,
+      "mean_completion_difference_of_three": 0.3541666666666667,
+      "mean_progress_difference": 0.22222222222222218,
+      "paired_success_both": 49,
+      "paired_footprint_difference_mean": 6.3061224489795915,
+      "paired_transport_difference_mean": 1.3673469387755102
+    },
+    "reason:highest-mixed-prior-outside-16": {
+      "candidates": 48,
+      "cases": 48,
+      "better_clear": 4,
+      "worse_clear": 1,
+      "unresolved": 43,
+      "mean_completion_difference_of_three": 0.1875,
+      "mean_progress_difference": 0.27083333333333326,
+      "paired_success_both": 43,
+      "paired_footprint_difference_mean": 18.906976744186046,
+      "paired_transport_difference_mean": 1.4651162790697674
+    },
+    "reason:highest-q-16": {
+      "candidates": 27,
+      "cases": 27,
+      "better_clear": 1,
+      "worse_clear": 3,
+      "unresolved": 23,
+      "mean_completion_difference_of_three": -0.037037037037037035,
+      "mean_progress_difference": 0.07407407407407413,
+      "paired_success_both": 16,
+      "paired_footprint_difference_mean": 38.1875,
+      "paired_transport_difference_mean": 20.25
+    },
+    "reason:highest-q-guaranteed-anchor": {
+      "candidates": 48,
+      "cases": 48,
+      "better_clear": 6,
+      "worse_clear": 2,
+      "unresolved": 40,
+      "mean_completion_difference_of_three": 0.16666666666666666,
+      "mean_progress_difference": 0.26388888888888884,
+      "paired_success_both": 42,
+      "paired_footprint_difference_mean": 24.333333333333332,
+      "paired_transport_difference_mean": 6.619047619047619
+    },
+    "reason:highest-q-outside-16-in-c128-n512": {
+      "candidates": 48,
+      "cases": 48,
+      "better_clear": 1,
+      "worse_clear": 9,
+      "unresolved": 38,
+      "mean_completion_difference_of_three": -0.14583333333333334,
+      "mean_progress_difference": 0.013888888888888848,
+      "paired_success_both": 32,
+      "paired_footprint_difference_mean": -1.21875,
+      "paired_transport_difference_mean": 6.4375
+    },
+    "reason:lowest-q-16": {
+      "candidates": 48,
+      "cases": 48,
+      "better_clear": 9,
+      "worse_clear": 4,
+      "unresolved": 35,
+      "mean_completion_difference_of_three": 0.20833333333333334,
+      "mean_progress_difference": 0.29166666666666674,
+      "paired_success_both": 40,
+      "paired_footprint_difference_mean": 21.6,
+      "paired_transport_difference_mean": 8.775
+    },
+    "reason:selected-c128-n512": {
+      "candidates": 10,
+      "cases": 10,
+      "better_clear": 0,
+      "worse_clear": 1,
+      "unresolved": 9,
+      "mean_completion_difference_of_three": 0.2,
+      "mean_progress_difference": 0.36666666666666664,
+      "paired_success_both": 8,
+      "paired_footprint_difference_mean": 68.25,
+      "paired_transport_difference_mean": 11
+    },
+    "reason:selected-c16-n512": {
+      "candidates": 13,
+      "cases": 13,
+      "better_clear": 1,
+      "worse_clear": 3,
+      "unresolved": 9,
+      "mean_completion_difference_of_three": -0.15384615384615385,
+      "mean_progress_difference": 0.10256410256410257,
+      "paired_success_both": 9,
+      "paired_footprint_difference_mean": 70.88888888888889,
+      "paired_transport_difference_mean": 9
+    },
+    "reason:selected-c32-n128": {
+      "candidates": 4,
+      "cases": 4,
+      "better_clear": 0,
+      "worse_clear": 2,
+      "unresolved": 2,
+      "mean_completion_difference_of_three": -0.75,
+      "mean_progress_difference": -0.33333333333333326,
+      "paired_success_both": 3,
+      "paired_footprint_difference_mean": 20,
+      "paired_transport_difference_mean": 6.666666666666667
+    },
+    "reason:selected-c32-n512": {
+      "candidates": 12,
+      "cases": 12,
+      "better_clear": 1,
+      "worse_clear": 3,
+      "unresolved": 8,
+      "mean_completion_difference_of_three": -0.08333333333333333,
+      "mean_progress_difference": 0.1666666666666667,
+      "paired_success_both": 9,
+      "paired_footprint_difference_mean": 70.88888888888889,
+      "paired_transport_difference_mean": 9
+    },
+    "reason:selected-c64-n128": {
+      "candidates": 8,
+      "cases": 8,
+      "better_clear": 0,
+      "worse_clear": 3,
+      "unresolved": 5,
+      "mean_completion_difference_of_three": -0.75,
+      "mean_progress_difference": -0.41666666666666663,
+      "paired_success_both": 1,
+      "paired_footprint_difference_mean": -42,
+      "paired_transport_difference_mean": -31
+    },
+    "reason:selected-c64-n512": {
+      "candidates": 12,
+      "cases": 12,
+      "better_clear": 1,
+      "worse_clear": 3,
+      "unresolved": 8,
+      "mean_completion_difference_of_three": -0.08333333333333333,
+      "mean_progress_difference": 0.1666666666666667,
+      "paired_success_both": 9,
+      "paired_footprint_difference_mean": 70.88888888888889,
+      "paired_transport_difference_mean": 9
+    }
+  },
+  "case_counts": {
+    "outside_clear_better": 11,
+    "inside_clear_better": 13,
+    "outside_clear_worse": 11,
+    "inside_clear_worse": 11
+  },
+  "q_ranking": {
+    "c16-n128": {
+      "clear_pairs_both_visited": 65,
+      "cases_with_pairs": 27,
+      "q_concordant": 17,
+      "q_tied": 11,
+      "outside_baseline_winners": 0
+    },
+    "c32-n128": {
+      "clear_pairs_both_visited": 110,
+      "cases_with_pairs": 32,
+      "q_concordant": 40,
+      "q_tied": 13,
+      "outside_baseline_winners": 14
+    },
+    "c64-n128": {
+      "clear_pairs_both_visited": 111,
+      "cases_with_pairs": 32,
+      "q_concordant": 40,
+      "q_tied": 16,
+      "outside_baseline_winners": 14
+    },
+    "c16-n512": {
+      "clear_pairs_both_visited": 65,
+      "cases_with_pairs": 27,
+      "q_concordant": 21,
+      "q_tied": 7,
+      "outside_baseline_winners": 0
+    },
+    "c32-n512": {
+      "clear_pairs_both_visited": 110,
+      "cases_with_pairs": 32,
+      "q_concordant": 41,
+      "q_tied": 14,
+      "outside_baseline_winners": 14
+    },
+    "c64-n512": {
+      "clear_pairs_both_visited": 111,
+      "cases_with_pairs": 32,
+      "q_concordant": 40,
+      "q_tied": 13,
+      "outside_baseline_winners": 14
+    },
+    "c128-n512": {
+      "clear_pairs_both_visited": 121,
+      "cases_with_pairs": 33,
+      "q_concordant": 42,
+      "q_tied": 16,
+      "outside_baseline_winners": 19
+    }
+  },
+  "primary_clear_pairs": 251,
+  "triggered_cases": 35,
+  "all_action_seed_pair_disagreements": {
+    "20260922-20260923": 138,
+    "20260922-20260924": 133,
+    "20260923-20260924": 139
+  },
+  "baseline_seed_pair_disagreements": {
+    "20260922-20260923": 20,
+    "20260922-20260924": 17,
+    "20260923-20260924": 15
+  },
+  "integrated_wall_seconds": 3755.2476632159996,
+  "raw_report_bytes": 2291753859
+}
