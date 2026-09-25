@@ -67,6 +67,7 @@ def analyze(root):
             require(generation != 0 or same_source,
                     f"shared first-generation source differs: {stream}")
             pairs.append({"stream": stream, "generation": generation + 1,
+                "case_ids": current["case_ids"],
                 "same_source_report": same_source,
                 "same_selected_first_actions": sum(a == b for a, b in zip(
                     current["selected_first_action_sha256"],
@@ -80,7 +81,8 @@ def analyze(root):
     output = {"schema": "aic-hierarchical-target-feedback-analysis-v1",
         "confirmation_protocol_sha256": sha(directory / "protocol.json"),
         "confirmation_progress_sha256": sha(directory / "progress.json"),
-        "rows": list(rows.values()), "pairs": pairs}
+        "rows": [{key: value for key, value in row.items() if key != "case_ids"}
+                 for row in rows.values()], "pairs": pairs}
     write(root / "learner-feedback-analysis.json", output)
     print(json.dumps(pairs, indent=2))
 
