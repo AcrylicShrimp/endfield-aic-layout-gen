@@ -54,6 +54,13 @@ two seeds, and does not lose more than two baseline robust successes. Report
 all arms even if none passes. A new disjoint panel is required before changing
 the search contract.
 
+As a mechanism check after the screen, compare each arm's first-root searched
+Q and improved-policy target with the previously independently confirmed
+first-action winner/loser pairs on these same cases. Count Q agreement only
+when both actions were visited, and compare target pair loss on the common
+set of pairs by case. This is a diagnostic reuse of previously selected
+action pairs, not a fresh estimate of action quality or a promotion gate.
+
 ## Learner screen and confirmation
 
 Treat the accepted search as the control unless an independently confirmed
