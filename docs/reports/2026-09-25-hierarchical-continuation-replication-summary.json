@@ -1,0 +1,854 @@
+{
+  "schema": "aic-hierarchical-continuation-replication-summary-v1",
+  "protocol_sha256": "495430effbab5403096132c1005251741acf14bb82926268aed00d41b23bbf36",
+  "progress_sha256": "77f48ee223b5d0ad6a36610d6b50a24ca1e39305126a7682821621cfcb5bda6d",
+  "triggered_cases": 35,
+  "primary_clear_pairs": 251,
+  "confirmed_pairs": 66,
+  "cases": [
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-13586",
+      "replication_completion_counts": [
+        2,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        3
+      ],
+      "primary_clear_pairs": 4,
+      "confirmed_pairs": []
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-15983",
+      "replication_completion_counts": [
+        2,
+        0,
+        2,
+        3,
+        2,
+        1,
+        2,
+        1
+      ],
+      "primary_clear_pairs": 10,
+      "confirmed_pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          1
+        ]
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-17062",
+      "replication_completion_counts": [
+        0,
+        1,
+        0,
+        1,
+        2,
+        0,
+        0,
+        0
+      ],
+      "primary_clear_pairs": 5,
+      "confirmed_pairs": []
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-22498",
+      "replication_completion_counts": [
+        3,
+        3,
+        2,
+        2,
+        1,
+        2,
+        0,
+        2
+      ],
+      "primary_clear_pairs": 12,
+      "confirmed_pairs": [
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          7,
+          6
+        ]
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-26043",
+      "replication_completion_counts": [
+        2,
+        2,
+        2,
+        0,
+        1,
+        2,
+        2,
+        0
+      ],
+      "primary_clear_pairs": 7,
+      "confirmed_pairs": []
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-30191",
+      "replication_completion_counts": [
+        3,
+        0,
+        1,
+        1,
+        2,
+        2,
+        1,
+        1,
+        0
+      ],
+      "primary_clear_pairs": 12,
+      "confirmed_pairs": []
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-30481",
+      "replication_completion_counts": [
+        3,
+        3,
+        1,
+        2,
+        1,
+        1,
+        1
+      ],
+      "primary_clear_pairs": 10,
+      "confirmed_pairs": [
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          5
+        ]
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-31246",
+      "replication_completion_counts": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        2,
+        1,
+        1
+      ],
+      "primary_clear_pairs": 6,
+      "confirmed_pairs": []
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-32031",
+      "replication_completion_counts": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        1,
+        2,
+        1
+      ],
+      "primary_clear_pairs": 5,
+      "confirmed_pairs": [
+        [
+          6,
+          1
+        ],
+        [
+          6,
+          3
+        ]
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-32093",
+      "replication_completion_counts": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        2,
+        0,
+        3
+      ],
+      "primary_clear_pairs": 8,
+      "confirmed_pairs": [
+        [
+          0,
+          7
+        ],
+        [
+          1,
+          7
+        ],
+        [
+          2,
+          7
+        ],
+        [
+          3,
+          7
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          5,
+          7
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          8,
+          7
+        ]
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-3308",
+      "replication_completion_counts": [
+        2,
+        0,
+        1,
+        2,
+        2,
+        2,
+        2,
+        1
+      ],
+      "primary_clear_pairs": 7,
+      "confirmed_pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          5,
+          1
+        ],
+        [
+          6,
+          1
+        ]
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-9040",
+      "replication_completion_counts": [
+        0,
+        1,
+        2,
+        1,
+        2,
+        3,
+        1
+      ],
+      "primary_clear_pairs": 10,
+      "confirmed_pairs": []
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-9932",
+      "replication_completion_counts": [
+        0,
+        1,
+        3,
+        1,
+        0,
+        0,
+        1,
+        2,
+        0,
+        2
+      ],
+      "primary_clear_pairs": 9,
+      "confirmed_pairs": [
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          2,
+          8
+        ]
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-12488",
+      "replication_completion_counts": [
+        1,
+        0,
+        2,
+        2,
+        0,
+        1,
+        2,
+        1
+      ],
+      "primary_clear_pairs": 8,
+      "confirmed_pairs": []
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-14441",
+      "replication_completion_counts": [
+        0,
+        0,
+        0,
+        1,
+        2,
+        1,
+        0,
+        2
+      ],
+      "primary_clear_pairs": 9,
+      "confirmed_pairs": [
+        [
+          4,
+          0
+        ],
+        [
+          7,
+          0
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          4,
+          2
+        ]
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-14990",
+      "replication_completion_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        2
+      ],
+      "primary_clear_pairs": 7,
+      "confirmed_pairs": []
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-15229",
+      "replication_completion_counts": [
+        2,
+        2,
+        1,
+        2,
+        2,
+        0,
+        0,
+        1
+      ],
+      "primary_clear_pairs": 3,
+      "confirmed_pairs": [
+        [
+          1,
+          6
+        ]
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-17554",
+      "replication_completion_counts": [
+        0,
+        3,
+        0,
+        0,
+        0,
+        1,
+        1
+      ],
+      "primary_clear_pairs": 6,
+      "confirmed_pairs": []
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-22421",
+      "replication_completion_counts": [
+        0,
+        0,
+        2,
+        2,
+        1,
+        1,
+        1,
+        0
+      ],
+      "primary_clear_pairs": 11,
+      "confirmed_pairs": [
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          2,
+          7
+        ],
+        [
+          3,
+          7
+        ]
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-23263",
+      "replication_completion_counts": [
+        2,
+        2,
+        2,
+        1,
+        0,
+        2,
+        0
+      ],
+      "primary_clear_pairs": 3,
+      "confirmed_pairs": []
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-29442",
+      "replication_completion_counts": [
+        1,
+        0,
+        1,
+        2,
+        2,
+        0,
+        1,
+        1
+      ],
+      "primary_clear_pairs": 6,
+      "confirmed_pairs": [
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          5
+        ]
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-731",
+      "replication_completion_counts": [
+        0,
+        1,
+        2,
+        1,
+        2,
+        0,
+        0,
+        2
+      ],
+      "primary_clear_pairs": 12,
+      "confirmed_pairs": [
+        [
+          2,
+          6
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          7,
+          6
+        ]
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-8504",
+      "replication_completion_counts": [
+        2,
+        1,
+        3,
+        2,
+        3,
+        3,
+        1,
+        2,
+        3
+      ],
+      "primary_clear_pairs": 9,
+      "confirmed_pairs": [
+        [
+          2,
+          1
+        ]
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-10903",
+      "replication_completion_counts": [
+        0,
+        3,
+        1,
+        1,
+        2,
+        1,
+        1
+      ],
+      "primary_clear_pairs": 4,
+      "confirmed_pairs": [
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          6
+        ]
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-14490",
+      "replication_completion_counts": [
+        1,
+        2,
+        0,
+        1,
+        0,
+        2,
+        1,
+        2
+      ],
+      "primary_clear_pairs": 7,
+      "confirmed_pairs": [
+        [
+          1,
+          4
+        ]
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-15857",
+      "replication_completion_counts": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        3,
+        2,
+        0
+      ],
+      "primary_clear_pairs": 8,
+      "confirmed_pairs": [
+        [
+          5,
+          0
+        ],
+        [
+          5,
+          1
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          5,
+          7
+        ]
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-16226",
+      "replication_completion_counts": [
+        0,
+        1,
+        1,
+        2,
+        0,
+        1,
+        2
+      ],
+      "primary_clear_pairs": 2,
+      "confirmed_pairs": [
+        [
+          3,
+          0
+        ]
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-1731",
+      "replication_completion_counts": [
+        1,
+        0,
+        3,
+        2,
+        1,
+        0,
+        1,
+        0
+      ],
+      "primary_clear_pairs": 10,
+      "confirmed_pairs": [
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          7
+        ]
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-242",
+      "replication_completion_counts": [
+        1,
+        1,
+        2,
+        0,
+        2,
+        0,
+        0
+      ],
+      "primary_clear_pairs": 4,
+      "confirmed_pairs": []
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-2444",
+      "replication_completion_counts": [
+        2,
+        0,
+        0,
+        1,
+        2,
+        2,
+        1,
+        1
+      ],
+      "primary_clear_pairs": 3,
+      "confirmed_pairs": [
+        [
+          0,
+          1
+        ]
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-29328",
+      "replication_completion_counts": [
+        1,
+        0,
+        3,
+        0,
+        1,
+        2,
+        3,
+        2,
+        0
+      ],
+      "primary_clear_pairs": 12,
+      "confirmed_pairs": [
+        [
+          2,
+          1
+        ],
+        [
+          6,
+          1
+        ],
+        [
+          7,
+          1
+        ],
+        [
+          2,
+          8
+        ],
+        [
+          6,
+          8
+        ],
+        [
+          7,
+          8
+        ]
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-3397",
+      "replication_completion_counts": [
+        1,
+        2,
+        0,
+        2,
+        2,
+        1,
+        1,
+        1
+      ],
+      "primary_clear_pairs": 4,
+      "confirmed_pairs": []
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-4981",
+      "replication_completion_counts": [
+        2,
+        2,
+        3,
+        0,
+        3,
+        1,
+        1
+      ],
+      "primary_clear_pairs": 6,
+      "confirmed_pairs": [
+        [
+          4,
+          5
+        ]
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-8231",
+      "replication_completion_counts": [
+        0,
+        0,
+        1,
+        2,
+        0,
+        0,
+        1,
+        0
+      ],
+      "primary_clear_pairs": 5,
+      "confirmed_pairs": []
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-83",
+      "replication_completion_counts": [
+        3,
+        3,
+        2,
+        2,
+        3,
+        1,
+        3,
+        0
+      ],
+      "primary_clear_pairs": 7,
+      "confirmed_pairs": [
+        [
+          0,
+          7
+        ],
+        [
+          1,
+          7
+        ],
+        [
+          2,
+          7
+        ],
+        [
+          3,
+          7
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          6,
+          7
+        ]
+      ]
+    }
+  ]
+}

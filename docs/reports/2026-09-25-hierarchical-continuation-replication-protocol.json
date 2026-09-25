@@ -1,0 +1,107 @@
+{
+  "schema": "aic-hierarchical-continuation-replication-protocol-v1",
+  "experiment_commit": "820a13dac399442840db7e859f1ebf8c83b140af",
+  "primary_summary_sha256": "36ca705c7fab33d7918a2922d64b64a884486542486fd5be1c485b429ee5be55",
+  "triggered_cases": 35,
+  "triggered_case_ids": [
+    "train-hierarchical-target-quality-s1-v1-13586",
+    "train-hierarchical-target-quality-s1-v1-15983",
+    "train-hierarchical-target-quality-s1-v1-17062",
+    "train-hierarchical-target-quality-s1-v1-22498",
+    "train-hierarchical-target-quality-s1-v1-26043",
+    "train-hierarchical-target-quality-s1-v1-30191",
+    "train-hierarchical-target-quality-s1-v1-30481",
+    "train-hierarchical-target-quality-s1-v1-31246",
+    "train-hierarchical-target-quality-s1-v1-32031",
+    "train-hierarchical-target-quality-s1-v1-32093",
+    "train-hierarchical-target-quality-s1-v1-3308",
+    "train-hierarchical-target-quality-s1-v1-9040",
+    "train-hierarchical-target-quality-s1-v1-9932",
+    "train-hierarchical-target-quality-s2-v1-12488",
+    "train-hierarchical-target-quality-s2-v1-14441",
+    "train-hierarchical-target-quality-s2-v1-14990",
+    "train-hierarchical-target-quality-s2-v1-15229",
+    "train-hierarchical-target-quality-s2-v1-17554",
+    "train-hierarchical-target-quality-s2-v1-22421",
+    "train-hierarchical-target-quality-s2-v1-23263",
+    "train-hierarchical-target-quality-s2-v1-29442",
+    "train-hierarchical-target-quality-s2-v1-731",
+    "train-hierarchical-target-quality-s2-v1-8504",
+    "train-hierarchical-target-quality-s3-v1-10903",
+    "train-hierarchical-target-quality-s3-v1-14490",
+    "train-hierarchical-target-quality-s3-v1-15857",
+    "train-hierarchical-target-quality-s3-v1-16226",
+    "train-hierarchical-target-quality-s3-v1-1731",
+    "train-hierarchical-target-quality-s3-v1-242",
+    "train-hierarchical-target-quality-s3-v1-2444",
+    "train-hierarchical-target-quality-s3-v1-29328",
+    "train-hierarchical-target-quality-s3-v1-3397",
+    "train-hierarchical-target-quality-s3-v1-4981",
+    "train-hierarchical-target-quality-s3-v1-8231",
+    "train-hierarchical-target-quality-s3-v1-83"
+  ],
+  "panels": {
+    "0": {
+      "sha256": "10ac80e1aec43ea6b6e8031cf598f13f3b733b4de523167b2393d0f1fe9cbb3e",
+      "cases": 35
+    },
+    "1": {
+      "sha256": "a965fff1cdd78bf9cb97cecfd51ac6b83015fbc4d6634aaabf04db22e98b710b",
+      "cases": 35
+    },
+    "2": {
+      "sha256": "709c90549f6156de8ef3659654cf2c21d5a7616a8712accbe788c9a60eb64536",
+      "cases": 35
+    },
+    "3": {
+      "sha256": "16ce87d28cc331e82b2bb1e563971a371df989e3c4675986c0925e7299d91155",
+      "cases": 35
+    },
+    "4": {
+      "sha256": "e90465c28500e866e4402be2d24d9930eca0031449d1607a676636eafb0d8ba5",
+      "cases": 35
+    },
+    "5": {
+      "sha256": "f1b865f1a70805ac5fbd141c6bc1ee85e58f1dd741252e21415a52881dc8a2b5",
+      "cases": 35
+    },
+    "6": {
+      "sha256": "99ba03eb842f59756c1e1434adae425da4e642b79c71b9fb94d22c2051457162",
+      "cases": 35
+    },
+    "7": {
+      "sha256": "9c46ac89f00ee64e10b2d88507ebf0b8604b47021e09fcd15dc2d1139a412f51",
+      "cases": 27
+    },
+    "8": {
+      "sha256": "b61fee97400c7675bd16fc62d7b6c644b635f275a842bb5d311839b11a28c054",
+      "cases": 5
+    },
+    "9": {
+      "sha256": "079d1f36eacf21e0f960fe0c332496cadc3ad9053d18cdf25d0c56cb28d1d2ee",
+      "cases": 1
+    }
+  },
+  "configs": {
+    "20260925": {
+      "search": "1c8536d137afd4cdb490cfb5eaad6237a609cc39465344f7f41c7a4bd05d27c6",
+      "outer": "afbe5b1ce3bb63faaab5311dfa871e8c85c97ed9805ee74fa4cbaa0dbe0de2bf",
+      "model_config": "afbe5b1ce3bb63faaab5311dfa871e8c85c97ed9805ee74fa4cbaa0dbe0de2bf"
+    },
+    "20260926": {
+      "search": "33fb1cee9a66ba73f432e20c5c4f1139bf8550c8e9c54dc3ef127c948e082307",
+      "outer": "2b7d8d5698e8cfdac102cdc866e5845d625427cc654e26227565ccd980496b92",
+      "model_config": "2b7d8d5698e8cfdac102cdc866e5845d625427cc654e26227565ccd980496b92"
+    },
+    "20260927": {
+      "search": "5e24e034ac51b55c76ba6b9d949b149a153e92559e8a7c5b5317c656ad9a1671",
+      "outer": "fc2162bb8121f6d0499d499324525868b4d09ee79b05766961149fcc60a0be67",
+      "model_config": "fc2162bb8121f6d0499d499324525868b4d09ee79b05766961149fcc60a0be67"
+    }
+  },
+  "binary_sha256": "e594b5425074a03731524d8c91991126232d840ef44a86e8b0630e1f16800fdf",
+  "runner_sha256": "4eb6acad920bd3d3ade0f5e7c66c08881dc18174c84ac37ad0ceb9574096ae0d",
+  "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+  "outer_checkpoint_sha256": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520",
+  "planned_cells": 30
+}

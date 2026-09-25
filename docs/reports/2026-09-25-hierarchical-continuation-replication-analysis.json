@@ -1,0 +1,706 @@
+{
+  "schema": "aic-hierarchical-continuation-replication-analysis-v1",
+  "primary_summary_sha256": "36ca705c7fab33d7918a2922d64b64a884486542486fd5be1c485b429ee5be55",
+  "replication_summary_sha256": "b68ff1b09e83b4c46d5788dc1d9be25376b5529f27984ac02a7b226b0c14e8bb",
+  "cases": [
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-13586",
+      "primary_clear_pairs": 4,
+      "confirmed_pairs": 0,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-15983",
+      "primary_clear_pairs": 10,
+      "confirmed_pairs": 3,
+      "candidate_vs_baseline_confirmed": [
+        {
+          "rank": 1,
+          "outside_original_16": false,
+          "candidate_better": false,
+          "reasons": [
+            "selected-c64-n128"
+          ]
+        }
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-17062",
+      "primary_clear_pairs": 5,
+      "confirmed_pairs": 0,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-22498",
+      "primary_clear_pairs": 12,
+      "confirmed_pairs": 4,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-26043",
+      "primary_clear_pairs": 7,
+      "confirmed_pairs": 0,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-30191",
+      "primary_clear_pairs": 12,
+      "confirmed_pairs": 0,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-30481",
+      "primary_clear_pairs": 10,
+      "confirmed_pairs": 3,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-31246",
+      "primary_clear_pairs": 6,
+      "confirmed_pairs": 0,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-32031",
+      "primary_clear_pairs": 5,
+      "confirmed_pairs": 2,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-32093",
+      "primary_clear_pairs": 8,
+      "confirmed_pairs": 8,
+      "candidate_vs_baseline_confirmed": [
+        {
+          "rank": 7,
+          "outside_original_16": true,
+          "candidate_better": false,
+          "reasons": [
+            "highest-q-outside-16-in-c128-n512"
+          ]
+        }
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-3308",
+      "primary_clear_pairs": 7,
+      "confirmed_pairs": 3,
+      "candidate_vs_baseline_confirmed": [
+        {
+          "rank": 1,
+          "outside_original_16": false,
+          "candidate_better": false,
+          "reasons": [
+            "selected-c32-n128",
+            "selected-c64-n128",
+            "selected-c16-n512",
+            "selected-c32-n512",
+            "selected-c64-n512",
+            "selected-c128-n512"
+          ]
+        }
+      ]
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-9040",
+      "primary_clear_pairs": 10,
+      "confirmed_pairs": 0,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-9932",
+      "primary_clear_pairs": 9,
+      "confirmed_pairs": 3,
+      "candidate_vs_baseline_confirmed": [
+        {
+          "rank": 2,
+          "outside_original_16": false,
+          "candidate_better": true,
+          "reasons": [
+            "selected-c64-n512"
+          ]
+        }
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-12488",
+      "primary_clear_pairs": 8,
+      "confirmed_pairs": 0,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-14441",
+      "primary_clear_pairs": 9,
+      "confirmed_pairs": 4,
+      "candidate_vs_baseline_confirmed": [
+        {
+          "rank": 4,
+          "outside_original_16": true,
+          "candidate_better": true,
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        },
+        {
+          "rank": 7,
+          "outside_original_16": true,
+          "candidate_better": true,
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-14990",
+      "primary_clear_pairs": 7,
+      "confirmed_pairs": 0,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-15229",
+      "primary_clear_pairs": 3,
+      "confirmed_pairs": 1,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-17554",
+      "primary_clear_pairs": 6,
+      "confirmed_pairs": 0,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-22421",
+      "primary_clear_pairs": 11,
+      "confirmed_pairs": 4,
+      "candidate_vs_baseline_confirmed": [
+        {
+          "rank": 2,
+          "outside_original_16": false,
+          "candidate_better": true,
+          "reasons": [
+            "lowest-q-16"
+          ]
+        },
+        {
+          "rank": 3,
+          "outside_original_16": false,
+          "candidate_better": true,
+          "reasons": [
+            "highest-q-guaranteed-anchor"
+          ]
+        }
+      ]
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-23263",
+      "primary_clear_pairs": 3,
+      "confirmed_pairs": 0,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-29442",
+      "primary_clear_pairs": 6,
+      "confirmed_pairs": 2,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-731",
+      "primary_clear_pairs": 12,
+      "confirmed_pairs": 4,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-8504",
+      "primary_clear_pairs": 9,
+      "confirmed_pairs": 1,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-10903",
+      "primary_clear_pairs": 4,
+      "confirmed_pairs": 2,
+      "candidate_vs_baseline_confirmed": [
+        {
+          "rank": 1,
+          "outside_original_16": false,
+          "candidate_better": true,
+          "reasons": [
+            "lowest-q-16"
+          ]
+        }
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-14490",
+      "primary_clear_pairs": 7,
+      "confirmed_pairs": 1,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-15857",
+      "primary_clear_pairs": 8,
+      "confirmed_pairs": 4,
+      "candidate_vs_baseline_confirmed": [
+        {
+          "rank": 5,
+          "outside_original_16": true,
+          "candidate_better": true,
+          "reasons": [
+            "highest-mixed-prior-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-16226",
+      "primary_clear_pairs": 2,
+      "confirmed_pairs": 1,
+      "candidate_vs_baseline_confirmed": [
+        {
+          "rank": 3,
+          "outside_original_16": true,
+          "candidate_better": true,
+          "reasons": [
+            "highest-anchor-outside-16"
+          ]
+        }
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-1731",
+      "primary_clear_pairs": 10,
+      "confirmed_pairs": 2,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-242",
+      "primary_clear_pairs": 4,
+      "confirmed_pairs": 0,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-2444",
+      "primary_clear_pairs": 3,
+      "confirmed_pairs": 1,
+      "candidate_vs_baseline_confirmed": [
+        {
+          "rank": 1,
+          "outside_original_16": false,
+          "candidate_better": false,
+          "reasons": [
+            "highest-q-16"
+          ]
+        }
+      ]
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-29328",
+      "primary_clear_pairs": 12,
+      "confirmed_pairs": 6,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-3397",
+      "primary_clear_pairs": 4,
+      "confirmed_pairs": 0,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-4981",
+      "primary_clear_pairs": 6,
+      "confirmed_pairs": 1,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-8231",
+      "primary_clear_pairs": 5,
+      "confirmed_pairs": 0,
+      "candidate_vs_baseline_confirmed": []
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-83",
+      "primary_clear_pairs": 7,
+      "confirmed_pairs": 6,
+      "candidate_vs_baseline_confirmed": [
+        {
+          "rank": 7,
+          "outside_original_16": true,
+          "candidate_better": false,
+          "reasons": [
+            "hash-sampled-outside-16"
+          ]
+        }
+      ]
+    }
+  ],
+  "groups": {
+    "inside": {
+      "comparisons": 7,
+      "cases": 6,
+      "candidate_better": 4,
+      "candidate_worse": 3,
+      "cases_candidate_better": 3
+    },
+    "outside": {
+      "comparisons": 6,
+      "cases": 5,
+      "candidate_better": 4,
+      "candidate_worse": 2,
+      "cases_candidate_better": 3
+    },
+    "reason:hash-sampled-outside-16": {
+      "comparisons": 2,
+      "cases": 2,
+      "candidate_better": 1,
+      "candidate_worse": 1,
+      "cases_candidate_better": 1
+    },
+    "reason:highest-anchor-outside-16": {
+      "comparisons": 2,
+      "cases": 2,
+      "candidate_better": 2,
+      "candidate_worse": 0,
+      "cases_candidate_better": 2
+    },
+    "reason:highest-mixed-prior-outside-16": {
+      "comparisons": 1,
+      "cases": 1,
+      "candidate_better": 1,
+      "candidate_worse": 0,
+      "cases_candidate_better": 1
+    },
+    "reason:highest-q-16": {
+      "comparisons": 1,
+      "cases": 1,
+      "candidate_better": 0,
+      "candidate_worse": 1,
+      "cases_candidate_better": 0
+    },
+    "reason:highest-q-guaranteed-anchor": {
+      "comparisons": 1,
+      "cases": 1,
+      "candidate_better": 1,
+      "candidate_worse": 0,
+      "cases_candidate_better": 1
+    },
+    "reason:highest-q-outside-16-in-c128-n512": {
+      "comparisons": 1,
+      "cases": 1,
+      "candidate_better": 0,
+      "candidate_worse": 1,
+      "cases_candidate_better": 0
+    },
+    "reason:lowest-q-16": {
+      "comparisons": 2,
+      "cases": 2,
+      "candidate_better": 2,
+      "candidate_worse": 0,
+      "cases_candidate_better": 2
+    },
+    "reason:selected-c128-n512": {
+      "comparisons": 1,
+      "cases": 1,
+      "candidate_better": 0,
+      "candidate_worse": 1,
+      "cases_candidate_better": 0
+    },
+    "reason:selected-c16-n512": {
+      "comparisons": 1,
+      "cases": 1,
+      "candidate_better": 0,
+      "candidate_worse": 1,
+      "cases_candidate_better": 0
+    },
+    "reason:selected-c32-n128": {
+      "comparisons": 1,
+      "cases": 1,
+      "candidate_better": 0,
+      "candidate_worse": 1,
+      "cases_candidate_better": 0
+    },
+    "reason:selected-c32-n512": {
+      "comparisons": 1,
+      "cases": 1,
+      "candidate_better": 0,
+      "candidate_worse": 1,
+      "cases_candidate_better": 0
+    },
+    "reason:selected-c64-n128": {
+      "comparisons": 2,
+      "cases": 2,
+      "candidate_better": 0,
+      "candidate_worse": 2,
+      "cases_candidate_better": 0
+    },
+    "reason:selected-c64-n512": {
+      "comparisons": 2,
+      "cases": 2,
+      "candidate_better": 1,
+      "candidate_worse": 1,
+      "cases_candidate_better": 1
+    }
+  },
+  "confirmed_q_ranking": {
+    "c16-n128": {
+      "pairs": 14,
+      "cases": 11,
+      "concordant": 3,
+      "discordant": 10,
+      "tied": 1,
+      "outside_winners": 0
+    },
+    "c32-n128": {
+      "pairs": 29,
+      "cases": 16,
+      "concordant": 10,
+      "discordant": 18,
+      "tied": 1,
+      "outside_winners": 4
+    },
+    "c64-n128": {
+      "pairs": 29,
+      "cases": 16,
+      "concordant": 10,
+      "discordant": 16,
+      "tied": 3,
+      "outside_winners": 4
+    },
+    "c16-n512": {
+      "pairs": 14,
+      "cases": 11,
+      "concordant": 3,
+      "discordant": 9,
+      "tied": 2,
+      "outside_winners": 0
+    },
+    "c32-n512": {
+      "pairs": 29,
+      "cases": 16,
+      "concordant": 10,
+      "discordant": 17,
+      "tied": 2,
+      "outside_winners": 4
+    },
+    "c64-n512": {
+      "pairs": 29,
+      "cases": 16,
+      "concordant": 10,
+      "discordant": 17,
+      "tied": 2,
+      "outside_winners": 4
+    },
+    "c128-n512": {
+      "pairs": 37,
+      "cases": 18,
+      "concordant": 13,
+      "discordant": 20,
+      "tied": 4,
+      "outside_winners": 8
+    }
+  },
+  "conditional_quality_q_ranking": {
+    "paired_success_seed_samples": 233,
+    "q_higher_smaller_area": 116,
+    "q_higher_larger_area": 99,
+    "equal_area": 18,
+    "cases": 26,
+    "mean_area_difference_q_high_minus_low": -3.6609442060085837,
+    "mean_transport_difference_q_high_minus_low": -1.0343347639484979,
+    "mean_case_mean_area_difference": -7.508873000219154,
+    "mean_case_mean_transport_difference": 0.6390994333302024
+  },
+  "conditional_quality_cases": [
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-13586",
+      "paired_success_seed_samples": 14,
+      "mean_area_difference_q_high_minus_low": -32,
+      "mean_transport_difference_q_high_minus_low": -0.8571428571428571
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-15983",
+      "paired_success_seed_samples": 5,
+      "mean_area_difference_q_high_minus_low": 52.6,
+      "mean_transport_difference_q_high_minus_low": 27.4
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-17062",
+      "paired_success_seed_samples": 1,
+      "mean_area_difference_q_high_minus_low": -148,
+      "mean_transport_difference_q_high_minus_low": -27
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-22498",
+      "paired_success_seed_samples": 13,
+      "mean_area_difference_q_high_minus_low": 19.846153846153847,
+      "mean_transport_difference_q_high_minus_low": -0.23076923076923078
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-26043",
+      "paired_success_seed_samples": 4,
+      "mean_area_difference_q_high_minus_low": -21,
+      "mean_transport_difference_q_high_minus_low": -29.25
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-30191",
+      "paired_success_seed_samples": 6,
+      "mean_area_difference_q_high_minus_low": 7.333333333333333,
+      "mean_transport_difference_q_high_minus_low": -3.8333333333333335
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-30481",
+      "paired_success_seed_samples": 5,
+      "mean_area_difference_q_high_minus_low": -4.2,
+      "mean_transport_difference_q_high_minus_low": -20.8
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-32093",
+      "paired_success_seed_samples": 54,
+      "mean_area_difference_q_high_minus_low": 2.3703703703703702,
+      "mean_transport_difference_q_high_minus_low": -2.8518518518518516
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-3308",
+      "paired_success_seed_samples": 4,
+      "mean_area_difference_q_high_minus_low": 3.75,
+      "mean_transport_difference_q_high_minus_low": -14.25
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-9040",
+      "paired_success_seed_samples": 1,
+      "mean_area_difference_q_high_minus_low": -42,
+      "mean_transport_difference_q_high_minus_low": 33
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-9932",
+      "paired_success_seed_samples": 12,
+      "mean_area_difference_q_high_minus_low": -7.583333333333333,
+      "mean_transport_difference_q_high_minus_low": -10.083333333333334
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-12488",
+      "paired_success_seed_samples": 3,
+      "mean_area_difference_q_high_minus_low": -24.666666666666668,
+      "mean_transport_difference_q_high_minus_low": -25
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-14990",
+      "paired_success_seed_samples": 7,
+      "mean_area_difference_q_high_minus_low": -31,
+      "mean_transport_difference_q_high_minus_low": 7.285714285714286
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-15229",
+      "paired_success_seed_samples": 6,
+      "mean_area_difference_q_high_minus_low": 21,
+      "mean_transport_difference_q_high_minus_low": 14.666666666666666
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-22421",
+      "paired_success_seed_samples": 3,
+      "mean_area_difference_q_high_minus_low": -3,
+      "mean_transport_difference_q_high_minus_low": 3.3333333333333335
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-23263",
+      "paired_success_seed_samples": 3,
+      "mean_area_difference_q_high_minus_low": 63,
+      "mean_transport_difference_q_high_minus_low": 25.333333333333332
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-731",
+      "paired_success_seed_samples": 3,
+      "mean_area_difference_q_high_minus_low": -56,
+      "mean_transport_difference_q_high_minus_low": -15.333333333333334
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-8504",
+      "paired_success_seed_samples": 32,
+      "mean_area_difference_q_high_minus_low": -28.375,
+      "mean_transport_difference_q_high_minus_low": 0.375
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-14490",
+      "paired_success_seed_samples": 8,
+      "mean_area_difference_q_high_minus_low": -26.25,
+      "mean_transport_difference_q_high_minus_low": -5.375
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-1731",
+      "paired_success_seed_samples": 3,
+      "mean_area_difference_q_high_minus_low": 0,
+      "mean_transport_difference_q_high_minus_low": 17
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-242",
+      "paired_success_seed_samples": 2,
+      "mean_area_difference_q_high_minus_low": 52.5,
+      "mean_transport_difference_q_high_minus_low": 33.5
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-2444",
+      "paired_success_seed_samples": 3,
+      "mean_area_difference_q_high_minus_low": -14,
+      "mean_transport_difference_q_high_minus_low": -7.666666666666667
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-29328",
+      "paired_success_seed_samples": 7,
+      "mean_area_difference_q_high_minus_low": 15,
+      "mean_transport_difference_q_high_minus_low": 1
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-3397",
+      "paired_success_seed_samples": 9,
+      "mean_area_difference_q_high_minus_low": -51.55555555555556,
+      "mean_transport_difference_q_high_minus_low": -2.5555555555555554
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-4981",
+      "paired_success_seed_samples": 4,
+      "mean_area_difference_q_high_minus_low": 21,
+      "mean_transport_difference_q_high_minus_low": 20
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-83",
+      "paired_success_seed_samples": 21,
+      "mean_area_difference_q_high_minus_low": 36,
+      "mean_transport_difference_q_high_minus_low": -1.1904761904761905
+    }
+  ]
+}
