@@ -99,6 +99,17 @@ primary run had completed only the first two ranks of its second seed, before
 the remaining alternative-action outcomes were inspected. Keep its runtime
 and inputs separate from the primary matrix and the 512-simulation control.
 
+After independent replication, the bounded 512-simulation escalation selects
+the ten outside-original-16 candidate/baseline comparisons in nine cases
+where the candidate won the primary three-seed screen by at least two
+completions but failed that same threshold in the independent triplet. Force
+the same first-action witnesses and immediate states. Continue each selected
+candidate and its case's baseline with the already reviewed 16-candidate,
+512-simulation, 23-move configurations and root seeds 20260922–20260924.
+Preserve all ten outcomes, including ties and reversals, separately from the
+128-simulation triplets; this small escalation cannot provide a new
+population-level prevalence estimate or erase contradictory seed outcomes.
+
 For the target's search-seed agreement promised in section 3, use a separate
 first-root-only 16-candidate/128-simulation search on all 48 frozen cases
 under root seeds 20260922, 20260923, and 20260924. Keep the same generation-87
