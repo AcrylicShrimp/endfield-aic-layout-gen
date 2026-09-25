@@ -208,6 +208,9 @@ def summarize_case(stream, reports, index):
                 f"visited width differs: {stream}/{arm}/{case['id']}")
         visited_by_arm[arm] = visited
         selected = action_key(root["actions"][root["selected_action"]])
+        anchor_indices = sorted(range(len(root["actions"])),
+                                key=lambda position: (-root["actions"][position]["anchor_prior"],
+                                                      position))[:8]
         targets = [action["policy_target"] for action in root["actions"]]
         priors = [0.5 * (action["prior"] + action["anchor_prior"])
                   for action in root["actions"]]
@@ -247,8 +250,12 @@ def summarize_case(stream, reports, index):
         row["arms"][arm] = {
             "selected_action_sha256": hashlib.sha256(selected.encode()).hexdigest(),
             "selected_in_baseline_16": selected in base_visits,
+            "selected_guaranteed_anchor": root["selected_action"] in anchor_indices,
             "selected_q": current[selected]["q"],
             "selected_visits": current[selected]["visits"],
+            "best_guaranteed_anchor_q_minus_selected_q": (
+                max(root["actions"][position]["q"] for position in anchor_indices)
+                - current[selected]["q"]),
             "weighted_visited_q": weighted_visited_q,
             "inferred_unvisited_imputation_q": inferred_imputed_q,
             "visited_below_imputation": visited_below_imputation,
@@ -342,6 +349,8 @@ def summarize(root):
                                    for value, base in zip(values, baseline)),
             "selected_outside_baseline_16": sum(not value["selected_in_baseline_16"]
                                                 for value in values),
+            "selected_guaranteed_anchor": sum(value["selected_guaranteed_anchor"]
+                                              for value in values),
             "mean_target_effective_actions": statistics.mean(
                 value["target_effective_actions"] for value in values),
             "mean_mixed_prior_effective_actions": statistics.mean(
