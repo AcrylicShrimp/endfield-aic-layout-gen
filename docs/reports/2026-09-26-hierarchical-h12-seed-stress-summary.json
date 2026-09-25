@@ -1,0 +1,44 @@
+{
+  "schema": "aic-hierarchical-horizon-seed-stress-summary-v1",
+  "protocol_sha256": "62d9fb65004428b3215749bbee4d7a0d2bbe6884c8b955a115589ca4eb43a822",
+  "progress_sha256": "3a3f15c3ba7313e4939d39793e5d61afdaee58db5c67ceecbd3838d8aba5e3bd",
+  "seed_mean_completion_differences": {
+    "20260922": 14,
+    "20260923": 20.666666666666668,
+    "20260924": 15.333333333333334
+  },
+  "stream_completion_differences": {
+    "20260922": {
+      "s1": 16,
+      "s2": 12,
+      "s3": 14
+    },
+    "20260923": {
+      "s1": 21,
+      "s2": 22,
+      "s3": 19
+    },
+    "20260924": {
+      "s1": 15,
+      "s2": 18,
+      "s3": 13
+    }
+  },
+  "starting_completions": {
+    "20260922": {
+      "h6": 26,
+      "h12": 33
+    },
+    "20260923": {
+      "h6": 21,
+      "h12": 37
+    },
+    "20260924": {
+      "h6": 25,
+      "h12": 39
+    }
+  },
+  "mean_completion_difference": 16.666666666666668,
+  "positive_seed_means": 3,
+  "passes_stress_gate": true
+}

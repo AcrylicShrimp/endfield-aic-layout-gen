@@ -1,0 +1,30 @@
+{
+  "schema": "aic-hierarchical-horizon-seed-stress-protocol-v1",
+  "runner_sha256": "66ad8950eb1b24f3c41099adb02fbeed7bad590fd933d60aa4df982c8e2b5842",
+  "parent_protocol_sha256": "ddbcddcc822a2dcdf08911736d8733a6b3262e39c958c619bca3644e76d2754d",
+  "parent_progress_sha256": "979713e1a198394db26383bc4cad60252722067e2914224099fc3d608cacde1e",
+  "primary_summary_sha256": "fdc9ef3322941bb6e3ed4824a3f50d3810ad73397f57ad10c4f2766d7edd3679",
+  "control_progress_sha256": "efa870d8d44169736894ced2c97f74eeab5df503d8cbecdd1e25291daddc58f0",
+  "binary_sha256": "66f72a2dbdf45aadbc50e4dfe8f3634012ef5f5a76d8159c698de20f85d7a4fa",
+  "lower_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+  "panel_sha256": "136a4c23daff9750255360e0a4d9451f9b618b38c1011237b3f5360812629998",
+  "model_sha256": {
+    "start-h6": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520",
+    "start-h12": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520",
+    "s1-h6": "d84b39f18b6a3714e5044a88eb4cd4aaeb63a0a7487b8625b0680d0f77b9ee24",
+    "s1-h12": "4270f35a196545fd81a6b0622901d4e989e002f45e388eb7f42de9aee699dfec",
+    "s2-h6": "55ba9fcf74151b6657f039bfc935253b03654e7f3f98113363cb0eb7389a178f",
+    "s2-h12": "c1661600b693816a7bfd131d332966e56d05de1932a6be155599af921fbc74b0",
+    "s3-h6": "baafd7dc56553736d813dfdcc46d258d49d499ca8c3fe788ee335d62be43cd94",
+    "s3-h12": "7a2ddc284783faca6fa2c8464d1e815453c24db0fc89b37abd68fb260baa5177"
+  },
+  "seeds": [
+    20260922,
+    20260923,
+    20260924
+  ],
+  "gate": {
+    "all_seed_mean_completion_gain": 4,
+    "positive_seed_means": 2
+  }
+}

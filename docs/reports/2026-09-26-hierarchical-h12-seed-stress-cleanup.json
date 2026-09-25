@@ -1,0 +1,30 @@
+{
+  "schema": "aic-research-cleanup-v1",
+  "phase": "horizon12-seed-stress",
+  "status": "complete",
+  "progress_status": "complete",
+  "retained_progress": "artifacts/recovery-horizon-onpolicy-v2/stress/progress.json",
+  "retained_summary": "artifacts/recovery-horizon-onpolicy-v2/stress/summary.json",
+  "retained_configs_and_shadow_models_for_cross_evaluation": true,
+  "removed": [
+    {
+      "path": "artifacts/recovery-horizon-onpolicy-v2/stress/evaluations",
+      "bytes": 3756604145
+    },
+    {
+      "path": "artifacts/recovery-horizon-onpolicy-v2/stress/logs",
+      "bytes": 5100
+    },
+    {
+      "path": "artifacts/recovery-horizon-onpolicy-v2/stress/run-rest.log",
+      "bytes": 587
+    },
+    {
+      "path": "artifacts/recovery-horizon-onpolicy-v2/stress/run-rest.pid",
+      "bytes": 6
+    }
+  ],
+  "removed_bytes": 3756609838,
+  "free_bytes_before": 159508389888,
+  "free_bytes_after": 163265138688
+}
