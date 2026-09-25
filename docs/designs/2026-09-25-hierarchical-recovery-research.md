@@ -66,6 +66,10 @@ prior-sorted edge order needed for progressive widening. A stable assignment
 has the same marginal independent Gumbel distribution; its proposed benefit
 is reduced sensitivity to incidental action order, not a guaranteed increase
 in expected search strength.
+The bounded [rank-coupling probe](../reports/2026-09-25-hierarchical-onpolicy-rank-probe-result.md)
+subsequently reconstructed all 64 actual candidate sets. The current
+model pair shared only 8/16 visited candidates (the anchors); the
+action-keyed counterfactual shared 15.81/16 initial candidates on average.
 
 ## Search screen
 
