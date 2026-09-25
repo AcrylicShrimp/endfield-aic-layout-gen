@@ -77,6 +77,9 @@ whose visited Q exceeds one, including the first four roots per episode. In
 this search, the unfinished-state heuristic and model completion value are at
 most one, so Q above one witnesses at least one completed-layout leaf. This
 post-hoc mechanism count does not enter selection.
+Also measure first and later-root target mass on unvisited actions and first-root
+effective action fraction, because a search improvement does not establish a
+better policy-learning signal.
 
 ## Learner screen and confirmation
 

@@ -42,6 +42,9 @@ def analyze(root):
             rows = []
             total_roots = visible_roots = 0
             early_roots = early_visible_roots = 0
+            first_unvisited_mass = []
+            later_unvisited_mass = []
+            first_effective_fraction = []
             for stream in STREAMS:
                 path = root / "raw" / stream / f"{name(arm, seed)}.json"
                 record = next(row for row in progress["records"]
@@ -54,6 +57,23 @@ def analyze(root):
                     total_roots += len(roots)
                     early_roots += min(4, len(roots))
                     for index, record in enumerate(roots):
+                        targets = [action["policy_target"]
+                                   for action in record["actions"]]
+                        require(all(target is not None and target >= 0
+                                    for target in targets)
+                                and abs(sum(targets) - 1.0) < 1e-5,
+                                "search target differs")
+                        unvisited = sum(target for target, action
+                                        in zip(targets, record["actions"])
+                                        if action["visits"] == 0)
+                        if index == 0:
+                            first_unvisited_mass.append(unvisited)
+                            entropy = -sum(target * math.log(target)
+                                           for target in targets if target > 0)
+                            first_effective_fraction.append(
+                                math.exp(entropy) / len(targets))
+                        else:
+                            later_unvisited_mass.append(unvisited)
                         visible = any(action["visits"] > 0 and action["q"] > 1.0
                                       for action in record["actions"])
                         visible_roots += visible
@@ -107,6 +127,12 @@ def analyze(root):
                 "total_roots": total_roots,
                 "first_four_terminal_value_visible_roots": early_visible_roots,
                 "first_four_roots": early_roots,
+                "first_root_unvisited_target_mass_mean": statistics.mean(
+                    first_unvisited_mass),
+                "later_root_unvisited_target_mass_mean": statistics.mean(
+                    later_unvisited_mass),
+                "first_root_effective_action_fraction_mean": statistics.mean(
+                    first_effective_fraction),
                 "case_rows": rows,
             }
     output = {
