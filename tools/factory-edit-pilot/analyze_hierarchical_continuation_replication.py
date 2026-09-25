@@ -66,6 +66,7 @@ def analyze(root):
                "q_higher_smaller_area": 0, "q_higher_larger_area": 0,
                "equal_area": 0, "area_differences": [],
                "transport_differences": []}
+    quality_by_case = defaultdict(lambda: {"area": [], "transport": []})
     for case_id, repeat in repeated.items():
         source = by_id[case_id]
         variants = source["variants"]
@@ -122,6 +123,8 @@ def analyze(root):
                 quality["equal_area"] += area == 0
                 quality["area_differences"].append(area)
                 quality["transport_differences"].append(transport)
+                quality_by_case[case_id]["area"].append(area)
+                quality_by_case[case_id]["transport"].append(transport)
         cases.append({"stream": source["stream"], "case_id": case_id,
                       "primary_clear_pairs": repeat["primary_clear_pairs"],
                       "confirmed_pairs": len(confirmed),
@@ -143,12 +146,24 @@ def analyze(root):
         quality["area_differences"]) if quality["area_differences"] else None
     quality_compact["mean_transport_difference_q_high_minus_low"] = statistics.mean(
         quality["transport_differences"]) if quality["transport_differences"] else None
+    quality_compact["mean_case_mean_area_difference"] = statistics.mean(
+        statistics.mean(row["area"]) for row in quality_by_case.values()) \
+        if quality_by_case else None
+    quality_compact["mean_case_mean_transport_difference"] = statistics.mean(
+        statistics.mean(row["transport"]) for row in quality_by_case.values()) \
+        if quality_by_case else None
     output = {"schema": "aic-hierarchical-continuation-replication-analysis-v1",
               "primary_summary_sha256": sha(root / "continuation-summary.json"),
               "replication_summary_sha256": sha(root / "replication-summary.json"),
               "cases": sorted(cases, key=lambda case: case["case_id"]),
               "groups": groups, "confirmed_q_ranking": q_compact,
-              "conditional_quality_q_ranking": quality_compact}
+              "conditional_quality_q_ranking": quality_compact,
+              "conditional_quality_cases": [
+                  {"case_id": case_id, "paired_success_seed_samples": len(row["area"]),
+                   "mean_area_difference_q_high_minus_low": statistics.mean(row["area"]),
+                   "mean_transport_difference_q_high_minus_low": statistics.mean(
+                       row["transport"])}
+                  for case_id, row in sorted(quality_by_case.items())]}
     write(root / "replication-analysis.json", output)
     print({"confirmed_pairs": replication["confirmed_pairs"],
            "groups": groups, "confirmed_q_ranking": q_compact,
