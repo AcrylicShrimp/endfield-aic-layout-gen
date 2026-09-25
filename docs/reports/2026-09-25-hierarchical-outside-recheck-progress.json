@@ -1,0 +1,133 @@
+{
+  "schema": "aic-hierarchical-outside-budget-recheck-progress-v1",
+  "protocol_sha256": "9931a97a9a05c2506ecc32ecfbfa49eb958131ed5e19a7a035d2f023a20ab900",
+  "status": "complete",
+  "records": [
+    {
+      "seed": 20260925,
+      "rank": 0,
+      "report_sha256": "15ef629a4a3543f6a6a73fc60a388133dbe170893f7fa937deac33ded78d1db8",
+      "report_bytes": 16727478,
+      "wall_seconds": 80.75394311000127
+    },
+    {
+      "seed": 20260925,
+      "rank": 3,
+      "report_sha256": "ddb49ada7ecd690e538bdda2fd097cfa06eee81a5457c179047041346710451b",
+      "report_bytes": 4746011,
+      "wall_seconds": 23.950051626998174
+    },
+    {
+      "seed": 20260925,
+      "rank": 4,
+      "report_sha256": "6748484ca181948fdb98a4e94b8c37460889bbf30e52e6f15901e6218b5dcadc",
+      "report_bytes": 4242976,
+      "wall_seconds": 15.67679104400304
+    },
+    {
+      "seed": 20260925,
+      "rank": 5,
+      "report_sha256": "34eeab11fc5cdca36c10d51f88d099f44e903fa893156150aeb5ca74c22fee57",
+      "report_bytes": 3536706,
+      "wall_seconds": 15.975849141002982
+    },
+    {
+      "seed": 20260925,
+      "rank": 6,
+      "report_sha256": "09cad9d35ec778f94de31a4f0b29eab62b4c7cff64614d1b37c5d738a81d9835",
+      "report_bytes": 4725814,
+      "wall_seconds": 22.09956028000306
+    },
+    {
+      "seed": 20260925,
+      "rank": 7,
+      "report_sha256": "6609fbac2674f9f8c3639acd7c67f742ea0ee2d3257fd5a803a562ca460f6fe2",
+      "report_bytes": 3339851,
+      "wall_seconds": 8.723674362998281
+    },
+    {
+      "seed": 20260926,
+      "rank": 0,
+      "report_sha256": "56d9ab1f63965a104f87cff452847b15a2a499d61c48869540e3efa571ecde9d",
+      "report_bytes": 16683443,
+      "wall_seconds": 79.47525194899936
+    },
+    {
+      "seed": 20260926,
+      "rank": 3,
+      "report_sha256": "e10dd80f1b8ae69502805be4ba131a1ade423c7107b5f21f13d826c08933016d",
+      "report_bytes": 3769412,
+      "wall_seconds": 30.908855269000924
+    },
+    {
+      "seed": 20260926,
+      "rank": 4,
+      "report_sha256": "93811a9db0ffaa88da8a933e11f92cf49834e7cdd9113a273dc28bf7a85ec23c",
+      "report_bytes": 5336526,
+      "wall_seconds": 20.473131371996715
+    },
+    {
+      "seed": 20260926,
+      "rank": 5,
+      "report_sha256": "6dece74d45f7359f3824cf58c4b741b9342f43cb8834fe290ba2c3385881fa74",
+      "report_bytes": 3742820,
+      "wall_seconds": 16.708930554996186
+    },
+    {
+      "seed": 20260926,
+      "rank": 6,
+      "report_sha256": "752a00211ee4dd6147f744b9b3adb5637686d4f6b724745f404c05e1afc3beac",
+      "report_bytes": 4862806,
+      "wall_seconds": 20.035360986999876
+    },
+    {
+      "seed": 20260926,
+      "rank": 7,
+      "report_sha256": "b9eec2be9d4e38ff3608f86a10d87de3d38512cd1ca9f7e32255778ba25c1827",
+      "report_bytes": 1726442,
+      "wall_seconds": 7.419515537003463
+    },
+    {
+      "seed": 20260927,
+      "rank": 0,
+      "report_sha256": "dfdc5c57ac4909f832aa30addbe25095fe5f17fd81e37d08df76609d4ccdcbdb",
+      "report_bytes": 15116852,
+      "wall_seconds": 74.12955562500429
+    },
+    {
+      "seed": 20260927,
+      "rank": 3,
+      "report_sha256": "6c4fed3d2ebb7a31ef07c7437b223ac5c24d55ce96c73866492408a050e07984",
+      "report_bytes": 4189805,
+      "wall_seconds": 25.804449438997835
+    },
+    {
+      "seed": 20260927,
+      "rank": 4,
+      "report_sha256": "05408de223c7c5bfce86fdf99cc3b158a8b441521db766eceea8e0347edd2251",
+      "report_bytes": 4461909,
+      "wall_seconds": 20.204868478998833
+    },
+    {
+      "seed": 20260927,
+      "rank": 5,
+      "report_sha256": "847f9f3e18d3803f1145a6e9400c64cbc256155421512f6f7c6999af813f752f",
+      "report_bytes": 3331059,
+      "wall_seconds": 17.58472929400159
+    },
+    {
+      "seed": 20260927,
+      "rank": 6,
+      "report_sha256": "32cb9db12e5f414a08cea85d5f9f61130a8ef991c5ac0dda2759c92e36ebe7a4",
+      "report_bytes": 5623942,
+      "wall_seconds": 28.292193645000225
+    },
+    {
+      "seed": 20260927,
+      "rank": 7,
+      "report_sha256": "23ff21dc71c06e017e116012577a557284a4f8b7d97b799ecccf22ff9b1562d9",
+      "report_bytes": 2344396,
+      "wall_seconds": 7.5387423400025
+    }
+  ]
+}

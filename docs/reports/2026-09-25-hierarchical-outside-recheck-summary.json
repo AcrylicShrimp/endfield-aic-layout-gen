@@ -1,0 +1,647 @@
+{
+  "schema": "aic-hierarchical-outside-budget-recheck-summary-v1",
+  "protocol_sha256": "9931a97a9a05c2506ecc32ecfbfa49eb958131ed5e19a7a035d2f023a20ab900",
+  "progress_sha256": "0991adfc4b25ac1d024254591a95380f5229d69f7041054d63fc1b5b33d1d2d3",
+  "pairs": [
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-22498",
+      "stream": "s1",
+      "rank": 4,
+      "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+      "primary_counts": [
+        1,
+        3
+      ],
+      "replication_counts": [
+        3,
+        1
+      ],
+      "first_state_sha256": "85d99a98a8121bdfa76ca08e52758e2100adead9a81e21570173feb31fbb7b9c",
+      "baseline_state_sha256": "0c7a4f6ebe167be7848d016b611c2723e954e4d132bfcf8d569241b178a90eb2",
+      "original_seed_512_counts": [
+        1,
+        3
+      ],
+      "independent_seed_512_counts": [
+        3,
+        1
+      ],
+      "baseline_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "0c7a4f6ebe167be7848d016b611c2723e954e4d132bfcf8d569241b178a90eb2",
+          "completed": true,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "0c7a4f6ebe167be7848d016b611c2723e954e4d132bfcf8d569241b178a90eb2",
+          "completed": true,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "0c7a4f6ebe167be7848d016b611c2723e954e4d132bfcf8d569241b178a90eb2",
+          "completed": true,
+          "completed_connections": 4
+        }
+      ],
+      "candidate_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "85d99a98a8121bdfa76ca08e52758e2100adead9a81e21570173feb31fbb7b9c",
+          "completed": false,
+          "completed_connections": 3
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "85d99a98a8121bdfa76ca08e52758e2100adead9a81e21570173feb31fbb7b9c",
+          "completed": true,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "85d99a98a8121bdfa76ca08e52758e2100adead9a81e21570173feb31fbb7b9c",
+          "completed": false,
+          "completed_connections": 2
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-22498",
+      "stream": "s1",
+      "rank": 5,
+      "action_sha256": "622eaf46ab32cf616db9fd250ad52f921c3baa91f5bfe58672dbdeb5e53e1f67",
+      "primary_counts": [
+        1,
+        3
+      ],
+      "replication_counts": [
+        3,
+        2
+      ],
+      "first_state_sha256": "a2374fbc70afbcec49dcab477fc4e20fc75deeea76238dea8f4a41a0a5e2a30c",
+      "baseline_state_sha256": "0c7a4f6ebe167be7848d016b611c2723e954e4d132bfcf8d569241b178a90eb2",
+      "original_seed_512_counts": [
+        1,
+        3
+      ],
+      "independent_seed_512_counts": [
+        3,
+        2
+      ],
+      "baseline_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "0c7a4f6ebe167be7848d016b611c2723e954e4d132bfcf8d569241b178a90eb2",
+          "completed": true,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "0c7a4f6ebe167be7848d016b611c2723e954e4d132bfcf8d569241b178a90eb2",
+          "completed": true,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "0c7a4f6ebe167be7848d016b611c2723e954e4d132bfcf8d569241b178a90eb2",
+          "completed": true,
+          "completed_connections": 4
+        }
+      ],
+      "candidate_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "a2374fbc70afbcec49dcab477fc4e20fc75deeea76238dea8f4a41a0a5e2a30c",
+          "completed": false,
+          "completed_connections": 3
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "a2374fbc70afbcec49dcab477fc4e20fc75deeea76238dea8f4a41a0a5e2a30c",
+          "completed": true,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "a2374fbc70afbcec49dcab477fc4e20fc75deeea76238dea8f4a41a0a5e2a30c",
+          "completed": true,
+          "completed_connections": 4
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-9040",
+      "stream": "s1",
+      "rank": 3,
+      "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+      "primary_counts": [
+        1,
+        3
+      ],
+      "replication_counts": [
+        0,
+        1
+      ],
+      "first_state_sha256": "73783900d9ed6f8848965cefa7347987d90009d1e48f01565deb774adf671f6b",
+      "baseline_state_sha256": "b569166f4e6e3e448784de25c4137ed792bdfaae30f56923100e1c6151cc3091",
+      "original_seed_512_counts": [
+        2,
+        3
+      ],
+      "independent_seed_512_counts": [
+        1,
+        1
+      ],
+      "baseline_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "b569166f4e6e3e448784de25c4137ed792bdfaae30f56923100e1c6151cc3091",
+          "completed": true,
+          "completed_connections": 6
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "b569166f4e6e3e448784de25c4137ed792bdfaae30f56923100e1c6151cc3091",
+          "completed": false,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "b569166f4e6e3e448784de25c4137ed792bdfaae30f56923100e1c6151cc3091",
+          "completed": false,
+          "completed_connections": 4
+        }
+      ],
+      "candidate_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "73783900d9ed6f8848965cefa7347987d90009d1e48f01565deb774adf671f6b",
+          "completed": false,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "73783900d9ed6f8848965cefa7347987d90009d1e48f01565deb774adf671f6b",
+          "completed": false,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "73783900d9ed6f8848965cefa7347987d90009d1e48f01565deb774adf671f6b",
+          "completed": true,
+          "completed_connections": 6
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-26043",
+      "stream": "s1",
+      "rank": 4,
+      "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+      "primary_counts": [
+        0,
+        3
+      ],
+      "replication_counts": [
+        2,
+        1
+      ],
+      "first_state_sha256": "44e6f378d9d4bd6caa246b313516ef8563a90bdeed5bf335f46ceac5180db208",
+      "baseline_state_sha256": "2e6cef551be319a52785332cdc199f3ea9a7f182794afc523cb00a0cb0f24123",
+      "original_seed_512_counts": [
+        0,
+        3
+      ],
+      "independent_seed_512_counts": [
+        2,
+        1
+      ],
+      "baseline_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "2e6cef551be319a52785332cdc199f3ea9a7f182794afc523cb00a0cb0f24123",
+          "completed": true,
+          "completed_connections": 5
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "2e6cef551be319a52785332cdc199f3ea9a7f182794afc523cb00a0cb0f24123",
+          "completed": true,
+          "completed_connections": 5
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "2e6cef551be319a52785332cdc199f3ea9a7f182794afc523cb00a0cb0f24123",
+          "completed": false,
+          "completed_connections": 3
+        }
+      ],
+      "candidate_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "44e6f378d9d4bd6caa246b313516ef8563a90bdeed5bf335f46ceac5180db208",
+          "completed": false,
+          "completed_connections": 3
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "44e6f378d9d4bd6caa246b313516ef8563a90bdeed5bf335f46ceac5180db208",
+          "completed": true,
+          "completed_connections": 5
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "44e6f378d9d4bd6caa246b313516ef8563a90bdeed5bf335f46ceac5180db208",
+          "completed": false,
+          "completed_connections": 4
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-30481",
+      "stream": "s1",
+      "rank": 6,
+      "action_sha256": "012d8821ab15d714c76090e2ba9077831c0aa4d734fdace8aa528b8b7203f59b",
+      "primary_counts": [
+        1,
+        3
+      ],
+      "replication_counts": [
+        3,
+        1
+      ],
+      "first_state_sha256": "e8510fcaa848a55b7f3e0a27585a81807d408dd443466cd587b95432a52842e6",
+      "baseline_state_sha256": "6daf3ba6b3bf40152fa5bbaa28fb13806717a9d48e84bd51182d6c029240bb82",
+      "original_seed_512_counts": [
+        1,
+        3
+      ],
+      "independent_seed_512_counts": [
+        0,
+        0
+      ],
+      "baseline_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "6daf3ba6b3bf40152fa5bbaa28fb13806717a9d48e84bd51182d6c029240bb82",
+          "completed": false,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "6daf3ba6b3bf40152fa5bbaa28fb13806717a9d48e84bd51182d6c029240bb82",
+          "completed": false,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "6daf3ba6b3bf40152fa5bbaa28fb13806717a9d48e84bd51182d6c029240bb82",
+          "completed": false,
+          "completed_connections": 4
+        }
+      ],
+      "candidate_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "e8510fcaa848a55b7f3e0a27585a81807d408dd443466cd587b95432a52842e6",
+          "completed": false,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "e8510fcaa848a55b7f3e0a27585a81807d408dd443466cd587b95432a52842e6",
+          "completed": false,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "e8510fcaa848a55b7f3e0a27585a81807d408dd443466cd587b95432a52842e6",
+          "completed": false,
+          "completed_connections": 4
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-31246",
+      "stream": "s1",
+      "rank": 7,
+      "action_sha256": "0e0445612e81c9412b8f63493f6ef5b2a1d7e34aab4b90dea26e902c4fad409a",
+      "primary_counts": [
+        0,
+        2
+      ],
+      "replication_counts": [
+        0,
+        1
+      ],
+      "first_state_sha256": "3640d88b6cdd6334fe74b03a4dfe12bd6783f94d0c86b1f6b617778ceac89220",
+      "baseline_state_sha256": "c9a102edebb53e0826c279ec09b0e095139bc006d7be8c05978b5dee197085ec",
+      "original_seed_512_counts": [
+        1,
+        2
+      ],
+      "independent_seed_512_counts": [
+        0,
+        1
+      ],
+      "baseline_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "c9a102edebb53e0826c279ec09b0e095139bc006d7be8c05978b5dee197085ec",
+          "completed": false,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "c9a102edebb53e0826c279ec09b0e095139bc006d7be8c05978b5dee197085ec",
+          "completed": false,
+          "completed_connections": 3
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "c9a102edebb53e0826c279ec09b0e095139bc006d7be8c05978b5dee197085ec",
+          "completed": false,
+          "completed_connections": 3
+        }
+      ],
+      "candidate_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "3640d88b6cdd6334fe74b03a4dfe12bd6783f94d0c86b1f6b617778ceac89220",
+          "completed": true,
+          "completed_connections": 5
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "3640d88b6cdd6334fe74b03a4dfe12bd6783f94d0c86b1f6b617778ceac89220",
+          "completed": false,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "3640d88b6cdd6334fe74b03a4dfe12bd6783f94d0c86b1f6b617778ceac89220",
+          "completed": false,
+          "completed_connections": 4
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-14441",
+      "stream": "s2",
+      "rank": 6,
+      "action_sha256": "d054db8f315d663db26291ebf2dc608cf2f29ad70e6725a07995bb0680b978cc",
+      "primary_counts": [
+        0,
+        2
+      ],
+      "replication_counts": [
+        0,
+        0
+      ],
+      "first_state_sha256": "5b1befa437bd77fa152c7381cd3f353cd386abbe119ee8c851f8751d166a4e14",
+      "baseline_state_sha256": "5e458f61e57bebbab14f23a3626219982fa82172c1dc782c782d21ba2a47a29d",
+      "original_seed_512_counts": [
+        0,
+        2
+      ],
+      "independent_seed_512_counts": [
+        0,
+        0
+      ],
+      "baseline_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "5e458f61e57bebbab14f23a3626219982fa82172c1dc782c782d21ba2a47a29d",
+          "completed": false,
+          "completed_connections": 3
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "5e458f61e57bebbab14f23a3626219982fa82172c1dc782c782d21ba2a47a29d",
+          "completed": false,
+          "completed_connections": 3
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "5e458f61e57bebbab14f23a3626219982fa82172c1dc782c782d21ba2a47a29d",
+          "completed": false,
+          "completed_connections": 3
+        }
+      ],
+      "candidate_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "5b1befa437bd77fa152c7381cd3f353cd386abbe119ee8c851f8751d166a4e14",
+          "completed": false,
+          "completed_connections": 3
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "5b1befa437bd77fa152c7381cd3f353cd386abbe119ee8c851f8751d166a4e14",
+          "completed": false,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "5b1befa437bd77fa152c7381cd3f353cd386abbe119ee8c851f8751d166a4e14",
+          "completed": false,
+          "completed_connections": 4
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-17554",
+      "stream": "s2",
+      "rank": 4,
+      "action_sha256": "1781404d47fc4bbfd0db56ffd8271780afd93ccdc8f2f66e93a20a883b39be97",
+      "primary_counts": [
+        0,
+        3
+      ],
+      "replication_counts": [
+        0,
+        0
+      ],
+      "first_state_sha256": "ad39a046a5effa41e412b43ab4fe60594f3111c82c3bcb1bd1c8094c7492d138",
+      "baseline_state_sha256": "625da4defb11a1c232b77f240fad76fb1a632568ce51c938baedd574f54b48c0",
+      "original_seed_512_counts": [
+        0,
+        3
+      ],
+      "independent_seed_512_counts": [
+        0,
+        1
+      ],
+      "baseline_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "625da4defb11a1c232b77f240fad76fb1a632568ce51c938baedd574f54b48c0",
+          "completed": false,
+          "completed_connections": 2
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "625da4defb11a1c232b77f240fad76fb1a632568ce51c938baedd574f54b48c0",
+          "completed": false,
+          "completed_connections": 3
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "625da4defb11a1c232b77f240fad76fb1a632568ce51c938baedd574f54b48c0",
+          "completed": false,
+          "completed_connections": 3
+        }
+      ],
+      "candidate_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "ad39a046a5effa41e412b43ab4fe60594f3111c82c3bcb1bd1c8094c7492d138",
+          "completed": false,
+          "completed_connections": 3
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "ad39a046a5effa41e412b43ab4fe60594f3111c82c3bcb1bd1c8094c7492d138",
+          "completed": true,
+          "completed_connections": 5
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "ad39a046a5effa41e412b43ab4fe60594f3111c82c3bcb1bd1c8094c7492d138",
+          "completed": false,
+          "completed_connections": 4
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-10903",
+      "stream": "s3",
+      "rank": 3,
+      "action_sha256": "47ce510c035f10335987aafc0eaa5620dd1ba20f05f4e78146fe0fa3eae79005",
+      "primary_counts": [
+        0,
+        2
+      ],
+      "replication_counts": [
+        0,
+        1
+      ],
+      "first_state_sha256": "a63e4376d030641a8efcf96c7e9c88bcf64d52bf3cf0e933d8e4b2abe5f5e679",
+      "baseline_state_sha256": "9c4375ebf8c79f501c596845a18e95ba0cd253f278f8013b0f043758b8aa2fd6",
+      "original_seed_512_counts": [
+        0,
+        2
+      ],
+      "independent_seed_512_counts": [
+        0,
+        1
+      ],
+      "baseline_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "9c4375ebf8c79f501c596845a18e95ba0cd253f278f8013b0f043758b8aa2fd6",
+          "completed": false,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "9c4375ebf8c79f501c596845a18e95ba0cd253f278f8013b0f043758b8aa2fd6",
+          "completed": false,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "9c4375ebf8c79f501c596845a18e95ba0cd253f278f8013b0f043758b8aa2fd6",
+          "completed": false,
+          "completed_connections": 3
+        }
+      ],
+      "candidate_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "a63e4376d030641a8efcf96c7e9c88bcf64d52bf3cf0e933d8e4b2abe5f5e679",
+          "completed": true,
+          "completed_connections": 5
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "a63e4376d030641a8efcf96c7e9c88bcf64d52bf3cf0e933d8e4b2abe5f5e679",
+          "completed": false,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "a63e4376d030641a8efcf96c7e9c88bcf64d52bf3cf0e933d8e4b2abe5f5e679",
+          "completed": false,
+          "completed_connections": 4
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-1731",
+      "stream": "s3",
+      "rank": 5,
+      "action_sha256": "1781404d47fc4bbfd0db56ffd8271780afd93ccdc8f2f66e93a20a883b39be97",
+      "primary_counts": [
+        0,
+        2
+      ],
+      "replication_counts": [
+        1,
+        0
+      ],
+      "first_state_sha256": "129b8fba0f1ae7c0c542d4bbf14351d55f208d62f5ffa8b4af4ad251c27dc148",
+      "baseline_state_sha256": "ba9f48e6e166a6b07cc153969866ef7118765458185ce0d973163c43bdd940d6",
+      "original_seed_512_counts": [
+        1,
+        2
+      ],
+      "independent_seed_512_counts": [
+        1,
+        2
+      ],
+      "baseline_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "ba9f48e6e166a6b07cc153969866ef7118765458185ce0d973163c43bdd940d6",
+          "completed": true,
+          "completed_connections": 6
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "ba9f48e6e166a6b07cc153969866ef7118765458185ce0d973163c43bdd940d6",
+          "completed": false,
+          "completed_connections": 4
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "ba9f48e6e166a6b07cc153969866ef7118765458185ce0d973163c43bdd940d6",
+          "completed": false,
+          "completed_connections": 4
+        }
+      ],
+      "candidate_trials": [
+        {
+          "seed": 20260925,
+          "first_state_sha256": "129b8fba0f1ae7c0c542d4bbf14351d55f208d62f5ffa8b4af4ad251c27dc148",
+          "completed": true,
+          "completed_connections": 6
+        },
+        {
+          "seed": 20260926,
+          "first_state_sha256": "129b8fba0f1ae7c0c542d4bbf14351d55f208d62f5ffa8b4af4ad251c27dc148",
+          "completed": false,
+          "completed_connections": 2
+        },
+        {
+          "seed": 20260927,
+          "first_state_sha256": "129b8fba0f1ae7c0c542d4bbf14351d55f208d62f5ffa8b4af4ad251c27dc148",
+          "completed": true,
+          "completed_connections": 6
+        }
+      ]
+    }
+  ]
+}
