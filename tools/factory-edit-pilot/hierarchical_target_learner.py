@@ -58,13 +58,13 @@ def search(root, name, panel, lower, outer, output):
     return report, seconds
 
 
-def panel(root, name, seed, candidates, take, seen):
+def panel(root, name, seed, candidates, take, seen, namespace=None):
     draft = root / "candidate-panels" / f"{name}.json"
     draft.parent.mkdir(parents=True, exist_ok=True)
     cli(root, f"prepare-{name}", ["prepare-hierarchical-panel", "--sampling", SAMPLING,
         "--catalog-root", "data/game/normalized", "--output", draft,
         "--partition", "training", "--cases", candidates, "--seed", seed,
-        "--namespace", f"hierarchical-target-learner-{name}-v1",
+        "--namespace", namespace or f"hierarchical-target-learner-{name}-v1",
         "--min-facilities", 2, "--max-facilities", 2, "--max-terminals", 6,
         "--max-connections", 6, "--max-turns", 10000, "--max-extension", 32])
     source = read(draft)

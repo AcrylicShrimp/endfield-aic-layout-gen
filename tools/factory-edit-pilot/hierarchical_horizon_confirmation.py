@@ -28,7 +28,7 @@ def model(arm, seed):
     return SOURCE / "models" / name(arm, seed)
 
 
-def prepare(root, commit):
+def prepare(root, commit, reference_panel):
     require(not root.exists(), "confirmation output exists")
     screen = read(SOURCE / "summary.json")
     require(screen["summary"]["horizon12"]["passes_screen"],
@@ -41,7 +41,17 @@ def prepare(root, commit):
             require(key not in seen, "duplicate screen problem")
             seen.add(key)
     root.mkdir(parents=True)
-    panel_sha = panel(root, "confirmation", 20262560, 512, 64, seen)
+    panel_sha = panel(root, "confirmation", 20262560, 512, 64, seen,
+                      namespace="hierarchical-recovery-horizon-confirm-v1")
+    selected = read(root / "panels/confirmation.json")["cases"]
+    reference = read(reference_panel)["cases"]
+    require(len(reference) == len(selected) == 64
+            and all(left["problem"] == right["problem"]
+                    for left, right in zip(selected, reference)),
+            "namespace changed the ordered problem graphs")
+    require(all(left["id"] != right["id"]
+                for left, right in zip(selected, reference)),
+            "namespace did not change case IDs")
     configs = {}
     for seed in SEEDS:
         for arm in ARMS:
@@ -62,6 +72,10 @@ def prepare(root, commit):
         "binary_sha256": sha(BINARY),
         "sampling_sha256": sha(SAMPLING),
         "panel_sha256": panel_sha,
+        "panel_namespace": "hierarchical-recovery-horizon-confirm-v1",
+        "reference_panel": str(reference_panel),
+        "reference_panel_sha256": sha(reference_panel),
+        "matching_reference_problem_graphs": 64,
         "lower_sha256": sha(SOURCE / "inputs/models/lower/state.safetensors"),
         "outer_sha256": sha(SOURCE / "inputs/models/outer-128/state.safetensors"),
         "configs": configs, "planned_cells": len(SEEDS) * len(ARMS),
@@ -84,6 +98,8 @@ def validate(root):
             and protocol["binary_sha256"] == sha(BINARY)
             and protocol["sampling_sha256"] == sha(SAMPLING)
             and protocol["panel_sha256"] == sha(root / "panels/confirmation.json")
+            and protocol["reference_panel_sha256"]
+            == sha(Path(protocol["reference_panel"]))
             and protocol["lower_sha256"]
             == sha(SOURCE / "inputs/models/lower/state.safetensors")
             and protocol["outer_sha256"]
@@ -232,11 +248,13 @@ def main():
     parser.add_argument("command", choices=("prepare", "run", "summarize"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--experiment-commit")
+    parser.add_argument("--reference-panel", type=Path)
     parser.add_argument("--max-cells", type=int)
     args = parser.parse_args()
     if args.command == "prepare":
         require(args.experiment_commit, "experiment commit is required")
-        prepare(args.output, args.experiment_commit)
+        require(args.reference_panel, "reference panel is required")
+        prepare(args.output, args.experiment_commit, args.reference_panel)
     elif args.command == "run":
         run(args.output, args.max_cells)
     else:
