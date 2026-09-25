@@ -50,6 +50,16 @@ first-only arm illustrates why aggregate completion alone is insufficient:
 it completed three more cases than current while losing two more starting
 successes.
 
+The common diagnostic case masks also show dependence on the training stream.
+Among the 23 cases solved by the starting model, the three `current` arms
+lost six in all three streams, 11 in two streams, and six in one stream;
+**none stayed solved in all three**. Among 41 starting failures, only two
+became successes in all three current arms. The first-only arms kept two
+starting successes across all three streams. These are independent
+one-generation training streams on different collections, not three steps
+of one trajectory; the counts describe instability across collections and
+do not identify its mechanism.
+
 All nine training reports passed their source collection, starting model,
 configuration, epoch, and update-count checks. Their losses decreased within
 each arm, but losses trained on different target distributions are not a
