@@ -1,0 +1,43 @@
+{
+  "schema": "aic-hierarchical-target-seed-cleanup-v1",
+  "progress_sha256": "625e91e6de7bc4deeccd29804c5647ee3490e191174d57aee8ecec50d20884db",
+  "summary_sha256": "a42df55e0da1f2328f9f8844fea246934e97a89a0322c55df411881fa679985e",
+  "removed": [
+    {
+      "path": "artifacts/target-causal-study/raw/target-seed",
+      "file_bytes": 240767522
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/target-seed-panel.json",
+      "file_bytes": 130131
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/target-seed-20260922.log",
+      "file_bytes": 310
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/target-seed-20260923.log",
+      "file_bytes": 310
+    },
+    {
+      "path": "artifacts/target-causal-study/logs/target-seed-20260924.log",
+      "file_bytes": 310
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-target-seed-20260922",
+      "file_bytes": 1503
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-target-seed-20260923",
+      "file_bytes": 1503
+    },
+    {
+      "path": "artifacts/target-causal-study/inputs/models/outer-target-seed-20260924",
+      "file_bytes": 1503
+    }
+  ],
+  "removed_file_bytes": 240903092,
+  "free_bytes_before": 176206540800,
+  "free_bytes_after": 176447500288,
+  "retention_reason": "Frozen original 16/128 search reports and forced-action summaries remain required for target scoring and learner screen."
+}
