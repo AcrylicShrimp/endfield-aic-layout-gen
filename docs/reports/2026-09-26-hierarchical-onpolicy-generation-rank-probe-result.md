@@ -58,4 +58,6 @@ verified across models and placement-page widening.
 - The [compact result](2026-09-26-hierarchical-onpolicy-generation-rank-probe.json)
   records all four source-report hashes, full probe hashes, search config
   hashes, case-level candidate overlaps, and aggregate results. The raw
-  reports remain part of the still-active on-policy experiment.
+  reports remain part of the still-active on-policy experiment. Generated
+  probe intermediates were removed after the compact evidence was committed;
+  see the [cleanup manifest](2026-09-26-hierarchical-onpolicy-rank-probe-cleanup.json).

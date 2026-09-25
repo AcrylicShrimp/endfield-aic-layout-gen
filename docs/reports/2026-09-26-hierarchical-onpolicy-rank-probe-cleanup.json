@@ -1,0 +1,20 @@
+{
+  "schema": "aic-experiment-cleanup-v1",
+  "experiment": "hierarchical-onpolicy-gumbel-rank-probes",
+  "remote_removed_path": "~/Srv/aic-target-causal-20260925/artifacts/recovery-success-onpolicy/diagnostics",
+  "remote_before_bytes": 167494,
+  "remote_after_bytes": 0,
+  "server_available_before_bytes": 172307763200,
+  "server_available_after_bytes": 172307947520,
+  "local_removed_path": "artifacts/onpolicy-generation-rank-probe",
+  "local_removed_file_bytes": 121464,
+  "local_after_bytes": 0,
+  "retained": [
+    "docs/reports/2026-09-25-hierarchical-onpolicy-rank-probe.json",
+    "docs/reports/2026-09-25-hierarchical-onpolicy-rank-probe-diagnostic.json",
+    "docs/reports/2026-09-26-hierarchical-onpolicy-generation-rank-probe.json",
+    "docs/reports/2026-09-25-hierarchical-onpolicy-rank-probe-result.md",
+    "docs/reports/2026-09-26-hierarchical-onpolicy-generation-rank-probe-result.md"
+  ],
+  "reconstruction": "The committed probe script, input report SHA-256 values, search config, per-case compact outcomes and reproduction commands remain. The source reports are retained as part of the active on-policy experiment until its own closeout."
+}
