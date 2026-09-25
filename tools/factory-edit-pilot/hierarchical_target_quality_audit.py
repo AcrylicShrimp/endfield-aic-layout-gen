@@ -14,7 +14,7 @@ from ppo_harness_state import read, sha, write
 
 STREAMS = ("s1", "s2", "s3")
 BUDGETS = (128, 512)
-LOWER_SHA = "353d560842da6c4270605da552a04adc8d3b847625cf9c502dea9"
+LOWER_SHA = "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9"
 OUTER_SHA = "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520"
 
 
