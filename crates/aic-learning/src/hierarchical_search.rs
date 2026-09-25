@@ -58,6 +58,21 @@ fn default_run_beam() -> bool {
     true
 }
 
+fn default_gumbel_assignment() -> GumbelAssignment {
+    GumbelAssignment::Rank
+}
+
+fn is_rank_gumbel_assignment(value: &GumbelAssignment) -> bool {
+    *value == GumbelAssignment::Rank
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum GumbelAssignment {
+    Rank,
+    ActionIdentity,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "algorithm", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum RootSelection {
@@ -69,6 +84,11 @@ pub enum RootSelection {
         seed: u64,
         value_scale: f64,
         max_visit_init: f64,
+        #[serde(
+            default = "default_gumbel_assignment",
+            skip_serializing_if = "is_rank_gumbel_assignment"
+        )]
+        gumbel_assignment: GumbelAssignment,
     },
 }
 
@@ -1596,6 +1616,7 @@ fn mcts_search(
                 seed,
                 value_scale,
                 max_visit_init,
+                gumbel_assignment,
             } => {
                 ensure_node_expanded(&mut nodes, 0, factory, &mut counters, true)?;
                 let decision = gumbel_sequential_halving(
@@ -1611,6 +1632,7 @@ fn mcts_search(
                         seed: *seed,
                         value_scale: *value_scale,
                         max_visit_init: *max_visit_init,
+                        gumbel_assignment: *gumbel_assignment,
                     },
                     case_id,
                     &state_identity,
@@ -1695,6 +1717,7 @@ struct GumbelControls {
     seed: u64,
     value_scale: f64,
     max_visit_init: f64,
+    gumbel_assignment: GumbelAssignment,
 }
 
 struct RootDecision {
@@ -1722,7 +1745,14 @@ fn gumbel_sequential_halving(
             simulations: 0,
         });
     }
-    let gumbels = deterministic_gumbels(controls.seed, case_id, state_identity, actions.len());
+    let gumbels = match controls.gumbel_assignment {
+        GumbelAssignment::Rank => {
+            deterministic_gumbels(controls.seed, case_id, state_identity, actions.len())
+        }
+        GumbelAssignment::ActionIdentity => {
+            deterministic_action_gumbels(controls.seed, state_identity, actions)?
+        }
+    };
     let mut remaining = considered_root_actions(
         actions,
         &gumbels,
@@ -1904,12 +1934,55 @@ fn deterministic_gumbels(seed: u64, case_id: &str, state_identity: &str, count: 
     let bytes = digest.finalize();
     let mut state = u64::from_le_bytes(bytes[..8].try_into().expect("SHA-256 prefix"));
     (0..count)
-        .map(|_| {
-            let bits = splitmix64(&mut state) >> 11;
-            let uniform = (bits as f64 + 0.5) / ((1u64 << 53) as f64);
-            -(-uniform.ln()).ln()
+        .map(|_| gumbel_from_bits(splitmix64(&mut state)))
+        .collect()
+}
+
+fn deterministic_action_gumbels(
+    seed: u64,
+    state_identity: &str,
+    actions: &[Edge],
+) -> Result<Vec<f64>> {
+    let mut prefix = Sha256::new();
+    prefix.update(seed.to_le_bytes());
+    prefix.update([0]);
+    // State identity already hashes the problem and observation. Case IDs are
+    // sampling metadata, so an identical physical state keeps the same noise.
+    prefix.update(state_identity.as_bytes());
+    prefix.update([0]);
+    actions
+        .iter()
+        .map(|edge| {
+            let mut digest = prefix.clone();
+            digest.update(physical_action_identity(&edge.action)?);
+            let bytes = digest.finalize();
+            let bits = u64::from_le_bytes(bytes[..8].try_into().expect("SHA-256 prefix"));
+            Ok(gumbel_from_bits(bits))
         })
         .collect()
+}
+
+fn physical_action_identity(action: &MacroAction) -> Result<Vec<u8>> {
+    match action {
+        MacroAction::Command(command) => Ok(serde_json::to_vec(&("command", command))?),
+        // A route's command witness determines its physical effect in this
+        // state. Candidate IDs, search work and model predictions can vary
+        // without changing that witness.
+        MacroAction::Route(candidate) => Ok(serde_json::to_vec(&("route", &candidate.commands))?),
+        MacroAction::Network(candidate) => {
+            let commands = candidate
+                .routes
+                .iter()
+                .map(|route| &route.commands)
+                .collect::<Vec<_>>();
+            Ok(serde_json::to_vec(&("network", commands))?)
+        }
+    }
+}
+
+fn gumbel_from_bits(bits: u64) -> f64 {
+    let uniform = ((bits >> 11) as f64 + 0.5) / ((1u64 << 53) as f64);
+    -(-uniform.ln()).ln()
 }
 
 fn splitmix64(state: &mut u64) -> u64 {
@@ -2615,10 +2688,87 @@ mod tests {
         assert_ne!(first, deterministic_gumbels(7, "case-b", "state-a", 8));
         assert!(first.iter().all(|value| value.is_finite()));
 
+        let command_edge = |command| Edge {
+            action: MacroAction::Command(command),
+            prior: 0.5,
+            anchor_prior: 0.5,
+            visits: 0,
+            value_sum: 0.0,
+            child: None,
+        };
+        let forward = [
+            command_edge(Command::Connect),
+            command_edge(Command::AbortRoute),
+        ];
+        let reverse = [
+            command_edge(Command::AbortRoute),
+            command_edge(Command::Connect),
+        ];
+        let keyed_forward = deterministic_action_gumbels(7, "state-a", &forward).unwrap();
+        let keyed_reverse = deterministic_action_gumbels(7, "state-a", &reverse).unwrap();
+        assert_eq!(keyed_forward, [keyed_reverse[1], keyed_reverse[0]]);
+        assert_ne!(keyed_forward[0], keyed_forward[1]);
+
+        let route = Candidate {
+            id: 0,
+            state_revision: 0,
+            connection: "route-a".into(),
+            source_port: None,
+            target_port: None,
+            cells: Vec::new(),
+            commands: vec![Command::Connect],
+            steps: 1,
+            turns: 0,
+            expanded: 10,
+            overlap_with_previous: 0,
+            learned_cost: 1,
+            predicted_success: Some(0.25),
+            guidance_uncertainty: Some(0.1),
+            provenance: Provenance::Anchor,
+        };
+        let mut same_physical_route = route.clone();
+        same_physical_route.id = 2;
+        same_physical_route.expanded = 100;
+        same_physical_route.learned_cost = 5;
+        same_physical_route.predicted_success = Some(0.75);
+        same_physical_route.guidance_uncertainty = Some(0.9);
+        assert_eq!(
+            physical_action_identity(&MacroAction::Route(route.clone())).unwrap(),
+            physical_action_identity(&MacroAction::Route(same_physical_route)).unwrap()
+        );
+        let mut different_route = route.clone();
+        different_route.commands.push(Command::AbortRoute);
+        assert_ne!(
+            physical_action_identity(&MacroAction::Route(route)).unwrap(),
+            physical_action_identity(&MacroAction::Route(different_route)).unwrap()
+        );
+
         let actions = vec![edge(0.8, 0.5), edge(0.2, 0.5)];
         let policy = improved_policy(&actions, &[0.0, 5.0], 0.5);
         assert!((policy.iter().sum::<f64>() - 1.0).abs() < 1e-12);
         assert!(policy[1] > policy[0]);
+    }
+
+    #[test]
+    fn legacy_gumbel_config_keeps_rank_assignment_and_round_trips() {
+        let original = json!({
+            "algorithm": "gumbel-sequential-halving",
+            "candidates": 16,
+            "anchor_candidates": 8,
+            "anchor_policy_mass": 0.5,
+            "seed": 20260922,
+            "value_scale": 0.1,
+            "max_visit_init": 50.0
+        });
+        let parsed: RootSelection = serde_json::from_value(original.clone()).unwrap();
+        assert!(matches!(
+            parsed,
+            RootSelection::GumbelSequentialHalving {
+                gumbel_assignment: GumbelAssignment::Rank,
+                ..
+            }
+        ));
+        assert_eq!(serde_json::to_value(&parsed).unwrap(), original);
     }
 
     #[test]

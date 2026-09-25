@@ -15,7 +15,13 @@ Learner retention and untouched held-out performance remain open.
 The frozen-collection learner screen later found that successful-action
 imitation alone passed its predeclared three-stream retention/completion gate;
 see the [screen result](../reports/2026-09-25-hierarchical-success-imitation-result.md).
-This is a candidate for fresh on-policy confirmation, not a production change.
+The [fresh on-policy confirmation](../reports/2026-09-26-hierarchical-success-onpolicy-result.md)
+then completed all 18 training evaluations and failed four of five primary
+promotion conditions. Its final completion differences were 0, -6, and +8
+of 64 across the three streams. The extra seed-stress stage was skipped
+because the required two winning streams were already impossible. This
+target recipe is rejected as a recovery setup; the next intervention should
+test search noise assignment and source-to-diagnostic transfer.
 
 ## Evidence and hypotheses
 
@@ -80,12 +86,40 @@ correspondence across paired models and after placement-page widening before
 using it. An action-identity hash remains the robust comparison if candidate
 generation itself changes when lower training is restored. Measure runtime
 and memory for either variant before a longer training run.
+For an action-identity variant, seed from the explicit search seed and the
+existing state SHA-256 (which includes problem and observation), then hash the
+physical command witness rather than the entire candidate record. A same-ID
+repeat retained the physical root action sets but changed route prediction,
+work, and provenance metadata, which would otherwise remap Gumbel draws.
+The source of this run-to-run variation remains to be isolated. Omit the
+panel case ID: it is sampling metadata and should
+not change search noise for an identical problem state. Keep rank-index
+assignment as the default during the controlled comparison. This also lets
+the same-graph/different-namespace panel pair test identity invariance.
 The [consecutive-generation probe](../reports/2026-09-26-hierarchical-onpolicy-generation-rank-probe-result.md)
 then reproduced all 512 candidate sets on the shared 64-case diagnostic.
 Even `current` generation 1→2, with mean rank correlation 0.979, retained
 only 8.14/16 candidates under rank-index Gumbels versus 16/16 under the
 action-keyed counterfactual. This supports a candidate-churn mechanism, not
 yet a measured performance repair.
+The first available on-policy diagnostic report had no duplicate serialized
+actions within any of its 608 root records (355,315 actions total). This is
+a bounded check that action-keyed draws stay distinct on the sampled roots;
+the candidate generator's general uniqueness and the new search outcomes
+still need validation.
+After restricting the key to physical commands, a retained 16-case search
+report also had no duplicate physical keys in 154 roots (92,788 actions).
+
+The bounded implementation check uses the first eight cases of the retained
+`s1` source panel, then a byte-identical problem/prefix panel with only IDs
+renamed. Run the original rank and physical-action-key variants at the same
+128-simulation, horizon-six, 24-move setting, seed 20260922, lower and outer
+checkpoints. Repeat each original-ID run once. Compare physical first-action
+agreement, initial visited-candidate overlap, completion, wall time, and peak
+resident memory across the six runs. This checks coupling and integrated
+cost; eight old source cases are not a performance-promotion panel. Any
+promising setting still needs disjoint paired search and fresh on-policy
+confirmation.
 
 ## Search screen
 
