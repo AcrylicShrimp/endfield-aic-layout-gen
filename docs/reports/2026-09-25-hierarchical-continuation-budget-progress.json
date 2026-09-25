@@ -1,0 +1,25 @@
+{
+  "schema": "aic-hierarchical-continuation-budget-progress-v1",
+  "protocol_sha256": "99de185a72a4dc926ea9faf9b14c20535673842ef52efd0ce75889548bc20a5f",
+  "records": [
+    {
+      "seed": 20260922,
+      "report_sha256": "fe85df1f15e4ee9d8b1483c8000fe8d2df335bd8e50b91673252a7cd8e63076a",
+      "report_bytes": 96817244,
+      "wall_seconds": 393.35888508399876
+    },
+    {
+      "seed": 20260923,
+      "report_sha256": "32a3d0a4490f40e83c1b4208813b07ca61fe8c13587501bf967b857bdd4245ed",
+      "report_bytes": 99901277,
+      "wall_seconds": 399.91101272000014
+    },
+    {
+      "seed": 20260924,
+      "report_sha256": "f136646dd5a2cad7d479175b2f6548d230da2ed95498e97c366176ed3ba6f922",
+      "report_bytes": 98523803,
+      "wall_seconds": 398.1911020010011
+    }
+  ],
+  "status": "complete"
+}

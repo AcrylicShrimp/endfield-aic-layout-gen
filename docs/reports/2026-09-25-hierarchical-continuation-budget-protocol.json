@@ -1,0 +1,29 @@
+{
+  "schema": "aic-hierarchical-continuation-budget-protocol-v1",
+  "experiment_commit": "32d3cbea51b81a24303d0ef1ce3d3d5be17071f8",
+  "primary_progress_sha256": "4143f9126ffde348985aeb8b053b31e57b1cc91628ab7a57a4f8ab7bc8fe437e",
+  "primary_summary_sha256": "36ca705c7fab33d7918a2922d64b64a884486542486fd5be1c485b429ee5be55",
+  "panel_sha256": "411d8082606a00250f0883554ab17aad99c5119a25892f51da559d7bf892124f",
+  "binary_sha256": "e594b5425074a03731524d8c91991126232d840ef44a86e8b0630e1f16800fdf",
+  "runner_sha256": "aa616d6a0cff6cd0deb9eff9adaa627b9f88d154d9a5523e2378b88891b70c54",
+  "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+  "outer_checkpoint_sha256": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520",
+  "configs": {
+    "20260922": {
+      "search": "db1ac972849a47919ada90e9c7fa9fdacc2e6e82fd9da1423ab1c54d7ee2053e",
+      "outer": "739a6171aa3a6ac03ca91169c82786184ea087478d21301ead9d03c5aa2dcdc2",
+      "model_config": "739a6171aa3a6ac03ca91169c82786184ea087478d21301ead9d03c5aa2dcdc2"
+    },
+    "20260923": {
+      "search": "9c6b9b057af37f59aa923a0127ae2e6f8698a6a85dbf01f5586d83542f346306",
+      "outer": "1055b9ea134596c43792d0bef3f4752fa33d266b54134c251ca0583b2f39478e",
+      "model_config": "1055b9ea134596c43792d0bef3f4752fa33d266b54134c251ca0583b2f39478e"
+    },
+    "20260924": {
+      "search": "4f78dadbce365b5d1ba68e90e367f1f6c250e6d3bd77eaddb5b6ac075f42a452",
+      "outer": "c0776f1855e80728ab55f5962975eed1c6f6b131a21beed9b0b036589254b45c",
+      "model_config": "c0776f1855e80728ab55f5962975eed1c6f6b131a21beed9b0b036589254b45c"
+    }
+  },
+  "planned_cells": 3
+}
