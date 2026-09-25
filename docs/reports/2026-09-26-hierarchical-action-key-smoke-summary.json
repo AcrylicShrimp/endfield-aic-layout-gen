@@ -1,0 +1,104 @@
+{
+  "schema": "aic-hierarchical-action-key-smoke-v1",
+  "base_commit": "3ddf5ec6",
+  "prototype_source_sha256": "2b28075c66afaae3a28f770cd6d048488e8b5db3f9391c1dc595b8ca33ae1760",
+  "prototype_binary_sha256": "aa3dec380edaa3629368d9002dfe5bb6e0b2c50bc548aa8105a22ac32ace8f00",
+  "physical_commit": "bdf06c61",
+  "physical_source_sha256": "7d64ab8017fb7f1e268157185ab213838bef58616b556834a32db9aad82148b5",
+  "physical_binary_sha256": "66f72a2dbdf45aadbc50e4dfe8f3634012ef5f5a76d8159c698de20f85d7a4fa",
+  "search_config_sha256": {
+    "search-action-key-full.json": "6df4be0c52477713c0931b4e9da38ba76b9678a970e181d414c118cb8c5acdfe",
+    "search-action-key.json": "86469e50325e761929e80910bf6e031903740ba4f9e33b95c886244983bf764e"
+  },
+  "panel_sha256": {
+    "panel-a.json": "d26185e9636a4f45f7ffa2af084de7b14800cb64674b1059538e15f3c66e1891",
+    "panel-b.json": "fd5f093111c7a54a8c3552d73b127cd1f8d4c7192728f9bec065baa2bac366a7",
+    "panel-original.json": "711f88a161b743445f2dc0097371316c9d7ce9e50ccda651ae532a2c9c1fb4aa"
+  },
+  "runs": [
+    {
+      "name": "rank",
+      "report_sha256": "9e655d27e113a9afc51ad67bbc4225aa509ece12aca7f6e5044b7b5e496d83df",
+      "case_id": "train-hierarchical-target-quality-s1-v1-6369",
+      "roots": 10,
+      "completed": false,
+      "elapsed_seconds": 3.266202065,
+      "physical_selection_sha256": "b111194961c0f259e9784c6acabc1619263fa339f46176b23783ad8f6ab3f031",
+      "state_sequence_sha256": "2935184c9ed4d19d0e5a75eba4134fbcb6a59829f703075caffa444c5ea38e57",
+      "first_root_actions": 2624,
+      "first_root_visited": 16
+    },
+    {
+      "name": "key-full-original",
+      "report_sha256": "7cf0fce66d610c820ca1bc55ee70084f3761d32af8ff5849a542916aed555dad",
+      "case_id": "train-hierarchical-target-quality-s1-v1-6369",
+      "roots": 9,
+      "completed": false,
+      "elapsed_seconds": 2.425478419,
+      "physical_selection_sha256": "d6a1cd676de31f770493ed180d5242e246f1d89f59ea4f5e92a8534d5930ac1a",
+      "state_sequence_sha256": "b21d1cd9094da2ad9a498c1aa0464b7d6bee167f38ead591e74077aee3d63c27",
+      "first_root_actions": 2624,
+      "first_root_visited": 16
+    },
+    {
+      "name": "key-full-a",
+      "report_sha256": "3f300f34b0659f91ed6d16dfde190d39f53ebf89ddb12b5dc9a5127d0130a90f",
+      "case_id": "gumbel-key-smoke-a",
+      "roots": 9,
+      "completed": false,
+      "elapsed_seconds": 2.43735381,
+      "physical_selection_sha256": "d6a1cd676de31f770493ed180d5242e246f1d89f59ea4f5e92a8534d5930ac1a",
+      "state_sequence_sha256": "b21d1cd9094da2ad9a498c1aa0464b7d6bee167f38ead591e74077aee3d63c27",
+      "first_root_actions": 2624,
+      "first_root_visited": 16
+    },
+    {
+      "name": "key-full-repeat",
+      "report_sha256": "d0813bf97a8e046224af9ba1e2c713b18c9989b42ef2da84e78fc5fc4adb5e0a",
+      "case_id": "train-hierarchical-target-quality-s1-v1-6369",
+      "roots": 8,
+      "completed": false,
+      "elapsed_seconds": 2.337504518,
+      "physical_selection_sha256": "9a4d36e71cbfc5a602eca20a19c358009f58775f93ea92bfdd6b227982e2c227",
+      "state_sequence_sha256": "2d47b5f3dd581ad54b66a3cc7814643a9d134021e9f480c26d0554af0141e4a1",
+      "first_root_actions": 2624,
+      "first_root_visited": 16
+    },
+    {
+      "name": "physical-original",
+      "report_sha256": "3d1fa3c40999e0f8295188a08c776e15d4b81fa664af6f06cc01541c2b58a66b",
+      "case_id": "train-hierarchical-target-quality-s1-v1-6369",
+      "roots": 10,
+      "completed": false,
+      "elapsed_seconds": 3.543368768,
+      "physical_selection_sha256": "56f63cf12ba8cc46920bf800b7bafc474281281d1f30616611b47e0209f8c065",
+      "state_sequence_sha256": "f24c9f231c7994d6421d5725afa0c36ecec9891215936ddb30fb5569ee5a06b4",
+      "first_root_actions": 2624,
+      "first_root_visited": 16
+    },
+    {
+      "name": "physical-repeat",
+      "report_sha256": "6f62105228e3f8d4cb156ac92f90d6315aa723d341b835ee3e1d84a05d713094",
+      "case_id": "train-hierarchical-target-quality-s1-v1-6369",
+      "roots": 10,
+      "completed": false,
+      "elapsed_seconds": 3.54448416,
+      "physical_selection_sha256": "56f63cf12ba8cc46920bf800b7bafc474281281d1f30616611b47e0209f8c065",
+      "state_sequence_sha256": "f24c9f231c7994d6421d5725afa0c36ecec9891215936ddb30fb5569ee5a06b4",
+      "first_root_actions": 2624,
+      "first_root_visited": 16
+    },
+    {
+      "name": "physical-a",
+      "report_sha256": "5b2c673beb75798dba0fd5087b9ebe6739271013e8402f37159c45be5d232995",
+      "case_id": "gumbel-key-smoke-a",
+      "roots": 10,
+      "completed": false,
+      "elapsed_seconds": 3.579159155,
+      "physical_selection_sha256": "56f63cf12ba8cc46920bf800b7bafc474281281d1f30616611b47e0209f8c065",
+      "state_sequence_sha256": "f24c9f231c7994d6421d5725afa0c36ecec9891215936ddb30fb5569ee5a06b4",
+      "first_root_actions": 2624,
+      "first_root_visited": 16
+    }
+  ]
+}

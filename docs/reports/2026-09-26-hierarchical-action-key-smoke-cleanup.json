@@ -1,0 +1,149 @@
+{
+  "schema": "aic-experiment-cleanup-v1",
+  "experiment": "hierarchical-physical-action-key-one-case-smoke",
+  "remote_root": "~/Srv/aic-target-causal-20260925/artifacts/gumbel-action-key-smoke",
+  "before_bytes": 30872842,
+  "after_bytes": 0,
+  "filesystem_free_before_bytes": 166709092352,
+  "filesystem_free_after_bytes": 166740078592,
+  "removed": [
+    {
+      "path": "build-physical.log",
+      "bytes_before": 2045
+    },
+    {
+      "path": "check-physical.log",
+      "bytes_before": 2054
+    },
+    {
+      "path": "feature-test-large-stack.log",
+      "bytes_before": 89165
+    },
+    {
+      "path": "feature-test.log",
+      "bytes_before": 9243
+    },
+    {
+      "path": "hierarchical-tests.log",
+      "bytes_before": 2728
+    },
+    {
+      "path": "outer-action-key",
+      "bytes_before": 121832
+    },
+    {
+      "path": "outer-action-key-full",
+      "bytes_before": 121833
+    },
+    {
+      "path": "panel-a.json",
+      "bytes_before": 3445
+    },
+    {
+      "path": "panel-b.json",
+      "bytes_before": 3445
+    },
+    {
+      "path": "panel-original.json",
+      "bytes_before": 3471
+    },
+    {
+      "path": "release-build.log",
+      "bytes_before": 2045
+    },
+    {
+      "path": "report-a.json",
+      "bytes_before": 1606571
+    },
+    {
+      "path": "report-b.json",
+      "bytes_before": 1606572
+    },
+    {
+      "path": "report-key-full-a.json",
+      "bytes_before": 3096875
+    },
+    {
+      "path": "report-key-full-original.json",
+      "bytes_before": 3096903
+    },
+    {
+      "path": "report-key-full-repeat.json",
+      "bytes_before": 3091686
+    },
+    {
+      "path": "report-physical-a.json",
+      "bytes_before": 4646936
+    },
+    {
+      "path": "report-physical-original.json",
+      "bytes_before": 4647047
+    },
+    {
+      "path": "report-physical-repeat.json",
+      "bytes_before": 4646954
+    },
+    {
+      "path": "report-rank.json",
+      "bytes_before": 3973241
+    },
+    {
+      "path": "run-a.log",
+      "bytes_before": 285
+    },
+    {
+      "path": "run-b.log",
+      "bytes_before": 286
+    },
+    {
+      "path": "run-key-full-a.log",
+      "bytes_before": 295
+    },
+    {
+      "path": "run-key-full-original.log",
+      "bytes_before": 301
+    },
+    {
+      "path": "run-key-full-repeat.log",
+      "bytes_before": 300
+    },
+    {
+      "path": "run-physical-a.log",
+      "bytes_before": 295
+    },
+    {
+      "path": "run-physical-original.log",
+      "bytes_before": 301
+    },
+    {
+      "path": "run-physical-repeat.log",
+      "bytes_before": 299
+    },
+    {
+      "path": "run-rank.log",
+      "bytes_before": 288
+    },
+    {
+      "path": "search-action-key-full.json",
+      "bytes_before": 955
+    },
+    {
+      "path": "search-action-key.json",
+      "bytes_before": 954
+    },
+    {
+      "path": "summary.json",
+      "bytes_before": 4837
+    },
+    {
+      "path": "test-physical.log",
+      "bytes_before": 89355
+    }
+  ],
+  "retained_elsewhere": [
+    "docs/reports/2026-09-26-hierarchical-action-key-smoke-result.md",
+    "docs/reports/2026-09-26-hierarchical-action-key-smoke-summary.json",
+    "docs/reports/2026-09-26-hierarchical-full-action-prototype.patch"
+  ],
+  "recovery_requirement": "None; the next bounded comparison regenerates panels and shadow model configurations from the retained source panel, checkpoint, and committed code."
+}

@@ -1,0 +1,120 @@
+--- a/crates/aic-learning/src/hierarchical_search.rs
++++ b/crates/aic-learning/src/hierarchical_search.rs
+@@ -60,0 +61,15 @@
++fn default_gumbel_assignment() -> GumbelAssignment {
++    GumbelAssignment::Rank
++}
++
++fn is_rank_gumbel_assignment(value: &GumbelAssignment) -> bool {
++    *value == GumbelAssignment::Rank
++}
++
++#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
++#[serde(rename_all = "kebab-case")]
++pub enum GumbelAssignment {
++    Rank,
++    ActionIdentity,
++}
++
+@@ -71,0 +87,5 @@
++        #[serde(
++            default = "default_gumbel_assignment",
++            skip_serializing_if = "is_rank_gumbel_assignment"
++        )]
++        gumbel_assignment: GumbelAssignment,
+@@ -1598,0 +1619 @@
++                gumbel_assignment,
+@@ -1613,0 +1635 @@
++                        gumbel_assignment: *gumbel_assignment,
+@@ -1697,0 +1720 @@
++    gumbel_assignment: GumbelAssignment,
+@@ -1725 +1748,8 @@
+-    let gumbels = deterministic_gumbels(controls.seed, case_id, state_identity, actions.len());
++    let gumbels = match controls.gumbel_assignment {
++        GumbelAssignment::Rank => {
++            deterministic_gumbels(controls.seed, case_id, state_identity, actions.len())
++        }
++        GumbelAssignment::ActionIdentity => {
++            deterministic_action_gumbels(controls.seed, state_identity, actions)?
++        }
++    };
+@@ -1907,4 +1937,24 @@
+-        .map(|_| {
+-            let bits = splitmix64(&mut state) >> 11;
+-            let uniform = (bits as f64 + 0.5) / ((1u64 << 53) as f64);
+-            -(-uniform.ln()).ln()
++        .map(|_| gumbel_from_bits(splitmix64(&mut state)))
++        .collect()
++}
++
++fn deterministic_action_gumbels(
++    seed: u64,
++    state_identity: &str,
++    actions: &[Edge],
++) -> Result<Vec<f64>> {
++    let mut prefix = Sha256::new();
++    prefix.update(seed.to_le_bytes());
++    prefix.update([0]);
++    // State identity already hashes the problem and observation. Case IDs are
++    // sampling metadata, so an identical physical state keeps the same noise.
++    prefix.update(state_identity.as_bytes());
++    prefix.update([0]);
++    actions
++        .iter()
++        .map(|edge| {
++            let mut digest = prefix.clone();
++            digest.update(serde_json::to_vec(&edge.action)?);
++            let bytes = digest.finalize();
++            let bits = u64::from_le_bytes(bytes[..8].try_into().expect("SHA-256 prefix"));
++            Ok(gumbel_from_bits(bits))
+@@ -1914,0 +1965,5 @@
++fn gumbel_from_bits(bits: u64) -> f64 {
++    let uniform = ((bits >> 11) as f64 + 0.5) / ((1u64 << 53) as f64);
++    -(-uniform.ln()).ln()
++}
++
+@@ -2617,0 +2673,21 @@
++        let command_edge = |command| Edge {
++            action: MacroAction::Command(command),
++            prior: 0.5,
++            anchor_prior: 0.5,
++            visits: 0,
++            value_sum: 0.0,
++            child: None,
++        };
++        let forward = [
++            command_edge(Command::Connect),
++            command_edge(Command::AbortRoute),
++        ];
++        let reverse = [
++            command_edge(Command::AbortRoute),
++            command_edge(Command::Connect),
++        ];
++        let keyed_forward = deterministic_action_gumbels(7, "state-a", &forward).unwrap();
++        let keyed_reverse = deterministic_action_gumbels(7, "state-a", &reverse).unwrap();
++        assert_eq!(keyed_forward, [keyed_reverse[1], keyed_reverse[0]]);
++        assert_ne!(keyed_forward[0], keyed_forward[1]);
++
+@@ -2624,0 +2701,22 @@
++    fn legacy_gumbel_config_keeps_rank_assignment_and_round_trips() {
++        let original = json!({
++            "algorithm": "gumbel-sequential-halving",
++            "candidates": 16,
++            "anchor_candidates": 8,
++            "anchor_policy_mass": 0.5,
++            "seed": 20260922,
++            "value_scale": 0.1,
++            "max_visit_init": 50.0
++        });
++        let parsed: RootSelection = serde_json::from_value(original.clone()).unwrap();
++        assert!(matches!(
++            parsed,
++            RootSelection::GumbelSequentialHalving {
++                gumbel_assignment: GumbelAssignment::Rank,
++                ..
++            }
++        ));
++        assert_eq!(serde_json::to_value(&parsed).unwrap(), original);
++    }
++
++    #[test]
