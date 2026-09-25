@@ -20,7 +20,11 @@ Prepare three fresh 16-case, two-facility train-source panels with seeds
 20261410, 20261430 and 20261450 and namespaces
 `hierarchical-target-quality-s1/s2/s3-v1`. Keep the established sampling
 config, maximum six terminals and connections, 10,000 turns, extension 32,
-and canonical generation-87 lower/outer checkpoints. No panel enters training.
+and canonical generation-87 lower/outer checkpoints. Generate 256 candidates
+per seed and select the first 16 distinct problem identities, excluding cases
+already selected by earlier panels. This deterministic identity filter was
+added after preparation found duplicates and before any search outcomes were
+observed. No panel enters training.
 Run the existing eager hierarchical search harness twice per panel with
 identical model weights, catalogs, panel, root Gumbel seed, search horizon,
 candidate construction, and move budget. The only treatment is 128 versus

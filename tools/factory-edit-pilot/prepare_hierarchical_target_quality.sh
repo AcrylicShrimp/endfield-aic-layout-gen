@@ -13,7 +13,7 @@ if [[ -e "$root" ]]; then
   echo "refusing existing audit root: $root" >&2
   exit 1
 fi
-mkdir -p "$root/inputs/panels" "$root/inputs/models"
+mkdir -p "$root/inputs/panels" "$root/inputs/candidates" "$root/inputs/models"
 
 for stream in s1 s2 s3; do
   case "$stream" in
@@ -24,12 +24,37 @@ for stream in s1 s2 s3; do
   "$cli" learning prepare-hierarchical-panel \
     --sampling docs/benchmarks/direct-constructive-full-graphs/sampling.json \
     --catalog-root data/game/normalized \
-    --output "$root/inputs/panels/$stream.json" \
-    --partition training --cases 16 --seed "$seed" \
+    --output "$root/inputs/candidates/$stream.json" \
+    --partition training --cases 256 --seed "$seed" \
     --namespace "hierarchical-target-quality-$stream-v1" \
     --min-facilities 2 --max-facilities 2 --max-terminals 6 \
     --max-connections 6 --max-turns 10000 --max-extension 32 >/dev/null
 done
+python3 - "$root/inputs" <<'PY'
+import hashlib
+import json
+from pathlib import Path
+import sys
+
+root = Path(sys.argv[1])
+seen = set()
+for stream in ("s1", "s2", "s3"):
+    panel = json.loads((root / "candidates" / f"{stream}.json").read_text())
+    selected = []
+    for case in panel["cases"]:
+        encoded = json.dumps(case["problem"], sort_keys=True, separators=(",", ":"))
+        identity = hashlib.sha256(encoded.encode()).hexdigest()
+        if identity not in seen:
+            selected.append(case)
+            seen.add(identity)
+        if len(selected) == 16:
+            break
+    if len(selected) != 16:
+        raise RuntimeError(f"only {len(selected)} distinct cases for {stream}")
+    panel["cases"] = selected
+    (root / "panels" / f"{stream}.json").write_text(json.dumps(panel, indent=2) + "\n")
+print(f"selected_panels=3 distinct_problems={len(seen)}")
+PY
 
 source="$HOME/Srv/aic-gumbel-curriculum-20260922/artifacts/hierarchical-curriculum-v1/generations/000087/training"
 cp -a "$source/lower" "$root/inputs/models/lower"
