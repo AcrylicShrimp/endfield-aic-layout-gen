@@ -1,0 +1,38 @@
+{
+  "schema": "aic-hierarchical-target-learner-confirmation-cleanup-v1",
+  "protocol_sha256": "a84b70b4d802bc50203412f5d2694498d1b218c48140e54d36d78a01e86be438",
+  "progress_sha256": "64f4d2453aaef4c237bf82b0446e114aac1e575ee3b7aa68efcf8041ab47d8d5",
+  "wandb_status_sha256": "4ca19957e1997222a9ab095733d522853e72b69f0e267e364f34fdb07e54d24c",
+  "final_analysis_sha256": "77d4aa54e0bb006eb815388f0dc5214dc0f3179d67f6f90aea3f2037823eaaea",
+  "feedback_analysis_sha256": "708caaaaf460232d22d6c13abface9294ab8a12cb3dfb282d95063a88a0013c1",
+  "removed": [
+    {
+      "path": "artifacts/target-causal-study/learner/confirmation/collections",
+      "file_bytes": 2739180266
+    },
+    {
+      "path": "artifacts/target-causal-study/learner/confirmation/training",
+      "file_bytes": 19169018
+    },
+    {
+      "path": "artifacts/target-causal-study/learner/confirmation/evaluations",
+      "file_bytes": 4525109423
+    },
+    {
+      "path": "artifacts/target-causal-study/learner/confirmation/logs",
+      "file_bytes": 50182
+    },
+    {
+      "path": "artifacts/target-causal-study/learner/confirmation/wandb-telemetry",
+      "file_bytes": 531529
+    },
+    {
+      "path": "artifacts/target-causal-study/learner/confirmation/.wandb-observer.lock",
+      "file_bytes": 0
+    }
+  ],
+  "removed_file_bytes": 7284040418,
+  "free_bytes_before": 169160376320,
+  "free_bytes_after": 176445911040,
+  "retention_reason": "All 18 case masks, lineage hashes, gate metrics, feedback comparisons and remote W&B acknowledgement are committed; models are not promotion candidates."
+}
