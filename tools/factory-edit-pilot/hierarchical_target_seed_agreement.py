@@ -221,12 +221,12 @@ def summarize(root):
         index = {hashlib.sha256(key.encode()).hexdigest(): i
                  for i, key in enumerate(witnesses)}
         tested = [index[key] for key in candidate_hashes[case_id]]
-        root = {}
+        root_data = {}
         for seed, record in zip(SEEDS, records):
             prior, visited, distributions = targets(record["actions"])
-            root[seed] = {"visited": {i for i, flag in enumerate(visited) if flag},
-                          "selected": record["selected_action"],
-                          "distributions": distributions}
+            root_data[seed] = {"visited": {i for i, flag in enumerate(visited) if flag},
+                               "selected": record["selected_action"],
+                               "distributions": distributions}
             for name in VARIANTS:
                 values = distributions[name]
                 variant_unvisited[name].append(sum(value for value, flag in zip(values, visited)
@@ -234,14 +234,14 @@ def summarize(root):
                 variant_effective[name].append(math.exp(entropy(values)) / len(values))
         baseline_visited = {i for i, action in enumerate(original["actions"])
                             if action["visits"] > 0}
-        selected_hashes = [hashlib.sha256(witnesses[root[seed]["selected"]].encode()).hexdigest()
+        selected_hashes = [hashlib.sha256(witnesses[root_data[seed]["selected"]].encode()).hexdigest()
                            for seed in SEEDS]
         selected_changes += len(set(selected_hashes)) > 1
-        selected_outside_original += sum(root[seed]["selected"] not in baseline_visited
+        selected_outside_original += sum(root_data[seed]["selected"] not in baseline_visited
                                          for seed in SEEDS)
         pair_rows = []
         for left_seed, right_seed in itertools.combinations(SEEDS, 2):
-            left, right = root[left_seed], root[right_seed]
+            left, right = root_data[left_seed], root_data[right_seed]
             overlap = len(left["visited"] & right["visited"])
             union = len(left["visited"] | right["visited"])
             visit_jaccards.append(overlap / union)
