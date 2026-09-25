@@ -52,6 +52,7 @@ def observe(directory, env_file, stopped):
                 x_disable_stats=True, x_disable_machine_info=True,
                 init_timeout=30, finish_timeout=20),
             config={"protocol_sha256": protocol_sha,
+                    "experiment_commit": protocol["experiment_commit"],
                     "phase": protocol["phase"], "contrast": protocol["contrast"],
                     "planned_records": maximum})
         acknowledged = remote_step(wandb, destination, identifier)

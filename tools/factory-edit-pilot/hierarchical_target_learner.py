@@ -84,7 +84,7 @@ def panel(root, name, seed, candidates, take, seen):
     return sha(output)
 
 
-def prepare(root):
+def prepare(root, commit):
     learner = root / "learner"
     require(not learner.exists(), "learner root already exists")
     continuation = read(root / "continuation-summary.json")
@@ -122,6 +122,7 @@ def prepare(root):
                                             512, 64, seen)
     screen = {
         "schema": "aic-hierarchical-target-learner-protocol-v1", "phase": "screen",
+        "experiment_commit": commit,
         "contrast": contrast["selected_contrast"],
         "selection_reason": contrast["selection_reason"],
         "contrast_analysis_sha256": sha(root / "target-contrast-analysis.json"),
@@ -334,7 +335,7 @@ def choose_scope(root):
     return scope, "screen-gate" if eligible else "stress-contrast-only", calculations
 
 
-def prepare_confirmation(root):
+def prepare_confirmation(root, commit):
     learner = root / "learner"
     directory = learner / "confirmation"
     require(not directory.exists(), "confirmation already prepared")
@@ -342,6 +343,7 @@ def prepare_confirmation(root):
     screen_protocol = read(learner / "screen/protocol.json")
     protocol = {
         "schema": "aic-hierarchical-target-learner-protocol-v1", "phase": "confirmation",
+        "experiment_commit": commit,
         "contrast": screen_protocol["contrast"], "scope": scope,
         "selection_reason": reason, "scope_calculations": calculations,
         "screen_progress_sha256": sha(learner / "screen/progress.json"),
@@ -438,14 +440,17 @@ def main():
                                             "confirmation"))
     parser.add_argument("--output", type=Path, default=Path("artifacts/target-causal-study"))
     parser.add_argument("--max-records", type=int)
+    parser.add_argument("--experiment-commit")
     args = parser.parse_args()
     os.chdir(Path(__file__).resolve().parents[2])
     if args.command == "prepare":
-        prepare(args.output)
+        require(args.experiment_commit, "experiment commit is required")
+        prepare(args.output, args.experiment_commit)
     elif args.command == "screen":
         screen(args.output, args.max_records)
     elif args.command == "prepare-confirmation":
-        prepare_confirmation(args.output)
+        require(args.experiment_commit, "experiment commit is required")
+        prepare_confirmation(args.output, args.experiment_commit)
     else:
         confirmation(args.output, args.max_records)
 
