@@ -1,0 +1,19 @@
+{
+  "schema": "aic-hierarchical-target-quality-cleanup-v1",
+  "closed_at_epoch": 1790307442.9084482,
+  "paths_removed": [
+    {
+      "path": "artifacts/target-quality-audit",
+      "bytes_before": 354540237,
+      "description": "replayable panels and candidate pools, copied checkpoints, raw search reports, logs and compact server copies"
+    },
+    {
+      "path": "target",
+      "bytes_before": 960707113,
+      "description": "regenerable release build cache"
+    }
+  ],
+  "filesystem_free_bytes_before": 177846964224,
+  "filesystem_free_bytes_after": 179082395648,
+  "filesystem_free_bytes_recovered": 1235431424
+}

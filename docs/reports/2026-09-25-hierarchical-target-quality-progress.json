@@ -1,0 +1,49 @@
+{
+  "schema": "aic-hierarchical-target-quality-progress-v1",
+  "protocol_sha256": "b3bcc5c1326e5f17ca0a80f3e7f87900cfc638fb4f75709c8c584b6d5d03c8ce",
+  "status": "complete",
+  "records": [
+    {
+      "stream": "s1",
+      "simulations": 128,
+      "report_sha256": "6f8b7f37bf4a398572a68e86c28f0b3e9ed25d50fc16069d5215da6989c3604b",
+      "report_bytes": 62191146,
+      "integrated_wall_seconds": 56.90979821599831
+    },
+    {
+      "stream": "s1",
+      "simulations": 512,
+      "report_sha256": "873518d790053a83ff2f4389e6a6d826494df51e546fa1f71c2cac3198d98dcc",
+      "report_bytes": 59612243,
+      "integrated_wall_seconds": 159.36836191100156
+    },
+    {
+      "stream": "s2",
+      "simulations": 128,
+      "report_sha256": "0229af466d2337ae963a4d5dd1a11a5cf01bf1ca5f0dd289b8dd45f86835d832",
+      "report_bytes": 54370649,
+      "integrated_wall_seconds": 41.12408948400116
+    },
+    {
+      "stream": "s2",
+      "simulations": 512,
+      "report_sha256": "a74168599eff961d154ef742219f0cb850525799a87ca1c0aeeb1c4eb80ac707",
+      "report_bytes": 55803773,
+      "integrated_wall_seconds": 103.59824475799905
+    },
+    {
+      "stream": "s3",
+      "simulations": 128,
+      "report_sha256": "ac5a6d52d2fd5258346bb2e2e10b8ea6328c0ac1d62fa4850b521ee422ed6c64",
+      "report_bytes": 59967863,
+      "integrated_wall_seconds": 71.8007398180016
+    },
+    {
+      "stream": "s3",
+      "simulations": 512,
+      "report_sha256": "d6f3ab12db15183706b3088186cd624624335b00fafbac1840327e6d92a24587",
+      "report_bytes": 59856378,
+      "integrated_wall_seconds": 187.865933244997
+    }
+  ]
+}
