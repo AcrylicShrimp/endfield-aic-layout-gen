@@ -61,6 +61,12 @@ def prepare(root, commit):
                 and search["root_selection"]["seed"] == seed
                 and outer["search"] == search, f"config differs: {seed}")
         model = root / f"inputs/models/outer-budget-512-{seed}"
+        model.mkdir(parents=True, exist_ok=True)
+        for name in ("state.safetensors", "parameter-order.json"):
+            link = model / name
+            if not link.exists():
+                link.symlink_to(Path("..") / "outer-128" / name)
+        write(model / "config.json", outer)
         require(sha(model / "config.json") == sha(config(seed, "outer")),
                 f"model config differs: {seed}")
         hashes[str(seed)] = {"search": sha(config(seed, "search")),
