@@ -1,0 +1,2361 @@
+{
+  "schema": "aic-hierarchical-target-contrast-analysis-v1",
+  "width_progress_sha256": "cd29b5d76f65455fa7274547037cf2fdbdea798d0f14c3b5c0bc0f5564d685bf",
+  "continuation_summary_sha256": "36ca705c7fab33d7918a2922d64b64a884486542486fd5be1c485b429ee5be55",
+  "replication_summary_sha256": "b68ff1b09e83b4c46d5788dc1d9be25376b5529f27984ac02a7b226b0c14e8bb",
+  "cases": [
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-6369",
+      "primary_clear_pairs": 0,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.0031790290110578867,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.008376698091231117,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.10134958023984543,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.15495692852525278,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-22498",
+      "primary_clear_pairs": 12,
+      "clear_pairs": 4,
+      "clear_pairs_winner_visited": 2,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 1.404584813628516,
+          "pair_concordance": 0.75,
+          "tested_action_mass": 0.004834327993189015,
+          "mean_confirmed_winner_mass": 0.000632345123716306,
+          "mean_confirmed_winner_rank_fraction": 0.2681586179819395,
+          "mean_confirmed_loser_rank_fraction": 0.9363957597173145
+        },
+        "q2": {
+          "mean_pair_loss": 2.3910313885982757,
+          "pair_concordance": 0.75,
+          "tested_action_mass": 0.014821494180115887,
+          "mean_confirmed_winner_mass": 0.0020463950018503757,
+          "mean_confirmed_winner_rank_fraction": 0.2681586179819395,
+          "mean_confirmed_loser_rank_fraction": 0.9363957597173145
+        },
+        "q4": {
+          "mean_pair_loss": 4.436227646540909,
+          "pair_concordance": 0.75,
+          "tested_action_mass": 0.18918814303471293,
+          "mean_confirmed_winner_mass": 0.028804387650046167,
+          "mean_confirmed_winner_rank_fraction": 0.2681586179819395,
+          "mean_confirmed_loser_rank_fraction": 0.9363957597173145
+        },
+        "half-visited": {
+          "mean_pair_loss": 0.3861369441468104,
+          "pair_concordance": 1,
+          "tested_action_mass": 0.31769988003673827,
+          "mean_confirmed_winner_mass": 0.04215170041736188,
+          "mean_confirmed_winner_rank_fraction": 0.021986650961915977,
+          "mean_confirmed_loser_rank_fraction": 0.9411071849234394
+        }
+      }
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-17062",
+      "primary_clear_pairs": 5,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.004313657016622003,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.01162309815849346,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.12091083075605487,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.264476462857574,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-30191",
+      "primary_clear_pairs": 12,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.005541225545942263,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.01714576440036375,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.19736186714666776,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.36325071730994657,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-3308",
+      "primary_clear_pairs": 7,
+      "clear_pairs": 3,
+      "clear_pairs_winner_visited": 1,
+      "clear_pairs_loser_visited": 3,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 1.211223614970356,
+          "pair_concordance": 0.3333333333333333,
+          "tested_action_mass": 0.00426601949361909,
+          "mean_confirmed_winner_mass": 0.0007241159313938951,
+          "mean_confirmed_winner_rank_fraction": 0.2682678866437921,
+          "mean_confirmed_loser_rank_fraction": 0.0003812428516965307
+        },
+        "q2": {
+          "mean_pair_loss": 1.9060613151451136,
+          "pair_concordance": 0.3333333333333333,
+          "tested_action_mass": 0.011008944417828355,
+          "mean_confirmed_winner_mass": 0.001930660805046089,
+          "mean_confirmed_winner_rank_fraction": 0.2682678866437921,
+          "mean_confirmed_loser_rank_fraction": 0.0003812428516965307
+        },
+        "q4": {
+          "mean_pair_loss": 3.47918269403271,
+          "pair_concordance": 0.3333333333333333,
+          "tested_action_mass": 0.10603334214882121,
+          "mean_confirmed_winner_mass": 0.019680136897709397,
+          "mean_confirmed_winner_rank_fraction": 0.2682678866437921,
+          "mean_confirmed_loser_rank_fraction": 0.0003812428516965307
+        },
+        "half-visited": {
+          "mean_pair_loss": 4.5657339456974695,
+          "pair_concordance": 0.3333333333333333,
+          "tested_action_mass": 0.270612377340294,
+          "mean_confirmed_winner_mass": 0.046345976508824535,
+          "mean_confirmed_winner_rank_fraction": 0.2713178294573643,
+          "mean_confirmed_loser_rank_fraction": 0.0003812428516965307
+        }
+      }
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-13586",
+      "primary_clear_pairs": 4,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.005147754650511758,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.017306124714381727,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.23950361541497248,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.30879465924081695,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-9040",
+      "primary_clear_pairs": 10,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.003205524941269024,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.009820737131533166,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.1388644249092222,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.15564687011641828,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-32031",
+      "primary_clear_pairs": 5,
+      "clear_pairs": 2,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 2,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 0.8764340916461965,
+          "pair_concordance": 0.5,
+          "tested_action_mass": 0.004693950660561441,
+          "mean_confirmed_winner_mass": 0.000384248418471591,
+          "mean_confirmed_winner_rank_fraction": 0.30613800991231416,
+          "mean_confirmed_loser_rank_fraction": 0.49904689287075865
+        },
+        "q2": {
+          "mean_pair_loss": 1.5694325075176505,
+          "pair_concordance": 0.5,
+          "tested_action_mass": 0.014619221708714828,
+          "mean_confirmed_winner_mass": 0.0003800306590989397,
+          "mean_confirmed_winner_rank_fraction": 0.30613800991231416,
+          "mean_confirmed_loser_rank_fraction": 0.49904689287075865
+        },
+        "q4": {
+          "mean_pair_loss": 3.1020804137193423,
+          "pair_concordance": 0.5,
+          "tested_action_mass": 0.19961934462856887,
+          "mean_confirmed_winner_mass": 0.00030531543217834174,
+          "mean_confirmed_winner_rank_fraction": 0.30613800991231416,
+          "mean_confirmed_loser_rank_fraction": 0.49904689287075865
+        },
+        "half-visited": {
+          "mean_pair_loss": 4.276901255248784,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.30932280463927464,
+          "mean_confirmed_winner_mass": 0.0001919228015135546,
+          "mean_confirmed_winner_rank_fraction": 0.3107129241326725,
+          "mean_confirmed_loser_rank_fraction": 0.0019062142584826535
+        }
+      }
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-26043",
+      "primary_clear_pairs": 7,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.004805076004896497,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.015565694835304867,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.22847050915530476,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.30941978069195325,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-30481",
+      "primary_clear_pairs": 10,
+      "clear_pairs": 3,
+      "clear_pairs_winner_visited": 3,
+      "clear_pairs_loser_visited": 1,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 3.0335715248032686,
+          "pair_concordance": 0.3333333333333333,
+          "tested_action_mass": 0.003483295823078278,
+          "mean_confirmed_winner_mass": 5.527726400186957e-06,
+          "mean_confirmed_winner_rank_fraction": 0.998203377650018,
+          "mean_confirmed_loser_rank_fraction": 0.4523895077254761
+        },
+        "q2": {
+          "mean_pair_loss": 5.823348238750244,
+          "pair_concordance": 0.3333333333333333,
+          "tested_action_mass": 0.012516542832735763,
+          "mean_confirmed_winner_mass": 8.145334776870529e-08,
+          "mean_confirmed_winner_rank_fraction": 0.998203377650018,
+          "mean_confirmed_loser_rank_fraction": 0.4523895077254761
+        },
+        "q4": {
+          "mean_pair_loss": 11.422515507600123,
+          "pair_concordance": 0.3333333333333333,
+          "tested_action_mass": 0.22004293600205868,
+          "mean_confirmed_winner_mass": 1.162316567184391e-11,
+          "mean_confirmed_winner_rank_fraction": 0.998203377650018,
+          "mean_confirmed_loser_rank_fraction": 0.4523895077254761
+        },
+        "half-visited": {
+          "mean_pair_loss": 0.38927904442749256,
+          "pair_concordance": 1,
+          "tested_action_mass": 0.1837912839945633,
+          "mean_confirmed_winner_mass": 0.0006800838211293103,
+          "mean_confirmed_winner_rank_fraction": 0.0035932446999640674,
+          "mean_confirmed_loser_rank_fraction": 0.12372739250209606
+        }
+      }
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-32093",
+      "primary_clear_pairs": 8,
+      "clear_pairs": 8,
+      "clear_pairs_winner_visited": 5,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 1.3428014580800058,
+          "pair_concordance": 0.625,
+          "tested_action_mass": 0.006043526547475044,
+          "mean_confirmed_winner_mass": 0.0007099451610546684,
+          "mean_confirmed_winner_rank_fraction": 0.33626313881841247,
+          "mean_confirmed_loser_rank_fraction": 0.3870967741935484
+        },
+        "q2": {
+          "mean_pair_loss": 2.281119685863193,
+          "pair_concordance": 0.625,
+          "tested_action_mass": 0.021018818375661306,
+          "mean_confirmed_winner_mass": 0.0025825318479309953,
+          "mean_confirmed_winner_rank_fraction": 0.33626313881841247,
+          "mean_confirmed_loser_rank_fraction": 0.3870967741935484
+        },
+        "q4": {
+          "mean_pair_loss": 4.266433331568585,
+          "pair_concordance": 0.625,
+          "tested_action_mass": 0.2852847188435516,
+          "mean_confirmed_winner_mass": 0.03562787022599987,
+          "mean_confirmed_winner_rank_fraction": 0.33626313881841247,
+          "mean_confirmed_loser_rank_fraction": 0.3870967741935484
+        },
+        "half-visited": {
+          "mean_pair_loss": 0.3095969981728103,
+          "pair_concordance": 0.875,
+          "tested_action_mass": 0.42584450360839515,
+          "mean_confirmed_winner_mass": 0.05320782532197443,
+          "mean_confirmed_winner_rank_fraction": 0.0892533526640087,
+          "mean_confirmed_loser_rank_fraction": 0.39144617615077926
+        }
+      }
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-9932",
+      "primary_clear_pairs": 9,
+      "clear_pairs": 3,
+      "clear_pairs_winner_visited": 3,
+      "clear_pairs_loser_visited": 2,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 0.594913911332824,
+          "pair_concordance": 0.6666666666666666,
+          "tested_action_mass": 0.005712694341783063,
+          "mean_confirmed_winner_mass": 0.0006374245204619138,
+          "mean_confirmed_winner_rank_fraction": 0.001143728555089592,
+          "mean_confirmed_loser_rank_fraction": 0.6650146143093151
+        },
+        "q2": {
+          "mean_pair_loss": 0.8194103767911324,
+          "pair_concordance": 0.6666666666666666,
+          "tested_action_mass": 0.018216879992460935,
+          "mean_confirmed_winner_mass": 0.0010318775897055219,
+          "mean_confirmed_winner_rank_fraction": 0.001143728555089592,
+          "mean_confirmed_loser_rank_fraction": 0.6650146143093151
+        },
+        "q4": {
+          "mean_pair_loss": 1.4083153701304565,
+          "pair_concordance": 0.6666666666666666,
+          "tested_action_mass": 0.24984431290414788,
+          "mean_confirmed_winner_mass": 0.002091859475565517,
+          "mean_confirmed_winner_rank_fraction": 0.001143728555089592,
+          "mean_confirmed_loser_rank_fraction": 0.6650146143093151
+        },
+        "half-visited": {
+          "mean_pair_loss": 0.4463678494543681,
+          "pair_concordance": 0.6666666666666666,
+          "tested_action_mass": 0.3854443957328063,
+          "mean_confirmed_winner_mass": 0.0585438389637728,
+          "mean_confirmed_winner_rank_fraction": 0.001143728555089592,
+          "mean_confirmed_loser_rank_fraction": 0.3351124666412505
+        }
+      }
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-15983",
+      "primary_clear_pairs": 10,
+      "clear_pairs": 3,
+      "clear_pairs_winner_visited": 2,
+      "clear_pairs_loser_visited": 3,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 2.4786142140764427,
+          "pair_concordance": 0.3333333333333333,
+          "tested_action_mass": 0.003982950898454641,
+          "mean_confirmed_winner_mass": 0.0006103638688863921,
+          "mean_confirmed_winner_rank_fraction": 0.33541211932231574,
+          "mean_confirmed_loser_rank_fraction": 0.0003118178983473651
+        },
+        "q2": {
+          "mean_pair_loss": 4.610384528421469,
+          "pair_concordance": 0.3333333333333333,
+          "tested_action_mass": 0.012914618025772505,
+          "mean_confirmed_winner_mass": 0.002478705945748502,
+          "mean_confirmed_winner_rank_fraction": 0.33541211932231574,
+          "mean_confirmed_loser_rank_fraction": 0.0003118178983473651
+        },
+        "q4": {
+          "mean_pair_loss": 8.980482986345084,
+          "pair_concordance": 0.3333333333333333,
+          "tested_action_mass": 0.18592320718621647,
+          "mean_confirmed_winner_mass": 0.04376293982000397,
+          "mean_confirmed_winner_rank_fraction": 0.33541211932231574,
+          "mean_confirmed_loser_rank_fraction": 0.0003118178983473651
+        },
+        "half-visited": {
+          "mean_pair_loss": 4.1247638221602845,
+          "pair_concordance": 0.3333333333333333,
+          "tested_action_mass": 0.2976332457125255,
+          "mean_confirmed_winner_mass": 0.055212728573192676,
+          "mean_confirmed_winner_rank_fraction": 0.00488514707410872,
+          "mean_confirmed_loser_rank_fraction": 0.0003118178983473651
+        }
+      }
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-6903",
+      "primary_clear_pairs": 0,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.00558348854241706,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.02463026376620441,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.4420530183280023,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.39027265374089504,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-4243",
+      "primary_clear_pairs": 0,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.004738479938975858,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.014593339913659933,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.18568719660946859,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.3033174075271199,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s1",
+      "case_id": "train-hierarchical-target-quality-s1-v1-31246",
+      "primary_clear_pairs": 6,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.004162862775381362,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.010487976174074704,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.10273138384504685,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.2676993369207791,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-23263",
+      "primary_clear_pairs": 3,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.003418285590451935,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.010336484218142135,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.15939719645050654,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.17683934597346865,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-14990",
+      "primary_clear_pairs": 7,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.00489551481335898,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.01599083853809349,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.2211782523480946,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.3206653508515232,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-15229",
+      "primary_clear_pairs": 3,
+      "clear_pairs": 1,
+      "clear_pairs_winner_visited": 1,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 0.2038598451475583,
+          "pair_concordance": 1,
+          "tested_action_mass": 0.00473391883601057,
+          "mean_confirmed_winner_mass": 0.0016742155674173641,
+          "mean_confirmed_winner_rank_fraction": 0.0,
+          "mean_confirmed_loser_rank_fraction": 0.7373236751810903
+        },
+        "q2": {
+          "mean_pair_loss": 0.050093847960404246,
+          "pair_concordance": 1,
+          "tested_action_mass": 0.01465421620940871,
+          "mean_confirmed_winner_mass": 0.007271630317480781,
+          "mean_confirmed_winner_rank_fraction": 0.0,
+          "mean_confirmed_loser_rank_fraction": 0.7373236751810903
+        },
+        "q4": {
+          "mean_pair_loss": 0.002647557861625513,
+          "pair_concordance": 1,
+          "tested_action_mass": 0.18607769288951959,
+          "mean_confirmed_winner_mass": 0.11215223897126009,
+          "mean_confirmed_winner_rank_fraction": 0.0,
+          "mean_confirmed_loser_rank_fraction": 0.7373236751810903
+        },
+        "half-visited": {
+          "mean_pair_loss": 0.0012710109724267608,
+          "pair_concordance": 1,
+          "tested_action_mass": 0.2848147789796853,
+          "mean_confirmed_winner_mass": 0.14875777910021998,
+          "mean_confirmed_winner_rank_fraction": 0.0,
+          "mean_confirmed_loser_rank_fraction": 0.7418985894014487
+        }
+      }
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-12488",
+      "primary_clear_pairs": 8,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.004202294207469197,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.011059787122673862,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.12243519841941693,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.25271509132196535,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-9758",
+      "primary_clear_pairs": 0,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.002836594348689852,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.007009780924464973,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.08036376761414626,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.15466691807910435,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-29442",
+      "primary_clear_pairs": 6,
+      "clear_pairs": 2,
+      "clear_pairs_winner_visited": 2,
+      "clear_pairs_loser_visited": 1,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 4.852884020911018,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.004207026321013359,
+          "mean_confirmed_winner_mass": 5.9345917551060245e-06,
+          "mean_confirmed_winner_rank_fraction": 0.9973353635325466,
+          "mean_confirmed_loser_rank_fraction": 0.0007613247049866769
+        },
+        "q2": {
+          "mean_pair_loss": 9.703557338094871,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.010768246373710324,
+          "mean_confirmed_winner_mass": 8.952739156507215e-08,
+          "mean_confirmed_winner_rank_fraction": 0.9973353635325466,
+          "mean_confirmed_loser_rank_fraction": 0.0007613247049866769
+        },
+        "q4": {
+          "mean_pair_loss": 19.423726526622307,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.1064465126234507,
+          "mean_confirmed_winner_mass": 1.8490511104047517e-11,
+          "mean_confirmed_winner_rank_fraction": 0.9973353635325466,
+          "mean_confirmed_loser_rank_fraction": 0.0007613247049866769
+        },
+        "half-visited": {
+          "mean_pair_loss": 2.723920217608502,
+          "pair_concordance": 0.5,
+          "tested_action_mass": 0.27323014351390723,
+          "mean_confirmed_winner_mass": 0.0007995561116565325,
+          "mean_confirmed_winner_rank_fraction": 0.0030452988199467074,
+          "mean_confirmed_loser_rank_fraction": 0.0030452988199467074
+        }
+      }
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-14441",
+      "primary_clear_pairs": 9,
+      "clear_pairs": 4,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 4,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 1.2221749234221486,
+          "pair_concordance": 0.25,
+          "tested_action_mass": 0.004641252259946727,
+          "mean_confirmed_winner_mass": 0.0003874136720971146,
+          "mean_confirmed_winner_rank_fraction": 0.17136866183759056,
+          "mean_confirmed_loser_rank_fraction": 0.24980937857415172
+        },
+        "q2": {
+          "mean_pair_loss": 2.163008806920637,
+          "pair_concordance": 0.25,
+          "tested_action_mass": 0.013944296208562945,
+          "mean_confirmed_winner_mass": 0.0003832302440534686,
+          "mean_confirmed_winner_rank_fraction": 0.17136866183759056,
+          "mean_confirmed_loser_rank_fraction": 0.24980937857415172
+        },
+        "q4": {
+          "mean_pair_loss": 4.254651713048082,
+          "pair_concordance": 0.25,
+          "tested_action_mass": 0.17442594874519796,
+          "mean_confirmed_winner_mass": 0.00031669396601430723,
+          "mean_confirmed_winner_rank_fraction": 0.17136866183759056,
+          "mean_confirmed_loser_rank_fraction": 0.24980937857415172
+        },
+        "half-visited": {
+          "mean_pair_loss": 5.420205173723932,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.30172796713560474,
+          "mean_confirmed_winner_mass": 0.00019351298290087924,
+          "mean_confirmed_winner_rank_fraction": 0.1759435760579489,
+          "mean_confirmed_loser_rank_fraction": 0.0012390392680137247
+        }
+      }
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-731",
+      "primary_clear_pairs": 12,
+      "clear_pairs": 4,
+      "clear_pairs_winner_visited": 1,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 1.5209798193564117,
+          "pair_concordance": 0.5,
+          "tested_action_mass": 0.004818125822523446,
+          "mean_confirmed_winner_mass": 0.00029377461453278746,
+          "mean_confirmed_winner_rank_fraction": 0.2655356462066336,
+          "mean_confirmed_loser_rank_fraction": 0.23999237514296606
+        },
+        "q2": {
+          "mean_pair_loss": 2.5206056160648824,
+          "pair_concordance": 0.5,
+          "tested_action_mass": 0.015373131570297622,
+          "mean_confirmed_winner_mass": 0.000288576776480141,
+          "mean_confirmed_winner_rank_fraction": 0.2655356462066336,
+          "mean_confirmed_loser_rank_fraction": 0.23999237514296606
+        },
+        "q4": {
+          "mean_pair_loss": 4.528694024158081,
+          "pair_concordance": 0.5,
+          "tested_action_mass": 0.21138747677676453,
+          "mean_confirmed_winner_mass": 0.0002285935107109489,
+          "mean_confirmed_winner_rank_fraction": 0.2655356462066336,
+          "mean_confirmed_loser_rank_fraction": 0.23999237514296606
+        },
+        "half-visited": {
+          "mean_pair_loss": 0.5664989112121681,
+          "pair_concordance": 0.75,
+          "tested_action_mass": 0.314693305551142,
+          "mean_confirmed_winner_mass": 0.00036344694663021987,
+          "mean_confirmed_winner_rank_fraction": 0.020396492565764392,
+          "mean_confirmed_loser_rank_fraction": 0.24456728936332445
+        }
+      }
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-22421",
+      "primary_clear_pairs": 11,
+      "clear_pairs": 4,
+      "clear_pairs_winner_visited": 4,
+      "clear_pairs_loser_visited": 2,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 4.753847885365322,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.005182933944876585,
+          "mean_confirmed_winner_mass": 7.068690937719393e-06,
+          "mean_confirmed_winner_rank_fraction": 0.9984750285932138,
+          "mean_confirmed_loser_rank_fraction": 0.27945101029355696
+        },
+        "q2": {
+          "mean_pair_loss": 9.522324102188803,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.01856453725668502,
+          "mean_confirmed_winner_mass": 1.2601972181854057e-07,
+          "mean_confirmed_winner_rank_fraction": 0.9984750285932138,
+          "mean_confirmed_loser_rank_fraction": 0.27945101029355696
+        },
+        "q4": {
+          "mean_pair_loss": 19.08121816037135,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.2828514804099357,
+          "mean_confirmed_winner_mass": 2.988858809687282e-11,
+          "mean_confirmed_winner_rank_fraction": 0.9984750285932138,
+          "mean_confirmed_loser_rank_fraction": 0.27945101029355696
+        },
+        "half-visited": {
+          "mean_pair_loss": 2.7225540405281192,
+          "pair_concordance": 0.5,
+          "tested_action_mass": 0.3364181083732996,
+          "mean_confirmed_winner_mass": 0.0008457709932952549,
+          "mean_confirmed_winner_rank_fraction": 0.0041936713686618375,
+          "mean_confirmed_loser_rank_fraction": 0.28173846740373615
+        }
+      }
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-5469",
+      "primary_clear_pairs": 0,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.0047791282453520266,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.020871257528031234,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.3942431985265925,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.3497931526978356,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-2818",
+      "primary_clear_pairs": 0,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.003983941046895854,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.02237067577368694,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.585701893756272,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.2834273421083513,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-5713",
+      "primary_clear_pairs": 0,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.004482261808786506,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.017491153713477956,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.3055449122826871,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.324201959040167,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-1821",
+      "primary_clear_pairs": 0,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.005006643396691908,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.014502538838937077,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.1809788091564267,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.3695845747598035,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-5888",
+      "primary_clear_pairs": 0,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.004240352100102344,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.013366659176490594,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.22720466257985672,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.2323608368368497,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-17554",
+      "primary_clear_pairs": 6,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.0032283543444853817,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.008743714869399474,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.11117049141860445,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.15660905740278722,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s2",
+      "case_id": "train-hierarchical-target-quality-s2-v1-8504",
+      "primary_clear_pairs": 9,
+      "clear_pairs": 1,
+      "clear_pairs_winner_visited": 1,
+      "clear_pairs_loser_visited": 1,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 0.6908296132092765,
+          "pair_concordance": 1,
+          "tested_action_mass": 0.005495845210126045,
+          "mean_confirmed_winner_mass": 0.0011279607241631887,
+          "mean_confirmed_winner_rank_fraction": 0.00039261876717707107,
+          "mean_confirmed_loser_rank_fraction": 0.0007852375343541421
+        },
+        "q2": {
+          "mean_pair_loss": 0.6947965333215328,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.014631837716525006,
+          "mean_confirmed_winner_mass": 0.0031459496740001017,
+          "mean_confirmed_winner_rank_fraction": 0.0007852375343541421,
+          "mean_confirmed_loser_rank_fraction": 0.00039261876717707107
+        },
+        "q4": {
+          "mean_pair_loss": 0.7027776139585163,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.14579196395339067,
+          "mean_confirmed_winner_mass": 0.021581898695009722,
+          "mean_confirmed_winner_rank_fraction": 0.0007852375343541421,
+          "mean_confirmed_loser_rank_fraction": 0.00039261876717707107
+        },
+        "half-visited": {
+          "mean_pair_loss": 0.6908223328991844,
+          "pair_concordance": 1,
+          "tested_action_mass": 0.37643979864921245,
+          "mean_confirmed_winner_mass": 0.10840082328915573,
+          "mean_confirmed_winner_rank_fraction": 0.00039261876717707107,
+          "mean_confirmed_loser_rank_fraction": 0.0007852375343541421
+        }
+      }
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-83",
+      "primary_clear_pairs": 7,
+      "clear_pairs": 6,
+      "clear_pairs_winner_visited": 4,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 2.145112875006965,
+          "pair_concordance": 0.5,
+          "tested_action_mass": 0.002863856275156684,
+          "mean_confirmed_winner_mass": 0.00037314503885119696,
+          "mean_confirmed_winner_rank_fraction": 0.5214634653362437,
+          "mean_confirmed_loser_rank_fraction": 0.9251637043966323
+        },
+        "q2": {
+          "mean_pair_loss": 4.003970006616171,
+          "pair_concordance": 0.5,
+          "tested_action_mass": 0.00907308107965301,
+          "mean_confirmed_winner_mass": 0.0014097488760490278,
+          "mean_confirmed_winner_rank_fraction": 0.5214634653362437,
+          "mean_confirmed_loser_rank_fraction": 0.9251637043966323
+        },
+        "q4": {
+          "mean_pair_loss": 7.78936151691941,
+          "pair_concordance": 0.5,
+          "tested_action_mass": 0.14034073122043345,
+          "mean_confirmed_winner_mass": 0.023318648859877934,
+          "mean_confirmed_winner_rank_fraction": 0.5214634653362437,
+          "mean_confirmed_loser_rank_fraction": 0.9251637043966323
+        },
+        "half-visited": {
+          "mean_pair_loss": 0.31554906421108225,
+          "pair_concordance": 1,
+          "tested_action_mass": 0.15311863753643398,
+          "mean_confirmed_winner_mass": 0.025467678719312225,
+          "mean_confirmed_winner_rank_fraction": 0.025049371167238335,
+          "mean_confirmed_loser_rank_fraction": 0.9289055191768008
+        }
+      }
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-25906",
+      "primary_clear_pairs": 0,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.004769120690815499,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.01475507932029297,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.18834025824150707,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.30795786727771185,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-10903",
+      "primary_clear_pairs": 4,
+      "clear_pairs": 2,
+      "clear_pairs_winner_visited": 2,
+      "clear_pairs_loser_visited": 1,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 4.846816965552202,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.0029923797540426043,
+          "mean_confirmed_winner_mass": 5.9091741908834425e-06,
+          "mean_confirmed_winner_rank_fraction": 0.9988562714449104,
+          "mean_confirmed_loser_rank_fraction": 0.006481128478841022
+        },
+        "q2": {
+          "mean_pair_loss": 9.683598978570267,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.0067628461847303945,
+          "mean_confirmed_winner_mass": 8.846649528756745e-08,
+          "mean_confirmed_winner_rank_fraction": 0.9988562714449104,
+          "mean_confirmed_loser_rank_fraction": 0.006481128478841022
+        },
+        "q4": {
+          "mean_pair_loss": 19.37598244586577,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.06431016424978567,
+          "mean_confirmed_winner_mass": 1.781291140228798e-11,
+          "mean_confirmed_winner_rank_fraction": 0.9988562714449104,
+          "mean_confirmed_loser_rank_fraction": 0.006481128478841022
+        },
+        "half-visited": {
+          "mean_pair_loss": 2.7124949674320953,
+          "pair_concordance": 0.5,
+          "tested_action_mass": 0.14066152888338931,
+          "mean_confirmed_winner_mass": 0.0007681096720814651,
+          "mean_confirmed_winner_rank_fraction": 0.004574914220358368,
+          "mean_confirmed_loser_rank_fraction": 0.008768585589020206
+        }
+      }
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-242",
+      "primary_clear_pairs": 4,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.00519466013657226,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.038604223121328954,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.8038533595569068,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.3141582601751471,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-3540",
+      "primary_clear_pairs": 0,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.004045709118510351,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.01754079135524192,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.4003369434655771,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.2147674720132732,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-15857",
+      "primary_clear_pairs": 8,
+      "clear_pairs": 4,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 3,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 1.0462206628410096,
+          "pair_concordance": 0.5,
+          "tested_action_mass": 0.005337424119409089,
+          "mean_confirmed_winner_mass": 0.0003678031620945858,
+          "mean_confirmed_winner_rank_fraction": 0.0017966223499820337,
+          "mean_confirmed_loser_rank_fraction": 0.40190441969098095
+        },
+        "q2": {
+          "mean_pair_loss": 1.7392824006103136,
+          "pair_concordance": 0.5,
+          "tested_action_mass": 0.02661484800699866,
+          "mean_confirmed_winner_mass": 0.00035971229404987,
+          "mean_confirmed_winner_rank_fraction": 0.0017966223499820337,
+          "mean_confirmed_loser_rank_fraction": 0.40190441969098095
+        },
+        "q4": {
+          "mean_pair_loss": 3.251218539737461,
+          "pair_concordance": 0.5,
+          "tested_action_mass": 0.6003930526354108,
+          "mean_confirmed_winner_mass": 0.00014696000940400762,
+          "mean_confirmed_winner_rank_fraction": 0.0017966223499820337,
+          "mean_confirmed_loser_rank_fraction": 0.40190441969098095
+        },
+        "half-visited": {
+          "mean_pair_loss": 3.99084390247578,
+          "pair_concordance": 0.25,
+          "tested_action_mass": 0.35815812587130685,
+          "mean_confirmed_winner_mass": 0.0001838331679247616,
+          "mean_confirmed_winner_rank_fraction": 0.006108515989938915,
+          "mean_confirmed_loser_rank_fraction": 0.1543298598634567
+        }
+      }
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-8231",
+      "primary_clear_pairs": 5,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.004064963513380858,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.010305063909143994,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.09817904859187558,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.26213125242662044,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-16226",
+      "primary_clear_pairs": 2,
+      "clear_pairs": 1,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 1,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 1.6391119168629331,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.003182634946861937,
+          "mean_confirmed_winner_mass": 0.00038976578654206936,
+          "mean_confirmed_winner_rank_fraction": 0.011437285550895921,
+          "mean_confirmed_loser_rank_fraction": 0.0003812428516965307
+        },
+        "q2": {
+          "mean_pair_loss": 2.934186310143657,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.008387275136666256,
+          "mean_confirmed_winner_mass": 0.0003849642190015928,
+          "mean_confirmed_winner_rank_fraction": 0.011437285550895921,
+          "mean_confirmed_loser_rank_fraction": 0.0003812428516965307
+        },
+        "q4": {
+          "mean_pair_loss": 5.795183427957137,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.10176453630105968,
+          "mean_confirmed_winner_mass": 0.00030680353737825314,
+          "mean_confirmed_winner_rank_fraction": 0.011437285550895921,
+          "mean_confirmed_loser_rank_fraction": 0.0003812428516965307
+        },
+        "half-visited": {
+          "mean_pair_loss": 6.6572755331071125,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.15380755616691014,
+          "mean_confirmed_winner_mass": 0.0001947238504048531,
+          "mean_confirmed_winner_rank_fraction": 0.016012199771254287,
+          "mean_confirmed_loser_rank_fraction": 0.0003812428516965307
+        }
+      }
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-3397",
+      "primary_clear_pairs": 4,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.0037519676967343926,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.011014014116865792,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.13462623917081476,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.3068254650433229,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-18600",
+      "primary_clear_pairs": 0,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.004726745839413544,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.014578627285910393,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.1862920010697095,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.3166171019922987,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-14490",
+      "primary_clear_pairs": 7,
+      "clear_pairs": 1,
+      "clear_pairs_winner_visited": 1,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 0.23460353852949303,
+          "pair_concordance": 1,
+          "tested_action_mass": 0.004680832944885641,
+          "mean_confirmed_winner_mass": 0.0014745063510468296,
+          "mean_confirmed_winner_rank_fraction": 0.0003812428516965307,
+          "mean_confirmed_loser_rank_fraction": 0.00533739992375143
+        },
+        "q2": {
+          "mean_pair_loss": 0.06677739830630183,
+          "pair_concordance": 1,
+          "tested_action_mass": 0.014072860500716983,
+          "mean_confirmed_winner_mass": 0.005582079481701314,
+          "mean_confirmed_winner_rank_fraction": 0.0003812428516965307,
+          "mean_confirmed_loser_rank_fraction": 0.00533739992375143
+        },
+        "q4": {
+          "mean_pair_loss": 0.004699634416005016,
+          "pair_concordance": 1,
+          "tested_action_mass": 0.1734242827821586,
+          "mean_confirmed_winner_mass": 0.06754010914943036,
+          "mean_confirmed_winner_rank_fraction": 0.0003812428516965307,
+          "mean_confirmed_loser_rank_fraction": 0.00533739992375143
+        },
+        "half-visited": {
+          "mean_pair_loss": 0.0014017525206825952,
+          "pair_concordance": 1,
+          "tested_action_mass": 0.2966941072497159,
+          "mean_confirmed_winner_mass": 0.13884711893825938,
+          "mean_confirmed_winner_rank_fraction": 0.0003812428516965307,
+          "mean_confirmed_loser_rank_fraction": 0.009912314144109797
+        }
+      }
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-1731",
+      "primary_clear_pairs": 10,
+      "clear_pairs": 2,
+      "clear_pairs_winner_visited": 2,
+      "clear_pairs_loser_visited": 1,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 4.890359115637466,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.004797835127553549,
+          "mean_confirmed_winner_mass": 6.555659361891941e-06,
+          "mean_confirmed_winner_rank_fraction": 0.9982085274095306,
+          "mean_confirmed_loser_rank_fraction": 0.3394840558939448
+        },
+        "q2": {
+          "mean_pair_loss": 9.788047558299066,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.017602740510960443,
+          "mean_confirmed_winner_mass": 1.1511128272950254e-07,
+          "mean_confirmed_winner_rank_fraction": 0.9982085274095306,
+          "mean_confirmed_loser_rank_fraction": 0.3394840558939448
+        },
+        "q4": {
+          "mean_pair_loss": 19.604280325011086,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.3118987972351918,
+          "mean_confirmed_winner_mass": 2.4956779768578943e-11,
+          "mean_confirmed_winner_rank_fraction": 0.9982085274095306,
+          "mean_confirmed_loser_rank_fraction": 0.3394840558939448
+        },
+        "half-visited": {
+          "mean_pair_loss": 2.8526922196950095,
+          "pair_concordance": 0.5,
+          "tested_action_mass": 0.3046818464792922,
+          "mean_confirmed_winner_mass": 0.0007780243148382212,
+          "mean_confirmed_winner_rank_fraction": 0.0035829451809387316,
+          "mean_confirmed_loser_rank_fraction": 0.34163382300250805
+        }
+      }
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-2444",
+      "primary_clear_pairs": 3,
+      "clear_pairs": 1,
+      "clear_pairs_winner_visited": 1,
+      "clear_pairs_loser_visited": 1,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 0.8195065880835527,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.005735250490042981,
+          "mean_confirmed_winner_mass": 0.0018828436077814239,
+          "mean_confirmed_winner_rank_fraction": 0.00035932446999640676,
+          "mean_confirmed_loser_rank_fraction": 0.0
+        },
+        "q2": {
+          "mean_pair_loss": 0.9553506505260128,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.026621427872581697,
+          "mean_confirmed_winner_mass": 0.009695000501707055,
+          "mean_confirmed_winner_rank_fraction": 0.00035932446999640676,
+          "mean_confirmed_loser_rank_fraction": 0.0
+        },
+        "q4": {
+          "mean_pair_loss": 1.2641310248323374,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.4935327606792348,
+          "mean_confirmed_winner_mass": 0.13920764487671283,
+          "mean_confirmed_winner_rank_fraction": 0.00035932446999640676,
+          "mean_confirmed_loser_rank_fraction": 0.0
+        },
+        "half-visited": {
+          "mean_pair_loss": 0.8193830671341635,
+          "pair_concordance": 0,
+          "tested_action_mass": 0.3817333093084197,
+          "mean_confirmed_winner_mass": 0.1672362087094215,
+          "mean_confirmed_winner_rank_fraction": 0.00035932446999640676,
+          "mean_confirmed_loser_rank_fraction": 0.0
+        }
+      }
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-3284",
+      "primary_clear_pairs": 0,
+      "clear_pairs": 0,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.003580456736270515,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q2": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.01276039017550877,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "q4": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.2232225377437965,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        },
+        "half-visited": {
+          "mean_pair_loss": null,
+          "pair_concordance": null,
+          "tested_action_mass": 0.18740042114744448,
+          "mean_confirmed_winner_mass": null,
+          "mean_confirmed_winner_rank_fraction": null,
+          "mean_confirmed_loser_rank_fraction": null
+        }
+      }
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-4981",
+      "primary_clear_pairs": 6,
+      "clear_pairs": 1,
+      "clear_pairs_winner_visited": 0,
+      "clear_pairs_loser_visited": 0,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 0.6820057069429282,
+          "pair_concordance": 1,
+          "tested_action_mass": 0.003458788448170794,
+          "mean_confirmed_winner_mass": 0.00036800759818330736,
+          "mean_confirmed_winner_rank_fraction": 0.0017966223499820337,
+          "mean_confirmed_loser_rank_fraction": 0.5156306144448437
+        },
+        "q2": {
+          "mean_pair_loss": 0.6820057069429286,
+          "pair_concordance": 1,
+          "tested_action_mass": 0.012322055112211017,
+          "mean_confirmed_winner_mass": 0.000363081996251655,
+          "mean_confirmed_winner_rank_fraction": 0.0017966223499820337,
+          "mean_confirmed_loser_rank_fraction": 0.5156306144448437
+        },
+        "q4": {
+          "mean_pair_loss": 0.6820057069429295,
+          "pair_concordance": 1,
+          "tested_action_mass": 0.23713464700763384,
+          "mean_confirmed_winner_mass": 0.0002557870506505654,
+          "mean_confirmed_winner_rank_fraction": 0.0017966223499820337,
+          "mean_confirmed_loser_rank_fraction": 0.5156306144448437
+        },
+        "half-visited": {
+          "mean_pair_loss": 0.6820057069429277,
+          "pair_concordance": 1,
+          "tested_action_mass": 0.20561804386158974,
+          "mean_confirmed_winner_mass": 0.0001838331679247616,
+          "mean_confirmed_winner_rank_fraction": 0.006108515989938915,
+          "mean_confirmed_loser_rank_fraction": 0.5199425080848006
+        }
+      }
+    },
+    {
+      "stream": "s3",
+      "case_id": "train-hierarchical-target-quality-s3-v1-29328",
+      "primary_clear_pairs": 12,
+      "clear_pairs": 6,
+      "clear_pairs_winner_visited": 2,
+      "clear_pairs_loser_visited": 3,
+      "scores": {
+        "current": {
+          "mean_pair_loss": 1.0123943914149884,
+          "pair_concordance": 0.3333333333333333,
+          "tested_action_mass": 0.006301383222548145,
+          "mean_confirmed_winner_mass": 0.0005199552803693724,
+          "mean_confirmed_winner_rank_fraction": 0.06892655367231638,
+          "mean_confirmed_loser_rank_fraction": 0.09679849340866291
+        },
+        "q2": {
+          "mean_pair_loss": 1.4858594192127943,
+          "pair_concordance": 0.3333333333333333,
+          "tested_action_mass": 0.024594284080715307,
+          "mean_confirmed_winner_mass": 0.0007874268313143765,
+          "mean_confirmed_winner_rank_fraction": 0.06892655367231638,
+          "mean_confirmed_loser_rank_fraction": 0.09679849340866291
+        },
+        "q4": {
+          "mean_pair_loss": 2.593630675997984,
+          "pair_concordance": 0.3333333333333333,
+          "tested_action_mass": 0.4166379009321177,
+          "mean_confirmed_winner_mass": 0.0014364543824868696,
+          "mean_confirmed_winner_rank_fraction": 0.06892655367231638,
+          "mean_confirmed_loser_rank_fraction": 0.09679849340866291
+        },
+        "half-visited": {
+          "mean_pair_loss": 2.554689203399201,
+          "pair_concordance": 0.3333333333333333,
+          "tested_action_mass": 0.370573636677172,
+          "mean_confirmed_winner_mass": 0.020662651842982837,
+          "mean_confirmed_winner_rank_fraction": 0.07193973634651601,
+          "mean_confirmed_loser_rank_fraction": 0.09905838041431263
+        }
+      }
+    }
+  ],
+  "variants": {
+    "current": {
+      "streams": {
+        "s1": {
+          "cases_with_clear_pairs": 7,
+          "clear_pairs": 26,
+          "case_mean_pair_loss": 1.5631633755053729,
+          "case_mean_pair_concordance": 0.5059523809523809
+        },
+        "s2": {
+          "cases_with_clear_pairs": 6,
+          "clear_pairs": 16,
+          "case_mean_pair_loss": 2.207429351235289,
+          "case_mean_pair_concordance": 0.4583333333333333
+        },
+        "s3": {
+          "cases_with_clear_pairs": 9,
+          "clear_pairs": 24,
+          "case_mean_pair_loss": 1.9240146400968376,
+          "case_mean_pair_concordance": 0.37037037037037035
+        }
+      },
+      "cases_with_clear_pairs": 22,
+      "clear_pairs": 66,
+      "case_mean_pair_loss": 1.8864932498554947,
+      "case_mean_confirmed_winner_mass": 0.0005722195577140815,
+      "case_mean_confirmed_winner_rank_fraction": 0.34317818696620894,
+      "case_mean_confirmed_loser_rank_fraction": 0.3063609395494053,
+      "first_roots": {
+        "actions": 2733.9166666666665,
+        "visited": 16,
+        "unvisited_mass": 0.9947168871600598,
+        "effective_fraction": 0.9937759031261585,
+        "max_probability": 0.0018317284231020236,
+        "target_prior_kl_nats": 0.006229534715668652
+      },
+      "later_roots": {
+        "actions": 330.68564356435644,
+        "visited": 14.465346534653465,
+        "unvisited_mass": 0.645102623674204,
+        "effective_fraction": 0.8313895532573585,
+        "max_probability": 0.12407213760650364,
+        "target_prior_kl_nats": 0.17188338267671954
+      },
+      "later_root_count": 404,
+      "budget_conditional_rank_agreement": {
+        "c32-n128": {
+          "tested_action_pairs": 1317,
+          "concordant": 1271,
+          "discordant": 46,
+          "tied": 0
+        },
+        "c64-n128": {
+          "tested_action_pairs": 1317,
+          "concordant": 1152,
+          "discordant": 165,
+          "tied": 0
+        },
+        "c16-n512": {
+          "tested_action_pairs": 1317,
+          "concordant": 1245,
+          "discordant": 72,
+          "tied": 0
+        },
+        "c32-n512": {
+          "tested_action_pairs": 1317,
+          "concordant": 1174,
+          "discordant": 143,
+          "tied": 0
+        },
+        "c64-n512": {
+          "tested_action_pairs": 1317,
+          "concordant": 1163,
+          "discordant": 154,
+          "tied": 0
+        },
+        "c128-n512": {
+          "tested_action_pairs": 1317,
+          "concordant": 1124,
+          "discordant": 193,
+          "tied": 0
+        }
+      }
+    },
+    "q2": {
+      "streams": {
+        "s1": {
+          "cases_with_clear_pairs": 7,
+          "clear_pairs": 26,
+          "case_mean_pair_loss": 2.771541148726725,
+          "case_mean_pair_concordance": 0.5059523809523809
+        },
+        "s2": {
+          "cases_with_clear_pairs": 6,
+          "clear_pairs": 16,
+          "case_mean_pair_loss": 4.109064374091855,
+          "case_mean_pair_concordance": 0.2916666666666667
+        },
+        "s3": {
+          "cases_with_clear_pairs": 9,
+          "clear_pairs": 24,
+          "case_mean_pair_loss": 3.4821198254697237,
+          "case_mean_pair_concordance": 0.37037037037037035
+        }
+      },
+      "cases_with_clear_pairs": 22,
+      "clear_pairs": 66,
+      "case_mean_pair_loss": 3.427011487039351,
+      "case_mean_confirmed_winner_mass": 0.0018237319836231353,
+      "case_mean_confirmed_winner_rank_fraction": 0.34319603327380793,
+      "case_mean_confirmed_loser_rank_fraction": 0.3063430932418063,
+      "first_roots": {
+        "actions": 2733.9166666666665,
+        "visited": 16,
+        "unvisited_mass": 0.9809663306605458,
+        "effective_fraction": 0.9594055751176505,
+        "max_probability": 0.009545032643488128,
+        "target_prior_kl_nats": 0.04165101759900871
+      },
+      "later_roots": {
+        "actions": 330.68564356435644,
+        "visited": 14.465346534653465,
+        "unvisited_mass": 0.5385676580002937,
+        "effective_fraction": 0.6514021425447555,
+        "max_probability": 0.20800197537014783,
+        "target_prior_kl_nats": 0.5464635293519406
+      },
+      "later_root_count": 404,
+      "budget_conditional_rank_agreement": {
+        "c32-n128": {
+          "tested_action_pairs": 1317,
+          "concordant": 1270,
+          "discordant": 47,
+          "tied": 0
+        },
+        "c64-n128": {
+          "tested_action_pairs": 1317,
+          "concordant": 1151,
+          "discordant": 166,
+          "tied": 0
+        },
+        "c16-n512": {
+          "tested_action_pairs": 1317,
+          "concordant": 1245,
+          "discordant": 72,
+          "tied": 0
+        },
+        "c32-n512": {
+          "tested_action_pairs": 1317,
+          "concordant": 1172,
+          "discordant": 145,
+          "tied": 0
+        },
+        "c64-n512": {
+          "tested_action_pairs": 1317,
+          "concordant": 1163,
+          "discordant": 154,
+          "tied": 0
+        },
+        "c128-n512": {
+          "tested_action_pairs": 1317,
+          "concordant": 1124,
+          "discordant": 193,
+          "tied": 0
+        }
+      }
+    },
+    "q4": {
+      "streams": {
+        "s1": {
+          "cases_with_clear_pairs": 7,
+          "clear_pairs": 26,
+          "case_mean_pair_loss": 5.299319707133887,
+          "case_mean_pair_concordance": 0.5059523809523809
+        },
+        "s2": {
+          "cases_with_clear_pairs": 6,
+          "clear_pairs": 16,
+          "case_mean_pair_loss": 7.99895259933666,
+          "case_mean_pair_concordance": 0.2916666666666667
+        },
+        "s3": {
+          "cases_with_clear_pairs": 9,
+          "clear_pairs": 24,
+          "case_mean_pair_loss": 6.706721477520014,
+          "case_mean_pair_concordance": 0.37037037037037035
+        }
+      },
+      "cases_with_clear_pairs": 22,
+      "clear_pairs": 66,
+      "case_mean_pair_loss": 6.611338492892604,
+      "case_mean_confirmed_winner_mass": 0.022580197391509595,
+      "case_mean_confirmed_winner_rank_fraction": 0.34319603327380793,
+      "case_mean_confirmed_loser_rank_fraction": 0.3063430932418063,
+      "first_roots": {
+        "actions": 2733.9166666666665,
+        "visited": 16,
+        "unvisited_mass": 0.725095043553714,
+        "effective_fraction": 0.32441903524888094,
+        "max_probability": 0.1828441202913658,
+        "target_prior_kl_nats": 1.4419012041996888
+      },
+      "later_roots": {
+        "actions": 330.68564356435644,
+        "visited": 14.465346534653465,
+        "unvisited_mass": 0.22516370117921428,
+        "effective_fraction": 0.2807972230546605,
+        "max_probability": 0.4492177193461212,
+        "target_prior_kl_nats": 2.091069692690078
+      },
+      "later_root_count": 404,
+      "budget_conditional_rank_agreement": {
+        "c32-n128": {
+          "tested_action_pairs": 1317,
+          "concordant": 1270,
+          "discordant": 47,
+          "tied": 0
+        },
+        "c64-n128": {
+          "tested_action_pairs": 1317,
+          "concordant": 1151,
+          "discordant": 166,
+          "tied": 0
+        },
+        "c16-n512": {
+          "tested_action_pairs": 1317,
+          "concordant": 1245,
+          "discordant": 72,
+          "tied": 0
+        },
+        "c32-n512": {
+          "tested_action_pairs": 1317,
+          "concordant": 1172,
+          "discordant": 145,
+          "tied": 0
+        },
+        "c64-n512": {
+          "tested_action_pairs": 1317,
+          "concordant": 1163,
+          "discordant": 154,
+          "tied": 0
+        },
+        "c128-n512": {
+          "tested_action_pairs": 1317,
+          "concordant": 1124,
+          "discordant": 193,
+          "tied": 0
+        }
+      }
+    },
+    "half-visited": {
+      "streams": {
+        "s1": {
+          "cases_with_clear_pairs": 7,
+          "clear_pairs": 26,
+          "case_mean_pair_loss": 2.0712542656154316,
+          "case_mean_pair_concordance": 0.6011904761904762
+        },
+        "s2": {
+          "cases_with_clear_pairs": 6,
+          "clear_pairs": 16,
+          "case_mean_pair_loss": 2.020878614490722,
+          "case_mean_pair_concordance": 0.625
+        },
+        "s3": {
+          "cases_with_clear_pairs": 9,
+          "clear_pairs": 24,
+          "case_mean_pair_loss": 2.287370601879784,
+          "case_mean_pair_concordance": 0.5092592592592593
+        }
+      },
+      "cases_with_clear_pairs": 22,
+      "clear_pairs": 66,
+      "case_mean_pair_loss": 2.1459266801441093,
+      "case_mean_confirmed_winner_mass": 0.03954623400976263,
+      "case_mean_confirmed_winner_rank_fraction": 0.047317331868749965,
+      "case_mean_confirmed_loser_rank_fraction": 0.23319084773380094,
+      "first_roots": {
+        "actions": 2733.9166666666665,
+        "visited": 16,
+        "unvisited_mass": 0.49702584291873747,
+        "effective_fraction": 0.08523718134977351,
+        "max_probability": 0.17295738988633147,
+        "target_prior_kl_nats": 2.4652502746446134
+      },
+      "later_roots": {
+        "actions": 330.68564356435644,
+        "visited": 14.465346534653465,
+        "unvisited_mass": 0.32014702536590667,
+        "effective_fraction": 0.4350722983939065,
+        "max_probability": 0.2133685185770203,
+        "target_prior_kl_nats": 0.9455607996895711
+      },
+      "later_root_count": 404,
+      "budget_conditional_rank_agreement": {
+        "c32-n128": {
+          "tested_action_pairs": 1317,
+          "concordant": 1096,
+          "discordant": 221,
+          "tied": 0
+        },
+        "c64-n128": {
+          "tested_action_pairs": 1317,
+          "concordant": 1068,
+          "discordant": 249,
+          "tied": 0
+        },
+        "c16-n512": {
+          "tested_action_pairs": 1317,
+          "concordant": 1273,
+          "discordant": 44,
+          "tied": 0
+        },
+        "c32-n512": {
+          "tested_action_pairs": 1317,
+          "concordant": 1070,
+          "discordant": 247,
+          "tied": 0
+        },
+        "c64-n512": {
+          "tested_action_pairs": 1317,
+          "concordant": 1054,
+          "discordant": 263,
+          "tied": 0
+        },
+        "c128-n512": {
+          "tested_action_pairs": 1317,
+          "concordant": 1044,
+          "discordant": 273,
+          "tied": 0
+        }
+      }
+    }
+  },
+  "selected_contrast": "half-visited",
+  "selection_reason": "stress-contrast-only",
+  "promotion_eligible_from_this_analysis": false
+}
