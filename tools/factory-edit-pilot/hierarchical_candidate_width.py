@@ -213,6 +213,12 @@ def summarize_case(stream, reports, index):
                   for action in root["actions"]]
         total = sum(priors)
         priors = [prior / total for prior in priors]
+        search_priors = [action["prior"] for action in root["actions"]]
+        anchor_priors = [action["anchor_prior"] for action in root["actions"]]
+        learned_priors = [max(0.0, (search - 0.25 * anchor) / 0.75)
+                          for search, anchor in zip(search_priors, anchor_priors)]
+        learned_total = sum(learned_priors)
+        learned_priors = [prior / learned_total for prior in learned_priors]
         require(all(target is not None and target >= 0 for target in targets)
                 and abs(sum(targets) - 1) < 1e-6,
                 f"invalid target: {stream}/{arm}/{case['id']}")
@@ -232,10 +238,20 @@ def summarize_case(stream, reports, index):
             "turns": result["turns"],
             "elapsed_seconds": result["elapsed_seconds"],
             "target_effective_actions": math.exp(entropy(targets)),
+            "mixed_prior_effective_actions": math.exp(entropy(priors)),
+            "anchor_prior_effective_actions": math.exp(entropy(anchor_priors)),
+            "learned_prior_effective_actions": math.exp(entropy(learned_priors)),
+            "max_mixed_prior": max(priors),
+            "max_anchor_prior": max(anchor_priors),
+            "max_learned_prior": max(learned_priors),
+            "mixed_prior_visited_mass": sum(priors[position] for position, action
+                                            in enumerate(root["actions"])
+                                            if action["visits"] > 0),
             "unvisited_target_mass": sum(action["policy_target"]
                                          for action in root["actions"]
                                          if action["visits"] == 0),
             "target_prior_js_bits": js_divergence(targets, priors),
+            "target_learned_js_bits": js_divergence(targets, learned_priors),
             "top_target_probability": max(targets),
         }
     for simulations in (128, 512):
@@ -302,10 +318,20 @@ def summarize(root):
                                                 for value in values),
             "mean_target_effective_actions": statistics.mean(
                 value["target_effective_actions"] for value in values),
+            "mean_mixed_prior_effective_actions": statistics.mean(
+                value["mixed_prior_effective_actions"] for value in values),
+            "mean_anchor_prior_effective_actions": statistics.mean(
+                value["anchor_prior_effective_actions"] for value in values),
+            "mean_learned_prior_effective_actions": statistics.mean(
+                value["learned_prior_effective_actions"] for value in values),
+            "mean_mixed_prior_visited_mass": statistics.mean(
+                value["mixed_prior_visited_mass"] for value in values),
             "mean_unvisited_target_mass": statistics.mean(
                 value["unvisited_target_mass"] for value in values),
             "mean_target_prior_js_bits": statistics.mean(
                 value["target_prior_js_bits"] for value in values),
+            "mean_target_learned_js_bits": statistics.mean(
+                value["target_learned_js_bits"] for value in values),
             "mean_case_elapsed_seconds": statistics.mean(
                 value["elapsed_seconds"] for value in values),
         }

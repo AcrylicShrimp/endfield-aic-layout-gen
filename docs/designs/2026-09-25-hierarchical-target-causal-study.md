@@ -30,8 +30,9 @@ new run so exact action witnesses can be compared with every other cell.
 For every paired first root verify state and complete action-witness identity.
 Record considered-set overlap, chosen-action membership in the 16-action set,
 search Q and visits, completed-Q target entropy, target-prior divergence,
-unvisited mass, full episode completion, conditional quality, and integrated
-wall time. Compare cases gained and lost, not only aggregate completion.
+unvisited mass, model and anchor prior entropy, prior mass on visited actions,
+full episode completion, conditional quality, and integrated wall time. Compare
+cases gained and lost, not only aggregate completion.
 Wider search may trade depth for coverage; neither a count gain nor a flat
 result alone settles action quality. Inspect cases with unexpected nonnested
 candidate sets, near-tied search rankings, or inconsistent first-root states
