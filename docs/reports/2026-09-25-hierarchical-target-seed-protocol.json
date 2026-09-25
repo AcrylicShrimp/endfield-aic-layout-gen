@@ -1,0 +1,40 @@
+{
+  "schema": "aic-hierarchical-target-seed-protocol-v1",
+  "experiment_commit": "d834cc88",
+  "runner_sha256": "ab0332710104503d070a3e0a852219088c0744ee4041207447facd9d14b995d0",
+  "target_transform_sha256": "c6e0963ec3013fc2ebe72cb20d2c3b993fa06a2671d0af3d0ee8328566fc5b81",
+  "replication_summary_sha256": "b68ff1b09e83b4c46d5788dc1d9be25376b5529f27984ac02a7b226b0c14e8bb",
+  "actions_sha256": "e9d7eb4e088ecee9f1f96bfdf9bfb67c3aefafed10945f1cd74b1f7813b52762",
+  "baseline_report_sha256": {
+    "s1": "a5c2e29a319ef6887f331d91c060e7daa7afd2239535eaaa48d88ebd4acc6a44",
+    "s2": "8dc05ad4ccbeb78ad1e265d1a238ac5a306b3c7c681fd69c168eb967ed5e6cbc",
+    "s3": "10028b831d5226771e43397c84f2a4ea2e45bb2a8b289ce5a7e908a0ded26df4"
+  },
+  "source_panel_sha256": {
+    "s1": "a1bae05c58a35d468f509517c6d148710a189cb2686fcc432dde5d411ec27b66",
+    "s2": "989c891cb1ef3c2de10a2833ca985cc04af89ddc753374b34436956079d9640d",
+    "s3": "bf2465b8a1b8b7459237316d403e6206d1217828fd9adaba67d8975f64413871"
+  },
+  "panel_sha256": "e8d3838dafc44f75471d178e0af07a652a164b9b81cf7b3470cb957cbf678691",
+  "configs": {
+    "20260922": {
+      "search": "cffdf38799bd35e49c3ebf113273a17bb99bb86148fac7e18e22d014f41dbbf1",
+      "outer": "7a5e72ab8be06bbd75ae0e3b3a6850dbc9cc891a23f5d8ad0aea9f5d8d6c59ae",
+      "model_config": "7a5e72ab8be06bbd75ae0e3b3a6850dbc9cc891a23f5d8ad0aea9f5d8d6c59ae"
+    },
+    "20260923": {
+      "search": "ec3ccef7a660e0c395f17765c0c8129e8b0b54bcc9b731618aa41e1bf5e603e9",
+      "outer": "b97110969952a11ea6eeb3e9e72625c824ba11bb212bb1255c04c265c4b63710",
+      "model_config": "b97110969952a11ea6eeb3e9e72625c824ba11bb212bb1255c04c265c4b63710"
+    },
+    "20260924": {
+      "search": "65d956cf68e6a143cb8fa1753cdf40b0299f8309e6a334962aa533218c0d39c6",
+      "outer": "ca08a2f8c5272d8474c726ca3f5be39cc1b2f98a3ecdea7965f53051b831e321",
+      "model_config": "ca08a2f8c5272d8474c726ca3f5be39cc1b2f98a3ecdea7965f53051b831e321"
+    }
+  },
+  "binary_sha256": "e594b5425074a03731524d8c91991126232d840ef44a86e8b0630e1f16800fdf",
+  "lower_checkpoint_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+  "outer_checkpoint_sha256": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520",
+  "planned_cells": 3
+}

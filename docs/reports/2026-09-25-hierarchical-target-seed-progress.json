@@ -1,0 +1,25 @@
+{
+  "schema": "aic-hierarchical-target-seed-progress-v1",
+  "protocol_sha256": "f0037fdd9280bfb9548401dbd9e6620ff7c5b81aa38ea38a5a28ad16a69455b1",
+  "records": [
+    {
+      "seed": 20260922,
+      "report_sha256": "e90a5dff1a06b49d2cdbb3ead1af3860c0af0948784e8ce737414928ffb8ca26",
+      "report_bytes": 80255507,
+      "wall_seconds": 17.233388888002082
+    },
+    {
+      "seed": 20260923,
+      "report_sha256": "6a5ffba698e2a62200634ec31d6d0cf274145d86e8e9585db7e40b47e33e4e0c",
+      "report_bytes": 80256230,
+      "wall_seconds": 17.253392503000214
+    },
+    {
+      "seed": 20260924,
+      "report_sha256": "559914ba0d790f2367cf74ff85e37e631c527ee722301c00c5d0a0df4e939854",
+      "report_bytes": 80255785,
+      "wall_seconds": 16.64223944400146
+    }
+  ],
+  "status": "complete"
+}

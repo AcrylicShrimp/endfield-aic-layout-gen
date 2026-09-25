@@ -1,0 +1,2452 @@
+{
+  "schema": "aic-hierarchical-target-seed-summary-v1",
+  "protocol_sha256": "f0037fdd9280bfb9548401dbd9e6620ff7c5b81aa38ea38a5a28ad16a69455b1",
+  "progress_sha256": "625e91e6de7bc4deeccd29804c5647ee3490e191174d57aee8ecec50d20884db",
+  "cases": [
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-13586",
+      "actions": 2548,
+      "selected_sha256": [
+        "2457793613e1a2a1f963de40a51fc02bafa1188d9060107a988d8ebf9782cfba",
+        "502f02e9e743ad7043af3dc66adac85a23d60bac2117a80784e065de8da5efd4",
+        "3a67d1793a0156a73b8b121907b46d2bbd70a72853b9a24f634f9f1e2d552848"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0023130011035687433,
+            "q2": 0.014487817715399427,
+            "q4": 0.22981512381049762,
+            "half-visited": 0.48457971808533384
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002418984019559503,
+            "q2": 0.015379556368573098,
+            "q4": 0.2529517707027644,
+            "half-visited": 0.48463841951586645
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002219538229198073,
+            "q2": 0.013441147312789559,
+            "q4": 0.2072714843723749,
+            "half-visited": 0.48468868058831205
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-15983",
+      "actions": 3208,
+      "selected_sha256": [
+        "49a78390e32745ea41d439151850167f0a97f0a9e09bfd2d8f42d7a4b87c5437",
+        "f06c2ea750be917070785a1a257ba9d705f3f6eb37dc31772bb8406e9c556176",
+        "8f4dbbe742e90918b0ee49efd43405a4872c550cd3b242e7c9446c1ae7155c4a"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0017588854745236601,
+            "q2": 0.011183730235108533,
+            "q4": 0.19692524252652077,
+            "half-visited": 0.48584059315544037
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0018872250074672655,
+            "q2": 0.012345627249028115,
+            "q4": 0.22413386392744855,
+            "half-visited": 0.4858627308609907
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0016849624783701,
+            "q2": 0.011556186977851792,
+            "q4": 0.21958640127410103,
+            "half-visited": 0.4854519050936539
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-17062",
+      "actions": 2628,
+      "selected_sha256": [
+        "afebb7fc9728e6f73949356636040342f5e1e622ede04b6473fc1453a50d9bae",
+        "aee493ae0c81decaf47971a54bf6203ed9d22e0b494d81aeeeb46b6e755fcac0",
+        "7c00b1789c8f7ce6bec301a5a8d0fd52c92f54fe37b4fb304f0397c8dcb34322"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0019377101927155027,
+            "q2": 0.011837117281387612,
+            "q4": 0.17741160543656798,
+            "half-visited": 0.4848320835348028
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0021012958956814123,
+            "q2": 0.012926937736629986,
+            "q4": 0.20449044329741606,
+            "half-visited": 0.4848220189657505
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0022218592709083323,
+            "q2": 0.013767763946725532,
+            "q4": 0.22610116865389765,
+            "half-visited": 0.4848137238473168
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-22498",
+      "actions": 2548,
+      "selected_sha256": [
+        "a7d6d2100fadbead1b23c80c031b26c39e033add14acaebad30278414427bc57",
+        "f784ef3d98e769632fec81a480fe4ea4078a6f14b49edba5261155324ff3fd09",
+        "0559a3165bab30d2e95382eb3a6c4b5d66f7e8bb9db6d088b1da8576ca0f9787"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001657407685034583,
+            "q2": 0.011059877009090367,
+            "q4": 0.1878171122627429,
+            "half-visited": 0.48385297806823535
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0016554440745124408,
+            "q2": 0.011071252988698585,
+            "q4": 0.18367198694252954,
+            "half-visited": 0.48380464133085543
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0016686476858252218,
+            "q2": 0.011101918098710216,
+            "q4": 0.18557985137180766,
+            "half-visited": 0.4837859338527096
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-26043",
+      "actions": 2624,
+      "selected_sha256": [
+        "68bdaed23969b0807e39c580a58a188811dace31631e5f736a3026836dc98235",
+        "4b41da2b9f5877d127b0fd6c34a29840574b1e65eac959affc8803ad0eb911db",
+        "6c340b350d30f0e377a2e8304e455b5c50c105a3cc00f21a280d83fcb9cafb3d"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001919531314886438,
+            "q2": 0.012583505393997985,
+            "q4": 0.22373496405913695,
+            "half-visited": 0.48412233276695604
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0019245149338631062,
+            "q2": 0.012361415821035312,
+            "q4": 0.21854919238339665,
+            "half-visited": 0.48417131893841636
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001804932637285954,
+            "q2": 0.011865738160602364,
+            "q4": 0.2076005032442403,
+            "half-visited": 0.48421614543575403
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-30191",
+      "actions": 2784,
+      "selected_sha256": [
+        "27fa00cd2efcec4c737d331942320e88c946df413deb94ad66cc5e242e06f812",
+        "59a5b78ecabac9f6f4e0b9ce2704e3528d7fd4c5e311d0cb9147fdadc02fd3a5",
+        "0b75d644ef9647e7d13c62b0c2483577d255f99e5bcd2d18ac6dbfa83915d934"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0022112323673069856,
+            "q2": 0.014318742725063923,
+            "q4": 0.23687911046306093,
+            "half-visited": 0.48651271782529615
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0021942813460527405,
+            "q2": 0.014565504234258115,
+            "q4": 0.253324767681805,
+            "half-visited": 0.4863724254522031
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.391304347826087,
+          "target_js_bits": {
+            "current": 0.002123609281106007,
+            "q2": 0.014125855092679876,
+            "q4": 0.263930374616808,
+            "half-visited": 0.4665118276789525
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-30481",
+      "actions": 2784,
+      "selected_sha256": [
+        "1b0d4aeb70718666bce8d4bce415283cc7a1b14d3d7cd021d031d109a8ab0e75",
+        "0773619f3bcc5daef04bfdcea72fe6f5896679d9bda6b00d1e56b414042e98d7",
+        "07f7419a800175057d58088cc7fdfbfc9abc7b8e07f0bbbb4f5304fb3f8be138"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.00249465680503792,
+            "q2": 0.018374674314280387,
+            "q4": 0.3695073348123026,
+            "half-visited": 0.48621510953402575
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0026152423625450997,
+            "q2": 0.01903747302057003,
+            "q4": 0.3701587042810549,
+            "half-visited": 0.4868255537997392
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0025240743156571734,
+            "q2": 0.018501530173700903,
+            "q4": 0.364262746861472,
+            "half-visited": 0.4863333332435464
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-31246",
+      "actions": 2624,
+      "selected_sha256": [
+        "39d94b0f7f7d8c87e63dec67551626cb7abbe902cf904e31d6256319e975d225",
+        "bce6c78f8b57615f4e704f35d84a0424ca5a262a426db099a9cb3d4f96c98889",
+        "b279dcc78bdf29af4b19f8b7c1e209fd2258b9236ccdc46a3c21066e9df29ff0"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0015740597161767148,
+            "q2": 0.009689015119130295,
+            "q4": 0.14079482498999193,
+            "half-visited": 0.4843933534081679
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001506402507207803,
+            "q2": 0.009308842070272948,
+            "q4": 0.13578534808257242,
+            "half-visited": 0.4842850585413326
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0018216600133900108,
+            "q2": 0.011107576355771975,
+            "q4": 0.16733173653510397,
+            "half-visited": 0.48466523708262016
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-32031",
+      "actions": 2624,
+      "selected_sha256": [
+        "ecfda9bf26b962451dab10e1df1792d57a7368c3875c0656f4967d9122ceb34e",
+        "24ad787b7506e2213d625c65fe2f5e7d1d6fe82140c178316977be73fce6be67",
+        "3342d1f8b7ebb8b7180a286cd68f06e7a7953e1c9aae2d609edc7811c580b4b1"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0015605997779158803,
+            "q2": 0.010691094054683563,
+            "q4": 0.1828618844659283,
+            "half-visited": 0.48392975743923505
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0017744844500748747,
+            "q2": 0.011414852008739363,
+            "q4": 0.18797115818370996,
+            "half-visited": 0.48433298181449647
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0016362934949911772,
+            "q2": 0.01059032187540929,
+            "q4": 0.16711838518992816,
+            "half-visited": 0.48435259828372024
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-32093",
+      "actions": 2760,
+      "selected_sha256": [
+        "eccbede55b2962f05edce47afd4304ff6a68b11aff1d519b4063752cc1d89289",
+        "4dc36df006d8bb81c83b60ff2395f9b94e7d9f521b5202962b7b4bdbdc31d6dc",
+        "c2e68bdb24d1c057524e89ed7fae584458d9b4ad1c937cb4713d99cfb794ab5a"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0024621855440308104,
+            "q2": 0.021478079066108748,
+            "q4": 0.5398194981765505,
+            "half-visited": 0.48454262629639966
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002452864603751776,
+            "q2": 0.017116421973273052,
+            "q4": 0.3018750685366903,
+            "half-visited": 0.4855697924041449
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0026632805683998477,
+            "q2": 0.02287107102840974,
+            "q4": 0.5522123569799866,
+            "half-visited": 0.48476181353943903
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-3308",
+      "actions": 2624,
+      "selected_sha256": [
+        "5235ef3f90350242631d3bf352ea79f0d13e2ddb5e36e4eba909ceeab04111b5",
+        "43b1f90662faf2d2d066d903385ff6eab97916c1bb08e2df9b641acac50e6667",
+        "5ce753e0f3e3e2f5fca62eabf01d232b652ba2a7bfcd3d5a9a6d2439cb8bec47"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0018661063381158055,
+            "q2": 0.011229504477198265,
+            "q4": 0.15505565610190353,
+            "half-visited": 0.4848574535451807
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001648013311465039,
+            "q2": 0.009993230965629665,
+            "q4": 0.13566999182524175,
+            "half-visited": 0.48487308670994705
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0020955030867854055,
+            "q2": 0.01244069674137839,
+            "q4": 0.17381474497939603,
+            "half-visited": 0.48504979103389134
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-4243",
+      "actions": 2624,
+      "selected_sha256": [
+        "4fc0aa32e8197ef54010bfc2e66c90f4c32c83aa6f97041c2caf1f99c26fa3df",
+        "f649b2dc540ccefb98a2570d17898f758fa72c5b8d111d2112974d6f0ed0127a",
+        "0207a608e85376c2146ec2d6310e23bdce048a5d23abfaf5735fb4959f625e2f"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001812151325087143,
+            "q2": 0.011128472507772127,
+            "q4": 0.16946115236382253,
+            "half-visited": 0.4845644268258409
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0016911855270259524,
+            "q2": 0.010495458782595023,
+            "q4": 0.16016189154326066,
+            "half-visited": 0.484526229266372
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0015903936299635454,
+            "q2": 0.009635568242209909,
+            "q4": 0.13747399097303056,
+            "half-visited": 0.48426863235007594
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-6369",
+      "actions": 2624,
+      "selected_sha256": [
+        "c565860db4a356d804802b17a881a399cf19936a96bbcad68aec079780450a52",
+        "61e536c6a9f391e87133fb90606ab761bec96e4b2a1db9ef74ff03701ff765dc",
+        "e6e9c472f1efb9df20b871dff2867f18523afe87b5ab757f09a3e6fead13c03f"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0019486849629298392,
+            "q2": 0.012642893467982658,
+            "q4": 0.21155485694719633,
+            "half-visited": 0.48443592059874424
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0019842338641313647,
+            "q2": 0.012719852739025924,
+            "q4": 0.21764837635497436,
+            "half-visited": 0.4845659964023603
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0019484671672141682,
+            "q2": 0.012537295911319857,
+            "q4": 0.2169774446428317,
+            "half-visited": 0.4842860510665281
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-6903",
+      "actions": 2792,
+      "selected_sha256": [
+        "f2f10dd7d7a16c6a7a6f293ff06fc9122a7ae95282325eef1f7a1abb693a498d",
+        "32c76ad9bf3c541a677d2c55c3ba7fd63d8fca21f27154cee8c63cb760a0f851",
+        "b91563c39c23cc529b3f9efdeddcd4aa12475e69ceb73586c938c45ddf9b214c"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0022082696607653727,
+            "q2": 0.016273153279835275,
+            "q4": 0.3383975596901829,
+            "half-visited": 0.4853064290707695
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0027505132141902025,
+            "q2": 0.02285746468547288,
+            "q4": 0.4901907252962704,
+            "half-visited": 0.48576651541250615
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002412129270482368,
+            "q2": 0.018627825541744296,
+            "q4": 0.40408084522937393,
+            "half-visited": 0.4856762530081151
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-9040",
+      "actions": 2784,
+      "selected_sha256": [
+        "982ef83dd8ae8408b42c107f5ec20e28bdfabf52f700757c5a82ab470bfe8928",
+        "cfd01b54aa06b3289632e2213b13e0a5ba7ced6b22c7ffff745c21e654dde857",
+        "1bc939cb8a203175563982d9d833f5af1e0e2ff8bd7b6d5b60ee08090dc3c7fe"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002529600693902387,
+            "q2": 0.017146601452835957,
+            "q4": 0.30946701712054103,
+            "half-visited": 0.486830363749418
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0024814246954326553,
+            "q2": 0.017979426343439006,
+            "q4": 0.375427865615916,
+            "half-visited": 0.48604059133930644
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002393951939789549,
+            "q2": 0.01692642340236173,
+            "q4": 0.3627518907114996,
+            "half-visited": 0.48580343643676005
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s1-v1-9932",
+      "actions": 2624,
+      "selected_sha256": [
+        "a42749bf3ea699f4ca989ef175dadf7922299731bf014a4bbec5f9ac590faac2",
+        "4efa7fc3c3f77fc3b70d77c35fc72de92eb134c72d2517354a423857af7a88a2",
+        "93f756f2aeef629c4d48c616127146a1617db92334af005ee3792a625bbf1615"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0019281667682478122,
+            "q2": 0.012281954780449205,
+            "q4": 0.2031871141225639,
+            "half-visited": 0.4845633378712835
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0019155808403304732,
+            "q2": 0.012479679632181427,
+            "q4": 0.21831911219673789,
+            "half-visited": 0.4842518493151733
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0015408327241424916,
+            "q2": 0.00990018193695155,
+            "q4": 0.16191060085495657,
+            "half-visited": 0.48408893513443935
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-12488",
+      "actions": 2624,
+      "selected_sha256": [
+        "cfb396f34b37c3045649da3769b69574d4263c282aee2ad280efafc3e5a20418",
+        "7aeeb63483cd2cd57f9654dd084e5c16a2e2fd9fde6d2a789c0ba933cf8971d8",
+        "5be3df1f49816de96a2d54b2b8e3a7065beb47ec69b80c447bb898ec234e35e2"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001732457484323101,
+            "q2": 0.010608880436790558,
+            "q4": 0.15605310350814244,
+            "half-visited": 0.4845006317835485
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0017915261063391318,
+            "q2": 0.0110689306701672,
+            "q4": 0.1717343955013148,
+            "half-visited": 0.4844620390423693
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0017859385666460729,
+            "q2": 0.011170111290110727,
+            "q4": 0.17739112035167418,
+            "half-visited": 0.4845332923200495
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-14441",
+      "actions": 2624,
+      "selected_sha256": [
+        "9d36cfb5b8f9195a561d2a59326342c53eb302f44aab9cd3bd557a80147d5af6",
+        "f1ee1885ce36930bf774c9313b8fe71946b168f1b965e0e125cd0ea3a098b8d7",
+        "7890f3d2e6daf9dc4ff9f8ae85c39cb5cb8b927175c13adde908aff4154bb4c0"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0018783486218325275,
+            "q2": 0.011543917483487013,
+            "q4": 0.17659813991914292,
+            "half-visited": 0.48470024040651466
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001646692845618822,
+            "q2": 0.010252478117698693,
+            "q4": 0.15645147235720952,
+            "half-visited": 0.484387538880087
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0017277607763702182,
+            "q2": 0.010492859760418818,
+            "q4": 0.1532108078555287,
+            "half-visited": 0.48457810143339286
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-14990",
+      "actions": 2624,
+      "selected_sha256": [
+        "4d94aead2cdcd359648b9f6ea250988489a1dba7653fd0af94cca924428284cd",
+        "6ab3dba1b85956fb2213bb174b55085e109237f2deae5c09b4651110aa44f968",
+        "de444e4112c07fdd311b045496cf40b6fb0b21b327728b3611ee34ab640a8438"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0023800720575673727,
+            "q2": 0.01577705722239294,
+            "q4": 0.28934336542480754,
+            "half-visited": 0.4843406629001399
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0019880885950995875,
+            "q2": 0.012642590309145083,
+            "q4": 0.2051987141213366,
+            "half-visited": 0.48428791199785315
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002296689311423658,
+            "q2": 0.014694020792116045,
+            "q4": 0.26407279846013226,
+            "half-visited": 0.48460245466657625
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-15229",
+      "actions": 2624,
+      "selected_sha256": [
+        "14a91aa3b4fa2c34d465a7db0a1accaf816955e1742fdebf5272033b6a478c6a",
+        "3ca435d4545e0f0db40b003ac624cb08fcbcd585ef42b30b72a49ee86d343771",
+        "33fb25e93f4545815500de4af256c51738e795b94d8e3a14b60d0f3d518027fc"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0020702062802274573,
+            "q2": 0.012417232888770566,
+            "q4": 0.178990890801548,
+            "half-visited": 0.4850466747125257
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002098035905270183,
+            "q2": 0.014227318233986642,
+            "q4": 0.2538147163954148,
+            "half-visited": 0.48438800605558396
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0018691751280610989,
+            "q2": 0.012754586579781818,
+            "q4": 0.22406990192541554,
+            "half-visited": 0.48415219264149195
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-17554",
+      "actions": 2624,
+      "selected_sha256": [
+        "5913b3bc1719d814f0098a06f6e29ea128d01945175fc66312414ca3cdbdf72a",
+        "6bc42226e950c4de99c2e5880c1c4ee806ca75cbc7655756e06c591be14af164",
+        "5a1d4bb351e032f8c98e1acb639cb6fd63df68d2471225ec9057d4ea57fdade4"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.391304347826087,
+          "target_js_bits": {
+            "current": 0.0013885980368578417,
+            "q2": 0.00793759806577009,
+            "q4": 0.11944076704076712,
+            "half-visited": 0.351405752483985
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0018322629408679403,
+            "q2": 0.01160141454289329,
+            "q4": 0.1833393236721258,
+            "half-visited": 0.4843839479603932
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0016481654787332712,
+            "q2": 0.00988962577773346,
+            "q4": 0.138913175861028,
+            "half-visited": 0.48449230494622647
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-1821",
+      "actions": 2708,
+      "selected_sha256": [
+        "307bca7772f2d86e9a25263f9185771c437d46cbf3fac8535fd9faa7b733d7ec",
+        "256b9bc8254cb7bce7cedcabb807d713c495edb2986b536076cff067026796a0",
+        "d43a611aad79a9c73fc88afcc8c2de8c92e8eea3893b8768cd6adedf4b7f3ebb"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001738508367324592,
+            "q2": 0.010721690500535907,
+            "q4": 0.16999967215560619,
+            "half-visited": 0.48463176102934324
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001719053324304879,
+            "q2": 0.011224923703679888,
+            "q4": 0.19476922731546872,
+            "half-visited": 0.48425921964564655
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0016991097908719843,
+            "q2": 0.011062159507232949,
+            "q4": 0.184260413046469,
+            "half-visited": 0.4844513528656078
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-22421",
+      "actions": 2624,
+      "selected_sha256": [
+        "81dfe7f966c19ed03656ad4a9ee825dce9bfbfbb552746df57b01642743aa988",
+        "3f6b035cf93d0c86f9c9bda21d26f1f59e7c4e3b07bf7f8a9afc5e05161cb5cd",
+        "611f6490844199731d8c7517e563232b2a816439ac1518073c1474a3ee632834"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002255819480054668,
+            "q2": 0.01537810773775343,
+            "q4": 0.28585908743804056,
+            "half-visited": 0.4847655219740827
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002359325444789089,
+            "q2": 0.015206179371088282,
+            "q4": 0.2630057020341975,
+            "half-visited": 0.485051361397152
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0023364311322645807,
+            "q2": 0.015246388982591641,
+            "q4": 0.26566631230941834,
+            "half-visited": 0.48498905479391474
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-23263",
+      "actions": 2624,
+      "selected_sha256": [
+        "862bf036a3e1d6ce20e86b23d582f6c12cd8ae9bbfa955fdcfc13818caadd946",
+        "2fa5dfccfbe3b85b48255b83a9d75dbd6afb7f94f85cc5f4c744ba44aeaddcbf",
+        "1fdd4c77308af68412889313e00357855a57690d4ab2f140c16442bf76380e42"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002329772567328598,
+            "q2": 0.014735743941427622,
+            "q4": 0.25172898121505893,
+            "half-visited": 0.4847951425785395
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001910989060678805,
+            "q2": 0.012276212208598869,
+            "q4": 0.20807316546646354,
+            "half-visited": 0.48440240530858936
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0021828767311706607,
+            "q2": 0.013813471907719988,
+            "q4": 0.23184791155817636,
+            "half-visited": 0.4847607462780966
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-2818",
+      "actions": 3048,
+      "selected_sha256": [
+        "f1536bce40da01524bce32ac93ee56924bcba979dc3399b491c6dfc6ad40a7ee",
+        "b56dc9ffa19b051547e3406fa93f8708293eafb90a7f84b02b675792b6e55366",
+        "902044c5840941c24422655db0c2bdc6ca003b1b0e592190ba0cb8edbc670a22"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0025064473409141075,
+            "q2": 0.030196127947648227,
+            "q4": 0.7563711289531063,
+            "half-visited": 0.4838962676422863
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001993829836344786,
+            "q2": 0.0197257354595193,
+            "q4": 0.5598641391141714,
+            "half-visited": 0.48373420764696556
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0024304070258147747,
+            "q2": 0.028952914034431704,
+            "q4": 0.7426955136552258,
+            "half-visited": 0.48392435458887684
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-29442",
+      "actions": 2628,
+      "selected_sha256": [
+        "73a63afd3c042e11cd992590cd5b457829ec20f774bd4ffcfdc9b89e2c40e0fd",
+        "900e0bc7e1a2b7755ca263ad7c1c4375db775b3f8d30ba13e84fd870408aa61c",
+        "50a06c6a1e1bb97a2bd127fb9130e8e7e0f00c8a9bb5aa93341ce7401660acf5"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0016573151024457315,
+            "q2": 0.010718118578028336,
+            "q4": 0.17741861077081053,
+            "half-visited": 0.48437375983143705
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0017330912668048156,
+            "q2": 0.011193369205489986,
+            "q4": 0.19224788733144227,
+            "half-visited": 0.48425501232023876
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002085078657834539,
+            "q2": 0.013767004615821542,
+            "q4": 0.25028511452976643,
+            "half-visited": 0.48439529970945017
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-5469",
+      "actions": 3208,
+      "selected_sha256": [
+        "80e689c474a35842555c6821ddd7f374cdcf3b85a7deb6f5b34b581f63b4e1f0",
+        "3818de509072a4a8c467497da9f437b3282dce6539d878e2cb7217306f4ef33a",
+        "5fd8102e5e6c202491abc84e9c6ed7414ed19070a331f3f42ed536f07a1882f5"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002291574777882581,
+            "q2": 0.016887729964704144,
+            "q4": 0.36184493783493354,
+            "half-visited": 0.487323778680983
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0019959345063700193,
+            "q2": 0.01412713341616331,
+            "q4": 0.28647574703629813,
+            "half-visited": 0.4876832955472356
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.00172909396882493,
+            "q2": 0.011781160031197495,
+            "q4": 0.22790443333585092,
+            "half-visited": 0.4873729309617082
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-5713",
+      "actions": 3208,
+      "selected_sha256": [
+        "4efa7fc3c3f77fc3b70d77c35fc72de92eb134c72d2517354a423857af7a88a2",
+        "d1dc9e3fd044e507bd93832599257be65df71f896b18341a75a72c94242df328",
+        "2489a4d7d66eeb94871a611abd4aa519d6588db1ec5e0b675032a7a5f21f0b0a"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0023870321197243887,
+            "q2": 0.018858382396864597,
+            "q4": 0.4426175438265939,
+            "half-visited": 0.48696815383540787
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0021375248190663243,
+            "q2": 0.015268505894370173,
+            "q4": 0.3210017632299468,
+            "half-visited": 0.48723713161849924
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0021361660892379843,
+            "q2": 0.017932718120872423,
+            "q4": 0.4444334271042574,
+            "half-visited": 0.48644566945611084
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-5888",
+      "actions": 2632,
+      "selected_sha256": [
+        "bffd0ff449499374b7d13ff92b47af723e783a4b3bfb9651b7382bfaedb3dc2a",
+        "3c513c7f3ed913bb518305999a19e148273fd81647f4eafd1dc3e2811256d0f3",
+        "b9033d393cdb26e8885fa12b15cd2500f62453670b15d02ba10694d5b10a4b9f"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002137559203668501,
+            "q2": 0.0162712716928006,
+            "q4": 0.31611534640727146,
+            "half-visited": 0.48566880814290636
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001935038681380112,
+            "q2": 0.01376264967137258,
+            "q4": 0.2527477929030425,
+            "half-visited": 0.4854961801314151
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0020343360940148956,
+            "q2": 0.014869523720114904,
+            "q4": 0.2855335712065459,
+            "half-visited": 0.48570547728095015
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-731",
+      "actions": 2624,
+      "selected_sha256": [
+        "7e2cfd3a408df4bf38fe7d47644226165d4e11b9e0d8312beeb8c38ec3e34ed4",
+        "d847dda4dcd82bf0b0d122f8c44f914ff2d5d6c8c0344073b559dfeb748bd966",
+        "7890f3d2e6daf9dc4ff9f8ae85c39cb5cb8b927175c13adde908aff4154bb4c0"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0018756015915729982,
+            "q2": 0.01176709407727018,
+            "q4": 0.18882409944717093,
+            "half-visited": 0.4845743601690593
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0020715873834348136,
+            "q2": 0.013195292831988895,
+            "q4": 0.22840114192416594,
+            "half-visited": 0.4842211287936309
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001988119301697424,
+            "q2": 0.012414581072840724,
+            "q4": 0.2033581743887583,
+            "half-visited": 0.4845367955802366
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-8504",
+      "actions": 2548,
+      "selected_sha256": [
+        "0d59737936b463206973afc99a68364b3129c688fc63fda3f05bc71f4d17a262",
+        "1c53cd69c42936eed8efd228b1ab12db86336a07ac6a63a8d86740b627374913",
+        "46540aa4dc854fc15f954b6106b9547b9ffd45849e9115bfcdb6b4599f3a7dfd"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0013691701355102053,
+            "q2": 0.008814736098488575,
+            "q4": 0.1334367335293223,
+            "half-visited": 0.48325630622401194
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002309111504879127,
+            "q2": 0.01210493695509518,
+            "q4": 0.18622133150884695,
+            "half-visited": 0.4814202173375578
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0022071213121026808,
+            "q2": 0.011521047133447808,
+            "q4": 0.18094487210718613,
+            "half-visited": 0.4808784898302805
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s2-v1-9758",
+      "actions": 2836,
+      "selected_sha256": [
+        "12e624097e83ee70ff0e14730341cf7d4c0f967976e57dfa2fbc8d413377c412",
+        "9abcb03aff596e03ff3337b978080a96f583f4b264f8f7885b84773d35b10b05",
+        "6e1464c7046be39bec6bfb52c4f02ef975cddfc5dc357cd6a12321b7ef9c916b"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0014457352994639988,
+            "q2": 0.009492245471675093,
+            "q4": 0.1544883958474363,
+            "half-visited": 0.48481586638110974
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0014926018403200504,
+            "q2": 0.009873157778048973,
+            "q4": 0.1678954821890007,
+            "half-visited": 0.4848404338414657
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001529942358188271,
+            "q2": 0.010511244806050653,
+            "q4": 0.18739607495750127,
+            "half-visited": 0.48459037384399
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-10903",
+      "actions": 2624,
+      "selected_sha256": [
+        "445c532bed4682c8b7aeac51e1db90b37a4313e15055664f729835ef9c0026ee",
+        "73e9f2948fe059d1edbe77b5bb9ba3c3f4ac78bf1351b4855519f97930c20e9e",
+        "78dbe6db9823e1069a568d984581dd7a10c3a318713d95bc2ddd5cfa9b578630"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0014661197077294875,
+            "q2": 0.009059008014910537,
+            "q4": 0.12133456687303984,
+            "half-visited": 0.48452023097420627
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0017150632629632147,
+            "q2": 0.010421018303307411,
+            "q4": 0.14802674382132586,
+            "half-visited": 0.4846127959072337
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0016479549172598645,
+            "q2": 0.010162424611965658,
+            "q4": 0.1467327333341818,
+            "half-visited": 0.4845024122302633
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-14490",
+      "actions": 2624,
+      "selected_sha256": [
+        "d847dda4dcd82bf0b0d122f8c44f914ff2d5d6c8c0344073b559dfeb748bd966",
+        "2ef9fef60939cf72a962fd04e937cf8eea05e80f86b19b5b7f5ba4aa402f42b6",
+        "bbc2849ea8b2dfcdab3f420ec90acc48a3a77115aae2938c6309c0d95ef0bc34"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0017524266023697074,
+            "q2": 0.010746663435962792,
+            "q4": 0.1584639389171909,
+            "half-visited": 0.4848275412143103
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001660374063112919,
+            "q2": 0.010565664813840872,
+            "q4": 0.162209752784772,
+            "half-visited": 0.48453804715869914
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0015076434574888041,
+            "q2": 0.009584264047413237,
+            "q4": 0.13911368930971182,
+            "half-visited": 0.48457150091357437
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-15857",
+      "actions": 2784,
+      "selected_sha256": [
+        "b0eb9dfdb42502b237a547aa589d58780b81a3ca40abb1c427b3b73362acfd06",
+        "9cc252d74110fbcbbfe6cc2f36c25c2ccafd903370b39d3b15640a824c30df8e",
+        "69a783c87ffbb332e07161c546cca9ef0dd04cb4e196b9adcb006fac4e43463a"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0024832408784946297,
+            "q2": 0.02190439489875666,
+            "q4": 0.5606356875112138,
+            "half-visited": 0.4848365616397243
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0028731979251100086,
+            "q2": 0.026616031419444262,
+            "q4": 0.6367623813054495,
+            "half-visited": 0.48511298078825926
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0028232603363537822,
+            "q2": 0.025197934938576902,
+            "q4": 0.6030732574383006,
+            "half-visited": 0.48530885970125304
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-16226",
+      "actions": 2624,
+      "selected_sha256": [
+        "83866a771bb83acd082276bee911fa5480c72797e7299e94409c97a3e006789e",
+        "66dcc6db2ba28454c45b16e8b2830671fbbcb562747340d9aecc66a3823f90db",
+        "9f40d2cf16db9cd197749001a3957727513dc0bee92828e36e477fd7cbf87a64"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0019610166237346146,
+            "q2": 0.012056390232642976,
+            "q4": 0.18718898987182364,
+            "half-visited": 0.4848868531164432
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0018334101017371783,
+            "q2": 0.011774430603119133,
+            "q4": 0.1957738800048132,
+            "half-visited": 0.48441985598434345
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001713111504578278,
+            "q2": 0.010891781258552707,
+            "q4": 0.17251784553063465,
+            "half-visited": 0.48451661643045774
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-1731",
+      "actions": 2792,
+      "selected_sha256": [
+        "8fe06f62022c4a84342228481b07a1736caf74dcc46b1e9389bd01763d43fb45",
+        "0f00176bd5199d645fc785c0ad5f14ebfbe34be1989d006d942829eeaeebbb64",
+        "09686652ddd2752d72d2c6f31dc603df30ead39017fd16f6b1b932d0deecb0c4"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0023190003000359873,
+            "q2": 0.02236725236841093,
+            "q4": 0.5852320801835968,
+            "half-visited": 0.48489203154752913
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002102774784409918,
+            "q2": 0.016452663964058287,
+            "q4": 0.3702628719385358,
+            "half-visited": 0.48480555580491597
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002287796031478803,
+            "q2": 0.02297952678205273,
+            "q4": 0.6075507426454225,
+            "half-visited": 0.4842344677225404
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-18600",
+      "actions": 2624,
+      "selected_sha256": [
+        "37374b98d23914628240e382071b0577d7d7d6291a653aa0b61e455a04ca7e18",
+        "5733744dea5665f6d228ee3c88c4758f9580131cfe4a997107b1ff527d335d1e",
+        "7bd2ae81921388dbb1dfaa17ce54327c12603a39ee3c52bbbf7b6f3f5cab1e44"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0017952126218596324,
+            "q2": 0.011706269799256836,
+            "q4": 0.2067247127133877,
+            "half-visited": 0.4839809999299364
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001740702054906286,
+            "q2": 0.011326708128309257,
+            "q4": 0.18712802568285752,
+            "half-visited": 0.4840986127611228
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0018346763519419586,
+            "q2": 0.01190431011061627,
+            "q4": 0.20869064347004634,
+            "half-visited": 0.4840242193744758
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-242",
+      "actions": 2784,
+      "selected_sha256": [
+        "9decc23572bc82be2647801b6ea99f5eed52824d1ec9536d9b8a79fa28359032",
+        "ad5b45cf12ebfe782f63ac7b1f10f67222308cc2582a9374fa543f2038cdf0c8",
+        "f442ec37672e797c826d400730dfc357339bd6c7d5f39f74e13122fc3d85f7bb"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0027183401138809776,
+            "q2": 0.0276152731047107,
+            "q4": 0.6890849241921924,
+            "half-visited": 0.48488478802245344
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0028283586973703017,
+            "q2": 0.028650367666622857,
+            "q4": 0.6934418417170175,
+            "half-visited": 0.48508378900665194
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002475018438465403,
+            "q2": 0.019363426547795926,
+            "q4": 0.45358887389723745,
+            "half-visited": 0.4855392065063837
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-2444",
+      "actions": 2784,
+      "selected_sha256": [
+        "ac9f90a21354e259e4aa2da1990293a3cf2ec1bb3fa11534142d71327ad51830",
+        "1341229da806621bc5504c9c556d575d745cbdd211faeff790e81497b4f7d1b0",
+        "8838f37af979a5180e236d2b9a8e9f3769a98bb3e359f1a3ee54b7ee3a7cbebc"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0025078204103770266,
+            "q2": 0.022557852046618154,
+            "q4": 0.5477918156560535,
+            "half-visited": 0.4853809108377942
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002636040529062089,
+            "q2": 0.023658351515438207,
+            "q4": 0.5745004954182688,
+            "half-visited": 0.4852977691542807
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002340121627429413,
+            "q2": 0.02342094630571697,
+            "q4": 0.6185668587083963,
+            "half-visited": 0.4843792596755004
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-25906",
+      "actions": 2624,
+      "selected_sha256": [
+        "911d85d7fdb4ff63a10d729b38d14e32e7ea155dcec7a3fc8718ef2d9720f44a",
+        "f1d9130f5fd75c475d78da132ee400b6dc3f32433cdb24955fd8d9b833df4017",
+        "af87c09b57152651357fdb8976f508dddeea5a9903ecad5ede099457a3819f4f"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001984788132663469,
+            "q2": 0.013814327187526398,
+            "q4": 0.2605652261891357,
+            "half-visited": 0.4843737307426348
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0018594116517674146,
+            "q2": 0.011703875006599012,
+            "q4": 0.18659881676922485,
+            "half-visited": 0.48475177845315276
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002041422182414749,
+            "q2": 0.013929498308909738,
+            "q4": 0.25826762453569224,
+            "half-visited": 0.4843828932872857
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-29328",
+      "actions": 2656,
+      "selected_sha256": [
+        "7bd2ae81921388dbb1dfaa17ce54327c12603a39ee3c52bbbf7b6f3f5cab1e44",
+        "0df39f04418bfa2b330b15c1af62f079aebdf67ad8611ff6b428fc0b40715063",
+        "40b6d6665e08cd080cf3dc725338c5197827c519f0eb8aacab99d609d2e760c1"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002889887292462664,
+            "q2": 0.0251612136153685,
+            "q4": 0.5850269132994728,
+            "half-visited": 0.48529164970389915
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0030729028910603086,
+            "q2": 0.02436936185543292,
+            "q4": 0.4981684970546078,
+            "half-visited": 0.48590077841744106
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0028645205916802757,
+            "q2": 0.02634462382962292,
+            "q4": 0.6167061819024807,
+            "half-visited": 0.4850007333108386
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-3284",
+      "actions": 2760,
+      "selected_sha256": [
+        "902044c5840941c24422655db0c2bdc6ca003b1b0e592190ba0cb8edbc670a22",
+        "eea5f325f9f7dffe2fe1cc646a14a12851e41364f3a8faa2d7ebb9897090f4bb",
+        "6822703d17fa2ebedb299b86f5f3b18a463125c436d89a2f9e6ee09b9be7c3ef"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002476472442520219,
+            "q2": 0.01804873642946876,
+            "q4": 0.3383918844082713,
+            "half-visited": 0.48603391854446
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0027034414565610095,
+            "q2": 0.020359610465955733,
+            "q4": 0.4203325603340595,
+            "half-visited": 0.4857072282949936
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0025333806999751933,
+            "q2": 0.018520727053218347,
+            "q4": 0.37954372616674703,
+            "half-visited": 0.4856288611822501
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-3397",
+      "actions": 3208,
+      "selected_sha256": [
+        "a963080549cf2a1f3b765eee2f86f3020de1f3d92633d8d3ccbb48032208b818",
+        "14dc3c44a91fac330cfa071dffe508fd3545cec7c51663111f1f6204ca8f552f",
+        "8a01063ac4c41f3b0bdca981483d5ac53b6ea715ba5bfdb1e0dee0c8f9c3b874"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0013721327851368705,
+            "q2": 0.008865561370976927,
+            "q4": 0.14710200131152315,
+            "half-visited": 0.48583714512284126
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.001502186623140642,
+            "q2": 0.010342916989028384,
+            "q4": 0.1861307244784351,
+            "half-visited": 0.4857510874858061
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0016475233499825253,
+            "q2": 0.010943877825818418,
+            "q4": 0.1968591461186901,
+            "half-visited": 0.48596174386808594
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-3540",
+      "actions": 2632,
+      "selected_sha256": [
+        "ccedf687f3439fe297365ce444650e098558f28c188e18b00b6367160cb8fa8a",
+        "974810ca892db5e94008853b66f38aa28f2347911a1b75608882a45daed3d253",
+        "445c532bed4682c8b7aeac51e1db90b37a4313e15055664f729835ef9c0026ee"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002486713495272334,
+            "q2": 0.017393607171471266,
+            "q4": 0.3500483281638639,
+            "half-visited": 0.4860327151720736
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002679728215261051,
+            "q2": 0.019917596445202735,
+            "q4": 0.4260642768377153,
+            "half-visited": 0.4856951981407447
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002662004481014091,
+            "q2": 0.018301131393730147,
+            "q4": 0.35007956856714617,
+            "half-visited": 0.4861235538594174
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-4981",
+      "actions": 2784,
+      "selected_sha256": [
+        "0accf2a3dc42b20563b2869a8ecdc07e84bf3eb0df68c0591cb32416f5e32088",
+        "e805f1b0dc63c3da681d29e1f246f2b38acd1cf8c5fea0803668c55982643343",
+        "d71a9a50299b7a719b107e9a7b044938e1c03a023f950b61a3e6fae659df63ae"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0021765355017854585,
+            "q2": 0.016921325070930776,
+            "q4": 0.37242308243640443,
+            "half-visited": 0.4852128704890005
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0020211602398148808,
+            "q2": 0.014136707965010514,
+            "q4": 0.2666575153657337,
+            "half-visited": 0.485504252596199
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0023140134643006407,
+            "q2": 0.0167505551683751,
+            "q4": 0.34083930700286247,
+            "half-visited": 0.48583964198150714
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-8231",
+      "actions": 2704,
+      "selected_sha256": [
+        "e61da23f752004f05675b4906f2a2aea47a436cd6568457c675b56e566f1535d",
+        "0d74127a37086008165adfd57837635e3fc72462ca7526be995bea24330587e5",
+        "d7074c3a886752dfe9db94ee05c76b42f1463e1313c2e59cad6bb22514e37d4d"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0015211541031267335,
+            "q2": 0.00959106722496511,
+            "q4": 0.15309303545644934,
+            "half-visited": 0.48441994376075487
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.0019397744104682987,
+            "q2": 0.011951055562325053,
+            "q4": 0.1883497451228225,
+            "half-visited": 0.4849723012257078
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002072576822331625,
+            "q2": 0.013066877183065888,
+            "q4": 0.22299665353525688,
+            "half-visited": 0.48483939381614716
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "train-hierarchical-target-quality-s3-v1-83",
+      "actions": 3208,
+      "selected_sha256": [
+        "6e9ba05c7af4006935cb96b4b067ed38c12ff2e1513f2e17dd854370ad43c055",
+        "9539bbfc391a5fc9a8e8bf7d1242667eac1cc2802864d6993f049c165e6dd731",
+        "0b71a5d5fb99850e6ab7c66aa589c58e2023953ee65f04654f350f1c12ffff52"
+      ],
+      "pair_comparisons": [
+        {
+          "seeds": [
+            20260922,
+            20260923
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002310059691817707,
+            "q2": 0.01593917609422493,
+            "q4": 0.31532408348869134,
+            "half-visited": 0.4878731053556408
+          }
+        },
+        {
+          "seeds": [
+            20260922,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002607494158627633,
+            "q2": 0.01811805147034605,
+            "q4": 0.3575415177503146,
+            "half-visited": 0.4881574958764231
+          }
+        },
+        {
+          "seeds": [
+            20260923,
+            20260924
+          ],
+          "visited_jaccard": 0.3333333333333333,
+          "target_js_bits": {
+            "current": 0.002292818558192339,
+            "q2": 0.016585072347462634,
+            "q4": 0.36129693382094813,
+            "half-visited": 0.48737360184205575
+          }
+        }
+      ]
+    }
+  ],
+  "selected_changes_cases": 48,
+  "selected_outside_original_16": 95,
+  "mean_visited_jaccard": 0.33413848631239934,
+  "variants": {
+    "current": {
+      "mean_seed_pair_js_bits": 0.0020606540625840233,
+      "mean_unvisited_mass": 0.9947307316380215,
+      "mean_effective_fraction": 0.9937790202527702,
+      "tested_action_pair_rank_agreement": {
+        "concordant": 3345,
+        "discordant": 606,
+        "tied": 0
+      }
+    },
+    "q2": {
+      "mean_seed_pair_js_bits": 0.01465462513373401,
+      "mean_unvisited_mass": 0.9808757086507208,
+      "mean_effective_fraction": 0.958603997606448,
+      "tested_action_pair_rank_agreement": {
+        "concordant": 3343,
+        "discordant": 608,
+        "tied": 0
+      }
+    },
+    "q4": {
+      "mean_seed_pair_js_bits": 0.28282073599032825,
+      "mean_unvisited_mass": 0.7158459216542947,
+      "mean_effective_fraction": 0.31316494577958104,
+      "tested_action_pair_rank_agreement": {
+        "concordant": 3343,
+        "discordant": 608,
+        "tied": 0
+      }
+    },
+    "half-visited": {
+      "mean_seed_pair_js_bits": 0.4839079639996504,
+      "mean_unvisited_mass": 0.4970251894314936,
+      "mean_effective_fraction": 0.0851017466153793,
+      "tested_action_pair_rank_agreement": {
+        "concordant": 2977,
+        "discordant": 974,
+        "tied": 0
+      }
+    }
+  }
+}
