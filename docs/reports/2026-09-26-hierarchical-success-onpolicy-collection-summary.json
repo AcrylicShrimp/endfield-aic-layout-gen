@@ -1,0 +1,114 @@
+{
+  "schema": "aic-hierarchical-success-onpolicy-collection-summary-v1",
+  "protocol_sha256": "db27d655a4c5281ac753183c012747396ec7f12a064fcb80b9f29de00e02c3b1",
+  "records": [
+    {
+      "name": "s1-g0-current",
+      "source_collection_sha256": "902e26e5669a48a62e04329598f510b239089381a309a3069cafa4be1022535b",
+      "completed": 12,
+      "case_success": "01110011000100010000001111000001"
+    },
+    {
+      "name": "s1-g0-success-on",
+      "source_collection_sha256": "902e26e5669a48a62e04329598f510b239089381a309a3069cafa4be1022535b",
+      "completed": 12,
+      "case_success": "01110011000100010000001111000001"
+    },
+    {
+      "name": "s1-g1-current",
+      "source_collection_sha256": "977f79cee2972a34208eee35ed3ab3afe16047027070ac634e936cfbc21650dd",
+      "completed": 14,
+      "case_success": "10000101000110000010111110101100"
+    },
+    {
+      "name": "s1-g1-success-on",
+      "source_collection_sha256": "49f7f12d6486a40676d50657e29816a8db605ef3b1306fd74df3c429f20cc7c1",
+      "completed": 12,
+      "case_success": "00001010000101001010100101101100"
+    },
+    {
+      "name": "s1-g2-current",
+      "source_collection_sha256": "47e8ec5ea4a878c9d3d51688764ff6e4f0e2eaee0adc3154c40bdf6f086e63de",
+      "completed": 12,
+      "case_success": "00101000010010010010001110100110"
+    },
+    {
+      "name": "s1-g2-success-on",
+      "source_collection_sha256": "41c9ca95dfbdd9f2f0b2cdffd5cd0f67f5d67f8b84a9f413ec3420d475b2c228",
+      "completed": 17,
+      "case_success": "11111101111001001100000100010011"
+    },
+    {
+      "name": "s2-g0-current",
+      "source_collection_sha256": "12a5c84ced702667f5c0c132338bfeeaa0de7e36c79ec4fb129d9692d6b27fdf",
+      "completed": 10,
+      "case_success": "10011111000000100000101010000000"
+    },
+    {
+      "name": "s2-g0-success-on",
+      "source_collection_sha256": "12a5c84ced702667f5c0c132338bfeeaa0de7e36c79ec4fb129d9692d6b27fdf",
+      "completed": 10,
+      "case_success": "10011111000000100000101010000000"
+    },
+    {
+      "name": "s2-g1-current",
+      "source_collection_sha256": "db7eb2293e64ee0ce9e6de6791555675994fc2c74c0e041ad9ab397e6515c9a7",
+      "completed": 10,
+      "case_success": "00111000010000011110010000000001"
+    },
+    {
+      "name": "s2-g1-success-on",
+      "source_collection_sha256": "62ec6cf1692722353e5e96b825854fc09a571b0192c3182e6957ace541690279",
+      "completed": 11,
+      "case_success": "10100010100100111100010000001000"
+    },
+    {
+      "name": "s2-g2-current",
+      "source_collection_sha256": "a18f0dca06f9bc9d684461be992c10a40bbc2af9382919dbd0e2ae800ad2b46b",
+      "completed": 11,
+      "case_success": "00001001100001011000001110010100"
+    },
+    {
+      "name": "s2-g2-success-on",
+      "source_collection_sha256": "e180ff398a22add365f76a7310491db4d06cd9d2c407e0d16922d03cf3584e89",
+      "completed": 18,
+      "case_success": "10011011111011001100101001110010"
+    },
+    {
+      "name": "s3-g0-current",
+      "source_collection_sha256": "83c6806d37f87bcf83c32a2c3de6a1058d7d076b404c8d0099a83fe6e62bb358",
+      "completed": 16,
+      "case_success": "11110110010011010001001010100101"
+    },
+    {
+      "name": "s3-g0-success-on",
+      "source_collection_sha256": "83c6806d37f87bcf83c32a2c3de6a1058d7d076b404c8d0099a83fe6e62bb358",
+      "completed": 16,
+      "case_success": "11110110010011010001001010100101"
+    },
+    {
+      "name": "s3-g1-current",
+      "source_collection_sha256": "9fb756d29b8a83c84cde967dff3480f839560094d8adb979003750f09888b501",
+      "completed": 11,
+      "case_success": "00100000000001110010001011001110"
+    },
+    {
+      "name": "s3-g1-success-on",
+      "source_collection_sha256": "2910c373de3ddf23dff61623cb657a455905f92d7695633a6ae166534084f8b2",
+      "completed": 14,
+      "case_success": "00010110110101110110000011000001"
+    },
+    {
+      "name": "s3-g2-current",
+      "source_collection_sha256": "05b5c3b2735566548d4cc24429fab627a8a026688c951dd216f86592f68d6027",
+      "completed": 13,
+      "case_success": "10100110101000010011010101010000"
+    },
+    {
+      "name": "s3-g2-success-on",
+      "source_collection_sha256": "c46028e2b7ae779bc3281466ae65acd4c22c9406d0a830fce5ec10d7f7667f9b",
+      "completed": 14,
+      "case_success": "11110000101000001011000000111110"
+    }
+  ]
+}

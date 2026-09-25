@@ -1,0 +1,63 @@
+{
+  "schema": "aic-hierarchical-success-onpolicy-model-retention-v1",
+  "source_protocol_sha256": "db27d655a4c5281ac753183c012747396ec7f12a064fcb80b9f29de00e02c3b1",
+  "source_progress_sha256": "efa870d8d44169736894ced2c97f74eeab5df503d8cbecdd1e25291daddc58f0",
+  "remote_root": "~/Srv/aic-target-causal-20260925/artifacts/recovery-success-onpolicy-final-models",
+  "continuation_requirement": "Frozen action-keyed versus rank Gumbel comparison on the three final stream model pairs; remove after that experiment closes.",
+  "models": [
+    {
+      "name": "s1-g2-current",
+      "source_training_report_sha256": "a9f0164de128d331d3ea64112eb48acf41bef91dc79afda2e572791d53fbdafa",
+      "files_sha256": {
+        "config.json": "d3226611ef6d36008b104db96e4bb6746cad99f35909b51fd174bf5fda825b47",
+        "state.safetensors": "d84b39f18b6a3714e5044a88eb4cd4aaeb63a0a7487b8625b0680d0f77b9ee24",
+        "parameter-order.json": "b1ab40000e0d20955ca9fcb4e0137710c31729e9e7b5c7aecc5c7e1c648bdfa5"
+      }
+    },
+    {
+      "name": "s1-g2-success-on",
+      "source_training_report_sha256": "5b6646467e842addc0e8d2fdf15b68b97d190d8896a90454ca137b1bcff364ba",
+      "files_sha256": {
+        "config.json": "d3226611ef6d36008b104db96e4bb6746cad99f35909b51fd174bf5fda825b47",
+        "state.safetensors": "204fc33bda05e2d3abdd29849b3dae90c2a3c5772e4035f0e9f06efc1b8bfc10",
+        "parameter-order.json": "b1ab40000e0d20955ca9fcb4e0137710c31729e9e7b5c7aecc5c7e1c648bdfa5"
+      }
+    },
+    {
+      "name": "s2-g2-current",
+      "source_training_report_sha256": "c30e7cf4ef0b8875634d0e0bb1a96deb88c52779ea89bb89a1d91fc0d0d86201",
+      "files_sha256": {
+        "config.json": "d3226611ef6d36008b104db96e4bb6746cad99f35909b51fd174bf5fda825b47",
+        "state.safetensors": "55ba9fcf74151b6657f039bfc935253b03654e7f3f98113363cb0eb7389a178f",
+        "parameter-order.json": "b1ab40000e0d20955ca9fcb4e0137710c31729e9e7b5c7aecc5c7e1c648bdfa5"
+      }
+    },
+    {
+      "name": "s2-g2-success-on",
+      "source_training_report_sha256": "c1cb518512917c6245ba3a973c816367db3630f26af7fc0d9454faaf7e614efa",
+      "files_sha256": {
+        "config.json": "d3226611ef6d36008b104db96e4bb6746cad99f35909b51fd174bf5fda825b47",
+        "state.safetensors": "9ebd603deb90e5637bbfeb63170e9a3f433a3dff449397ce6f5207ed9c699636",
+        "parameter-order.json": "b1ab40000e0d20955ca9fcb4e0137710c31729e9e7b5c7aecc5c7e1c648bdfa5"
+      }
+    },
+    {
+      "name": "s3-g2-current",
+      "source_training_report_sha256": "811ec8fddfe006b8cb787f68514e2bd518f1d134c5f88d2d7205ef5e6d1600aa",
+      "files_sha256": {
+        "config.json": "d3226611ef6d36008b104db96e4bb6746cad99f35909b51fd174bf5fda825b47",
+        "state.safetensors": "baafd7dc56553736d813dfdcc46d258d49d499ca8c3fe788ee335d62be43cd94",
+        "parameter-order.json": "b1ab40000e0d20955ca9fcb4e0137710c31729e9e7b5c7aecc5c7e1c648bdfa5"
+      }
+    },
+    {
+      "name": "s3-g2-success-on",
+      "source_training_report_sha256": "7e2386577b58f3a8f93973136d7d7462ad1fc05b373fa57e8a7145b4f9fb6d42",
+      "files_sha256": {
+        "config.json": "d3226611ef6d36008b104db96e4bb6746cad99f35909b51fd174bf5fda825b47",
+        "state.safetensors": "ddfac905e8d5ea4aba2289458a11b949d2d05d2b4bd51da860260a33d9f3f533",
+        "parameter-order.json": "b1ab40000e0d20955ca9fcb4e0137710c31729e9e7b5c7aecc5c7e1c648bdfa5"
+      }
+    }
+  ]
+}

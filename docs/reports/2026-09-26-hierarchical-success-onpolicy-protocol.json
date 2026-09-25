@@ -1,0 +1,50 @@
+{
+  "schema": "aic-hierarchical-target-learner-protocol-v1",
+  "phase": "confirmation",
+  "contrast": "success-selected",
+  "experiment_commit": "d4f65f23",
+  "planned_records": 18,
+  "runner_sha256": "a9cb2cb4194f24c7384da1c914166cd4137a0796752afbe0b12ba15b74426ab8",
+  "transform_runner_sha256": "48df0669ccde9d87cd29354671425616e7c55e10779163ef455b9d456f08f554",
+  "helper_sha256": "a3d0576a4f2852074d41e82c8c9b460776b6d75156218523ee58a1f7d655da7b",
+  "tracking_sha256": "8defe5cb00e861b1fb6c1ab2bc86f55c56adb3ed1508e377bd7b53bc67d478ef",
+  "screen_protocol_sha256": "983864baf2f82efde44a9d0448f2457577a860cd232c7025a56fc1d9b8689a90",
+  "screen_summary_sha256": "7f67b917d5da58bc479893cc54acf91e375621733c71a19f6da81229c6f1c6db",
+  "screen_diagnostic_sha256": "94f3bb8e30224410ecc5a57aacad6d61109551e1c624a4b967c87259d7339702",
+  "binary_sha256": "e594b5425074a03731524d8c91991126232d840ef44a86e8b0630e1f16800fdf",
+  "search_sha256": "8e93eabedac15f81adbb27bd9ca0a3f05f985d339bc9e84e647f87b60c06e48d",
+  "generation_sha256": "dc81cdbc9e5ab0798881d5f24ea22d975fa41fed449372a9d7139e60827d8a48",
+  "sampling_sha256": "69c9fe638fc23af815c00ca4698d47d6e448fb15616e1235ef3c3e993a627fc6",
+  "lower_sha256": "353d560842da6c4270605da552a04adc8d96411512d8d3b847625cf9c502dea9",
+  "outer_sha256": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520",
+  "source_panels": {
+    "s1": "a1bae05c58a35d468f509517c6d148710a189cb2686fcc432dde5d411ec27b66",
+    "s2": "989c891cb1ef3c2de10a2833ca985cc04af89ddc753374b34436956079d9640d",
+    "s3": "bf2465b8a1b8b7459237316d403e6206d1217828fd9adaba67d8975f64413871"
+  },
+  "panels": {
+    "train-s1-g0": "41cf181ab81af6bb64174e6c6153accaf229de319fb9df67312a33be543a1338",
+    "train-s1-g1": "3cddc03027fde921b4dd1d2fbbca7bea1094bf79dc6be5f5b5e4e65d8d52da41",
+    "train-s1-g2": "00bc1868c067cb267780a18126f8ec7502b9e08726b7e9cc72e4c57b9ee55073",
+    "train-s2-g0": "01bd8585c3a0ad56900651130336d90b3549039f63d8a4b1e704816d9119ca10",
+    "train-s2-g1": "944eceac1e1e65c7758a622802407077b20c743bf67889e8129791a96c4e0def",
+    "train-s2-g2": "1bd75fa0267f25168ab1094ee1b442e7ba5c4763917c3c58f9085b9f7540edc3",
+    "train-s3-g0": "a84ba4b5caf511e147c9289a73e4e639b8e73c28626370d35530b876cd71ec0a",
+    "train-s3-g1": "d52da409c043f6c3070e8ea6637848178dd5b18636843110be8d03aaa41cd135",
+    "train-s3-g2": "32db5818245522aca570195f3672c2e3ce94a3e77d6acd63de1aea9436d725df",
+    "diagnostic": "136a4c23daff9750255360e0a4d9451f9b618b38c1011237b3f5360812629998"
+  },
+  "search_configs": {
+    "20260923": "870d6cca04b9a517e4ade2835ccaca45ca9a4c61e86baac294efe1a5642a3ba8",
+    "20260924": "a7a108f2a249f59185cdbce565a9afeb91aaf2a225056a4fd9b92485293f3785"
+  },
+  "numeric_gate": {
+    "final_mean_completion_gain": 4,
+    "final_stream_wins": 2,
+    "final_mean_fewer_lost_start_successes": 3,
+    "final_positive_retention_streams": 2,
+    "generation_2_3_mean_completion_gain": 0,
+    "all_seed_mean_completion_gain": 4,
+    "positive_seed_means": 2
+  }
+}

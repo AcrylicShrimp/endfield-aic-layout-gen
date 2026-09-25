@@ -1,0 +1,11 @@
+{
+  "schema": "aic-hierarchical-success-imitation-transform-v1",
+  "source_sha256": "902e26e5669a48a62e04329598f510b239089381a309a3069cafa4be1022535b",
+  "output_sha256": "be8d10a2c1ba61bca2b4226a2f4674c1b9a080eb50641817d27b6ca800c48aed",
+  "mass_on_selected": 0.8,
+  "successful_roots": 118,
+  "failed_roots": 168,
+  "mean_root_total_variation": 0.6887740746109248,
+  "panel_sha256": "41cf181ab81af6bb64174e6c6153accaf229de319fb9df67312a33be543a1338",
+  "outer_checkpoint_sha256": "6a1f61578aa29a9e80d90ab7805bfec2ef8e543bd24fd9db90441fbb5d724520"
+}

@@ -1,0 +1,38 @@
+{
+  "schema": "aic-hierarchical-success-onpolicy-primary-summary-v1",
+  "protocol_sha256": "db27d655a4c5281ac753183c012747396ec7f12a064fcb80b9f29de00e02c3b1",
+  "progress_sha256": "efa870d8d44169736894ced2c97f74eeab5df503d8cbecdd1e25291daddc58f0",
+  "streams": [
+    "s1",
+    "s2",
+    "s3"
+  ],
+  "baseline_completed": 26,
+  "final_completion_differences": [
+    0,
+    -6,
+    8
+  ],
+  "final_retention_differences": [
+    -2,
+    2,
+    3
+  ],
+  "later_completion_differences": [
+    -5,
+    0,
+    -5,
+    -6,
+    -6,
+    8
+  ],
+  "primary_checks": {
+    "final_mean_completion_gain": false,
+    "final_stream_wins": false,
+    "final_mean_fewer_lost_start_successes": false,
+    "final_positive_retention_streams": true,
+    "generation_2_3_mean_completion_gain": false
+  },
+  "passes_primary_gate": false,
+  "stress_required_for_final_gate": false
+}
