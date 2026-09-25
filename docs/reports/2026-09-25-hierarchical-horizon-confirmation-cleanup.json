@@ -1,0 +1,19 @@
+{
+  "schema": "aic-experiment-cleanup-v1",
+  "experiment": "hierarchical-horizon-confirmation-namespace-deviation",
+  "remote_root": "~/Srv/aic-target-causal-20260925/artifacts/recovery-horizon-confirm",
+  "before_bytes": 1435940239,
+  "after_bytes": 264919,
+  "removed": [
+    {"path": "raw", "bytes_before": 1434334209},
+    {"path": "logs", "bytes_before": 2371},
+    {"path": "candidate-panels", "bytes_before": 1338740}
+  ],
+  "retained": [
+    "panels/confirmation.json",
+    "protocol.json",
+    "progress.json",
+    "summary.json"
+  ],
+  "reason_retained": "The exact 64-case panel is needed for the declared-namespace paired comparison; compact evidence is committed under docs/reports."
+}
