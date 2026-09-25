@@ -10,7 +10,7 @@ from ppo_harness_state import read, sha, write
 
 
 ARMS = ("current", "failed-off", "success-on", "success-off")
-SOURCE = Path("artifacts/recovery-search")
+SOURCE = Path("artifacts/recovery-search-v2")
 MASS = 0.8
 
 
