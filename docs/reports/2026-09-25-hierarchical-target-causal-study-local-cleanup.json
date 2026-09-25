@@ -1,0 +1,13 @@
+{
+  "schema": "aic-hierarchical-target-causal-study-local-cleanup-v1",
+  "removed": [
+    {
+      "path": "artifacts/target-causal-study",
+      "file_bytes": 3182764
+    }
+  ],
+  "removed_file_bytes": 3182764,
+  "free_bytes_before": 41947041792,
+  "free_bytes_after": 41950183424,
+  "retention_reason": "Committed stage protocols, compact outcome summaries, case masks, analyses, synthesis and server cleanup manifests are the durable evidence; local copies were disposable."
+}
