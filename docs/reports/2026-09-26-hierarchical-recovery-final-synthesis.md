@@ -61,5 +61,15 @@ bind the independent final gate. The factorial's
 [summary](2026-09-26-hierarchical-lower-outer-cross-summary.json) bind the
 fixed-model diagnostic. Each stage report contains its reproduction commands,
 source identity, interpretation, and cleanup manifest. All retained
-repository files are English and the final checkpoints remain on the training
-server only while explicit research continuation or recovery requires them.
+repository files are English. After the attribution continuation closed, the
+final checkpoints, exact panels, and search contracts were placed in an
+ignored `artifacts/recovery-lower-restored-v2/final-evidence.tar.gz` copy in
+both the local workspace and training-server workspace. The archive SHA-256 is
+`488d68b57343550be13fca36f8bb0456ae32e5876811cdf62e528207f04232b3`;
+the [file manifest](2026-09-26-hierarchical-recovery-final-evidence-files.json),
+[package record](2026-09-26-hierarchical-recovery-final-evidence-package.json),
+and [final cleanup](2026-09-26-hierarchical-recovery-final-closeout.json)
+record verification and removal of the unpacked executable state. To restore
+the retained inputs for a new study, extract the archive under its parent
+`artifacts/recovery-lower-restored-v2` directory and verify the file hashes
+against the manifest.

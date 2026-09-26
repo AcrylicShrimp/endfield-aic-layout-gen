@@ -78,5 +78,6 @@ python3 tools/factory-edit-pilot/hierarchical_lower_outer_cross.py summarize \
 
 The [cleanup manifest](2026-09-26-hierarchical-lower-outer-cross-cleanup.json)
 records removal of replayable raw evaluations after their compact evidence
-was retained. Parent final checkpoints remain while the research continuation
-is active.
+was retained. Parent final checkpoints were retained for this diagnostic and
+subsequently packaged with the exact panels and configs in the
+[final evidence archive](2026-09-26-hierarchical-recovery-final-evidence-package.json).

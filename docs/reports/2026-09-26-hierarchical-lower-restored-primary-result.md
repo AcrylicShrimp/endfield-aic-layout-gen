@@ -83,7 +83,9 @@ python3 tools/factory-edit-pilot/hierarchical_lower_restored_target_audit.py \
   --output artifacts/recovery-lower-restored-v2
 ```
 
-The source panels and final checkpoints remain available for the reserved
-held-out continuation. The [cleanup manifest](2026-09-26-hierarchical-lower-restored-cleanup.json)
+The source panels and final checkpoints were retained for the reserved
+held-out continuation and later placed in the
+[final evidence archive](2026-09-26-hierarchical-recovery-final-evidence-package.json).
+The [cleanup manifest](2026-09-26-hierarchical-lower-restored-cleanup.json)
 records which replayable intermediate outputs were removed after the compact
 evidence was retained.

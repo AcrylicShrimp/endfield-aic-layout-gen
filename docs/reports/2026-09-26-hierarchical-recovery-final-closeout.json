@@ -1,0 +1,29 @@
+{
+  "schema": "aic-research-cleanup-v1",
+  "phase": "hierarchical-recovery-final-package",
+  "status": "complete",
+  "archive_sha256": "488d68b57343550be13fca36f8bb0456ae32e5876811cdf62e528207f04232b3",
+  "retained_archive": "artifacts/recovery-lower-restored-v2/final-evidence.tar.gz",
+  "retained_manifest": "artifacts/recovery-lower-restored-v2/final-evidence-files.json",
+  "removed": [
+    {
+      "path": "artifacts/recovery-lower-restored-v2/training",
+      "bytes": 9821618
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/panels",
+      "bytes": 1270936
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/configs",
+      "bytes": 912
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/inputs",
+      "bytes": 121788
+    }
+  ],
+  "removed_bytes": 11215254,
+  "free_bytes_before": 163242336256,
+  "free_bytes_after": 163253960704
+}

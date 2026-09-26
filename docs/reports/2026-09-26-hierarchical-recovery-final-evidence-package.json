@@ -1,0 +1,9 @@
+{
+  "schema": "aic-hierarchical-final-evidence-package-v1",
+  "archive_path": "artifacts/recovery-lower-restored-v2/final-evidence.tar.gz",
+  "archive_sha256": "488d68b57343550be13fca36f8bb0456ae32e5876811cdf62e528207f04232b3",
+  "archive_bytes": 9094505,
+  "file_manifest_sha256": "0ec9fae0805f363f97be0902217bfc4c78af21c9f187c4240a50e951c0565154",
+  "file_count": 107,
+  "scope": "final checkpoints, exact panels/configs, and compact experiment evidence"
+}

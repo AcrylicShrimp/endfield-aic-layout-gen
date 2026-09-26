@@ -103,5 +103,6 @@ python3 tools/factory-edit-pilot/hierarchical_lower_restored_heldout.py summariz
 The [cleanup manifest](2026-09-26-hierarchical-lower-restored-heldout-cleanup.json)
 records removal of replayable raw evaluations after the compact protocol,
 success masks, conditional quality results, and report hashes were retained.
-The parent final checkpoints remain for the explicit attribution and recovery
-continuation.
+The parent final checkpoints were retained for the explicit attribution
+continuation and subsequently packaged in the
+[final evidence archive](2026-09-26-hierarchical-recovery-final-evidence-package.json).
