@@ -1,0 +1,40 @@
+{
+  "schema": "aic-research-cleanup-v1",
+  "phase": "hierarchical-lower-restored-heldout",
+  "status": "complete",
+  "retained_compact_evidence": [
+    "protocol.json",
+    "progress.json",
+    "summary.json"
+  ],
+  "retained_parent_final_checkpoints_for_attribution": true,
+  "removed": [
+    {
+      "path": "artifacts/recovery-lower-restored-v2/heldout-check/evaluations",
+      "bytes": 9757048576
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/heldout-check/logs",
+      "bytes": 6807
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/heldout-check/models",
+      "bytes": 2557536
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/heldout-check/configs",
+      "bytes": 5469
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/heldout-check/run-rest.log",
+      "bytes": 815
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/heldout-check/run-rest.pid",
+      "bytes": 6
+    }
+  ],
+  "removed_bytes": 9759619209,
+  "free_bytes_before": 153491357696,
+  "free_bytes_after": 163251494912
+}
