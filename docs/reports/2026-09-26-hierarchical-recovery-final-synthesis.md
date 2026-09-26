@@ -48,6 +48,12 @@ independently validated continuation outcomes is needed if monotonic learning
 is the next objective. Keep that study separate from this completed
 candidate-selection and held-out verdict.
 
+Direct inspection of the archived panels confirms 480 distinct problem-graph
+identities: 288 training cases across nine panels, 64 diagnostic cases, and
+128 held-out cases. The held-out partition is marked `held-out` in its saved
+panel; the training configuration hash matches the tracked 100-epoch config
+with `train_lower: true`.
+
 ## Provenance
 
 The primary [protocol](2026-09-26-hierarchical-lower-restored-protocol.json),
