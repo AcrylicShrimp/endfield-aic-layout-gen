@@ -42,6 +42,10 @@ The selected small, medium and upper held-out panels all missed the proposed min
 
 This is a sampler/input finding. No large physical case was placed or routed, and neither model received an optimizer update. The full Plan 08 gate still needs actual route/component/crossing/repair targets and size × pattern selected-example counts for both models.
 
+## Immediate physical bound obstruction
+
+The committed hierarchical curriculum search configuration has inclusive bounds `[0,20] × [0,20]`, an area of `21 × 21 = 441` cells (`Bounds::width/height` add one to the coordinate difference). The learning placement domain requires every rotated facility footprint to fit inside those bounds, and native placement rejects overlapping body cells. Every facility in the current normalized catalog has a footprint of at least 9 cells. Thus even the 65-facility minimum of the intended upper band needs at least `65 × 9 = 585` nonoverlapping facility cells, before terminals, routes, crossings or spacing. No upper-band case can fit the current curriculum search bounds. This arithmetic is a necessary area bound, not a proof that enlarging the bounds will make those graphs physically routable. Plan 08 must bind and measure an upper-band physical domain before treating its logical graph samples as usable targets.
+
 Independent read-only audit `/root/review_distribution_plan_caps`: PASS. It reproduced the two failed 16/32-case requests and independently matched all eight panel counts, graph-identity overlap, sampling/catalog hashes and narrow interpretation. No server was used.
 
 ## Cleanup
