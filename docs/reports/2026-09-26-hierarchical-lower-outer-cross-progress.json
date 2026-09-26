@@ -1,0 +1,121 @@
+{
+  "schema": "aic-hierarchical-lower-outer-cross-progress-v1",
+  "protocol_sha256": "52cbce91e9266d2e53c680acfa8fb21a9cdb4ae6657110e397a8a69272d711dc",
+  "status": "complete",
+  "records": [
+    {
+      "case_success": "1001110111110101100000110111111111100101001100111001011111000001",
+      "completed": 38,
+      "easy_completed": 13,
+      "hard_completed": 25,
+      "termination_counts": {
+        "fully-validated": 38,
+        "no-macro-actions": 26
+      },
+      "completed_connection_sum": 272,
+      "validated_footprint_mean": 327.5,
+      "validated_transport_mean": 84.3157894736842,
+      "name": "s1-lower-h6-outer-h12",
+      "stream": "s1",
+      "lower_arm": "h6",
+      "outer_arm": "h12",
+      "report_sha256": "696f41785aad867426eb0b1e46be43c42e0c5fd126b5e6e5c47671f475c01044",
+      "evaluation_seconds": 184.13389544900565
+    },
+    {
+      "case_success": "1011111111101100101010101111010111111100010111111111010011111111",
+      "completed": 47,
+      "easy_completed": 15,
+      "hard_completed": 32,
+      "termination_counts": {
+        "fully-validated": 47,
+        "no-macro-actions": 17
+      },
+      "completed_connection_sum": 282,
+      "validated_footprint_mean": 317.40425531914894,
+      "validated_transport_mean": 84.8936170212766,
+      "name": "s1-lower-h12-outer-h6",
+      "stream": "s1",
+      "lower_arm": "h12",
+      "outer_arm": "h6",
+      "report_sha256": "385be3e4e2a9882d735fe4286c0cb6770cbc8757b598fa3a9623259933f480df",
+      "evaluation_seconds": 194.17200864999904
+    },
+    {
+      "case_success": "1111111111001100101110111111111110101111010111110111110011011101",
+      "completed": 49,
+      "easy_completed": 14,
+      "hard_completed": 35,
+      "termination_counts": {
+        "fully-validated": 49,
+        "no-macro-actions": 15
+      },
+      "completed_connection_sum": 285,
+      "validated_footprint_mean": 333.42857142857144,
+      "validated_transport_mean": 92.42857142857143,
+      "name": "s2-lower-h6-outer-h12",
+      "stream": "s2",
+      "lower_arm": "h6",
+      "outer_arm": "h12",
+      "report_sha256": "cacad5a58406c42d23fee4dda1fd69b70a513de45a451c8c4bd8c4c0b0c49b89",
+      "evaluation_seconds": 187.54962160199648
+    },
+    {
+      "case_success": "1011001101011011111110111111110111101111100000111010110100000110",
+      "completed": 41,
+      "easy_completed": 14,
+      "hard_completed": 27,
+      "termination_counts": {
+        "fully-validated": 41,
+        "no-macro-actions": 23
+      },
+      "completed_connection_sum": 280,
+      "validated_footprint_mean": 312.5121951219512,
+      "validated_transport_mean": 91,
+      "name": "s2-lower-h12-outer-h6",
+      "stream": "s2",
+      "lower_arm": "h12",
+      "outer_arm": "h6",
+      "report_sha256": "10708184768d56ffbf366d3d22a16e50e1519f8839a5ced7158de49783cd8cc5",
+      "evaluation_seconds": 194.3936023649876
+    },
+    {
+      "case_success": "1001110111101110111101101110010111100101000010010101010110110101",
+      "completed": 38,
+      "easy_completed": 13,
+      "hard_completed": 25,
+      "termination_counts": {
+        "fully-validated": 38,
+        "no-macro-actions": 26
+      },
+      "completed_connection_sum": 274,
+      "validated_footprint_mean": 314.86842105263156,
+      "validated_transport_mean": 86.42105263157895,
+      "name": "s3-lower-h6-outer-h12",
+      "stream": "s3",
+      "lower_arm": "h6",
+      "outer_arm": "h12",
+      "report_sha256": "a92f5462777393beb2eacf896c3c9ff04d8369876020f5e7eb8da76682c13f13",
+      "evaluation_seconds": 195.548381443994
+    },
+    {
+      "case_success": "1100100000010111111011100100111111111100000011010111010000011100",
+      "completed": 34,
+      "easy_completed": 11,
+      "hard_completed": 23,
+      "termination_counts": {
+        "fully-validated": 34,
+        "no-macro-actions": 30
+      },
+      "completed_connection_sum": 263,
+      "validated_footprint_mean": 316.1764705882353,
+      "validated_transport_mean": 82.91176470588235,
+      "name": "s3-lower-h12-outer-h6",
+      "stream": "s3",
+      "lower_arm": "h12",
+      "outer_arm": "h6",
+      "report_sha256": "007a51d8cdb6894c84f691db5553331d0b6932e7542aaf1065c1874d923880c6",
+      "evaluation_seconds": 181.56580768700223
+    }
+  ]
+}

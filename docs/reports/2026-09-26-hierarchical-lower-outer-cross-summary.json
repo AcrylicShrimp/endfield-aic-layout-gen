@@ -1,0 +1,117 @@
+{
+  "schema": "aic-hierarchical-lower-outer-cross-summary-v1",
+  "protocol_sha256": "52cbce91e9266d2e53c680acfa8fb21a9cdb4ae6657110e397a8a69272d711dc",
+  "progress_sha256": "a82dc19fd1f2a2991c2d69185835b996504a864785b219e0a7dad1d14e4d7e83",
+  "streams": [
+    {
+      "stream": "s1",
+      "cells": {
+        "lower-h6-outer-h6": {
+          "completed": 47,
+          "case_success": "1011111101001101111110101100010111111101010110111101110111111111",
+          "evaluation_seconds": 197.2870679159969,
+          "lost_from_start": 4
+        },
+        "lower-h6-outer-h12": {
+          "completed": 38,
+          "case_success": "1001110111110101100000110111111111100101001100111001011111000001",
+          "evaluation_seconds": 184.13389544900565,
+          "lost_from_start": 12
+        },
+        "lower-h12-outer-h6": {
+          "completed": 47,
+          "case_success": "1011111111101100101010101111010111111100010111111111010011111111",
+          "evaluation_seconds": 194.17200864999904,
+          "lost_from_start": 4
+        },
+        "lower-h12-outer-h12": {
+          "completed": 34,
+          "case_success": "1011110100000101100000111100111111100101001100101101010111001001",
+          "evaluation_seconds": 186.58678543199494,
+          "lost_from_start": 12
+        }
+      },
+      "lower_effect_with_h6_outer": 0,
+      "lower_effect_with_h12_outer": -4,
+      "outer_effect_with_h6_lower": -9,
+      "outer_effect_with_h12_lower": -13,
+      "interaction": -4
+    },
+    {
+      "stream": "s2",
+      "cells": {
+        "lower-h6-outer-h6": {
+          "completed": 38,
+          "case_success": "1011001101011011111011111101110111111101000000101110010100000110",
+          "evaluation_seconds": 196.24271105299704,
+          "lost_from_start": 7
+        },
+        "lower-h6-outer-h12": {
+          "completed": 49,
+          "case_success": "1111111111001100101110111111111110101111010111110111110011011101",
+          "evaluation_seconds": 187.54962160199648,
+          "lost_from_start": 6
+        },
+        "lower-h12-outer-h6": {
+          "completed": 41,
+          "case_success": "1011001101011011111110111111110111101111100000111010110100000110",
+          "evaluation_seconds": 194.3936023649876,
+          "lost_from_start": 8
+        },
+        "lower-h12-outer-h12": {
+          "completed": 49,
+          "case_success": "1111111111111100101110111111111110111111010001110111110011001110",
+          "evaluation_seconds": 184.18171636400803,
+          "lost_from_start": 4
+        }
+      },
+      "lower_effect_with_h6_outer": 3,
+      "lower_effect_with_h12_outer": 0,
+      "outer_effect_with_h6_lower": 11,
+      "outer_effect_with_h12_lower": 8,
+      "interaction": -3
+    },
+    {
+      "stream": "s3",
+      "cells": {
+        "lower-h6-outer-h6": {
+          "completed": 45,
+          "case_success": "1111011101111110011011110101111111011101100111011011010001111100",
+          "evaluation_seconds": 186.07946896299836,
+          "lost_from_start": 8
+        },
+        "lower-h6-outer-h12": {
+          "completed": 38,
+          "case_success": "1001110111101110111101101110010111100101000010010101010110110101",
+          "evaluation_seconds": 195.548381443994,
+          "lost_from_start": 6
+        },
+        "lower-h12-outer-h6": {
+          "completed": 34,
+          "case_success": "1100100000010111111011100100111111111100000011010111010000011100",
+          "evaluation_seconds": 181.56580768700223,
+          "lost_from_start": 11
+        },
+        "lower-h12-outer-h12": {
+          "completed": 36,
+          "case_success": "1011110110101100101110101110000110101001000111110101000110110101",
+          "evaluation_seconds": 183.72088059200905,
+          "lost_from_start": 9
+        }
+      },
+      "lower_effect_with_h6_outer": -11,
+      "lower_effect_with_h12_outer": -2,
+      "outer_effect_with_h6_lower": -7,
+      "outer_effect_with_h12_lower": 2,
+      "interaction": 9
+    }
+  ],
+  "mean_effects": {
+    "lower_effect_with_h6_outer": -2.6666666666666665,
+    "lower_effect_with_h12_outer": -2,
+    "outer_effect_with_h6_lower": -1.6666666666666667,
+    "outer_effect_with_h12_lower": -1,
+    "interaction": 0.6666666666666666
+  },
+  "interpretation_limit": "mechanism on reused diagnostic; no promotion decision"
+}

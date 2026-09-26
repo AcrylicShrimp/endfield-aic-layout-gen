@@ -1,0 +1,36 @@
+{
+  "schema": "aic-research-cleanup-v1",
+  "phase": "hierarchical-lower-outer-cross",
+  "status": "complete",
+  "retained_compact_evidence": [
+    "protocol.json",
+    "progress.json",
+    "summary.json"
+  ],
+  "retained_parent_final_checkpoints_for_research_continuation": true,
+  "removed": [
+    {
+      "path": "artifacts/recovery-lower-restored-v2/lower-outer-cross/evaluations",
+      "bytes": 1415589406
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/lower-outer-cross/logs",
+      "bytes": 2000
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/lower-outer-cross/run-rest.log",
+      "bytes": 220
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/lower-outer-cross/run-rest.pid",
+      "bytes": 6
+    },
+    {
+      "path": "artifacts/recovery-lower-restored-v2/mixed-outer",
+      "bytes": 365364
+    }
+  ],
+  "removed_bytes": 1415956996,
+  "free_bytes_before": 161835405312,
+  "free_bytes_after": 163251462144
+}
