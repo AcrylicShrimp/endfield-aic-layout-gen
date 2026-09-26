@@ -62,6 +62,14 @@
 - Preserve the relevant training input, evaluation separation, episode identity, and resume contracts when replacing learners, environments, or harnesses.
 - Keep production behavior and research tooling separate. Do not silently fall back to a research solver, weaken a problem to obtain success, or report a timeout, exhausted budget, or local failure as global infeasibility. Example bounds are not system limits.
 
+## Design And Implementation Review Gates
+
+- Before accepting a design or implementation plan, obtain an independent fresh-context review against the user's requested outcome, existing accepted contracts, and current capabilities. The reviewer must trace every required responsibility to a concrete design and verification path, including difficult cases and integration boundaries. A design that says to implement a simpler subset now and complete a required capability later does not pass merely because the subset is easier to test.
+- Make each approved stage complete for its stated purpose. Do not silently turn an end-to-end requirement into a research-only boundary, narrow the supported problem or input domain, or defer component legalization, recovery, performance, or other required behavior. Record any genuine scope change and obtain explicit user authorization before treating it as accepted; a TODO, limitation note, or future-work section is not authorization.
+- After implementation, obtain a separate independent fresh-context review before calling the stage complete, promoting its result, or launching expensive downstream training. Give the reviewer the accepted design and requirements, the implementation diff and relevant code paths, and the integrated verification evidence. The reviewer must check missing and weakened requirements as well as bugs, incorrect behavior, and regressions in previously supported capabilities.
+- Review each requirement from input through output: how it is represented, generated or processed, validated, and exposed to the user. Exercise at least one case that genuinely requires each critical capability; a passing example that can avoid the capability does not prove it is implemented. Report which requirements were demonstrated, which remain unverified, and which are absent.
+- Treat a verified missing required capability or an unapproved scope reduction as a blocking review finding. Fix it and repeat the review before reporting completion. If the work remains incomplete, label it as such and do not present bounded prototype metrics as proof of full-system readiness.
+
 ## Rust Conventions
 
 - Use Rust stable, a virtual Cargo workspace root, and resolver `3`. Place crates under `crates/` with names prefixed by `aic-`; share dependency versions at the workspace root when practical.
