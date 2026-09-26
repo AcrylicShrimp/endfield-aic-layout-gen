@@ -30,6 +30,10 @@
   reuse successful results while identity is unchanged, and keep checks out of
   hot loops. A normal run should emit compact summaries and required recovery
   state, not exhaustive traces, repeated snapshots, or large diagnostic bundles.
+- Prove internal module output invariants through module design and offline tests
+  or explicit bounded audits. Do not repeatedly revalidate trusted internal
+  outputs per sample, batch, or step in normal execution. Keep necessary checks
+  for external input admission, publication, and actual resource exhaustion.
 - Keep training and other normal workloads focused on useful work. Give added persistence, validation, and diagnostics a concrete purpose and a frequency proportional to that purpose.
 - Simplify state saving, recovery, and validation by default. Save only the state needed for the required resume behavior, reuse existing checkpoint mechanisms, and prefer a direct restore path. Avoid duplicate snapshots, redundant journals, and extra recovery layers.
 - Do not impose exact historical replay, exhaustive provenance, or full revalidation on routine recovery unless an explicit contract requires it. Choose checkpoint frequency for the required recovery needs and measured I/O cost, not maximum possible durability.
