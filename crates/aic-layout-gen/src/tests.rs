@@ -35,6 +35,7 @@ fn sequence_pairs_are_nonoverlapping_for_varied_rectangles_and_rotations() {
                 terminal_poses: vec![],
                 routes: vec![],
                 bridges: vec![],
+                junctions: vec![],
             },
         };
         let m = validate(&layout, &loaded.catalogs).unwrap();
@@ -136,9 +137,10 @@ fn independent_validation_rejects_corrupted_obligations_ports_capacity_and_bridg
     expect(bad, "capacity");
     let mut bad = good.clone();
     bad.solution.bridges.pop();
-    expect(bad, "intersection");
+    expect(bad, "topology");
     let mut bad = good.clone();
-    bad.solution.bridges[0].connections[1] = bad.solution.bridges[0].connections[0].clone();
+    bad.solution.bridges[0].channels[1].connections =
+        bad.solution.bridges[0].channels[0].connections.clone();
     expect(bad, "bridge");
     let mut bad = good.clone();
     bad.catalog_sha256 = "0".repeat(64);
@@ -175,6 +177,44 @@ fn independent_validation_rejects_corrupted_obligations_ports_capacity_and_bridg
         validate(&good, &loaded.catalogs).unwrap().area
     );
     assert!(crate::render::svg(&reordered, &loaded.catalogs).contains("<svg"));
+}
+
+#[test]
+fn bridge_axis_accepts_multiple_same_commodity_route_owners() {
+    let loaded = catalogs();
+    let mut layout = Generator::new(&loaded.catalogs, Config::default())
+        .unwrap()
+        .generate(1000)
+        .unwrap()
+        .layout;
+    let owner = layout.solution.bridges[0].channels[0].connections[0].clone();
+    let connection = layout
+        .problem
+        .connections
+        .iter_mut()
+        .find(|connection| connection.id == owner)
+        .unwrap();
+    connection.rate.denominator *= 2;
+    let mut shared = connection.clone();
+    shared.id = "shared-bridge-flow".into();
+    let mut shared_route = layout
+        .solution
+        .routes
+        .iter()
+        .find(|route| route.connection == owner)
+        .unwrap()
+        .clone();
+    shared_route.connection = shared.id.clone();
+    for bridge in &mut layout.solution.bridges {
+        for channel in &mut bridge.channels {
+            if channel.connections.contains(&owner) {
+                channel.connections.push(shared.id.clone());
+            }
+        }
+    }
+    layout.problem.connections.push(shared);
+    layout.solution.routes.push(shared_route);
+    validate(&layout, &loaded.catalogs).unwrap();
 }
 
 #[test]
@@ -261,6 +301,7 @@ fn oversized_catalog_geometry_is_rejected_before_port_projection() {
             terminal_poses: vec![],
             routes: vec![],
             bridges: vec![],
+            junctions: vec![],
         },
     };
     assert_eq!(

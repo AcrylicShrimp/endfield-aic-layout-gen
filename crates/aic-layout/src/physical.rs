@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{geometry::Point, logistics::TransportKind, rate::Rate};
 
-pub const SCHEMA: &str = "aic-physical-layout-v2";
+pub const SCHEMA: &str = "aic-physical-layout-v3";
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -71,6 +71,7 @@ pub struct Solution {
     pub terminal_poses: Vec<TerminalPose>,
     pub routes: Vec<Route>,
     pub bridges: Vec<Bridge>,
+    pub junctions: Vec<Junction>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -106,7 +107,32 @@ pub struct Bridge {
     pub component: String,
     pub position: Point,
     pub rotation: i64,
-    pub connections: [String; 2],
+    pub channels: [BridgeChannel; 2],
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum BridgeAxis {
+    Horizontal,
+    Vertical,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct BridgeChannel {
+    pub axis: BridgeAxis,
+    pub commodity: String,
+    pub connections: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Junction {
+    pub id: String,
+    pub component: String,
+    pub position: Point,
+    pub rotation: i64,
+    pub connections: Vec<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

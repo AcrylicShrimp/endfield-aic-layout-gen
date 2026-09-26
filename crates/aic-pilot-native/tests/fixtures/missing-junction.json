@@ -1,0 +1,227 @@
+{
+  "schema": "aic-physical-layout-v3",
+  "catalog_sha256": "6e483b5b903fe759008823f50dfe55d6e9a7b3d8d36978864fb292a76d5684de",
+  "problem": {
+    "blocks": [
+      {
+        "id": "machine",
+        "facility": "grinder-1-mode-normal"
+      }
+    ],
+    "terminals": [
+      {
+        "id": "supply",
+        "direction": "input",
+        "commodity": "test-item",
+        "transport": "belt"
+      },
+      {
+        "id": "sink-a",
+        "direction": "output",
+        "commodity": "test-item",
+        "transport": "belt"
+      },
+      {
+        "id": "sink-b",
+        "direction": "output",
+        "commodity": "test-item",
+        "transport": "belt"
+      }
+    ],
+    "connections": [
+      {
+        "id": "supply-flow",
+        "source": "supply",
+        "target": "machine",
+        "commodity": "test-item",
+        "transport": "belt",
+        "rate": {
+          "numerator": 1,
+          "denominator": 2
+        }
+      },
+      {
+        "id": "output-a",
+        "source": "machine",
+        "target": "sink-a",
+        "commodity": "test-item",
+        "transport": "belt",
+        "rate": {
+          "numerator": 1,
+          "denominator": 4
+        }
+      },
+      {
+        "id": "output-b",
+        "source": "machine",
+        "target": "sink-b",
+        "commodity": "test-item",
+        "transport": "belt",
+        "rate": {
+          "numerator": 1,
+          "denominator": 4
+        }
+      }
+    ]
+  },
+  "solution": {
+    "poses": [
+      {
+        "block": "machine",
+        "position": {
+          "x": 5,
+          "y": 8
+        },
+        "rotation": 0
+      }
+    ],
+    "terminal_poses": [
+      {
+        "terminal": "supply",
+        "position": {
+          "x": 6,
+          "y": 15
+        }
+      },
+      {
+        "terminal": "sink-a",
+        "position": {
+          "x": 4,
+          "y": 0
+        }
+      },
+      {
+        "terminal": "sink-b",
+        "position": {
+          "x": 8,
+          "y": 0
+        }
+      }
+    ],
+    "routes": [
+      {
+        "connection": "supply-flow",
+        "source_port": null,
+        "target_port": "input-belt-1",
+        "cells": [
+          {
+            "x": 6,
+            "y": 15
+          },
+          {
+            "x": 6,
+            "y": 14
+          },
+          {
+            "x": 6,
+            "y": 13
+          },
+          {
+            "x": 6,
+            "y": 12
+          },
+          {
+            "x": 6,
+            "y": 11
+          }
+        ]
+      },
+      {
+        "connection": "output-a",
+        "source_port": "output-belt-1",
+        "target_port": null,
+        "cells": [
+          {
+            "x": 6,
+            "y": 7
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 2
+          },
+          {
+            "x": 4,
+            "y": 1
+          },
+          {
+            "x": 4,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "connection": "output-b",
+        "source_port": "output-belt-1",
+        "target_port": null,
+        "cells": [
+          {
+            "x": 6,
+            "y": 7
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 3
+          },
+          {
+            "x": 8,
+            "y": 2
+          },
+          {
+            "x": 8,
+            "y": 1
+          },
+          {
+            "x": 8,
+            "y": 0
+          }
+        ]
+      }
+    ],
+    "bridges": [],
+    "junctions": []
+  }
+}

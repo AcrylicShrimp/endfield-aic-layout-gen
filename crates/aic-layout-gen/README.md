@@ -117,16 +117,20 @@ but it is not the standalone CLI contract. Workers share immutable catalogs,
 retain typed route state during construction and publish through a bounded queue.
 Catalogs are read, validated and hashed once per command, not per edge.
 
-`aic-layout` owns `aic-physical-layout-v2`: `problem` contains block/facility
+`aic-layout` owns `aic-physical-layout-v3`: `problem` contains block/facility
 identities, boundary terminals, and connection endpoint identities, commodity
 labels, transports and exact rates. `solution` contains facility and terminal
-poses, optional facility port IDs, complete paths and bridge placements. Compatible
-same-commodity routes may share a transport cell within catalog line capacity.
+poses, optional facility port IDs, complete paths, catalog junctions and bridge
+placements with separately owned horizontal and vertical channels. Compatible
+same-commodity routes may share a straight transport arm within catalog line
+capacity; branches and merges require a matching selected catalog component.
 Array ordering is not identity. `catalog_sha256` binds the
 layout to the exact external files; the CLI hashes each filename and file bytes
 with their little-endian u64 lengths, in facilities/transports/components order.
 Independent validation checks coverage, body overlap, ports, rates, adjacency,
-layers and declared bridge use. Metrics are derived from actual geometry.
+layers, directed junction flow and bridge-axis ownership. Physical-v2 JSON must
+be explicitly migrated; its bridge connection pair and implicit junctions are
+not interpreted as physical-v3. Metrics are derived from actual geometry.
 
 `aic-routing` owns the extracted native A* kernel and reachability preflight.
 Existing native factory editing and generation use this same implementation.

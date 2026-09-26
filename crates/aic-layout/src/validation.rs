@@ -7,7 +7,7 @@ use crate::logistics::{
     LogisticsComponentKind, TransportKind, ValidatedLogisticsComponentCatalog,
     ValidatedTransportCatalog,
 };
-use crate::physical::{Layout, Metrics, SCHEMA, TerminalDirection};
+use crate::physical::{BridgeAxis, Junction, Layout, Metrics, SCHEMA, TerminalDirection};
 use crate::projection::{cardinal_index, rotate};
 use crate::rate::Rate;
 use crate::stable_id::is_stable_id;
@@ -47,6 +47,185 @@ pub fn within_capacity(rate: Rate, quantity: i64, duration_ms: i64) -> bool {
     per_millisecond <= i128::from(quantity) * i128::from(rate.denominator)
 }
 
+/// The directed arm used by one route at one transport cell. A boundary
+/// terminal contributes an external arm with no fixed cardinal direction.
+pub struct SiteArmUse<'a> {
+    pub connection: &'a str,
+    pub commodity: &'a str,
+    pub rate: Rate,
+    pub incoming: Option<usize>,
+    pub outgoing: Option<usize>,
+    pub external_incoming: bool,
+    pub external_outgoing: bool,
+}
+
+/// Return every catalog component/rotation that can carry this site's exact
+/// directed flow. An ordinary cell returns an empty list without requiring a
+/// component. This is also used at native route-commit boundaries.
+pub fn junction_options(
+    transport: TransportKind,
+    point: Point,
+    uses: &[SiteArmUse<'_>],
+    catalogs: &Catalogs,
+) -> Result<Option<Vec<(String, i64)>>> {
+    if uses.is_empty() {
+        return Err(error(
+            "topology",
+            format!("{},{}", point.x, point.y),
+            "Empty transport site",
+        ));
+    }
+    let commodity = uses[0].commodity;
+    let mut incoming = [Rate::zero(); 4];
+    let mut outgoing = [Rate::zero(); 4];
+    let mut external_incoming = Rate::zero();
+    let mut external_outgoing = Rate::zero();
+    for use_site in uses {
+        if use_site.commodity != commodity
+            || use_site.incoming.is_some() == use_site.external_incoming
+            || use_site.outgoing.is_some() == use_site.external_outgoing
+        {
+            return Err(error(
+                "topology",
+                format!("{},{}", point.x, point.y),
+                "Mixed commodity or incomplete directed route arm",
+            ));
+        }
+        if let Some(d) = use_site.incoming {
+            incoming[d] = incoming[d].checked_add(use_site.rate).map_err(|_| {
+                error(
+                    "topology",
+                    use_site.connection,
+                    "Incoming arm rate overflow",
+                )
+            })?;
+        } else {
+            external_incoming = external_incoming.checked_add(use_site.rate).map_err(|_| {
+                error(
+                    "topology",
+                    use_site.connection,
+                    "External incoming rate overflow",
+                )
+            })?;
+        }
+        if let Some(d) = use_site.outgoing {
+            outgoing[d] = outgoing[d].checked_add(use_site.rate).map_err(|_| {
+                error(
+                    "topology",
+                    use_site.connection,
+                    "Outgoing arm rate overflow",
+                )
+            })?;
+        } else {
+            external_outgoing = external_outgoing.checked_add(use_site.rate).map_err(|_| {
+                error(
+                    "topology",
+                    use_site.connection,
+                    "External outgoing rate overflow",
+                )
+            })?;
+        }
+    }
+    let capacity = catalogs.transports.capacity(transport);
+    let mut total_in = external_incoming;
+    let mut total_out = external_outgoing;
+    for d in 0..4 {
+        if !incoming[d].is_zero() && !outgoing[d].is_zero() {
+            return Err(error(
+                "topology",
+                format!("{},{}", point.x, point.y),
+                "A physical arm carries opposing directions",
+            ));
+        }
+        total_in = total_in
+            .checked_add(incoming[d])
+            .map_err(|_| error("topology", "routes", "Incoming flow overflow"))?;
+        total_out = total_out
+            .checked_add(outgoing[d])
+            .map_err(|_| error("topology", "routes", "Outgoing flow overflow"))?;
+    }
+    if total_in != total_out || !within_capacity(total_in, capacity.quantity, capacity.duration_ms)
+    {
+        return Err(error(
+            "topology",
+            format!("{},{}", point.x, point.y),
+            "Site flow is unbalanced or exceeds line capacity",
+        ));
+    }
+    let in_dirs = (0..4)
+        .filter(|&d| !incoming[d].is_zero())
+        .collect::<Vec<_>>();
+    let out_dirs = (0..4)
+        .filter(|&d| !outgoing[d].is_zero())
+        .collect::<Vec<_>>();
+    let in_degree = in_dirs.len() + usize::from(!external_incoming.is_zero());
+    let out_degree = out_dirs.len() + usize::from(!external_outgoing.is_zero());
+    if in_degree <= 1 && out_degree <= 1 {
+        return Ok(None);
+    }
+    let kind = match (in_degree, out_degree) {
+        (1, 2..=3) => LogisticsComponentKind::Splitter,
+        (2..=3, 1) => LogisticsComponentKind::Converger,
+        _ => {
+            return Err(error(
+                "topology",
+                format!("{},{}", point.x, point.y),
+                "No catalog junction topology supports these directed arms",
+            ));
+        }
+    };
+    if !external_incoming.is_zero() || !external_outgoing.is_zero() {
+        return Err(error(
+            "topology",
+            format!("{},{}", point.x, point.y),
+            "A boundary terminal cannot host a junction",
+        ));
+    }
+    let mut options = Vec::new();
+    for definition in &catalogs.components.catalog().components {
+        if definition.transport != transport
+            || definition.kind != kind
+            || definition.footprint.width != 1
+            || definition.footprint.height != 1
+            || !within_capacity(
+                total_in,
+                definition.capacity.quantity,
+                definition.capacity.duration_ms,
+            )
+        {
+            continue;
+        }
+        for &rotation in &definition.allowed_rotations {
+            let rotated = |direction: &crate::logistics::CardinalDirection| {
+                (cardinal_index(*direction) + rotation as usize / 90) % 4
+            };
+            let valid_in = in_dirs.iter().all(|&d| {
+                definition
+                    .input_directions
+                    .iter()
+                    .any(|arm| rotated(arm) == d)
+            });
+            let valid_out = out_dirs.iter().all(|&d| {
+                definition
+                    .output_directions
+                    .iter()
+                    .any(|arm| rotated(arm) == d)
+            });
+            if valid_in && valid_out {
+                options.push((definition.id.clone(), rotation));
+            }
+        }
+    }
+    if options.is_empty() {
+        return Err(error(
+            "junction",
+            format!("{},{}", point.x, point.y),
+            "No catalog junction supports the directed arms, flow and rotation",
+        ));
+    }
+    Ok(Some(options))
+}
+
 /// Validate actual geometry and obligations, never caller-supplied metrics/flags.
 /// Count/materialization guards are operational limits, not game limits.
 pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
@@ -71,6 +250,7 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
         || problem.connections.len() > 32768
         || solution.routes.len() != problem.connections.len()
         || solution.bridges.len() > 32768
+        || solution.junctions.len() > 32768
     {
         return Err(error(
             "counts",
@@ -178,6 +358,7 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
     }
     let mut terminal_positions = vec![None; problem.terminals.len()];
     let mut occupied_terminal_positions = HashSet::new();
+    let mut terminal_at = HashMap::new();
     for pose in &solution.terminal_poses {
         let Some(&i) = terminals.get(pose.terminal.as_str()) else {
             return Err(error(
@@ -199,6 +380,7 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
         }
         include(pose.position);
         terminal_positions[i] = Some(pose.position);
+        terminal_at.insert(pose.position, i);
     }
     let mut connection_ids = BTreeMap::new();
     let mut parent: Vec<_> = (0..blocks.len() + terminals.len()).collect();
@@ -376,20 +558,16 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
         }
         let mut local = HashSet::new();
         for (pi, &p) in route.cells.iter().enumerate() {
-            if terminal_positions
-                .iter()
-                .enumerate()
-                .any(|(terminal, position)| {
-                    *position == Some(p)
-                        && problem.terminals[terminal].id != connection.source
-                        && problem.terminals[terminal].id != connection.target
-                })
-            {
-                return Err(error(
-                    "terminal-intersection",
-                    route.connection.clone(),
-                    "Route crosses an unrelated boundary terminal",
-                ));
+            if let Some(&terminal) = terminal_at.get(&p) {
+                if problem.terminals[terminal].id != connection.source
+                    && problem.terminals[terminal].id != connection.target
+                {
+                    return Err(error(
+                        "terminal-intersection",
+                        route.connection.clone(),
+                        "Route crosses an unrelated boundary terminal",
+                    ));
+                }
             }
             if !valid_point(p)
                 || body.contains(&p)
@@ -416,35 +594,6 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
         let distance = route.cells[0].distance(*route.cells.last().unwrap());
         distance_sum += distance;
         detour_sum += (route.cells.len() - 1) as f64 / distance.max(1) as f64;
-    }
-    let mut shared_sites = HashSet::new();
-    for (&(transport, point), users) in &visits {
-        if users.len() <= 1 {
-            continue;
-        }
-        let commodities = users
-            .iter()
-            .map(|&(connection, _)| problem.connections[connection].commodity.as_str())
-            .collect::<BTreeSet<_>>();
-        if commodities.len() == 1 {
-            let mut load = Rate::zero();
-            for &(connection, _) in users {
-                load = load
-                    .checked_add(problem.connections[connection].rate)
-                    .map_err(|_| {
-                        error("shared-capacity", "routes", "Shared route rate overflow")
-                    })?;
-            }
-            let capacity = catalogs.transports.capacity(transport);
-            if !within_capacity(load, capacity.quantity, capacity.duration_ms) {
-                return Err(error(
-                    "shared-capacity",
-                    "routes",
-                    "Aggregate same-commodity route demand exceeds line capacity",
-                ));
-            }
-            shared_sites.insert((transport, point));
-        }
     }
     let mut bridge_sites = HashSet::new();
     let mut bridge_ids = HashSet::new();
@@ -477,19 +626,18 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
                 "Bridge is not used by a route",
             ));
         };
-        let named: BTreeSet<_> = bridge.connections.iter().map(String::as_str).collect();
-        let actual: BTreeSet<_> = users
-            .iter()
-            .map(|&(ci, _)| problem.connections[ci].id.as_str())
-            .collect();
-        if users.len() != 2 || named.len() != 2 || named != actual {
+        if bridge.channels[0].axis != BridgeAxis::Horizontal
+            || bridge.channels[1].axis != BridgeAxis::Vertical
+        {
             return Err(error(
                 "bridge",
                 bridge.id.clone(),
-                "Bridge must carry exactly its two declared connections",
+                "Bridge channels must declare horizontal and vertical axes",
             ));
         }
-        let mut axes = HashSet::new();
+        let mut actual = [BTreeSet::new(), BTreeSet::new()];
+        let mut load = [Rate::zero(), Rate::zero()];
+        let mut directions = [None, None];
         for &(ci, pi) in users {
             let route = &solution.routes[route_indices[ci]];
             if pi == 0 || pi + 1 == route.cells.len() {
@@ -500,9 +648,24 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
                 ));
             }
             let d = direction(route.cells[pi - 1], route.cells[pi]).unwrap();
+            let axis = d % 2;
+            let channel = &bridge.channels[axis];
+            if channel.commodity != problem.connections[ci].commodity
+                || directions[axis].is_some_and(|previous| previous != d)
+            {
+                return Err(error(
+                    "bridge",
+                    bridge.id.clone(),
+                    "One bridge axis cannot mix commodities or opposing flow directions",
+                ));
+            }
+            directions[axis] = Some(d);
+            actual[axis].insert(problem.connections[ci].id.as_str());
+            load[axis] = load[axis]
+                .checked_add(problem.connections[ci].rate)
+                .map_err(|_| error("bridge", bridge.id.clone(), "Bridge axis rate overflow"))?;
             let rotated = |v| (cardinal_index(v) + bridge.rotation as usize / 90) % 4;
             if direction(route.cells[pi], route.cells[pi + 1]) != Some(d)
-                || !axes.insert(d % 2)
                 || !definition
                     .input_directions
                     .iter()
@@ -511,27 +674,179 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
                     .output_directions
                     .iter()
                     .any(|&v| rotated(v) == d)
-                || !within_capacity(
-                    problem.connections[ci].rate,
-                    definition.capacity.quantity,
-                    definition.capacity.duration_ms,
-                )
             {
                 return Err(error(
                     "bridge",
                     bridge.id.clone(),
-                    "Bridge turns, shares an axis, violates direction or exceeds capacity",
+                    "Bridge route turns or violates rotated channel direction",
+                ));
+            }
+        }
+        for axis in 0..2 {
+            let channel = &bridge.channels[axis];
+            let named = channel
+                .connections
+                .iter()
+                .map(String::as_str)
+                .collect::<BTreeSet<_>>();
+            let line = catalogs.transports.capacity(definition.transport);
+            if actual[axis].is_empty()
+                || named.len() != channel.connections.len()
+                || named != actual[axis]
+                || !within_capacity(
+                    load[axis],
+                    definition.capacity.quantity,
+                    definition.capacity.duration_ms,
+                )
+                || !within_capacity(load[axis], line.quantity, line.duration_ms)
+            {
+                return Err(error(
+                    "bridge",
+                    bridge.id.clone(),
+                    "Bridge axis owners or aggregate capacity do not match route flow",
                 ));
             }
         }
     }
-    if visits.iter().any(|(tag, users)| {
-        users.len() > 1 && !bridge_sites.contains(tag) && !shared_sites.contains(tag)
-    }) {
+    let mut junction_sites = HashMap::new();
+    let mut junction_ids = HashSet::new();
+    for junction in &solution.junctions {
+        let definition = catalogs
+            .components
+            .component(&junction.component)
+            .ok_or_else(|| {
+                error(
+                    "junction",
+                    junction.id.clone(),
+                    "Unknown junction component",
+                )
+            })?;
+        if !is_stable_id(&junction.id)
+            || !junction_ids.insert(junction.id.as_str())
+            || bridge_ids.contains(junction.id.as_str())
+            || !matches!(
+                definition.kind,
+                LogisticsComponentKind::Splitter | LogisticsComponentKind::Converger
+            )
+            || definition.footprint.width != 1
+            || definition.footprint.height != 1
+            || !definition.allowed_rotations.contains(&junction.rotation)
+            || body.contains(&junction.position)
+            || occupied_terminal_positions.contains(&junction.position)
+            || bridge_sites.contains(&(definition.transport, junction.position))
+            || junction_sites
+                .insert((definition.transport, junction.position), junction)
+                .is_some()
+        {
+            return Err(error(
+                "junction",
+                junction.id.clone(),
+                "Invalid or overlapping catalog junction",
+            ));
+        }
+    }
+    for (&(transport, point), users) in &visits {
+        if bridge_sites.contains(&(transport, point)) {
+            if junction_sites.contains_key(&(transport, point)) {
+                return Err(error("junction", "routes", "Junction overlaps bridge"));
+            }
+            continue;
+        }
+        if users.len() == 1 && !junction_sites.contains_key(&(transport, point)) {
+            continue;
+        }
+        let mut arm_uses = Vec::with_capacity(users.len());
+        for &(ci, pi) in users {
+            let connection = &problem.connections[ci];
+            let route = &solution.routes[route_indices[ci]];
+            let mut external_incoming = false;
+            let mut external_outgoing = false;
+            let incoming = if pi > 0 {
+                direction(point, route.cells[pi - 1])
+            } else if let Some(&bi) = blocks.get(connection.source.as_str()) {
+                let port = ports[bi]
+                    .as_ref()
+                    .unwrap()
+                    .iter()
+                    .find(|port| Some(port.id.as_str()) == route.source_port.as_deref())
+                    .expect("route port checked before topology");
+                direction(point, port.position)
+            } else {
+                external_incoming = true;
+                None
+            };
+            let outgoing = if pi + 1 < route.cells.len() {
+                direction(point, route.cells[pi + 1])
+            } else if let Some(&bi) = blocks.get(connection.target.as_str()) {
+                let port = ports[bi]
+                    .as_ref()
+                    .unwrap()
+                    .iter()
+                    .find(|port| Some(port.id.as_str()) == route.target_port.as_deref())
+                    .expect("route port checked before topology");
+                direction(point, port.position)
+            } else {
+                external_outgoing = true;
+                None
+            };
+            arm_uses.push(SiteArmUse {
+                connection: &connection.id,
+                commodity: &connection.commodity,
+                rate: connection.rate,
+                incoming,
+                outgoing,
+                external_incoming,
+                external_outgoing,
+            });
+        }
+        let required = junction_options(transport, point, &arm_uses, catalogs)?;
+        let selected: Option<&&Junction> = junction_sites.get(&(transport, point));
+        match (required, selected) {
+            (None, None) => {}
+            (Some(options), Some(junction)) => {
+                let named = junction
+                    .connections
+                    .iter()
+                    .map(String::as_str)
+                    .collect::<BTreeSet<_>>();
+                let actual = users
+                    .iter()
+                    .map(|&(ci, _)| problem.connections[ci].id.as_str())
+                    .collect::<BTreeSet<_>>();
+                if named.len() != junction.connections.len()
+                    || named != actual
+                    || !options.contains(&(junction.component.clone(), junction.rotation))
+                {
+                    return Err(error(
+                        "junction",
+                        junction.id.clone(),
+                        "Junction ownership, catalog geometry or flow does not match route arms",
+                    ));
+                }
+            }
+            (Some(_), None) => {
+                return Err(error(
+                    "junction",
+                    "routes",
+                    "Branch or merge lacks a catalog junction",
+                ));
+            }
+            (None, Some(junction)) => {
+                return Err(error(
+                    "junction",
+                    junction.id.clone(),
+                    "Unneeded junction on an ordinary line",
+                ));
+            }
+        }
+    }
+    if junction_sites.len() != solution.junctions.len()
+        || junction_sites.keys().any(|site| !visits.contains_key(site))
+    {
         return Err(error(
-            "intersection",
-            "routes",
-            "Same-layer paths intersect without a valid catalog bridge",
+            "junction",
+            "layout",
+            "Junction has no matching routed site",
         ));
     }
     let width = hi.x - lo.x + 1;

@@ -14,11 +14,12 @@ use aic_layout::{
     facilities::FacilityPortDirection,
     geometry::{Point, layer},
     physical::{
-        Layout, Metrics, Pose, Problem, Route, SCHEMA, Solution, TerminalDirection, TerminalPose,
+        Junction, Layout, Metrics, Pose, Problem, Route, SCHEMA, Solution, TerminalDirection,
+        TerminalPose,
     },
     projection::{Port, rotate},
     stable_id::is_stable_id,
-    validation::{Catalogs, validate, within_capacity},
+    validation::{Catalogs, SiteArmUse, junction_options, validate, within_capacity},
 };
 use serde::{Deserialize, Serialize};
 
@@ -118,6 +119,7 @@ pub struct Observation {
     pub poses: Vec<Option<Pose>>,
     pub terminal_poses: Vec<Option<TerminalPose>>,
     pub routes: Vec<Option<Route>>,
+    pub junctions: Vec<Junction>,
     pub active: Option<ActiveRoute>,
     pub focus: Option<Focus>,
     pub completed: usize,
@@ -186,7 +188,9 @@ pub struct Session {
     connections: BTreeMap<String, usize>,
     poses: Vec<Option<Pose>>,
     terminal_poses: Vec<Option<TerminalPose>>,
+    terminal_at: HashMap<Point, usize>,
     routes: Vec<Option<Route>>,
+    junctions: HashMap<(aic_layout::logistics::TransportKind, Point), Junction>,
     active: Option<ActiveRoute>,
     active_cells: HashSet<Point>,
     focus: Option<Focus>,
@@ -344,7 +348,9 @@ impl Session {
             connections,
             poses: vec![None; block_count],
             terminal_poses: vec![None; terminal_count],
+            terminal_at: HashMap::new(),
             routes: vec![None; connection_count],
+            junctions: HashMap::new(),
             active: None,
             active_cells: HashSet::new(),
             focus: None,
@@ -366,6 +372,11 @@ impl Session {
             poses: self.poses.clone(),
             terminal_poses: self.terminal_poses.clone(),
             routes: self.routes.clone(),
+            junctions: {
+                let mut junctions = self.junctions.values().cloned().collect::<Vec<_>>();
+                junctions.sort_by(|a, b| a.id.cmp(&b.id));
+                junctions
+            },
             active: self.active.clone(),
             focus: self.focus.clone(),
             completed: self.completed(),
@@ -536,6 +547,11 @@ impl Session {
                 terminal_poses: self.terminal_poses.iter().flatten().cloned().collect(),
                 routes: self.routes.iter().flatten().cloned().collect(),
                 bridges: vec![],
+                junctions: {
+                    let mut junctions = self.junctions.values().cloned().collect::<Vec<_>>();
+                    junctions.sort_by(|a, b| a.id.cmp(&b.id));
+                    junctions
+                },
             },
         }
     }
@@ -604,11 +620,7 @@ impl Session {
                         .occupied
                         .iter()
                         .any(|occupied| occupied.contains_key(&cell))
-                    || self
-                        .terminal_poses
-                        .iter()
-                        .flatten()
-                        .any(|pose| pose.position == cell)
+                    || self.terminal_at.contains_key(&cell)
                 {
                     return Err(error(
                         "placement-collision",
@@ -663,11 +675,7 @@ impl Session {
                 .occupied
                 .iter()
                 .any(|occupied| occupied.contains_key(&position))
-            || self
-                .terminal_poses
-                .iter()
-                .flatten()
-                .any(|pose| pose.position == position)
+            || self.terminal_at.contains_key(&position)
         {
             return Err(error(
                 "terminal-position",
@@ -679,6 +687,7 @@ impl Session {
             terminal: terminal.into(),
             position,
         });
+        self.terminal_at.insert(position, index);
         self.focus = Some(Focus::Terminal {
             terminal: index,
             position,
@@ -797,17 +806,12 @@ impl Session {
 
     fn shared_cell_available(&self, point: Point, connection: usize) -> bool {
         let obligation = &self.problem.connections[connection];
-        if self
-            .terminal_poses
-            .iter()
-            .enumerate()
-            .any(|(terminal, pose)| {
-                pose.as_ref().is_some_and(|pose| pose.position == point)
-                    && self.problem.terminals[terminal].id != obligation.source
-                    && self.problem.terminals[terminal].id != obligation.target
-            })
-        {
-            return false;
+        if let Some(&terminal) = self.terminal_at.get(&point) {
+            if self.problem.terminals[terminal].id != obligation.source
+                && self.problem.terminals[terminal].id != obligation.target
+            {
+                return false;
+            }
         }
         let users = self.occupied[layer(obligation.transport)].get(&point);
         let Some(users) = users else { return true };
@@ -986,6 +990,150 @@ impl Session {
         Ok(())
     }
 
+    fn site_arm_use<'a>(
+        &'a self,
+        connection_index: usize,
+        route: &'a Route,
+        path_index: usize,
+    ) -> Result<SiteArmUse<'a>, Diagnostic> {
+        let connection = &self.problem.connections[connection_index];
+        let point = route.cells[path_index];
+        let mut external_incoming = false;
+        let mut external_outgoing = false;
+        let incoming = if path_index > 0 {
+            aic_layout::geometry::direction(point, route.cells[path_index - 1])
+        } else if let Some(&block) = self.blocks.get(&connection.source) {
+            let port_id = route
+                .source_port
+                .as_deref()
+                .ok_or_else(|| error("topology", &connection.id, "source route port is missing"))?;
+            let port = self
+                .projected_ports(block)?
+                .into_iter()
+                .find(|p| p.id == port_id)
+                .ok_or_else(|| error("topology", &connection.id, "source route port is unknown"))?;
+            aic_layout::geometry::direction(point, port.position)
+        } else {
+            external_incoming = true;
+            None
+        };
+        let outgoing = if path_index + 1 < route.cells.len() {
+            aic_layout::geometry::direction(point, route.cells[path_index + 1])
+        } else if let Some(&block) = self.blocks.get(&connection.target) {
+            let port_id = route
+                .target_port
+                .as_deref()
+                .ok_or_else(|| error("topology", &connection.id, "target route port is missing"))?;
+            let port = self
+                .projected_ports(block)?
+                .into_iter()
+                .find(|p| p.id == port_id)
+                .ok_or_else(|| error("topology", &connection.id, "target route port is unknown"))?;
+            aic_layout::geometry::direction(point, port.position)
+        } else {
+            external_outgoing = true;
+            None
+        };
+        if incoming.is_none() && !external_incoming || outgoing.is_none() && !external_outgoing {
+            return Err(error(
+                "topology",
+                &connection.id,
+                "route endpoint arm is not adjacent",
+            ));
+        }
+        Ok(SiteArmUse {
+            connection: &connection.id,
+            commodity: &connection.commodity,
+            rate: connection.rate,
+            incoming,
+            outgoing,
+            external_incoming,
+            external_outgoing,
+        })
+    }
+
+    fn junction_updates(
+        &self,
+        pending_index: usize,
+        pending: &Route,
+    ) -> Result<
+        Vec<(
+            (aic_layout::logistics::TransportKind, Point),
+            Option<Junction>,
+        )>,
+        Diagnostic,
+    > {
+        let transport = self.problem.connections[pending_index].transport;
+        let touched = pending.cells.iter().copied().collect::<HashSet<_>>();
+        let mut existing_connections = HashSet::new();
+        for point in &touched {
+            if let Some(users) = self.occupied[layer(transport)].get(point) {
+                existing_connections.extend(users.iter().copied());
+            }
+        }
+        let mut old_indices = HashMap::new();
+        for ci in existing_connections {
+            let route = self.routes[ci]
+                .as_ref()
+                .expect("occupied route is committed");
+            for (pi, &point) in route.cells.iter().enumerate() {
+                if touched.contains(&point) {
+                    old_indices.insert((ci, point), pi);
+                }
+            }
+        }
+        let mut updates = Vec::with_capacity(pending.cells.len());
+        for (pi, &point) in pending.cells.iter().enumerate() {
+            let users = self.occupied[layer(transport)].get(&point);
+            if users.is_none() && pi > 0 && pi + 1 < pending.cells.len() {
+                continue;
+            }
+            let mut uses = Vec::new();
+            if let Some(users) = users {
+                for &ci in users {
+                    let route = self.routes[ci]
+                        .as_ref()
+                        .expect("occupied route is committed");
+                    let old_pi = old_indices[&(ci, point)];
+                    uses.push(self.site_arm_use(ci, route, old_pi)?);
+                }
+            }
+            uses.push(self.site_arm_use(pending_index, pending, pi)?);
+            let options =
+                junction_options(transport, point, &uses, &self.catalogs).map_err(|failure| {
+                    error("topology", failure.entity.to_string(), failure.message)
+                })?;
+            let key = (transport, point);
+            let junction = options.map(|options| {
+                let selected = self
+                    .junctions
+                    .get(&key)
+                    .filter(|prior| options.contains(&(prior.component.clone(), prior.rotation)))
+                    .map(|prior| (prior.component.clone(), prior.rotation))
+                    .unwrap_or_else(|| options[0].clone());
+                let mut connections = uses
+                    .iter()
+                    .map(|use_site| use_site.connection.to_owned())
+                    .collect::<Vec<_>>();
+                connections.sort();
+                connections.dedup();
+                let transport_id = match transport {
+                    aic_layout::logistics::TransportKind::Belt => "belt",
+                    aic_layout::logistics::TransportKind::Pipe => "pipe",
+                };
+                Junction {
+                    id: format!("junction-{transport_id}-{}-{}", point.x, point.y),
+                    component: selected.0,
+                    position: point,
+                    rotation: selected.1,
+                    connections,
+                }
+            });
+            updates.push((key, junction));
+        }
+        Ok(updates)
+    }
+
     fn connect(&mut self) -> Result<(), Diagnostic> {
         let active = self.active.as_ref().ok_or_else(|| {
             error(
@@ -1001,15 +1149,17 @@ impl Session {
                 "active path does not end at its selected target port",
             ));
         }
-        let active = self.active.take().expect("active route checked above");
-        self.active_cells.clear();
         let obligation = &self.problem.connections[active.connection];
         let route = Route {
             connection: obligation.id.clone(),
             source_port: active.source_port.clone(),
             target_port: active.target_port.clone(),
-            cells: active.cells,
+            cells: active.cells.clone(),
         };
+        let updates = self.junction_updates(active.connection, &route)?;
+        let active = self.active.take().expect("active route checked above");
+        self.active_cells.clear();
+        let obligation = &self.problem.connections[active.connection];
         for &cell in &route.cells {
             self.occupied[layer(obligation.transport)]
                 .entry(cell)
@@ -1046,6 +1196,13 @@ impl Session {
                 .expect("begin-route checked shared port rate");
         }
         self.routes[active.connection] = Some(route);
+        for (site, junction) in updates {
+            if let Some(junction) = junction {
+                self.junctions.insert(site, junction);
+            } else {
+                self.junctions.remove(&site);
+            }
+        }
         self.focus = Some(Focus::Route {
             connection: active.connection,
             endpoint: active.target,
@@ -1673,6 +1830,226 @@ mod tests {
         assert!(session.done());
         assert!(session.metrics().is_some());
         assert_eq!(session.observe().completed, 3);
+        let layout = session.layout().unwrap();
+        assert_eq!(layout.solution.junctions.len(), 1);
+        assert_eq!(layout.solution.junctions[0].connections.len(), 2);
+        let mut missing_junction = layout.clone();
+        missing_junction.solution.junctions.clear();
+        assert_eq!(
+            validate(&missing_junction, &catalogs()).unwrap_err().code,
+            "aic-layout.junction"
+        );
+    }
+
+    #[test]
+    fn belt_and_pipe_merges_materialize_catalog_convergers() {
+        for (transport, facility, port, center_x, source_y) in [
+            (
+                TransportKind::Belt,
+                "grinder-1-mode-normal",
+                "input-belt-1",
+                6,
+                15,
+            ),
+            (
+                TransportKind::Pipe,
+                "transmuter-1-mode-gastrans",
+                "input-pipe-2",
+                7,
+                17,
+            ),
+        ] {
+            let problem = Problem {
+                blocks: vec![Block {
+                    id: "machine".into(),
+                    facility: facility.into(),
+                }],
+                terminals: ["left", "right"]
+                    .into_iter()
+                    .map(|id| Terminal {
+                        id: id.into(),
+                        direction: TerminalDirection::Input,
+                        commodity: "merge-item".into(),
+                        transport,
+                    })
+                    .collect(),
+                connections: ["left", "right"]
+                    .into_iter()
+                    .map(|source| Connection {
+                        id: format!("flow-{source}"),
+                        source: source.into(),
+                        target: "machine".into(),
+                        commodity: "merge-item".into(),
+                        transport,
+                        rate: Rate {
+                            numerator: 1,
+                            denominator: 4,
+                        },
+                    })
+                    .collect(),
+            };
+            let mut session = Session::new(
+                problem,
+                catalogs(),
+                Limits {
+                    max_turns: 32,
+                    max_extension: 16,
+                },
+            )
+            .unwrap();
+            for command in [
+                Command::Place {
+                    block: "machine".into(),
+                    position: Point { x: 5, y: 8 },
+                    rotation: 0,
+                },
+                Command::PlaceTerminal {
+                    terminal: "left".into(),
+                    position: Point {
+                        x: center_x - 2,
+                        y: source_y,
+                    },
+                },
+                Command::PlaceTerminal {
+                    terminal: "right".into(),
+                    position: Point {
+                        x: center_x + 2,
+                        y: source_y,
+                    },
+                },
+            ] {
+                assert!(session.step(command).accepted);
+            }
+            for (source, direction) in [("left", Direction::East), ("right", Direction::West)] {
+                for command in [
+                    Command::BeginRoute {
+                        connection: format!("flow-{source}"),
+                        source_port: None,
+                        target_port: Some(port.into()),
+                    },
+                    Command::Extend {
+                        direction,
+                        length: 2,
+                    },
+                    Command::Extend {
+                        direction: Direction::North,
+                        length: 4,
+                    },
+                    Command::Connect,
+                ] {
+                    let step = session.step(command);
+                    assert!(step.accepted, "{}", step.diagnostic.unwrap());
+                }
+            }
+            let layout = session.layout().expect("complete merge validates");
+            assert_eq!(layout.solution.junctions.len(), 1);
+            assert_eq!(layout.solution.junctions[0].connections.len(), 2);
+            let definition = session
+                .catalogs
+                .components
+                .component(&layout.solution.junctions[0].component)
+                .unwrap();
+            assert_eq!(
+                definition.kind,
+                aic_layout::logistics::LogisticsComponentKind::Converger
+            );
+        }
+    }
+
+    #[test]
+    fn pipe_split_materializes_rotated_catalog_splitter() {
+        let problem = Problem {
+            blocks: vec![Block {
+                id: "machine".into(),
+                facility: "furnance-1-mode-liquid".into(),
+            }],
+            terminals: ["left", "right"]
+                .into_iter()
+                .map(|id| Terminal {
+                    id: id.into(),
+                    direction: TerminalDirection::Output,
+                    commodity: "split-item".into(),
+                    transport: TransportKind::Pipe,
+                })
+                .collect(),
+            connections: ["left", "right"]
+                .into_iter()
+                .map(|target| Connection {
+                    id: format!("flow-{target}"),
+                    source: "machine".into(),
+                    target: target.into(),
+                    commodity: "split-item".into(),
+                    transport: TransportKind::Pipe,
+                    rate: Rate {
+                        numerator: 1,
+                        denominator: 4,
+                    },
+                })
+                .collect(),
+        };
+        let mut session = Session::new(
+            problem,
+            catalogs(),
+            Limits {
+                max_turns: 32,
+                max_extension: 16,
+            },
+        )
+        .unwrap();
+        for command in [
+            Command::Place {
+                block: "machine".into(),
+                position: Point { x: 5, y: 8 },
+                rotation: 270,
+            },
+            Command::PlaceTerminal {
+                terminal: "left".into(),
+                position: Point { x: 4, y: 0 },
+            },
+            Command::PlaceTerminal {
+                terminal: "right".into(),
+                position: Point { x: 8, y: 0 },
+            },
+        ] {
+            let step = session.step(command);
+            assert!(step.accepted, "{}", step.diagnostic.unwrap());
+        }
+        for (target, direction) in [("left", Direction::West), ("right", Direction::East)] {
+            for command in [
+                Command::BeginRoute {
+                    connection: format!("flow-{target}"),
+                    source_port: Some("output-pipe-3".into()),
+                    target_port: None,
+                },
+                Command::Extend {
+                    direction: Direction::North,
+                    length: 3,
+                },
+                Command::Extend {
+                    direction,
+                    length: 2,
+                },
+                Command::Extend {
+                    direction: Direction::North,
+                    length: 4,
+                },
+                Command::Connect,
+            ] {
+                let step = session.step(command);
+                assert!(step.accepted, "{}", step.diagnostic.unwrap());
+            }
+        }
+        let layout = session.layout().expect("complete pipe split validates");
+        assert_eq!(layout.solution.junctions.len(), 1);
+        let definition = session
+            .catalogs
+            .components
+            .component(&layout.solution.junctions[0].component)
+            .unwrap();
+        assert_eq!(
+            definition.kind,
+            aic_layout::logistics::LogisticsComponentKind::Splitter
+        );
     }
 
     #[test]

@@ -2,6 +2,7 @@
 use aic_layout::{
     facilities::ValidatedFacilityCatalog,
     logistics::{ValidatedLogisticsComponentCatalog, ValidatedTransportCatalog},
+    physical::Layout,
     validation::Catalogs,
 };
 use anyhow::{Context, Result};
@@ -29,6 +30,30 @@ pub fn bytes(path: &Path) -> Result<Vec<u8>> {
 
 pub fn read<T: DeserializeOwned>(path: &Path) -> Result<T> {
     serde_json::from_slice(&bytes(path)?).with_context(|| format!("parse {}", path.display()))
+}
+
+pub fn read_layout(path: &Path) -> Result<Layout> {
+    let input = bytes(path)?;
+    let migration = || {
+        anyhow::anyhow!(
+            "aic-layout-gen.source-schema-migration: {} uses physical layout v2; regenerate it as v3 with explicit junctions and axis-owned bridge channels",
+            path.display()
+        )
+    };
+    match serde_json::from_slice::<Layout>(&input) {
+        Ok(layout) if layout.schema == "aic-physical-layout-v2" => Err(migration()),
+        Ok(layout) => Ok(layout),
+        Err(parse_error) => {
+            let old_schema = serde_json::from_slice::<serde_json::Value>(&input)
+                .ok()
+                .and_then(|value| value.get("schema")?.as_str().map(str::to_owned))
+                .is_some_and(|schema| schema == "aic-physical-layout-v2");
+            if old_schema {
+                return Err(migration());
+            }
+            Err(parse_error).with_context(|| format!("parse {}", path.display()))
+        }
+    }
 }
 
 fn hex(bytes: &[u8]) -> String {

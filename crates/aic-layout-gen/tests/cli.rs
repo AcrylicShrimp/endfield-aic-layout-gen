@@ -62,6 +62,26 @@ fn cli_generates_validates_and_preserves_seed_identity_across_worker_counts() {
             fs::read(dir.join(format!("workers-2/layout-{i:05}.json"))).unwrap()
         );
     }
+    let mut old: serde_json::Value =
+        serde_json::from_slice(&fs::read(dir.join("workers-1/layout-00000.json")).unwrap())
+            .unwrap();
+    old["schema"] = "aic-physical-layout-v2".into();
+    old["solution"].as_object_mut().unwrap().remove("junctions");
+    let old_path = dir.join("old-layout.json");
+    fs::write(&old_path, serde_json::to_vec(&old).unwrap()).unwrap();
+    let migration = Command::new(cli)
+        .arg("validate")
+        .arg("--layout")
+        .arg(&old_path)
+        .arg("--catalog-dir")
+        .arg(root.join("data/game/normalized"))
+        .output()
+        .unwrap();
+    assert_eq!(migration.status.code(), Some(1));
+    assert!(
+        String::from_utf8_lossy(&migration.stderr)
+            .contains("aic-layout-gen.source-schema-migration")
+    );
     let invalid = Command::new(cli)
         .arg("generate")
         .arg("--config")

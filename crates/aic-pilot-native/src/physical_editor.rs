@@ -101,7 +101,7 @@ fn diagnostic(
         code: format!("physical-editor.{code}"),
         severity: "error",
         stage,
-        source: "aic-physical-layout-v2",
+        source: "aic-physical-layout-v3",
         entity: entity.into(),
         message: message.into(),
     }
@@ -149,17 +149,55 @@ impl ProceduralAdmission {
             ));
         }
         let original: Layout = serde_json::from_slice(source).map_err(|failure| {
-            error(
-                "source-json",
-                "source",
-                format!("cannot decode procedural layout: {failure}"),
-            )
+            let is_v2 = serde_json::from_slice::<serde_json::Value>(source)
+                .ok()
+                .and_then(|value| value.get("schema")?.as_str().map(str::to_owned))
+                .is_some_and(|schema| schema == "aic-physical-layout-v2");
+            if is_v2 {
+                error(
+                    "source-schema-migration",
+                    "source",
+                    "physical-v2 input cannot be decoded as physical-v3; migrate bridges to axis channels and declare catalog junctions",
+                )
+            } else {
+                error(
+                    "source-json",
+                    "source",
+                    format!("cannot decode procedural layout: {failure}"),
+                )
+            }
         })?;
+        if original.schema == "aic-physical-layout-v2" {
+            return Err(error(
+                "source-schema-migration",
+                "source",
+                "physical-v2 input must be regenerated as physical-v3 with explicit junctions and axis-owned bridge channels",
+            ));
+        }
         if !original.problem.terminals.is_empty() || !original.solution.terminal_poses.is_empty() {
             return Err(error(
                 "source-terminals",
                 "source",
                 "the procedural physical editor does not accept boundary-terminal layouts",
+            ));
+        }
+        if !original.solution.junctions.is_empty() {
+            return Err(error(
+                "source-junctions",
+                "source",
+                "the procedural physical editor cannot preserve catalog junctions",
+            ));
+        }
+        if original.solution.bridges.iter().any(|bridge| {
+            bridge
+                .channels
+                .iter()
+                .any(|channel| channel.connections.len() != 1)
+        }) {
+            return Err(error(
+                "source-bridge-ownership",
+                "source",
+                "the procedural physical editor supports exactly one route per bridge axis",
             ));
         }
         let initial_metrics = validation::validate(&original, catalogs).map_err(|failure| {
@@ -312,11 +350,13 @@ impl ProceduralAdmission {
             .collect();
         let mut bridges_by_connection: BTreeMap<&str, Vec<(Point, &str)>> = BTreeMap::new();
         for bridge in &original.solution.bridges {
-            for connection in &bridge.connections {
-                bridges_by_connection
-                    .entry(connection.as_str())
-                    .or_default()
-                    .push((bridge.position, bridge.id.as_str()));
+            for channel in &bridge.channels {
+                for connection in &channel.connections {
+                    bridges_by_connection
+                        .entry(connection.as_str())
+                        .or_default()
+                        .push((bridge.position, bridge.id.as_str()));
+                }
             }
         }
 
@@ -624,6 +664,7 @@ impl ProceduralAdmission {
                 terminal_poses: vec![],
                 routes,
                 bridges,
+                junctions: vec![],
             },
         };
         validation::validate(&layout, catalogs).map_err(|failure| {
@@ -761,6 +802,18 @@ mod tests {
     const NO_BRIDGE: &[u8] = include_bytes!("../tests/fixtures/procedural-no-bridge.json");
     const BRIDGES: &[u8] = include_bytes!("../tests/fixtures/procedural-bridges.json");
 
+    #[test]
+    fn physical_v2_source_reports_explicit_migration_diagnostic() {
+        let mut old: serde_json::Value = serde_json::from_slice(NO_BRIDGE).unwrap();
+        old["schema"] = "aic-physical-layout-v2".into();
+        old["solution"].as_object_mut().unwrap().remove("junctions");
+        let source = serde_json::to_vec(&old).unwrap();
+        let diagnostic = ProceduralAdmission::compile(&source, &catalogs())
+            .err()
+            .unwrap();
+        assert_eq!(diagnostic.code, "physical-editor.source-schema-migration");
+    }
+
     fn catalogs() -> validation::Catalogs {
         let sources = [
             ("facilities.json", FACILITIES),
@@ -848,10 +901,11 @@ mod tests {
         }
         for (index, bridge) in layout.solution.bridges.iter_mut().enumerate() {
             bridge.id = format!("renamed-bridge-{index}");
-            bridge.connections = bridge
-                .connections
-                .each_ref()
-                .map(|connection| connections[connection].clone());
+            for channel in &mut bridge.channels {
+                for connection in &mut channel.connections {
+                    *connection = connections[connection].clone();
+                }
+            }
         }
         serde_json::to_vec(&layout).unwrap()
     }

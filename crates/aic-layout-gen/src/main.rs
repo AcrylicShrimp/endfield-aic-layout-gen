@@ -97,7 +97,7 @@ fn run() -> anyhow::Result<bool> {
             catalog_dir,
         } => {
             let loaded = io::load_catalogs(&catalog_dir)?;
-            let value = io::read(&layout)?;
+            let value = io::read_layout(&layout)?;
             let metrics =
                 aic_layout::validation::validate(&value, &loaded.catalogs).map_err(|d| {
                     anyhow::anyhow!(

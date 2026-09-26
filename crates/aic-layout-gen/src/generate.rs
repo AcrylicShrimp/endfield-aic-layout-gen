@@ -5,7 +5,10 @@ use crate::{
 use aic_layout::{
     facilities::FacilityPortDirection,
     geometry::{Bounds, Diagnostic, Point, layer},
-    physical::{Bridge, Connection, Layout, Metrics, Problem, Route, SCHEMA, Solution},
+    physical::{
+        Bridge, BridgeAxis, BridgeChannel, Connection, Layout, Metrics, Problem, Route, SCHEMA,
+        Solution,
+    },
     rate::Rate,
     rng::Rng,
     validation::{Catalogs, validate},
@@ -421,12 +424,38 @@ impl<'a> Generator<'a> {
                 let cells = result.cells.unwrap();
                 let id = format!("edge-{}", connections.len());
                 for site in result.crossings.unwrap_or_default() {
+                    let new_horizontal = cells
+                        .windows(3)
+                        .any(|window| window[1] == site.position && window[0].y == window[2].y);
+                    let new_channel = BridgeChannel {
+                        axis: if new_horizontal {
+                            BridgeAxis::Horizontal
+                        } else {
+                            BridgeAxis::Vertical
+                        },
+                        commodity: format!("flow-{}", connections.len()),
+                        connections: vec![id.clone()],
+                    };
+                    let carrier_channel = BridgeChannel {
+                        axis: if new_horizontal {
+                            BridgeAxis::Vertical
+                        } else {
+                            BridgeAxis::Horizontal
+                        },
+                        commodity: connections[site.carrier_chain].commodity.clone(),
+                        connections: vec![connections[site.carrier_chain].id.clone()],
+                    };
+                    let channels = if new_horizontal {
+                        [new_channel, carrier_channel]
+                    } else {
+                        [carrier_channel, new_channel]
+                    };
                     bridges.push(Bridge {
                         id: format!("bridge-{}", bridges.len()),
                         component: site.component,
                         position: site.position,
                         rotation: site.rotation,
-                        connections: [connections[site.carrier_chain].id.clone(), id.clone()],
+                        channels,
                     });
                 }
                 blocked[tr].extend(cells.iter().copied());
@@ -480,6 +509,7 @@ impl<'a> Generator<'a> {
                     terminal_poses: vec![],
                     routes,
                     bridges,
+                    junctions: vec![],
                 },
             }));
         }
