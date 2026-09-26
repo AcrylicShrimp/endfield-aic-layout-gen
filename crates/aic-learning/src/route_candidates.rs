@@ -2,7 +2,11 @@
 
 use std::{collections::BTreeSet, fs, path::Path, sync::Arc, time::Instant};
 
-use aic_layout::{physical::Problem, validation::Catalogs};
+use aic_layout::{
+    geometry::Point,
+    physical::{BridgeAxis, Problem},
+    validation::Catalogs,
+};
 use aic_pilot_native::constructive::{
     Command, Limits, Session,
     routing_candidates::{Candidate, Config as CandidateConfig, Request, Termination},
@@ -14,7 +18,7 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 const PANEL_SCHEMA: &str = "aic-route-candidate-panel-v1";
-const REPORT_SCHEMA: &str = "aic-route-candidate-harness-report-v1";
+const REPORT_SCHEMA: &str = "aic-route-candidate-harness-report-v2";
 const MAX_INPUT_BYTES: u64 = 16 * 1024 * 1024;
 
 #[derive(Clone, Debug, Deserialize)]
@@ -87,6 +91,7 @@ struct CaseReport {
     endpoint_pairs: usize,
     searches: usize,
     expanded: usize,
+    crossing_limit: usize,
     preflight_expanded: usize,
     guides_found: usize,
     duplicate_guides: usize,
@@ -106,6 +111,7 @@ struct CandidateReport {
     cells: usize,
     steps: i64,
     turns: i64,
+    bridges: Vec<BridgeUseSummary>,
     overlap_with_previous: usize,
     later_routes_requested: usize,
     later_routes_completed: usize,
@@ -116,6 +122,15 @@ struct CandidateReport {
     downstream_preflight_expanded: usize,
     downstream_unique_guides: usize,
     downstream_native_rejections: usize,
+}
+
+#[derive(Clone, Debug, Serialize)]
+struct BridgeUseSummary {
+    position: Point,
+    component: String,
+    rotation: i64,
+    direction: usize,
+    crossed_axis: BridgeAxis,
 }
 
 pub fn run(panel_path: &Path, catalog_root: &Path, output: &Path) -> Result<Value> {
@@ -367,6 +382,7 @@ fn evaluate_case(case: &Case, panel: &Panel, catalogs: Arc<Catalogs>) -> Result<
         endpoint_pairs: root.endpoint_pairs,
         searches: root.searches,
         expanded: root.expanded,
+        crossing_limit: root.crossing_limit,
         preflight_expanded: root.preflight_expanded,
         guides_found: root.guides_found,
         duplicate_guides: root.duplicate_guides,
@@ -447,6 +463,21 @@ fn evaluate_candidate(
         cells: candidate.cells.len(),
         steps: candidate.steps,
         turns: candidate.turns,
+        bridges: candidate
+            .crossings
+            .iter()
+            .map(|crossing| BridgeUseSummary {
+                position: crossing.position,
+                component: crossing.component.clone(),
+                rotation: crossing.rotation,
+                direction: crossing.direction,
+                crossed_axis: if crossing.direction % 2 == 0 {
+                    BridgeAxis::Vertical
+                } else {
+                    BridgeAxis::Horizontal
+                },
+            })
+            .collect(),
         overlap_with_previous: candidate.overlap_with_previous,
         later_routes_requested: case.later_connections.len(),
         later_routes_completed,

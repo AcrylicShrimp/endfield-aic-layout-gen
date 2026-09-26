@@ -55,6 +55,7 @@
     "hierarchical-curriculum/generation.json",
     "hierarchical-curriculum/outer-warm.json",
     "hierarchical-curriculum/search.json",
+    "hierarchical-crossing/panel.json",
     "hierarchical-full-factory/config.json",
     "hierarchical-full-factory/panel.json",
     "hierarchical-generation/config.json",

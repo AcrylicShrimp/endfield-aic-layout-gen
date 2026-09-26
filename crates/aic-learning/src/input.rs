@@ -4,13 +4,45 @@ mod tests;
 mod validation;
 // Native numerical batches; retained interchange validation is test-only.
 use aic_torch::tch::{Device, Tensor};
-#[cfg(test)]
-use anyhow::ensure;
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, ensure};
+use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, fs, io::Read, path::Path};
 
 pub type Tensors = BTreeMap<String, Tensor>;
+
+#[derive(Deserialize)]
+struct TrainingArtifactIdentity {
+    status: String,
+    catalog_sha256: String,
+    checkpoint_sha256: String,
+}
+
+pub(crate) fn verify_training_artifact(
+    output: &Path,
+    catalog_sha256: &str,
+    checkpoint_sha256: &str,
+) -> Result<()> {
+    let report = output.join("report.json");
+    let size = fs::metadata(&report)
+        .with_context(|| format!("aic-learning.artifact-report: {}", report.display()))?
+        .len();
+    ensure!(
+        size <= 16 * 1024 * 1024,
+        "aic-learning.artifact-report: report exceeds input limit: {}",
+        report.display()
+    );
+    let identity: TrainingArtifactIdentity = serde_json::from_slice(&fs::read(&report)?)?;
+    ensure!(
+        identity.status == "complete"
+            && identity.catalog_sha256 == catalog_sha256
+            && identity.checkpoint_sha256 == checkpoint_sha256,
+        "aic-learning.artifact-identity: training artifact catalog or checkpoint differs: {}",
+        output.display()
+    );
+    Ok(())
+}
+
 pub fn sha256(path: &Path) -> Result<String> {
     let mut file =
         fs::File::open(path).with_context(|| format!("aic-learning.input: {}", path.display()))?;

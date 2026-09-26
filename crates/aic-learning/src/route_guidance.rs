@@ -23,7 +23,7 @@ use crate::{
     schema::RouteGuidanceModelConfig,
 };
 
-pub const CHECKPOINT_SCHEMA: &str = "aic-route-guidance-checkpoint-v2";
+pub const CHECKPOINT_SCHEMA: &str = "aic-route-guidance-checkpoint-v3";
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -618,6 +618,7 @@ mod tests {
             global_features: [0.; GLOBAL_FEATURES],
             focus_features: [0.; FOCUS_FEATURES],
             focus_entity: 1,
+            bridge_resources: vec![],
         });
         let input = GuidanceInput {
             schema: GUIDANCE_SCHEMA,
@@ -631,6 +632,7 @@ mod tests {
                 max_y: 7,
             },
             channels: GUIDANCE_GRID_CHANNELS,
+            bridge_resources: vec![],
             grid: vec![0.; GUIDANCE_GRID_CHANNELS * 8 * 6],
             graph,
         };

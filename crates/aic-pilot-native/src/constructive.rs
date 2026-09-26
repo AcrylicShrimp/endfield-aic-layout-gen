@@ -12,12 +12,13 @@ use std::{
 use aic_layout::rate::Rate;
 use aic_layout::{
     facilities::FacilityPortDirection,
-    geometry::{Point, layer},
+    geometry::{Point, direction as point_direction, layer},
+    logistics::LogisticsComponentKind,
     physical::{
-        Junction, Layout, Metrics, Pose, Problem, Route, SCHEMA, Solution, TerminalDirection,
-        TerminalPose,
+        Bridge, BridgeAxis, BridgeChannel, Junction, Layout, Metrics, Pose, Problem, Route, SCHEMA,
+        Solution, TerminalDirection, TerminalPose,
     },
-    projection::{Port, rotate},
+    projection::{Port, cardinal_index, rotate},
     stable_id::is_stable_id,
     validation::{Catalogs, SiteArmUse, junction_options, validate, within_capacity},
 };
@@ -76,6 +77,12 @@ pub enum Command {
         direction: Direction,
         length: i64,
     },
+    ReserveBridge {
+        position: Point,
+        component: String,
+        rotation: i64,
+        crossed_axis: BridgeAxis,
+    },
     Connect,
     AbortRoute,
 }
@@ -88,6 +95,17 @@ pub struct ActiveRoute {
     pub target_port: Option<String>,
     pub target: Point,
     pub cells: Vec<Point>,
+    pub bridge_reservations: Vec<BridgeReservation>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct BridgeReservation {
+    pub position: Point,
+    pub component: String,
+    pub rotation: i64,
+    pub crossed_axis: BridgeAxis,
+    pub direction: usize,
 }
 
 /// Explicit Markov focus for the policy decoder. It survives route completion
@@ -120,6 +138,7 @@ pub struct Observation {
     pub terminal_poses: Vec<Option<TerminalPose>>,
     pub routes: Vec<Option<Route>>,
     pub junctions: Vec<Junction>,
+    pub bridges: Vec<Bridge>,
     pub active: Option<ActiveRoute>,
     pub focus: Option<Focus>,
     pub completed: usize,
@@ -191,6 +210,7 @@ pub struct Session {
     terminal_at: HashMap<Point, usize>,
     routes: Vec<Option<Route>>,
     junctions: HashMap<(aic_layout::logistics::TransportKind, Point), Junction>,
+    bridges: HashMap<(aic_layout::logistics::TransportKind, Point), Bridge>,
     active: Option<ActiveRoute>,
     active_cells: HashSet<Point>,
     focus: Option<Focus>,
@@ -351,6 +371,7 @@ impl Session {
             terminal_at: HashMap::new(),
             routes: vec![None; connection_count],
             junctions: HashMap::new(),
+            bridges: HashMap::new(),
             active: None,
             active_cells: HashSet::new(),
             focus: None,
@@ -377,6 +398,11 @@ impl Session {
                 junctions.sort_by(|a, b| a.id.cmp(&b.id));
                 junctions
             },
+            bridges: {
+                let mut bridges = self.bridges.values().cloned().collect::<Vec<_>>();
+                bridges.sort_by(|a, b| a.id.cmp(&b.id));
+                bridges
+            },
             active: self.active.clone(),
             focus: self.focus.clone(),
             completed: self.completed(),
@@ -392,6 +418,49 @@ impl Session {
 
     pub fn problem(&self) -> &Problem {
         &self.problem
+    }
+
+    /// Stable catalog code and exact per-axis load for a committed bridge.
+    /// The code is meaningful only with the input's catalog identity.
+    pub fn bridge_component_features(&self, bridge: &Bridge) -> (f32, [f32; 2]) {
+        let mut total = 0usize;
+        let mut ordinal = 0usize;
+        for component in &self.catalogs.components.catalog().components {
+            if component.kind == LogisticsComponentKind::Bridge {
+                total += 1;
+                if component.id == bridge.component {
+                    ordinal = total;
+                }
+            }
+        }
+        let definition = self
+            .catalogs
+            .components
+            .component(&bridge.component)
+            .expect("committed bridge has a catalog component");
+        let mut loads = [0.0; 2];
+        for (axis, channel) in bridge.channels.iter().enumerate() {
+            let mut rate = Rate::zero();
+            for owner in &channel.connections {
+                let ci = self.connections[owner];
+                rate = rate
+                    .checked_add(self.problem.connections[ci].rate)
+                    .expect("committed bridge axis has a representable rate");
+            }
+            loads[axis] = ((rate.numerator as f64 / rate.denominator as f64)
+                * definition.capacity.duration_ms as f64
+                / (1000.0 * definition.capacity.quantity as f64))
+                .min(1.0) as f32;
+        }
+        (ordinal as f32 / (total + 1) as f32, loads)
+    }
+
+    pub fn bridge_at(
+        &self,
+        transport: aic_layout::logistics::TransportKind,
+        position: Point,
+    ) -> Option<&Bridge> {
+        self.bridges.get(&(transport, position))
     }
 
     /// Manhattan distance from the open end of the provisional route to its
@@ -452,6 +521,12 @@ impl Session {
                 target_port,
             } => self.begin_route(&connection, source_port.as_deref(), target_port.as_deref()),
             Command::Extend { direction, length } => self.extend(direction, length),
+            Command::ReserveBridge {
+                position,
+                component,
+                rotation,
+                crossed_axis,
+            } => self.reserve_bridge(position, &component, rotation, crossed_axis),
             Command::Connect => self.connect(),
             Command::AbortRoute => self.abort_route(),
         };
@@ -546,7 +621,11 @@ impl Session {
                 poses: self.poses.iter().flatten().cloned().collect(),
                 terminal_poses: self.terminal_poses.iter().flatten().cloned().collect(),
                 routes: self.routes.iter().flatten().cloned().collect(),
-                bridges: vec![],
+                bridges: {
+                    let mut bridges = self.bridges.values().cloned().collect::<Vec<_>>();
+                    bridges.sort_by(|a, b| a.id.cmp(&b.id));
+                    bridges
+                },
                 junctions: {
                     let mut junctions = self.junctions.values().cloned().collect::<Vec<_>>();
                     junctions.sort_by(|a, b| a.id.cmp(&b.id));
@@ -891,6 +970,7 @@ impl Session {
             target_port: target_port.map(str::to_owned),
             target,
             cells: vec![source],
+            bridge_reservations: vec![],
         });
         self.active_cells.clear();
         self.active_cells.insert(source);
@@ -900,6 +980,219 @@ impl Session {
             target,
             active: true,
         });
+        Ok(())
+    }
+
+    fn reserve_bridge(
+        &mut self,
+        position: Point,
+        component: &str,
+        rotation: i64,
+        crossed_axis: BridgeAxis,
+    ) -> Result<(), Diagnostic> {
+        let active = self.active.as_ref().ok_or_else(|| {
+            error(
+                "missing-active-route",
+                "active-route",
+                "bridge reservation requires an active route",
+            )
+        })?;
+        let obligation = &self.problem.connections[active.connection];
+        let previous = *active.cells.last().expect("active route has a source");
+        let Some(direction) = point_direction(previous, position) else {
+            return Err(error(
+                "bridge-reservation",
+                &obligation.id,
+                "bridge must be reserved immediately before entering its adjacent cell",
+            ));
+        };
+        let expected_axis = if direction % 2 == 0 {
+            BridgeAxis::Vertical
+        } else {
+            BridgeAxis::Horizontal
+        };
+        if crossed_axis != expected_axis
+            || self.bodies.contains(&position)
+            || self.terminal_at.contains_key(&position)
+            || self.active_cells.contains(&position)
+            || self
+                .junctions
+                .contains_key(&(obligation.transport, position))
+            || active
+                .bridge_reservations
+                .iter()
+                .any(|reserved| reserved.position == position)
+        {
+            return Err(error(
+                "bridge-reservation",
+                &obligation.id,
+                "bridge axis, site or reservation conflicts with occupied geometry",
+            ));
+        }
+        let users = self.occupied[layer(obligation.transport)]
+            .get(&position)
+            .ok_or_else(|| {
+                error(
+                    "bridge-reservation",
+                    &obligation.id,
+                    "bridge site has no committed carrier axis",
+                )
+            })?;
+        if let Some(installed) = self.bridges.get(&(obligation.transport, position)) {
+            let axis = direction % 2;
+            let channel = &installed.channels[axis];
+            let definition = self
+                .catalogs
+                .components
+                .component(&installed.component)
+                .expect("installed bridge has a catalog component");
+            let mut load = obligation.rate;
+            let mut matches_axis = channel.commodity == obligation.commodity
+                && installed.component == component
+                && installed.rotation == rotation;
+            for owner in &channel.connections {
+                let ci = self.connections[owner];
+                let route = self.routes[ci]
+                    .as_ref()
+                    .expect("bridge owner route is committed");
+                let pi = route
+                    .cells
+                    .iter()
+                    .position(|&point| point == position)
+                    .expect("bridge owner visits its component");
+                matches_axis &= pi > 0
+                    && pi + 1 < route.cells.len()
+                    && point_direction(route.cells[pi - 1], position) == Some(direction)
+                    && point_direction(position, route.cells[pi + 1]) == Some(direction);
+                load = load
+                    .checked_add(self.problem.connections[ci].rate)
+                    .map_err(|_| {
+                        error(
+                            "bridge-reservation",
+                            &obligation.id,
+                            "bridge axis rate overflows",
+                        )
+                    })?;
+            }
+            let line = self.catalogs.transports.capacity(obligation.transport);
+            if !matches_axis
+                || !within_capacity(
+                    load,
+                    definition.capacity.quantity,
+                    definition.capacity.duration_ms,
+                )
+                || !within_capacity(load, line.quantity, line.duration_ms)
+            {
+                return Err(error(
+                    "bridge-reservation",
+                    &obligation.id,
+                    "installed bridge axis has incompatible flow or insufficient residual capacity",
+                ));
+            }
+            self.active
+                .as_mut()
+                .expect("active route checked above")
+                .bridge_reservations
+                .push(BridgeReservation {
+                    position,
+                    component: component.to_owned(),
+                    rotation,
+                    crossed_axis,
+                    direction,
+                });
+            return Ok(());
+        }
+        let mut carrier_direction = None;
+        let mut carrier_rate = Rate::zero();
+        let carrier_commodity = &self.problem.connections[users[0]].commodity;
+        for &ci in users {
+            let existing = &self.problem.connections[ci];
+            let route = self.routes[ci]
+                .as_ref()
+                .expect("occupied route is committed");
+            let Some(pi) = route.cells.iter().position(|&point| point == position) else {
+                return Err(error(
+                    "bridge-reservation",
+                    &obligation.id,
+                    "carrier route does not visit the bridge site",
+                ));
+            };
+            let heading = if pi > 0 && pi + 1 < route.cells.len() {
+                point_direction(route.cells[pi - 1], position)
+            } else {
+                None
+            };
+            if existing.commodity != *carrier_commodity
+                || heading.is_none()
+                || point_direction(position, route.cells[pi + 1]) != heading
+                || carrier_direction.is_some_and(|old| heading != Some(old))
+            {
+                return Err(error(
+                    "bridge-reservation",
+                    &obligation.id,
+                    "carrier routes must form one same-commodity straight directed axis",
+                ));
+            }
+            carrier_direction = heading;
+            carrier_rate = carrier_rate.checked_add(existing.rate).map_err(|_| {
+                error(
+                    "bridge-reservation",
+                    &obligation.id,
+                    "carrier axis rate overflows",
+                )
+            })?;
+        }
+        let definition = self.catalogs.components.component(component);
+        let legal = definition.is_some_and(|definition| {
+            let Some(carrier_direction) = carrier_direction else {
+                return false;
+            };
+            let rotated = |arm| (cardinal_index(arm) + rotation as usize / 90) % 4;
+            definition.kind == LogisticsComponentKind::Bridge
+                && definition.transport == obligation.transport
+                && carrier_direction % 2 != direction % 2
+                && definition.footprint.width == 1
+                && definition.footprint.height == 1
+                && definition.allowed_rotations.contains(&rotation)
+                && within_capacity(
+                    carrier_rate,
+                    definition.capacity.quantity,
+                    definition.capacity.duration_ms,
+                )
+                && within_capacity(
+                    obligation.rate,
+                    definition.capacity.quantity,
+                    definition.capacity.duration_ms,
+                )
+                && [carrier_direction, direction].iter().all(|&heading| {
+                    definition
+                        .input_directions
+                        .iter()
+                        .any(|&arm| rotated(arm) == (heading + 2) % 4)
+                        && definition
+                            .output_directions
+                            .iter()
+                            .any(|&arm| rotated(arm) == heading)
+                })
+        });
+        if !legal {
+            return Err(error(
+                "bridge-reservation",
+                &obligation.id,
+                "catalog bridge does not fit the carrier, new route, rotation or capacity",
+            ));
+        }
+        self.active
+            .as_mut()
+            .expect("active route checked above")
+            .bridge_reservations
+            .push(BridgeReservation {
+                position,
+                component: component.to_owned(),
+                rotation,
+                crossed_axis,
+                direction,
+            });
         Ok(())
     }
 
@@ -921,6 +1214,12 @@ impl Session {
         let focus_connection = active.connection;
         let focus_target = active.target;
         let (dx, dy) = direction.offset();
+        let heading = match direction {
+            Direction::East => 0,
+            Direction::South => 1,
+            Direction::West => 2,
+            Direction::North => 3,
+        };
         let mut point = *active
             .cells
             .last()
@@ -928,6 +1227,17 @@ impl Session {
         let mut added = Vec::with_capacity(length as usize);
         let mut new_cells = HashSet::with_capacity(length as usize);
         for _ in 0..length {
+            if active
+                .bridge_reservations
+                .iter()
+                .any(|reserved| reserved.position == point && reserved.direction != heading)
+            {
+                return Err(error(
+                    "bridge-turn",
+                    "active-route",
+                    "route must leave a reserved bridge in its entry direction",
+                ));
+            }
             point = Point {
                 x: point.x.checked_add(dx).ok_or_else(|| {
                     error(
@@ -966,11 +1276,33 @@ impl Session {
                     "extension revisits its active route",
                 ));
             }
-            if !self.shared_cell_available(point, focus_connection) {
+            let pending = active.bridge_reservations.iter().find(|reserved| {
+                !self.active_cells.contains(&reserved.position)
+                    && !new_cells.contains(&reserved.position)
+                    && reserved.position != point
+            });
+            if pending.is_some() {
+                return Err(error(
+                    "bridge-reservation",
+                    "active-route",
+                    "the next extension must enter the reserved bridge cell",
+                ));
+            }
+            let reserved = active
+                .bridge_reservations
+                .iter()
+                .find(|reserved| reserved.position == point);
+            if reserved.is_some_and(|reserved| reserved.direction != heading)
+                || reserved.is_none()
+                    && (self.bridges.contains_key(&(
+                        self.problem.connections[focus_connection].transport,
+                        point,
+                    )) || !self.shared_cell_available(point, focus_connection))
+            {
                 return Err(error(
                     "same-layer-intersection",
                     "active-route",
-                    "same-layer cell is incompatible or lacks residual shared capacity",
+                    "same-layer cell is incompatible, reserved in another direction or lacks capacity",
                 ));
             }
             added.push(point);
@@ -1084,6 +1416,14 @@ impl Session {
         }
         let mut updates = Vec::with_capacity(pending.cells.len());
         for (pi, &point) in pending.cells.iter().enumerate() {
+            if self.active.as_ref().is_some_and(|active| {
+                active
+                    .bridge_reservations
+                    .iter()
+                    .any(|bridge| bridge.position == point)
+            }) {
+                continue;
+            }
             let users = self.occupied[layer(transport)].get(&point);
             if users.is_none() && pi > 0 && pi + 1 < pending.cells.len() {
                 continue;
@@ -1134,6 +1474,107 @@ impl Session {
         Ok(updates)
     }
 
+    fn bridge_updates(
+        &self,
+        pending_index: usize,
+        pending: &Route,
+    ) -> Result<Vec<Bridge>, Diagnostic> {
+        let active = self
+            .active
+            .as_ref()
+            .expect("bridge updates require an active route");
+        let transport = self.problem.connections[pending_index].transport;
+        let mut bridges = Vec::with_capacity(active.bridge_reservations.len());
+        for reserved in &active.bridge_reservations {
+            let Some(pi) = pending
+                .cells
+                .iter()
+                .position(|&point| point == reserved.position)
+            else {
+                return Err(error(
+                    "bridge-reservation",
+                    &pending.connection,
+                    "reserved bridge was not traversed",
+                ));
+            };
+            if pi == 0
+                || pi + 1 == pending.cells.len()
+                || point_direction(pending.cells[pi - 1], reserved.position)
+                    != Some(reserved.direction)
+                || point_direction(reserved.position, pending.cells[pi + 1])
+                    != Some(reserved.direction)
+            {
+                return Err(error(
+                    "bridge-turn",
+                    &pending.connection,
+                    "route must enter and leave each bridge straight",
+                ));
+            }
+            if let Some(installed) = self.bridges.get(&(transport, reserved.position)) {
+                let mut bridge = installed.clone();
+                let owners = &mut bridge.channels[reserved.direction % 2].connections;
+                owners.push(pending.connection.clone());
+                owners.sort();
+                owners.dedup();
+                bridges.push(bridge);
+                continue;
+            }
+            let users = self.occupied[layer(transport)]
+                .get(&reserved.position)
+                .expect("reserved bridge has committed carrier users");
+            let mut owners = users
+                .iter()
+                .map(|&ci| self.problem.connections[ci].id.clone())
+                .collect::<Vec<_>>();
+            owners.sort();
+            owners.dedup();
+            let carrier_commodity = self.problem.connections[users[0]].commodity.clone();
+            let new_commodity = self.problem.connections[pending_index].commodity.clone();
+            let (horizontal, vertical) = if reserved.crossed_axis == BridgeAxis::Horizontal {
+                (
+                    BridgeChannel {
+                        axis: BridgeAxis::Horizontal,
+                        commodity: carrier_commodity,
+                        connections: owners,
+                    },
+                    BridgeChannel {
+                        axis: BridgeAxis::Vertical,
+                        commodity: new_commodity,
+                        connections: vec![pending.connection.clone()],
+                    },
+                )
+            } else {
+                (
+                    BridgeChannel {
+                        axis: BridgeAxis::Horizontal,
+                        commodity: new_commodity,
+                        connections: vec![pending.connection.clone()],
+                    },
+                    BridgeChannel {
+                        axis: BridgeAxis::Vertical,
+                        commodity: carrier_commodity,
+                        connections: owners,
+                    },
+                )
+            };
+            let transport_id = match transport {
+                aic_layout::logistics::TransportKind::Belt => "belt",
+                aic_layout::logistics::TransportKind::Pipe => "pipe",
+            };
+            bridges.push(Bridge {
+                id: format!(
+                    "bridge-{transport_id}-{}-{}",
+                    reserved.position.x, reserved.position.y
+                ),
+                component: reserved.component.clone(),
+                position: reserved.position,
+                rotation: reserved.rotation,
+                channels: [horizontal, vertical],
+            });
+        }
+        Ok(bridges)
+    }
+
     fn connect(&mut self) -> Result<(), Diagnostic> {
         let active = self.active.as_ref().ok_or_else(|| {
             error(
@@ -1157,6 +1598,7 @@ impl Session {
             cells: active.cells.clone(),
         };
         let updates = self.junction_updates(active.connection, &route)?;
+        let bridges = self.bridge_updates(active.connection, &route)?;
         let active = self.active.take().expect("active route checked above");
         self.active_cells.clear();
         let obligation = &self.problem.connections[active.connection];
@@ -1203,6 +1645,10 @@ impl Session {
                 self.junctions.remove(&site);
             }
         }
+        for bridge in bridges {
+            self.bridges
+                .insert((obligation.transport, bridge.position), bridge);
+        }
         self.focus = Some(Focus::Route {
             connection: active.connection,
             endpoint: active.target,
@@ -1240,7 +1686,7 @@ mod tests {
             LogisticsComponentCatalog, TransportKind, ValidatedLogisticsComponentCatalog,
             ValidatedTransportCatalog,
         },
-        physical::{Block, Connection, Terminal},
+        physical::{Block, Connection, Terminal, TerminalDirection},
         rate::Rate,
     };
     use serde::de::DeserializeOwned;
@@ -1361,6 +1807,7 @@ mod tests {
             work_per_search: 10_000,
             max_expanded: 100_000,
             overlap_penalty: 8,
+            max_crossings_per_route: 0,
         }
     }
 
@@ -1800,6 +2247,7 @@ mod tests {
                 target_port: None,
                 cells: route.cells,
                 commands,
+                crossings: vec![],
                 steps: 9,
                 turns: 2,
                 expanded: 0,
@@ -2239,7 +2687,7 @@ mod tests {
     }
 
     #[test]
-    fn same_layer_crossing_is_rejected_atomically() {
+    fn same_layer_crossing_requires_a_reserved_bridge_and_commits_atomically() {
         let problem = Problem {
             blocks: ["west", "east", "south", "north"]
                 .into_iter()
@@ -2317,6 +2765,7 @@ mod tests {
                 .accepted
         );
         assert!(session.step(Command::Connect).accepted);
+        let stable_before_vertical = session.clone();
         assert!(
             session
                 .step(Command::BeginRoute {
@@ -2338,5 +2787,499 @@ mod tests {
         );
         assert_eq!(session.observe().active.unwrap().cells, before);
         assert_eq!(session.observe().completion_ratio, 0.5);
+        let horizontal = session.routes[0].as_ref().unwrap();
+        let crossing = horizontal.cells[1];
+        let option = aic_routing::crossing_options(
+            &[aic_routing::Carrier {
+                id: 0,
+                network: 0,
+                transport: TransportKind::Belt,
+                rate: session.problem.connections[0].rate,
+                cells: &horizontal.cells,
+            }],
+            &aic_routing::RouteJob {
+                id: 1,
+                transport: TransportKind::Belt,
+                rate: session.problem.connections[1].rate,
+            },
+            &session.catalogs.components,
+            &indexmap::IndexSet::new(),
+        )
+        .get(&(crossing, 3))
+        .cloned()
+        .expect("catalog has a matching northbound bridge");
+        let start = before[0];
+        assert_eq!(start.x, crossing.x);
+        let to_bridge = start.y - crossing.y;
+        assert!(to_bridge >= 2);
+        assert!(
+            session
+                .step(Command::Extend {
+                    direction: Direction::North,
+                    length: to_bridge - 1,
+                })
+                .accepted
+        );
+        assert!(
+            session
+                .step(Command::ReserveBridge {
+                    position: crossing,
+                    component: option.component,
+                    rotation: option.rotation,
+                    crossed_axis: BridgeAxis::Horizontal,
+                })
+                .accepted
+        );
+        let mut aborted = session.clone();
+        assert!(aborted.step(Command::AbortRoute).accepted);
+        assert!(aborted.observe().bridges.is_empty());
+        assert_eq!(aborted.observe().routes[0], session.observe().routes[0]);
+        assert!(
+            session
+                .step(Command::Extend {
+                    direction: Direction::North,
+                    length: 1,
+                })
+                .accepted
+        );
+        let wrong_turn = session.step(Command::Extend {
+            direction: Direction::East,
+            length: 1,
+        });
+        assert_eq!(
+            wrong_turn.diagnostic.unwrap().code,
+            "constructive.bridge-turn"
+        );
+        let target = session.active.as_ref().unwrap().target;
+        assert!(
+            session
+                .step(Command::Extend {
+                    direction: Direction::North,
+                    length: crossing.y - target.y,
+                })
+                .accepted
+        );
+        assert!(session.step(Command::Connect).accepted);
+        let layout = session.layout().expect("bridge-bearing layout validates");
+        assert_eq!(layout.solution.bridges.len(), 1);
+        assert_eq!(
+            layout.solution.bridges[0].channels[0].connections,
+            vec!["horizontal"]
+        );
+        assert_eq!(
+            layout.solution.bridges[0].channels[1].connections,
+            vec!["vertical"]
+        );
+        assert_eq!(session.observe().bridges, layout.solution.bridges);
+        let learning = session.macro_learning_input(&learning_config()).unwrap();
+        assert_eq!(learning.bridge_resources, layout.solution.bridges);
+        assert!(learning.spatial_features.iter().any(|row| row[9] == 1.0));
+        assert!(learning.spatial_features.iter().any(|row| row[10] == 1.0));
+        assert!(
+            learning
+                .spatial_features
+                .iter()
+                .any(|row| row[9] == 1.0 && row[11] > 0.0 && row[12] > 0.0)
+        );
+        let mut config = route_candidate_config();
+        config.bounds = aic_layout::geometry::Bounds {
+            min_x: crossing.x,
+            max_x: crossing.x,
+            min_y: target.y,
+            max_y: start.y,
+        };
+        config.max_candidates = 1;
+        config.max_crossings_per_route = 1;
+        let report = stable_before_vertical
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: stable_before_vertical.revision,
+                    connection: "vertical".into(),
+                },
+                &config,
+            )
+            .unwrap();
+        assert_eq!(report.crossing_limit, 1);
+        assert_eq!(report.candidates.len(), 1, "{report:?}");
+        assert_eq!(report.candidates[0].crossings.len(), 1);
+        let mut replay = stable_before_vertical;
+        let mut tampered = report.candidates[0].clone();
+        tampered.crossings[0].position.x += 1;
+        if let Some(Command::ReserveBridge { position, .. }) = tampered
+            .commands
+            .iter_mut()
+            .find(|command| matches!(command, Command::ReserveBridge { .. }))
+        {
+            position.x += 1;
+        }
+        let before_revision = replay.revision;
+        assert!(replay.apply_route_candidate(&tampered).is_err());
+        assert_eq!(replay.revision, before_revision);
+        assert!(replay.observe().bridges.is_empty());
+        let mut wrong_direction = report.candidates[0].clone();
+        wrong_direction.crossings[0].direction = 1;
+        assert_eq!(
+            replay
+                .apply_route_candidate(&wrong_direction)
+                .unwrap_err()
+                .code,
+            "constructive.route-candidate-bridge-witness"
+        );
+        let mut wrong_carrier = report.candidates[0].clone();
+        wrong_carrier.crossings[0].carrier_chain = usize::MAX;
+        assert_eq!(
+            replay
+                .apply_route_candidate(&wrong_carrier)
+                .unwrap_err()
+                .code,
+            "constructive.route-candidate-bridge-witness"
+        );
+        replay.apply_route_candidate(&report.candidates[0]).unwrap();
+        assert_eq!(replay.layout().unwrap().solution.bridges.len(), 1);
+    }
+
+    #[test]
+    fn pipe_crossing_candidate_needs_a_catalog_bridge_in_the_fixed_corridor() {
+        let problem = Problem {
+            blocks: ["west", "east", "south", "north"]
+                .into_iter()
+                .map(|id| Block {
+                    id: id.into(),
+                    facility: "furnance-1-mode-liquid".into(),
+                })
+                .collect(),
+            terminals: vec![],
+            connections: vec![
+                Connection {
+                    id: "horizontal".into(),
+                    source: "west".into(),
+                    target: "east".into(),
+                    commodity: "pipe-a".into(),
+                    transport: TransportKind::Pipe,
+                    rate: Rate {
+                        numerator: 1,
+                        denominator: 2,
+                    },
+                },
+                Connection {
+                    id: "vertical".into(),
+                    source: "south".into(),
+                    target: "north".into(),
+                    commodity: "pipe-b".into(),
+                    transport: TransportKind::Pipe,
+                    rate: Rate {
+                        numerator: 1,
+                        denominator: 2,
+                    },
+                },
+            ],
+        };
+        let prefix = |catalogs: Arc<Catalogs>, problem: Problem| {
+            let mut session = Session::new(
+                problem,
+                catalogs,
+                Limits {
+                    max_turns: 32,
+                    max_extension: 16,
+                },
+            )
+            .unwrap();
+            for (block, position, rotation) in [
+                ("west", Point { x: 2, y: 5 }, 0),
+                ("east", Point { x: 8, y: 5 }, 0),
+                ("south", Point { x: 5, y: 9 }, 270),
+                ("north", Point { x: 5, y: 1 }, 270),
+            ] {
+                assert!(
+                    session
+                        .step(Command::Place {
+                            block: block.into(),
+                            position,
+                            rotation
+                        })
+                        .accepted
+                );
+            }
+            for command in [
+                Command::BeginRoute {
+                    connection: "horizontal".into(),
+                    source_port: Some("output-pipe-3".into()),
+                    target_port: Some("input-pipe-3".into()),
+                },
+                Command::Extend {
+                    direction: Direction::East,
+                    length: 2,
+                },
+                Command::Connect,
+            ] {
+                let step = session.step(command);
+                assert!(
+                    step.accepted,
+                    "{}",
+                    step.diagnostic
+                        .unwrap_or_else(|| error("test", "pipe", "unknown"))
+                );
+            }
+            session
+        };
+        let mut config = route_candidate_config();
+        config.bounds = aic_layout::geometry::Bounds {
+            min_x: 6,
+            max_x: 6,
+            min_y: 4,
+            max_y: 8,
+        };
+        config.max_candidates = 1;
+        config.max_crossings_per_route = 1;
+        let mut session = prefix(catalogs(), problem.clone());
+        let request = routing_candidates::Request {
+            state_revision: session.revision,
+            connection: "vertical".into(),
+        };
+        let report = session.route_candidates(&request, &config).unwrap();
+        assert_eq!(report.candidates.len(), 1, "{report:?}");
+        assert_eq!(report.candidates[0].crossings.len(), 1);
+        session
+            .apply_route_candidate(&report.candidates[0])
+            .unwrap();
+        assert_eq!(session.layout().unwrap().solution.bridges.len(), 1);
+        let mut same_item = problem.clone();
+        same_item.connections[1].commodity = "pipe-a".into();
+        let shared = prefix(catalogs(), same_item);
+        let shared_report = shared
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: shared.revision,
+                    connection: "vertical".into(),
+                },
+                &config,
+            )
+            .unwrap();
+        assert_eq!(shared_report.candidates.len(), 1, "{shared_report:?}");
+        assert_eq!(shared_report.candidates[0].crossings.len(), 1);
+
+        let mut parallel_problem = problem.clone();
+        parallel_problem.blocks.push(Block {
+            id: "east-2".into(),
+            facility: "furnance-1-mode-liquid".into(),
+        });
+        parallel_problem.terminals.push(Terminal {
+            id: "west-2".into(),
+            direction: TerminalDirection::Input,
+            commodity: "pipe-a".into(),
+            transport: TransportKind::Pipe,
+        });
+        parallel_problem.connections.push(Connection {
+            id: "horizontal-2".into(),
+            source: "west-2".into(),
+            target: "east-2".into(),
+            commodity: "pipe-a".into(),
+            transport: TransportKind::Pipe,
+            rate: Rate {
+                numerator: 1,
+                denominator: 2,
+            },
+        });
+        let mut parallel = prefix(catalogs(), parallel_problem);
+        for command in [
+            Command::Place {
+                block: "east-2".into(),
+                position: Point { x: 12, y: 5 },
+                rotation: 0,
+            },
+            Command::PlaceTerminal {
+                terminal: "west-2".into(),
+                position: Point { x: 5, y: 4 },
+            },
+            Command::BeginRoute {
+                connection: "horizontal-2".into(),
+                source_port: None,
+                target_port: Some("input-pipe-3".into()),
+            },
+            Command::Extend {
+                direction: Direction::South,
+                length: 2,
+            },
+        ] {
+            let step = parallel.step(command);
+            assert!(step.accepted, "{step:?}");
+        }
+        let parallel_rejection = parallel.step(Command::ReserveBridge {
+            position: Point { x: 6, y: 6 },
+            component: "log-pipe-connector".into(),
+            rotation: 0,
+            crossed_axis: BridgeAxis::Vertical,
+        });
+        assert_eq!(
+            parallel_rejection.diagnostic.unwrap().code,
+            "constructive.bridge-reservation"
+        );
+        assert!(parallel.observe().bridges.is_empty());
+
+        let mut multiowner_problem = problem.clone();
+        multiowner_problem.blocks.push(Block {
+            id: "north-2".into(),
+            facility: "furnance-1-mode-liquid".into(),
+        });
+        multiowner_problem.terminals.push(Terminal {
+            id: "south-2".into(),
+            direction: TerminalDirection::Input,
+            commodity: "pipe-b".into(),
+            transport: TransportKind::Pipe,
+        });
+        multiowner_problem.connections.push(Connection {
+            id: "vertical-2".into(),
+            source: "south-2".into(),
+            target: "north-2".into(),
+            commodity: "pipe-b".into(),
+            transport: TransportKind::Pipe,
+            rate: Rate {
+                numerator: 1,
+                denominator: 2,
+            },
+        });
+        let mut multiowner = prefix(catalogs(), multiowner_problem);
+        for command in [
+            Command::Place {
+                block: "north-2".into(),
+                position: Point { x: 10, y: 2 },
+                rotation: 0,
+            },
+            Command::PlaceTerminal {
+                terminal: "south-2".into(),
+                position: Point { x: 7, y: 12 },
+            },
+        ] {
+            let step = multiowner.step(command);
+            assert!(step.accepted, "{step:?}");
+        }
+        // Probe the candidate filter while the third obligation keeps this
+        // state incomplete: a component on the other transport layer must not
+        // suppress a pipe bridge candidate at the same coordinate.
+        let mut other_layer = multiowner.clone();
+        other_layer.junctions.insert(
+            (TransportKind::Belt, Point { x: 6, y: 6 }),
+            Junction {
+                id: "other-layer-probe".into(),
+                component: "log-converger".into(),
+                position: Point { x: 6, y: 6 },
+                rotation: 0,
+                connections: vec![],
+            },
+        );
+        let cross_layer = other_layer
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: other_layer.revision,
+                    connection: "vertical".into(),
+                },
+                &config,
+            )
+            .unwrap();
+        assert_eq!(cross_layer.candidates.len(), 1, "{cross_layer:?}");
+        assert_eq!(
+            cross_layer.candidates[0].crossings[0].position,
+            Point { x: 6, y: 6 }
+        );
+        let first = multiowner
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: multiowner.revision,
+                    connection: "vertical".into(),
+                },
+                &config,
+            )
+            .unwrap();
+        assert_eq!(first.candidates.len(), 1, "{first:?}");
+        multiowner
+            .apply_route_candidate(&first.candidates[0])
+            .unwrap();
+        let mut second_config = config.clone();
+        second_config.bounds.max_x = 9;
+        second_config.bounds.min_y = 3;
+        second_config.bounds.max_y = 12;
+        let second = multiowner
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: multiowner.revision,
+                    connection: "vertical-2".into(),
+                },
+                &second_config,
+            )
+            .unwrap();
+        assert_eq!(second.candidates.len(), 1, "{second:?}");
+        assert_eq!(second.candidates[0].crossings.len(), 1);
+        assert_eq!(
+            second.candidates[0].crossings[0].position,
+            Point { x: 6, y: 6 }
+        );
+        multiowner
+            .apply_route_candidate(&second.candidates[0])
+            .unwrap();
+        let layout = multiowner.layout().unwrap();
+        assert_eq!(layout.solution.bridges.len(), 1);
+        assert_eq!(
+            layout.solution.bridges[0].channels[1].connections,
+            ["vertical", "vertical-2"]
+        );
+
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/game/normalized");
+        let full = catalogs();
+        let mut components: LogisticsComponentCatalog = read(&root, "logistics-components.json");
+        for component in &mut components.components {
+            if component.kind == aic_layout::logistics::LogisticsComponentKind::Bridge
+                && component.transport == TransportKind::Pipe
+            {
+                component.capacity.duration_ms = 10_000;
+            }
+        }
+        let without_bridges = Arc::new(Catalogs {
+            identity: full.identity.clone(),
+            facilities: ValidatedFacilityCatalog::try_from_catalog(read(&root, "facilities.json"))
+                .unwrap(),
+            transports: ValidatedTransportCatalog::try_from_catalog(read(&root, "transports.json"))
+                .unwrap(),
+            components: ValidatedLogisticsComponentCatalog::try_from_catalog(components).unwrap(),
+        });
+        let mut no_bridge = prefix(without_bridges, problem);
+        let request = routing_candidates::Request {
+            state_revision: no_bridge.revision,
+            connection: "vertical".into(),
+        };
+        let report = no_bridge.route_candidates(&request, &config).unwrap();
+        assert!(report.candidates.is_empty());
+        assert_eq!(
+            report.termination,
+            routing_candidates::Termination::FrontierExhausted
+        );
+        assert!(report.fixed_request_proven_infeasible);
+        assert!(
+            no_bridge
+                .step(Command::BeginRoute {
+                    connection: "vertical".into(),
+                    source_port: Some("output-pipe-3".into()),
+                    target_port: Some("input-pipe-3".into()),
+                })
+                .accepted
+        );
+        assert!(
+            no_bridge
+                .step(Command::Extend {
+                    direction: Direction::North,
+                    length: 1
+                })
+                .accepted
+        );
+        let rejected = no_bridge.step(Command::ReserveBridge {
+            position: Point { x: 6, y: 6 },
+            component: "log-pipe-connector".into(),
+            rotation: 0,
+            crossed_axis: BridgeAxis::Horizontal,
+        });
+        assert_eq!(
+            rejected.diagnostic.unwrap().code,
+            "constructive.bridge-reservation"
+        );
+        assert!(no_bridge.observe().bridges.is_empty());
     }
 }

@@ -1,0 +1,230 @@
+{
+  "schema": "aic-route-candidate-panel-v1",
+  "partition": "held-out",
+  "cpu_threads": 1,
+  "repetitions": 1,
+  "limits": {
+    "max_turns": 32,
+    "max_extension": 16
+  },
+  "candidate": {
+    "bounds": {
+      "minX": 6,
+      "minY": 4,
+      "maxX": 6,
+      "maxY": 8
+    },
+    "max_candidates": 1,
+    "max_searches": 12,
+    "work_per_search": 10000,
+    "max_expanded": 100000,
+    "overlap_penalty": 8,
+    "max_crossings_per_route": 1
+  },
+  "cases": [
+    {
+      "id": "belt-forced-crossing",
+      "problem": {
+        "blocks": [
+          {
+            "id": "west",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "east",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "south",
+            "facility": "grinder-1-mode-normal"
+          },
+          {
+            "id": "north",
+            "facility": "grinder-1-mode-normal"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "horizontal",
+            "source": "west",
+            "target": "east",
+            "commodity": "horizontal-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "vertical",
+            "source": "south",
+            "target": "north",
+            "commodity": "vertical-item",
+            "transport": "belt",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "west",
+          "position": {
+            "x": 2,
+            "y": 5
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "east",
+          "position": {
+            "x": 8,
+            "y": 5
+          },
+          "rotation": 90
+        },
+        {
+          "kind": "place",
+          "block": "south",
+          "position": {
+            "x": 5,
+            "y": 9
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "north",
+          "position": {
+            "x": 5,
+            "y": 1
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "begin-route",
+          "connection": "horizontal",
+          "source_port": "output-belt-1",
+          "target_port": "input-belt-1"
+        },
+        {
+          "kind": "extend",
+          "direction": "east",
+          "length": 2
+        },
+        {
+          "kind": "connect"
+        }
+      ],
+      "request": "vertical",
+      "later_connections": []
+    },
+    {
+      "id": "pipe-forced-crossing",
+      "problem": {
+        "blocks": [
+          {
+            "id": "west",
+            "facility": "furnance-1-mode-liquid"
+          },
+          {
+            "id": "east",
+            "facility": "furnance-1-mode-liquid"
+          },
+          {
+            "id": "south",
+            "facility": "furnance-1-mode-liquid"
+          },
+          {
+            "id": "north",
+            "facility": "furnance-1-mode-liquid"
+          }
+        ],
+        "terminals": [],
+        "connections": [
+          {
+            "id": "horizontal",
+            "source": "west",
+            "target": "east",
+            "commodity": "horizontal-item",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "vertical",
+            "source": "south",
+            "target": "north",
+            "commodity": "vertical-item",
+            "transport": "pipe",
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ]
+      },
+      "prefix": [
+        {
+          "kind": "place",
+          "block": "west",
+          "position": {
+            "x": 2,
+            "y": 5
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "east",
+          "position": {
+            "x": 8,
+            "y": 5
+          },
+          "rotation": 0
+        },
+        {
+          "kind": "place",
+          "block": "south",
+          "position": {
+            "x": 5,
+            "y": 9
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "place",
+          "block": "north",
+          "position": {
+            "x": 5,
+            "y": 1
+          },
+          "rotation": 270
+        },
+        {
+          "kind": "begin-route",
+          "connection": "horizontal",
+          "source_port": "output-pipe-3",
+          "target_port": "input-pipe-3"
+        },
+        {
+          "kind": "extend",
+          "direction": "east",
+          "length": 2
+        },
+        {
+          "kind": "connect"
+        }
+      ],
+      "request": "vertical",
+      "later_connections": []
+    }
+  ]
+}

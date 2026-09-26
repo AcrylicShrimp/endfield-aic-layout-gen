@@ -16,9 +16,9 @@ use crate::{
     schema::OuterModelConfig,
 };
 
-pub const ACTION_FEATURES: usize = 24;
+pub const ACTION_FEATURES: usize = 30;
 pub const VALUE_HEADS: usize = 8;
-pub const CHECKPOINT_SCHEMA: &str = "aic-hierarchical-outer-checkpoint-v3";
+pub const CHECKPOINT_SCHEMA: &str = "aic-hierarchical-outer-checkpoint-v4";
 pub const COMPLETION_HEAD: i64 = 0;
 pub const AREA_HEAD: i64 = 4;
 pub const TRANSPORT_HEAD: i64 = 5;
@@ -542,6 +542,7 @@ mod tests {
             relation_features: vec![[0.; RELATION_FEATURES]],
             spatial_features: vec![[0.; SPATIAL_FEATURES]],
             spatial_owners: vec![0],
+            bridge_resources: vec![],
             global_features: [0.; GLOBAL_FEATURES],
             focus_features: [0.; FOCUS_FEATURES],
             focus_entity: -1,

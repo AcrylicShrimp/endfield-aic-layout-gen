@@ -172,6 +172,11 @@ pub fn run(
     let lower_checkpoint_sha256 = crate::input::sha256(&lower_checkpoint)?;
     let loaded = aic_layout_gen::io::load_catalogs(catalog_root)?;
     let catalogs = Arc::new(loaded.catalogs);
+    crate::input::verify_training_artifact(
+        lower_training_output,
+        &catalogs.identity,
+        &lower_checkpoint_sha256,
+    )?;
     let domain = aic_pilot_native::constructive::learning::Config {
         placement: config.search.bounds,
         extension_lengths: config.search.extension_lengths.clone(),

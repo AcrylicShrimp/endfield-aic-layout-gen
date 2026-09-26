@@ -452,6 +452,7 @@ fn attempt(
                     work_budget: remaining,
                     crossings: &sites,
                     crossing_limit: limits.crossings_per_route,
+                    prefer_crossings: false,
                     allow_zero_length: c.zero_length,
                     cell_penalties: None,
                     edge_penalties: None,

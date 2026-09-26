@@ -28,7 +28,7 @@ pub mod search;
 #[cfg(test)]
 pub(crate) mod test_support;
 
-pub const CHECKPOINT_SCHEMA: &str = "aic-constructive-attention-checkpoint-v2";
+pub const CHECKPOINT_SCHEMA: &str = "aic-constructive-attention-checkpoint-v3";
 pub(crate) const INPUT_TENSOR_COUNT: usize = 12;
 const INPUT_TENSOR_NAMES: [&str; INPUT_TENSOR_COUNT] = [
     "entity_features",
@@ -681,6 +681,7 @@ mod tests {
             global_features: [0.1; GLOBAL_FEATURES],
             focus_features: [0.2; FOCUS_FEATURES],
             focus_entity,
+            bridge_resources: vec![],
         }
     }
 

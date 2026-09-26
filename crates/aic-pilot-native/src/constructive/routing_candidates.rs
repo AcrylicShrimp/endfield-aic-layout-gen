@@ -5,18 +5,20 @@ use std::collections::{BTreeSet, HashSet};
 use aic_layout::{
     facilities::{FacilityPortDirection, FacilityPortEdge},
     geometry::{Bounds, Point, layer},
-    logistics::TransportKind,
+    logistics::{LogisticsComponentKind, TransportKind},
+    physical::{Bridge, BridgeAxis},
     projection::edge_index,
+    validation::within_capacity,
 };
-use aic_routing::{Crossings, PathOptions, shortest_path};
+use aic_routing::{Carrier, Crossing, PathOptions, RouteJob, crossing_options, shortest_path};
 use indexmap::{IndexMap, IndexSet};
 use serde::{Deserialize, Serialize};
 
 use super::{Command, Diagnostic, Direction, Session, Step, error};
 
-pub const SCHEMA: &str = "aic-constructive-route-candidates-v2";
-pub const GUIDANCE_SCHEMA: &str = "aic-constructive-route-guidance-v1";
-pub const GUIDANCE_GRID_CHANNELS: usize = 14;
+pub const SCHEMA: &str = "aic-constructive-route-candidates-v3";
+pub const GUIDANCE_SCHEMA: &str = "aic-constructive-route-guidance-v2";
+pub const GUIDANCE_GRID_CHANNELS: usize = 16;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -27,6 +29,9 @@ pub struct Config {
     pub work_per_search: usize,
     pub max_expanded: usize,
     pub overlap_penalty: u32,
+    /// Missing in older saved panels means the prior crossing-disabled behavior.
+    #[serde(default)]
+    pub max_crossings_per_route: usize,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -78,6 +83,7 @@ pub struct GuidanceInput {
     pub catalog_identity: String,
     pub bounds: Bounds,
     pub channels: usize,
+    pub bridge_resources: Vec<Bridge>,
     /// Channel-major `[channel][y][x]` values.
     pub grid: Vec<f32>,
     pub graph: std::sync::Arc<super::learning::Input>,
@@ -89,6 +95,7 @@ pub enum Termination {
     CandidateLimit,
     SearchLimit,
     WorkBudget,
+    ResourceLimit,
     FrontierExhausted,
     NoCompatibleEndpoints,
 }
@@ -117,6 +124,8 @@ pub struct Candidate {
     pub target_port: Option<String>,
     pub cells: Vec<Point>,
     pub commands: Vec<Command>,
+    #[serde(default)]
+    pub crossings: Vec<Crossing>,
     pub steps: i64,
     pub turns: i64,
     pub expanded: usize,
@@ -160,6 +169,7 @@ pub struct Report {
     pub endpoint_pairs: usize,
     pub searches: usize,
     pub expanded: usize,
+    pub crossing_limit: usize,
     pub preflight_expanded: usize,
     pub guides_found: usize,
     pub duplicate_guides: usize,
@@ -203,11 +213,12 @@ impl Config {
             || !(1..=10_000_000).contains(&self.work_per_search)
             || !(1..=100_000_000).contains(&self.max_expanded)
             || !(1..=1_000_000).contains(&self.overlap_penalty)
+            || area.is_some_and(|area| self.max_crossings_per_route > area as usize)
         {
             return Err(error(
                 "route-candidate-config",
                 "route-candidates",
-                "invalid bounds, candidate count, search count, work budget or overlap penalty",
+                "invalid bounds, candidate count, search count, work budget, overlap penalty or crossing limit",
             ));
         }
         Ok(())
@@ -350,6 +361,27 @@ impl Session {
         for &point in self.occupied[1 - transport_layer].keys() {
             mark(&mut grid, 4, point, 1.0);
         }
+        let mut bridge_resources = self.bridges.values().cloned().collect::<Vec<_>>();
+        bridge_resources.sort_by(|left, right| left.id.cmp(&right.id));
+        for bridge in &bridge_resources {
+            let transport = self
+                .catalogs
+                .components
+                .component(&bridge.component)
+                .expect("installed bridge has a validated catalog component")
+                .transport;
+            if layer(transport) != transport_layer {
+                continue;
+            }
+            for (axis, channel) in bridge.channels.iter().enumerate() {
+                mark(
+                    &mut grid,
+                    14 + axis,
+                    bridge.position,
+                    (channel.connections.len() as f32 / 8.0).min(1.0),
+                );
+            }
+        }
         for pair in self.endpoint_pairs(connection, candidate.bounds)? {
             mark(&mut grid, 5, pair.source.point, 1.0);
             mark(&mut grid, 6, pair.target.point, 1.0);
@@ -392,6 +424,7 @@ impl Session {
             catalog_identity: self.catalogs.identity.clone(),
             bounds: candidate.bounds,
             channels: GUIDANCE_GRID_CHANNELS,
+            bridge_resources,
             grid,
             graph: self.route_guidance_learning_input(learning, connection)?,
         })
@@ -457,6 +490,7 @@ impl Session {
                 Termination::NoCompatibleEndpoints,
                 0,
                 false,
+                config.max_crossings_per_route,
             ));
         }
         let guidance_maps = guidance
@@ -464,7 +498,154 @@ impl Session {
             .transpose()?;
         let guidance_heads = guidance.map_or(&[][..], |guidance| guidance.heads.as_slice());
         let blocked = self.route_blocked_cells(connection, config.bounds);
-        let crossings = Crossings::new();
+        let crossings = if config.max_crossings_per_route == 0 {
+            Default::default()
+        } else {
+            let mut networks = IndexMap::<&str, usize>::new();
+            let carriers = self
+                .routes
+                .iter()
+                .enumerate()
+                .filter_map(|(ci, route)| {
+                    let route = route.as_ref()?;
+                    let obligation = &self.problem.connections[ci];
+                    let network = match networks.get(obligation.commodity.as_str()) {
+                        Some(&network) => network,
+                        None => {
+                            let network = networks.len();
+                            networks.insert(&obligation.commodity, network);
+                            network
+                        }
+                    };
+                    Some(Carrier {
+                        id: ci,
+                        network,
+                        transport: obligation.transport,
+                        rate: obligation.rate,
+                        cells: &route.cells,
+                    })
+                })
+                .collect::<Vec<_>>();
+            let obligation = &self.problem.connections[connection];
+            let excluded = self
+                .bodies
+                .iter()
+                .copied()
+                .chain(self.terminal_at.keys().copied())
+                .chain(
+                    self.junctions
+                        .keys()
+                        .filter(|(transport, _)| *transport == obligation.transport)
+                        .map(|(_, point)| *point),
+                )
+                .chain(
+                    self.bridges
+                        .keys()
+                        .filter(|(transport, _)| *transport == obligation.transport)
+                        .map(|(_, point)| *point),
+                )
+                .collect::<IndexSet<_>>();
+            let mut crossings = crossing_options(
+                &carriers,
+                &RouteJob {
+                    id: connection,
+                    transport: obligation.transport,
+                    rate: obligation.rate,
+                },
+                &self.catalogs.components,
+                &excluded,
+            );
+            // An installed bridge is occupied, but a new route can join an
+            // existing directed channel when its exact residual capacity fits.
+            for (&(transport, position), bridge) in &self.bridges {
+                if transport != obligation.transport || !config.bounds.contains(position) {
+                    continue;
+                }
+                let Some(definition) = self.catalogs.components.component(&bridge.component) else {
+                    continue;
+                };
+                let line = self.catalogs.transports.capacity(transport);
+                for channel in &bridge.channels {
+                    if channel.commodity != obligation.commodity {
+                        continue;
+                    }
+                    let mut heading = None;
+                    let mut load = obligation.rate;
+                    let mut first_owner = None;
+                    let mut valid = true;
+                    for owner in &channel.connections {
+                        let Some(&ci) = self.connections.get(owner) else {
+                            valid = false;
+                            break;
+                        };
+                        let Some(route) = self.routes[ci].as_ref() else {
+                            valid = false;
+                            break;
+                        };
+                        let Some(pi) = route.cells.iter().position(|&point| point == position)
+                        else {
+                            valid = false;
+                            break;
+                        };
+                        if pi == 0 || pi + 1 == route.cells.len() {
+                            valid = false;
+                            break;
+                        }
+                        let Some(step_direction) =
+                            aic_layout::geometry::direction(route.cells[pi - 1], position)
+                        else {
+                            valid = false;
+                            break;
+                        };
+                        if aic_layout::geometry::direction(route.cells[pi], route.cells[pi + 1])
+                            != Some(step_direction)
+                            || heading.is_some_and(|old| old != step_direction)
+                        {
+                            valid = false;
+                            break;
+                        }
+                        let Ok(next_load) = load.checked_add(self.problem.connections[ci].rate)
+                        else {
+                            valid = false;
+                            break;
+                        };
+                        load = next_load;
+                        heading = Some(step_direction);
+                        first_owner.get_or_insert(ci);
+                    }
+                    let (Some(direction), Some(carrier_chain)) = (heading, first_owner) else {
+                        continue;
+                    };
+                    if !valid
+                        || !within_capacity(
+                            load,
+                            definition.capacity.quantity,
+                            definition.capacity.duration_ms,
+                        )
+                        || !within_capacity(load, line.quantity, line.duration_ms)
+                    {
+                        continue;
+                    }
+                    let Some(&carrier_network) = networks.get(channel.commodity.as_str()) else {
+                        continue;
+                    };
+                    crossings.insert(
+                        (position, direction),
+                        Crossing {
+                            position,
+                            direction,
+                            component: bridge.component.clone(),
+                            rotation: bridge.rotation,
+                            transport,
+                            kind: LogisticsComponentKind::Bridge,
+                            carrier_chain,
+                            carrier_network,
+                        },
+                    );
+                }
+            }
+            crossings
+        };
         let mut penalties = IndexMap::<Point, u32>::new();
         let mut semantic = BTreeSet::new();
         let mut candidates = Vec::new();
@@ -523,7 +704,8 @@ impl Session {
                         last: pair.target.direction,
                         work_budget,
                         crossings: &crossings,
-                        crossing_limit: 0,
+                        crossing_limit: config.max_crossings_per_route,
+                        prefer_crossings: phase > 0,
                         allow_zero_length: false,
                         cell_penalties: (!anchor && !guided).then_some(&penalties),
                         edge_penalties,
@@ -540,6 +722,9 @@ impl Session {
                 phase_searches += 1;
                 expanded += result.expanded;
                 preflight_expanded += result.preflight_expanded;
+                if result.status == "resource-limit" {
+                    break 'rounds Termination::ResourceLimit;
+                }
                 if result.status == "work-budget" {
                     if anchor {
                         anchor_complete = false;
@@ -555,10 +740,26 @@ impl Session {
                     }
                     continue;
                 };
+                let found_crossings = result.crossings.unwrap_or_default();
                 guides_found += 1;
                 let source_port = pair.source.port.clone();
                 let target_port = pair.target.port.clone();
-                let key = (source_port.clone(), target_port.clone(), cells.clone());
+                let key = (
+                    source_port.clone(),
+                    target_port.clone(),
+                    cells.clone(),
+                    found_crossings
+                        .iter()
+                        .map(|crossing| {
+                            (
+                                crossing.position,
+                                crossing.direction,
+                                crossing.component.clone(),
+                                crossing.rotation,
+                            )
+                        })
+                        .collect::<Vec<_>>(),
+                );
                 let overlap = maximum_overlap(&cells, &candidates);
                 let learned_cost = edge_penalties
                     .map(|costs| directed_cost(&cells, costs))
@@ -573,6 +774,7 @@ impl Session {
                     source_port.clone(),
                     target_port.clone(),
                     &cells,
+                    &found_crossings,
                 );
                 if let Err(diagnostic) =
                     self.replay_route_witness(request.state_revision, &commands)
@@ -592,6 +794,7 @@ impl Session {
                     target_port,
                     cells,
                     commands,
+                    crossings: found_crossings,
                     steps: result.steps.expect("found path has a step count"),
                     turns: result.turns.expect("found path has a turn count"),
                     expanded: result.expanded,
@@ -642,6 +845,7 @@ impl Session {
             endpoint_pairs: pairs.len(),
             searches,
             expanded,
+            crossing_limit: config.max_crossings_per_route,
             preflight_expanded,
             guides_found,
             duplicate_guides,
@@ -676,12 +880,94 @@ impl Session {
         ) && candidate.commands.last() == Some(&Command::Connect)
             && candidate.commands[1..candidate.commands.len().saturating_sub(1)]
                 .iter()
-                .all(|command| matches!(command, Command::Extend { .. }));
+                .all(|command| {
+                    matches!(
+                        command,
+                        Command::Extend { .. } | Command::ReserveBridge { .. }
+                    )
+                });
         if !valid_shape {
             return Err(error(
                 "route-candidate-witness",
                 &candidate.connection,
                 "route candidate does not contain one complete route witness",
+            ));
+        }
+        let reservations = candidate
+            .commands
+            .iter()
+            .filter_map(|command| match command {
+                Command::ReserveBridge {
+                    position,
+                    component,
+                    rotation,
+                    crossed_axis,
+                } => Some((*position, component.as_str(), *rotation, *crossed_axis)),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        let mut networks = IndexMap::<&str, usize>::new();
+        for (ci, route) in self.routes.iter().enumerate() {
+            if route.is_some() {
+                let commodity = self.problem.connections[ci].commodity.as_str();
+                let next = networks.len();
+                networks.entry(commodity).or_insert(next);
+            }
+        }
+        if reservations.len() != candidate.crossings.len()
+            || reservations.iter().zip(&candidate.crossings).any(
+                |(&(position, component, rotation, crossed_axis), crossing)| {
+                    let axis = if crossing.direction % 2 == 0 {
+                        BridgeAxis::Vertical
+                    } else {
+                        BridgeAxis::Horizontal
+                    };
+                    crossing.position != position
+                        || crossing.component != component
+                        || crossing.rotation != rotation
+                        || crossing.kind != LogisticsComponentKind::Bridge
+                        || crossing.transport != self.problem.connections[connection].transport
+                        || crossed_axis != axis
+                        || candidate
+                            .cells
+                            .iter()
+                            .position(|&point| point == position)
+                            .and_then(|pi| pi.checked_sub(1).map(|previous| (pi, previous)))
+                            .and_then(|(pi, previous)| {
+                                aic_layout::geometry::direction(
+                                    candidate.cells[previous],
+                                    candidate.cells[pi],
+                                )
+                            })
+                            != Some(crossing.direction)
+                        || self
+                            .bridges
+                            .get(&(crossing.transport, position))
+                            .and_then(|bridge| {
+                                bridge.channels[crossing.direction % 2]
+                                    .connections
+                                    .first()
+                                    .and_then(|owner| self.connections.get(owner).copied())
+                            })
+                            .or_else(|| {
+                                self.occupied[layer(crossing.transport)]
+                                    .get(&position)
+                                    .and_then(|users| users.iter().copied().min())
+                            })
+                            != Some(crossing.carrier_chain)
+                        || self
+                            .problem
+                            .connections
+                            .get(crossing.carrier_chain)
+                            .and_then(|carrier| networks.get(carrier.commodity.as_str()).copied())
+                            != Some(crossing.carrier_network)
+                },
+            )
+        {
+            return Err(error(
+                "route-candidate-bridge-witness",
+                &candidate.connection,
+                "bridge metadata does not match the reserved native commands",
             ));
         }
         let (fork, steps) =
@@ -694,6 +980,23 @@ impl Session {
                 "route-candidate-geometry",
                 &candidate.connection,
                 "replayed route does not match candidate geometry",
+            ));
+        }
+        if candidate.crossings.iter().any(|crossing| {
+            fork.bridges
+                .get(&(crossing.transport, crossing.position))
+                .is_none_or(|bridge| {
+                    bridge.component != crossing.component
+                        || bridge.rotation != crossing.rotation
+                        || !bridge.channels[crossing.direction % 2]
+                            .connections
+                            .contains(&candidate.connection)
+                })
+        }) {
+            return Err(error(
+                "route-candidate-bridge-witness",
+                &candidate.connection,
+                "replayed bridge axes do not match the candidate witness",
             ));
         }
         *self = fork;
@@ -875,7 +1178,10 @@ impl Session {
                 .keys()
                 .copied()
                 .filter(|point| bounds.contains(*point))
-                .filter(|&point| !self.shared_cell_available(point, connection)),
+                .filter(|&point| {
+                    self.bridges.contains_key(&(obligation.transport, point))
+                        || !self.shared_cell_available(point, connection)
+                }),
         );
         blocked.sort_by_key(|point| (point.y, point.x));
         blocked.dedup();
@@ -888,18 +1194,42 @@ impl Session {
         source_port: Option<String>,
         target_port: Option<String>,
         cells: &[Point],
+        crossings: &[Crossing],
     ) -> Vec<Command> {
         let mut commands = vec![Command::BeginRoute {
             connection: connection.to_owned(),
             source_port,
             target_port,
         }];
+        let at = crossings
+            .iter()
+            .map(|crossing| (crossing.position, crossing))
+            .collect::<IndexMap<_, _>>();
         let mut start = 0usize;
         while start + 1 < cells.len() {
             let heading = direction(cells[start], cells[start + 1]);
+            if let Some(crossing) = at.get(&cells[start + 1]) {
+                commands.push(Command::ReserveBridge {
+                    position: crossing.position,
+                    component: crossing.component.clone(),
+                    rotation: crossing.rotation,
+                    crossed_axis: if crossing.direction % 2 == 0 {
+                        BridgeAxis::Vertical
+                    } else {
+                        BridgeAxis::Horizontal
+                    },
+                });
+                commands.push(Command::Extend {
+                    direction: heading,
+                    length: 1,
+                });
+                start += 1;
+                continue;
+            }
             let mut end = start + 1;
             while end + 1 < cells.len()
                 && direction(cells[end], cells[end + 1]) == heading
+                && !at.contains_key(&cells[end + 1])
                 && end - start < self.limits.max_extension as usize
             {
                 end += 1;
@@ -950,6 +1280,7 @@ fn empty_report(
     termination: Termination,
     endpoint_pairs: usize,
     proven: bool,
+    crossing_limit: usize,
 ) -> Report {
     Report {
         schema: SCHEMA,
@@ -960,6 +1291,7 @@ fn empty_report(
         endpoint_pairs,
         searches: 0,
         expanded: 0,
+        crossing_limit,
         preflight_expanded: 0,
         guides_found: 0,
         duplicate_guides: 0,

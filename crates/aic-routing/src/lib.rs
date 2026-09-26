@@ -6,12 +6,13 @@ use std::collections::BinaryHeap;
 use aic_layout::logistics::{LogisticsComponentKind, TransportKind};
 use aic_layout::rate::Rate;
 use indexmap::{IndexMap, IndexSet};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use aic_layout::geometry::*;
 use aic_layout::logistics::ValidatedLogisticsComponentCatalog;
 use aic_layout::projection::cardinal_index;
 type Result<T> = std::result::Result<T, Diagnostic>;
+const MAX_PATH_STATES: usize = 1_000_000;
 
 /// Borrowed routed geometry; routing has no dependency on factory recipes.
 pub struct Carrier<'a> {
@@ -37,7 +38,7 @@ pub use negotiated::{
 #[cfg(test)]
 mod tests;
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Crossing {
     pub position: Point,
     pub direction: usize,
@@ -84,30 +85,57 @@ pub fn crossing_options(
         .collect();
     let mut options = IndexMap::new();
     for (p, xs) in visits {
-        if xs.len() != 1 || excluded.contains(&p) {
+        if excluded.contains(&p) {
             continue;
         }
-        let (c, i) = xs[0];
-        if c.id == job.id || i == 0 || i + 1 == c.cells.len() {
+        let mut carrier_direction = None;
+        let mut carrier_network = None;
+        let mut carrier_rate = Rate::zero();
+        let mut carrier_chain = None;
+        let mut straight = true;
+        for (c, i) in xs {
+            if c.id == job.id || i == 0 || i + 1 == c.cells.len() {
+                straight = false;
+                break;
+            }
+            let Some(d) = direction(c.cells[i - 1], p) else {
+                straight = false;
+                break;
+            };
+            if direction(p, c.cells[i + 1]) != Some(d)
+                || carrier_direction.is_some_and(|old| old != d)
+                || carrier_network.is_some_and(|old| old != c.network)
+            {
+                straight = false;
+                break;
+            }
+            let Ok(rate) = carrier_rate.checked_add(c.rate) else {
+                straight = false;
+                break;
+            };
+            carrier_rate = rate;
+            carrier_direction = Some(d);
+            carrier_network = Some(c.network);
+            carrier_chain.get_or_insert(c.id);
+        }
+        if !straight {
             continue;
         }
-        let Some(d) = direction(c.cells[i - 1], p) else {
-            continue;
-        };
-        if direction(p, c.cells[i + 1]) != Some(d) {
-            continue;
-        }
+        let Some(d) = carrier_direction else { continue };
         for next in [(d + 1) % 4, (d + 3) % 4] {
             let pose = poses.iter().find(|&&(def, rotation)| {
-                sufficient(def.capacity.quantity, def.capacity.duration_ms, c.rate)
-                    && [d, next].iter().all(|&axis| {
-                        def.input_directions.iter().any(|&e| {
-                            (cardinal_index(e) + rotation as usize / 90) % 4 == (axis + 2) % 4
-                        }) && def
-                            .output_directions
-                            .iter()
-                            .any(|&e| (cardinal_index(e) + rotation as usize / 90) % 4 == axis)
-                    })
+                sufficient(
+                    def.capacity.quantity,
+                    def.capacity.duration_ms,
+                    carrier_rate,
+                ) && [d, next].iter().all(|&axis| {
+                    def.input_directions.iter().any(|&e| {
+                        (cardinal_index(e) + rotation as usize / 90) % 4 == (axis + 2) % 4
+                    }) && def
+                        .output_directions
+                        .iter()
+                        .any(|&e| (cardinal_index(e) + rotation as usize / 90) % 4 == axis)
+                })
             });
             if let Some(&(def, rotation)) = pose {
                 options.insert(
@@ -119,8 +147,8 @@ pub fn crossing_options(
                         rotation,
                         transport: job.transport,
                         kind: LogisticsComponentKind::Bridge,
-                        carrier_chain: c.id,
-                        carrier_network: c.network,
+                        carrier_chain: carrier_chain.expect("nonempty carrier visits"),
+                        carrier_network: carrier_network.expect("nonempty carrier visits"),
                     },
                 );
             }
@@ -135,6 +163,9 @@ pub struct PathOptions<'a> {
     pub work_budget: usize,
     pub crossings: &'a Crossings,
     pub crossing_limit: usize,
+    /// Tie preference between a legal shared-cell step and a bridge step.
+    /// Both transitions remain available and have the same physical length.
+    pub prefer_crossings: bool,
     pub allow_zero_length: bool,
     /// Optional nonnegative additive step costs. These affect path ordering
     /// only; blocked cells and crossing legality remain exact graph rules.
@@ -202,6 +233,7 @@ struct State {
     id: i64,
     g: i64,
     via: Option<Crossing>,
+    parent: Option<usize>,
 }
 
 pub fn shortest_path(
@@ -217,6 +249,7 @@ pub fn shortest_path(
         work_budget,
         crossings,
         crossing_limit,
+        prefer_crossings,
         allow_zero_length,
         cell_penalties,
         edge_penalties,
@@ -230,7 +263,6 @@ pub fn shortest_path(
         || work_budget < 1
         || first.is_some_and(|d| d > 3)
         || last.is_some_and(|d| d > 3)
-        || crossing_limit > 8
         || cell_penalties.is_some_and(|penalties| {
             penalties
                 .iter()
@@ -277,6 +309,7 @@ pub fn shortest_path(
             work_budget,
             crossings,
             crossing_limit,
+            prefer_crossings,
             allow_zero_length,
             cell_penalties: None,
             edge_penalties: None,
@@ -290,13 +323,19 @@ pub fn shortest_path(
         result.blocked_frontier = probe.frontier;
         return Ok(result);
     }
-    let weight = width * height * 4 * (crossing_limit as i64 + 1) + 1;
-    let id = |p: Point, d: usize, used: usize| {
-        (((p.y - bounds.min_y) * width + p.x - bounds.min_x) * 5 + d as i64)
+    // A simple route cannot cross more cells than the bounded grid contains.
+    // This reduces a redundant caller limit without imposing a game rule.
+    let crossing_limit = crossing_limit.min(area as usize);
+    let weight = i64::try_from(area * 4 * (crossing_limit as i128 + 1) + 1)
+        .expect("bounded grid and crossing count fit i64");
+    let id = |p: Point, d: usize, used: usize, entered_bridge: bool| {
+        ((((p.y - bounds.min_y) * width + p.x - bounds.min_x) * 5 + d as i64)
             * (crossing_limit as i64 + 1)
-            + used as i64
+            + used as i64)
+            * 2
+            + i64::from(entered_bridge)
     };
-    let initial = id(start, 4, 0);
+    let initial = id(start, 4, 0, false);
     let mut states = vec![State {
         point: start,
         direction: 4,
@@ -304,16 +343,16 @@ pub fn shortest_path(
         id: initial,
         g: 0,
         via: None,
+        parent: None,
     }];
     let mut heap = BinaryHeap::from([Reverse((
         start.distance(end) * weight,
+        0_i64,
         0_i64,
         initial,
         0_usize,
     ))]);
     let mut best = IndexMap::from([(initial, 0)]);
-    // Match the oracle's map from state ID to its latest predecessor object.
-    let mut parents = IndexMap::<i64, usize>::new();
     let mut expanded = probe.expanded;
     // Bound diagnostic collection independently of the path-state allocation.
     let mut frontier = IndexSet::new();
@@ -324,7 +363,7 @@ pub fn shortest_path(
         result.preflight_status = probe.status;
         result
     };
-    while let Some(Reverse((_, _, _, pi))) = heap.pop() {
+    while let Some(Reverse((_, _, _, _, pi))) = heap.pop() {
         let p = states[pi].clone();
         if best.get(&p.id) != Some(&p.g) {
             continue;
@@ -343,7 +382,7 @@ pub fn shortest_path(
                 if let Some(via) = &s.via {
                     crossings.push(via.clone());
                 }
-                current = parents.get(&s.id).copied();
+                current = s.parent;
             }
             cells.reverse();
             crossings.reverse();
@@ -351,7 +390,8 @@ pub fn shortest_path(
                 return Ok(stopped("repeated-cell", expanded, frontier));
             }
             let steps = i64::try_from(cells.len() - 1).expect("bounded path length fits i64");
-            let mut result = PathResult::found(cells, crossings, steps, p.g % weight, expanded);
+            let turns = p.g % weight;
+            let mut result = PathResult::found(cells, crossings, steps, turns, expanded);
             result.preflight_expanded = probe.expanded;
             result.preflight_status = probe.status;
             return Ok(result);
@@ -367,37 +407,30 @@ pub fn shortest_path(
                 continue;
             }
             let q = p.point.offset(d);
-            let via = if blocked.contains(&q) {
-                let Some(site) = crossings.get(&(q, d)) else {
-                    if frontier.len() < 2048 {
-                        frontier.insert(q);
-                    }
-                    continue;
-                };
-                if p.used >= crossing_limit {
-                    if frontier.len() < 2048 {
-                        frontier.insert(q);
-                    }
-                    continue;
-                }
-                if site.position != q || site.direction != d {
-                    let mut e = Diagnostic::new(
-                        "path-invalid-crossing",
-                        "Crossing module does not match its entry cell and direction",
-                        serde_json::Value::Null,
-                    );
-                    e.stage = "local-path";
-                    return Err(e);
-                }
-                Some(site.clone())
-            } else {
-                None
-            };
             if !bounds.contains(q) || q == start || (q == end && last.is_some_and(|last| d != last))
             {
                 continue;
             }
-            let used = p.used + usize::from(via.is_some());
+            let site = if crossing_limit == 0 {
+                None
+            } else {
+                crossings.get(&(q, d))
+            };
+            if blocked.contains(&q) && (site.is_none() || p.used >= crossing_limit) {
+                if frontier.len() < 2048 {
+                    frontier.insert(q);
+                }
+                continue;
+            }
+            if site.is_some_and(|site| site.position != q || site.direction != d) {
+                let mut e = Diagnostic::new(
+                    "path-invalid-crossing",
+                    "Crossing module does not match its entry cell and direction",
+                    serde_json::Value::Null,
+                );
+                e.stage = "local-path";
+                return Err(e);
+            }
             let penalty = cell_penalties
                 .and_then(|penalties| penalties.get(&q))
                 .copied()
@@ -409,25 +442,53 @@ pub fn shortest_path(
                         .unwrap_or(0),
                 )
                 .min(1_000_000);
-            let g = p.g
-                + (i64::from(penalty) + 1) * weight
-                + i64::from(p.direction != 4 && p.direction != d);
-            let qid = id(q, d, used);
-            if best.get(&qid).is_some_and(|&old| old <= g) {
-                continue;
+            let Some(g) = (i64::from(penalty) + 1)
+                .checked_mul(weight)
+                .and_then(|step| p.g.checked_add(step))
+                .and_then(|cost| cost.checked_add(i64::from(p.direction != 4 && p.direction != d)))
+            else {
+                return Ok(stopped("resource-limit", expanded, frontier));
+            };
+            for choice in 0..=usize::from(site.is_some()) {
+                let via = if choice == 0 { None } else { site };
+                if via.is_none() && blocked.contains(&q)
+                    || via.is_some() && p.used >= crossing_limit
+                {
+                    continue;
+                }
+                let used = p.used + usize::from(via.is_some());
+                let qid = id(q, d, used, via.is_some());
+                if best.get(&qid).is_some_and(|&old| old <= g) {
+                    continue;
+                }
+                if states.len() == MAX_PATH_STATES {
+                    return Ok(stopped("resource-limit", expanded, frontier));
+                }
+                best.insert(qid, g);
+                let qi = states.len();
+                states.push(State {
+                    point: q,
+                    direction: d,
+                    used,
+                    id: qid,
+                    g,
+                    via: via.cloned(),
+                    parent: Some(pi),
+                });
+                let preference = if prefer_crossings {
+                    -(used as i64)
+                } else {
+                    used as i64
+                };
+                let Some(priority) = q
+                    .distance(end)
+                    .checked_mul(weight)
+                    .and_then(|distance| g.checked_add(distance))
+                else {
+                    return Ok(stopped("resource-limit", expanded, frontier));
+                };
+                heap.push(Reverse((priority, g, preference, qid, qi)));
             }
-            best.insert(qid, g);
-            parents.insert(qid, pi);
-            let qi = states.len();
-            states.push(State {
-                point: q,
-                direction: d,
-                used,
-                id: qid,
-                g,
-                via,
-            });
-            heap.push(Reverse((g + q.distance(end) * weight, g, qid, qi)));
         }
     }
     Ok(stopped("no-path", expanded, frontier))

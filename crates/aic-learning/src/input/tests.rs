@@ -6,6 +6,25 @@ use crate::{
 };
 
 #[test]
+fn trained_model_catalog_and_checkpoint_identity_must_match() -> Result<()> {
+    let folder = std::env::temp_dir().join(format!(
+        "aic-training-artifact-identity-{}",
+        std::process::id()
+    ));
+    let _ = fs::remove_dir_all(&folder);
+    fs::create_dir_all(&folder)?;
+    fs::write(
+        folder.join("report.json"),
+        r#"{"status":"complete","catalog_sha256":"catalog-a","checkpoint_sha256":"checkpoint-a"}"#,
+    )?;
+    assert!(verify_training_artifact(&folder, "catalog-a", "checkpoint-a").is_ok());
+    assert!(verify_training_artifact(&folder, "catalog-b", "checkpoint-a").is_err());
+    assert!(verify_training_artifact(&folder, "catalog-a", "checkpoint-b").is_err());
+    fs::remove_dir_all(folder)?;
+    Ok(())
+}
+
+#[test]
 #[ignore = "requires AIC_RETAINED_COLLECTION and the recorded CUDA backend"]
 fn retained_collection_updates_remain_exact() -> Result<()> {
     aic_torch::tch::set_num_threads(1);

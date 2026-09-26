@@ -2,6 +2,108 @@ use std::collections::{HashSet, VecDeque};
 
 use super::*;
 
+#[test]
+fn shared_straight_trunk_offers_only_capacity_valid_bridge_sites() {
+    let raw: aic_layout::logistics::LogisticsComponentCatalog = serde_json::from_slice(
+        include_bytes!("../../../data/game/normalized/logistics-components.json"),
+    )
+    .unwrap();
+    let catalogs = ValidatedLogisticsComponentCatalog::try_from_catalog(raw).unwrap();
+    let left = (0..5).map(|x| Point { x, y: 2 }).collect::<Vec<_>>();
+    let right = (1..6).map(|x| Point { x, y: 2 }).collect::<Vec<_>>();
+    let rate = Rate {
+        numerator: 1,
+        denominator: 4,
+    };
+    let mut carriers = [
+        Carrier {
+            id: 0,
+            network: 0,
+            transport: TransportKind::Belt,
+            rate,
+            cells: &left,
+        },
+        Carrier {
+            id: 1,
+            network: 0,
+            transport: TransportKind::Belt,
+            rate,
+            cells: &right,
+        },
+    ];
+    let job = RouteJob {
+        id: 2,
+        transport: TransportKind::Belt,
+        rate: Rate {
+            numerator: 1,
+            denominator: 2,
+        },
+    };
+    let site = Point { x: 3, y: 2 };
+    assert!(
+        crossing_options(&carriers, &job, &catalogs, &IndexSet::new()).contains_key(&(site, 3))
+    );
+    carriers[1].network = 1;
+    assert!(
+        !crossing_options(&carriers, &job, &catalogs, &IndexSet::new()).contains_key(&(site, 3))
+    );
+    carriers[1].network = 0;
+    carriers[1].rate = Rate {
+        numerator: 1,
+        denominator: 2,
+    };
+    assert!(
+        !crossing_options(&carriers, &job, &catalogs, &IndexSet::new()).contains_key(&(site, 3))
+    );
+}
+
+#[test]
+fn same_cell_share_and_bridge_are_separate_search_choices() {
+    let site = Point { x: 1, y: 1 };
+    let mut crossings = Crossings::new();
+    crossings.insert(
+        (site, 0),
+        Crossing {
+            position: site,
+            direction: 0,
+            component: "test-bridge".into(),
+            rotation: 0,
+            transport: TransportKind::Belt,
+            kind: LogisticsComponentKind::Bridge,
+            carrier_chain: 0,
+            carrier_network: 0,
+        },
+    );
+    let bounds = Bounds {
+        min_x: 0,
+        min_y: 1,
+        max_x: 2,
+        max_y: 1,
+    };
+    for (prefer_crossings, expected) in [(false, 0), (true, 1)] {
+        let result = shortest_path(
+            Point { x: 0, y: 1 },
+            Point { x: 2, y: 1 },
+            &IndexSet::new(),
+            bounds,
+            PathOptions {
+                first: Some(0),
+                last: Some(0),
+                work_budget: 100,
+                crossings: &crossings,
+                crossing_limit: 1,
+                prefer_crossings,
+                allow_zero_length: false,
+                cell_penalties: None,
+                edge_penalties: None,
+            },
+        )
+        .unwrap();
+        assert_eq!(result.status, "found");
+        assert_eq!(result.crossings.unwrap().len(), expected);
+    }
+}
+
 /// Explicit extraction/performance check; never part of normal routing or tests.
 #[test]
 #[ignore]
@@ -39,6 +141,7 @@ fn route_kernel_timing() {
                 work_budget: 100_000,
                 crossings: &crossings,
                 crossing_limit: 0,
+                prefer_crossings: false,
                 allow_zero_length: false,
                 cell_penalties: None,
                 edge_penalties: None,
@@ -151,6 +254,7 @@ fn reverse_negative_preserves_every_forward_reachable_crossing_walk() {
                         work_budget: 10000,
                         crossings: &crossings,
                         crossing_limit,
+                        prefer_crossings: false,
                         allow_zero_length: false,
                         cell_penalties: None,
                         edge_penalties: None,
@@ -199,6 +303,7 @@ fn sealed_goal_fails_locally_and_charges_reverse_work() {
             work_budget: 1000,
             crossings: &crossings,
             crossing_limit: 8,
+            prefer_crossings: false,
             allow_zero_length: false,
             cell_penalties: None,
             edge_penalties: None,
@@ -234,6 +339,7 @@ fn reverse_cutoff_still_runs_astar_and_preserves_directed_route_quality() {
             work_budget: 1200,
             crossings: &crossings,
             crossing_limit: 0,
+            prefer_crossings: false,
             allow_zero_length: false,
             cell_penalties: None,
             edge_penalties: None,
@@ -270,6 +376,7 @@ fn cell_penalties_select_a_distinct_equal_length_corridor() {
                 work_budget: 1_000,
                 crossings: &crossings,
                 crossing_limit: 0,
+                prefer_crossings: false,
                 allow_zero_length: false,
                 cell_penalties: penalties,
                 edge_penalties: None,
@@ -319,6 +426,7 @@ fn directed_edge_penalties_change_ordering_without_changing_legality() {
                 work_budget: 1_000,
                 crossings: &crossings,
                 crossing_limit: 0,
+                prefer_crossings: false,
                 allow_zero_length: false,
                 cell_penalties: None,
                 edge_penalties: penalties,

@@ -424,6 +424,16 @@ pub(crate) fn run_published(
 
     let loaded = aic_layout_gen::io::load_catalogs(catalog_root)?;
     let catalogs = Arc::new(loaded.catalogs);
+    crate::input::verify_training_artifact(
+        lower_training_output,
+        &catalogs.identity,
+        &lower_source_sha256,
+    )?;
+    crate::input::verify_training_artifact(
+        outer_training_output,
+        &catalogs.identity,
+        &outer_source_sha256,
+    )?;
     ensure!(
         catalogs.identity == collection.catalog_sha256,
         "aic-learning.hierarchical-generation-catalog: collection catalog differs"

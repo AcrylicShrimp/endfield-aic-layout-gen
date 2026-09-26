@@ -31,7 +31,7 @@ def changed_target(source, output, manifest):
     require(source.is_file() and not output.exists() and not manifest.exists(),
             "source missing or transformed output already exists")
     report = read(source)
-    require(report["schema"] == "aic-hierarchical-search-report-v7"
+    require(report["schema"] in ("aic-hierarchical-search-report-v7", "aic-hierarchical-search-report-v8")
             and report["status"] == "complete" and report["partition"] == "training"
             and report["root_records_retained"], "invalid source report")
     successful_roots = 0

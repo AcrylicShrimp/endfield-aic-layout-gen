@@ -9,7 +9,11 @@ use std::{
     time::Instant,
 };
 
-use aic_layout::{geometry::Bounds, physical::Problem, validation::Catalogs};
+use aic_layout::{
+    geometry::{Bounds, Point},
+    physical::{BridgeAxis, Problem},
+    validation::Catalogs,
+};
 use aic_pilot_native::constructive::{
     Command, Limits, Session,
     learning::{CommandKind, Config as DomainConfig},
@@ -42,7 +46,7 @@ use crate::{
 
 const CONFIG_SCHEMA: &str = "aic-hierarchical-search-config-v2";
 pub(crate) const PANEL_SCHEMA: &str = "aic-hierarchical-search-panel-v1";
-pub const REPORT_SCHEMA: &str = "aic-hierarchical-search-report-v7";
+pub const REPORT_SCHEMA: &str = "aic-hierarchical-search-report-v8";
 const MAX_INPUT_BYTES: u64 = 16 * 1024 * 1024;
 const ROUTE_ATTEMPT_SAMPLE_LIMIT: usize = 32;
 
@@ -163,6 +167,56 @@ struct ActionSummary {
     state_revision: u64,
     steps: Option<i64>,
     provenance: Option<Provenance>,
+    #[serde(default)]
+    bridge_uses: Vec<BridgeUseSummary>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct BridgeUseSummary {
+    position: Point,
+    component: String,
+    rotation: i64,
+    direction: usize,
+}
+
+fn bridge_uses<'a>(routes: impl Iterator<Item = &'a Candidate>) -> Vec<BridgeUseSummary> {
+    routes
+        .flat_map(|route| route.crossings.iter())
+        .map(|crossing| BridgeUseSummary {
+            position: crossing.position,
+            component: crossing.component.clone(),
+            rotation: crossing.rotation,
+            direction: crossing.direction,
+        })
+        .collect()
+}
+
+fn bridge_action_features<'a>(
+    after: &Session,
+    routes: impl Iterator<Item = &'a Candidate>,
+) -> [f32; 6] {
+    let mut values = [0.0; 6];
+    let mut count = 0usize;
+    for crossing in routes.flat_map(|route| route.crossings.iter()) {
+        let Some(bridge) = after.bridge_at(crossing.transport, crossing.position) else {
+            continue;
+        };
+        let (code, loads) = after.bridge_component_features(bridge);
+        let axis = crossing.direction % 2;
+        count += 1;
+        values[1] += code;
+        values[2] += loads[axis];
+        values[3] += loads[1 - axis];
+        values[4] += (axis == 0) as u8 as f32;
+        values[5] += crossing.rotation as f32 / 270.0;
+    }
+    if count > 0 {
+        values[0] = count as f32;
+        for value in &mut values[1..] {
+            *value /= count as f32;
+        }
+    }
+    values
 }
 
 /// Compact next-generation target emitted once per committed MCTS root.
@@ -222,6 +276,8 @@ pub(crate) struct Counters {
     route_candidate_limit: usize,
     route_search_limit: usize,
     route_work_budget: usize,
+    #[serde(default)]
+    route_resource_limit: usize,
     route_frontier_exhausted: usize,
     route_no_compatible_endpoints: usize,
     #[serde(default, skip_deserializing, skip_serializing_if = "Vec::is_empty")]
@@ -680,11 +736,7 @@ impl Factory<'_> {
             .into_iter()
             .filter(|partial| partial.routes.len() == connections.len())
         {
-            let key = partial
-                .routes
-                .iter()
-                .map(|route| (route.connection.clone(), route.cells.clone()))
-                .collect::<Vec<_>>();
+            let key = network_witness_key(&partial.routes);
             if !semantic.insert(key) {
                 continue;
             }
@@ -820,6 +872,7 @@ fn record_route_report(
         RouteTermination::CandidateLimit => counters.route_candidate_limit += 1,
         RouteTermination::SearchLimit => counters.route_search_limit += 1,
         RouteTermination::WorkBudget => counters.route_work_budget += 1,
+        RouteTermination::ResourceLimit => counters.route_resource_limit += 1,
         RouteTermination::FrontierExhausted => counters.route_frontier_exhausted += 1,
         RouteTermination::NoCompatibleEndpoints => {
             counters.route_no_compatible_endpoints += 1;
@@ -906,6 +959,7 @@ impl MacroAction {
                 state_revision: revision,
                 steps: None,
                 provenance: None,
+                bridge_uses: vec![],
             },
             Self::Command(Command::PlaceTerminal { terminal, .. }) => ActionSummary {
                 kind: "place-terminal".into(),
@@ -913,6 +967,7 @@ impl MacroAction {
                 state_revision: revision,
                 steps: None,
                 provenance: None,
+                bridge_uses: vec![],
             },
             Self::Command(_) => unreachable!("macro command generator exposes only placements"),
             Self::Route(candidate) => ActionSummary {
@@ -921,6 +976,7 @@ impl MacroAction {
                 state_revision: candidate.state_revision,
                 steps: Some(candidate.steps),
                 provenance: Some(candidate.provenance.clone()),
+                bridge_uses: bridge_uses(std::iter::once(candidate)),
             },
             Self::Network(candidate) => ActionSummary {
                 kind: "network".into(),
@@ -928,6 +984,7 @@ impl MacroAction {
                 state_revision: candidate.state_revision,
                 steps: Some(candidate.steps),
                 provenance: None,
+                bridge_uses: bridge_uses(candidate.routes.iter()),
             },
         }
     }
@@ -1017,6 +1074,8 @@ impl MacroAction {
                         candidate.cells.iter().map(|point| point.y).max().unwrap() as f32 / scale;
                 }
                 row[22] = candidate.cells.len() as f32 / (bounds.width() * bounds.height()) as f32;
+                row[24..30]
+                    .copy_from_slice(&bridge_action_features(after, std::iter::once(candidate)));
             }
             Self::Network(candidate) => {
                 row[2] = 1.0;
@@ -1079,6 +1138,8 @@ impl MacroAction {
                     row[21] = cells.iter().map(|point| point.y).max().unwrap() as f32 / scale;
                 }
                 row[22] = cells.len() as f32 / (bounds.width() * bounds.height()) as f32;
+                row[24..30]
+                    .copy_from_slice(&bridge_action_features(after, candidate.routes.iter()));
             }
         }
         row
@@ -1127,6 +1188,30 @@ fn placement_anchor_score(command: &Command, session: &Session, bounds: Bounds) 
         })
         .sum::<f64>();
     -center_distance * 0.08 - connected_distance * 0.12
+}
+
+type NetworkWitnessKey = Vec<(String, Vec<Point>, Vec<(Point, String, i64, BridgeAxis)>)>;
+
+fn network_witness_key(routes: &[Candidate]) -> NetworkWitnessKey {
+    routes
+        .iter()
+        .map(|route| {
+            let bridges = route
+                .commands
+                .iter()
+                .filter_map(|command| match command {
+                    Command::ReserveBridge {
+                        position,
+                        component,
+                        rotation,
+                        crossed_axis,
+                    } => Some((*position, component.clone(), *rotation, *crossed_axis)),
+                    _ => None,
+                })
+                .collect();
+            (route.connection.clone(), route.cells.clone(), bridges)
+        })
+        .collect()
 }
 
 fn session_network_identity(
@@ -1278,6 +1363,16 @@ fn collect_and_publish(
     let outer = OuterModel::load(&outer_config.model, &outer_order, &outer_values, device)?;
     let loaded = aic_layout_gen::io::load_catalogs(catalog_root)?;
     let catalogs = Arc::new(loaded.catalogs);
+    crate::input::verify_training_artifact(
+        lower_training_output,
+        &catalogs.identity,
+        &checkpoint_sha256,
+    )?;
+    crate::input::verify_training_artifact(
+        outer_training_output,
+        &catalogs.identity,
+        &outer_checkpoint_sha256,
+    )?;
     let factory = Factory::new(
         &guidance,
         &checkpoint_sha256,
@@ -2717,6 +2812,7 @@ mod tests {
             target_port: None,
             cells: Vec::new(),
             commands: vec![Command::Connect],
+            crossings: vec![],
             steps: 1,
             turns: 0,
             expanded: 10,
@@ -2726,6 +2822,20 @@ mod tests {
             guidance_uncertainty: Some(0.1),
             provenance: Provenance::Anchor,
         };
+        let mut crossing_route = route.clone();
+        crossing_route.commands.insert(
+            0,
+            Command::ReserveBridge {
+                position: Point { x: 6, y: 6 },
+                component: "log-connector".into(),
+                rotation: 0,
+                crossed_axis: BridgeAxis::Horizontal,
+            },
+        );
+        assert_ne!(
+            network_witness_key(&[route.clone(), route.clone()]),
+            network_witness_key(&[route.clone(), crossing_route]),
+        );
         let mut same_physical_route = route.clone();
         same_physical_route.id = 2;
         same_physical_route.expanded = 100;
@@ -2793,6 +2903,7 @@ mod tests {
             work_per_search: 10_000,
             max_expanded: 100_000,
             overlap_penalty: 8,
+            max_crossings_per_route: 0,
         };
         let config = Config {
             schema: CONFIG_SCHEMA.into(),

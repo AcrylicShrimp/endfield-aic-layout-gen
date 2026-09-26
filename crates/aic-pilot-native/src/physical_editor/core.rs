@@ -1037,6 +1037,7 @@ pub(crate) fn repair_pending_validated_until(
                 work_budget: remaining,
                 crossings: &IndexMap::new(),
                 crossing_limit: 0,
+                prefer_crossings: false,
                 allow_zero_length: edge.zero_length,
                 cell_penalties: None,
                 edge_penalties: None,

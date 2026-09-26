@@ -5,16 +5,17 @@ use std::{collections::BTreeSet, sync::Arc};
 use aic_layout::{
     facilities::FacilityPortDirection,
     geometry::{Bounds, Point, layer},
+    physical::{Bridge, BridgeAxis},
     projection::rotate,
 };
 use serde::{Deserialize, Serialize};
 
 use super::{Command, Diagnostic, Direction, Session, error};
 
-pub const SCHEMA: &str = "aic-constructive-learning-v2";
+pub const SCHEMA: &str = "aic-constructive-learning-v3";
 pub const ENTITY_FEATURES: usize = 18;
 pub const RELATION_FEATURES: usize = 6;
-pub const SPATIAL_FEATURES: usize = 12;
+pub const SPATIAL_FEATURES: usize = 14;
 pub const GLOBAL_FEATURES: usize = 8;
 pub const FOCUS_FEATURES: usize = 12;
 pub const CHOICE_FEATURES: usize = 22;
@@ -41,6 +42,8 @@ pub struct Input {
     pub global_features: [f32; GLOBAL_FEATURES],
     pub focus_features: [f32; FOCUS_FEATURES],
     pub focus_entity: i64,
+    /// Exact installed components supplement the fixed-size numerical rows.
+    pub bridge_resources: Vec<Bridge>,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
@@ -1370,6 +1373,32 @@ impl Input {
                 );
             }
         }
+        let mut bridge_resources = session.bridges.values().cloned().collect::<Vec<_>>();
+        bridge_resources.sort_by(|left, right| left.id.cmp(&right.id));
+        for bridge in &bridge_resources {
+            let (component_code, loads) = session.bridge_component_features(bridge);
+            for (axis, channel) in bridge.channels.iter().enumerate() {
+                let kind = match channel.axis {
+                    BridgeAxis::Horizontal => 9,
+                    BridgeAxis::Vertical => 10,
+                };
+                for connection in &channel.connections {
+                    let owner = session.connections[connection] + connection_offset;
+                    push_spatial(
+                        &mut spatial_features,
+                        &mut spatial_owners,
+                        bridge.position,
+                        scale,
+                        kind,
+                        owner as i64,
+                    );
+                    let row = spatial_features.last_mut().expect("bridge row was pushed");
+                    row[11] = component_code;
+                    row[12] = loads[axis];
+                    row[13] = bridge.rotation as f32 / 270.0;
+                }
+            }
+        }
         for (terminal, pose) in session.terminal_poses.iter().enumerate() {
             let Some(pose) = pose else { continue };
             push_spatial(
@@ -1489,6 +1518,7 @@ impl Input {
             global_features,
             focus_features,
             focus_entity,
+            bridge_resources,
         }
     }
 }

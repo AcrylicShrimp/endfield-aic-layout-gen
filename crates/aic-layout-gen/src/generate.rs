@@ -400,6 +400,7 @@ impl<'a> Generator<'a> {
                         work_budget: remaining.min(c.route_work_per_call),
                         crossings: &sites,
                         crossing_limit: c.max_bridges_per_route,
+                        prefer_crossings: false,
                         allow_zero_length: true,
                         cell_penalties: None,
                         edge_penalties: None,
