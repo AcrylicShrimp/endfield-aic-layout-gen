@@ -329,6 +329,17 @@ Any promising combination needs a fresh on-policy comparison and an untouched
 held-out gate. Audit target concentration across all completed collections
 before deciding whether a target intervention is warranted.
 
+The integrated H12/H12 candidate subsequently passed all four prespecified
+held-out checks, but the same-search diagnostic did not show a consistent
+benefit from its learned weights. After closing out the held-out stage, the
+same six missing-cell evaluations may be run as a post-selection mechanism
+diagnostic. Freeze the already evaluated final checkpoints, root seed,
+diagnostic panel, and H12 search configuration. Use the original two-by-two
+lower/outer design and success/retention masks; make no further candidate
+selection or production claim from this reused diagnostic. This resolves
+whether the H12-trained lower model, outer model, or their interaction explains
+the inconsistent same-search result while leaving the held-out verdict fixed.
+
 ## Continuity and closeout
 
 Reuse the existing CLI search harness, panel generator, generation trainer,

@@ -1,4 +1,4 @@
-"""Separate final lower- and outer-model effects after a failed primary gate."""
+"""Separate final lower- and outer-model effects on the fixed diagnostic."""
 
 import argparse
 from pathlib import Path
@@ -12,6 +12,22 @@ from ppo_harness_state import read, sha, write
 
 
 NEW_CELLS = (("h6", "h12"), ("h12", "h6"))
+
+
+def diagnostic_trigger(parent, primary):
+    if not primary["passes_primary_gate"]:
+        return "failed-primary", None
+    heldout = parent / "heldout-check"
+    protocol = read(heldout / "protocol.json")
+    progress = read(heldout / "progress.json")
+    summary = read(heldout / "summary.json")
+    require(progress["status"] == "complete"
+            and len(progress["records"]) == protocol["planned_records"] == 21
+            and summary["protocol_sha256"] == sha(heldout / "protocol.json")
+            and summary["progress_sha256"] == sha(heldout / "progress.json")
+            and summary["passes_heldout_gate"],
+            "passed held-out closeout required")
+    return "passed-heldout", sha(heldout / "summary.json")
 
 
 def pair_models(parent, stream, lower_arm, outer_arm):
@@ -37,10 +53,10 @@ def prepare(parent):
     require(parent_progress["status"] == "complete"
             and len(parent_progress["records"]) == parent_protocol["planned_records"]
             and primary["progress_sha256"] == sha(parent / "progress.json")
-            and not primary["passes_primary_gate"]
             and observer["status"] == "finished"
             and observer["exported_records"] == parent_protocol["planned_records"],
-            "failed primary gate and tracking closeout required")
+            "parent and tracking closeout required")
+    trigger, heldout_summary_sha256 = diagnostic_trigger(parent, primary)
     cross = parent / "lower-outer-cross"
     require(not cross.exists(), "cross output already exists")
     models = {}
@@ -70,6 +86,8 @@ def prepare(parent):
         "parent_protocol_sha256": sha(parent / "protocol.json"),
         "parent_progress_sha256": sha(parent / "progress.json"),
         "primary_summary_sha256": sha(parent / "primary-summary.json"),
+        "trigger": trigger,
+        "heldout_summary_sha256": heldout_summary_sha256,
         "binary_sha256": sha(BINARY),
         "panel_sha256": sha(parent / "panels/lower-diagnostic.json"),
         "search_sha256": sha(search_config(parent, "h12")),
@@ -89,12 +107,16 @@ def validate(parent):
     cross = parent / "lower-outer-cross"
     protocol = read(cross / "protocol.json")
     progress = read(cross / "progress.json")
+    trigger, heldout_summary_sha256 = diagnostic_trigger(
+        parent, read(parent / "primary-summary.json"))
     require(parent_progress["status"] == "complete"
             and progress["protocol_sha256"] == sha(cross / "protocol.json")
             and protocol["runner_sha256"] == sha(Path(__file__))
             and protocol["parent_protocol_sha256"] == sha(parent / "protocol.json")
             and protocol["parent_progress_sha256"] == sha(parent / "progress.json")
             and protocol["primary_summary_sha256"] == sha(parent / "primary-summary.json")
+            and protocol["trigger"] == trigger
+            and protocol["heldout_summary_sha256"] == heldout_summary_sha256
             and protocol["binary_sha256"] == sha(BINARY)
             and protocol["panel_sha256"] == sha(parent / "panels/lower-diagnostic.json")
             and protocol["search_sha256"] == sha(search_config(parent, "h12"))
