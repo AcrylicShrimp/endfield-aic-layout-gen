@@ -95,6 +95,7 @@
 !/hierarchical-policy-stability/smoke-curriculum-b.json
 !/hierarchical-policy-stability/smoke-curriculum-c.json
 !/hierarchical-policy-stability/smoke-curriculum-d.json
+!/hierarchical-repair/fixture.json
 !/hierarchical-route-candidates/panel.json
 !/hierarchical-route-guidance/config.json
 !/hierarchical-route-guidance/evaluation-panel.json

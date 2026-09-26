@@ -19,9 +19,9 @@ use aic_pilot_native::constructive::{
     learning::{CommandKind, Config as DomainConfig},
     routing_candidates::{
         AllowanceStop, AllowanceUsage, Candidate, Config as CandidateConfig, NetworkCandidate,
-        Provenance, Report as RouteReport, Request, RequestAllowance, RequestFailure,
-        RouteReadiness, Termination as RouteTermination, WorkKind,
-        network_shared_cells_with_allowance,
+        Provenance, RepairCandidate, RepairRequest, Report as RouteReport, Request,
+        RequestAllowance, RequestFailure, RouteReadiness, Termination as RouteTermination,
+        WorkKind, network_shared_cells_with_allowance,
     },
 };
 use aic_torch::tch::{self, Device, Tensor};
@@ -105,6 +105,10 @@ pub struct Config {
     pub bounds: Bounds,
     pub extension_lengths: Vec<i64>,
     pub candidate: CandidateConfig,
+    /// Zero disables repair. A positive value authorizes removal of at most
+    /// this many currently committed routes in one atomic transaction.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub repair_max_removed: usize,
     pub cpu_threads: usize,
     pub placement_page: usize,
     pub beam_width: usize,
@@ -119,6 +123,10 @@ pub struct Config {
     pub anchor_prior_mass: f64,
     #[serde(default = "default_compiled_inference")]
     pub compiled_inference: bool,
+}
+
+fn is_zero(value: &usize) -> bool {
+    *value == 0
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -160,6 +168,10 @@ pub(crate) enum MacroAction {
     Command(Command),
     Route(Candidate),
     Network(NetworkCandidate),
+    Repair {
+        request: RepairRequest,
+        candidate: RepairCandidate,
+    },
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -171,6 +183,8 @@ struct ActionSummary {
     provenance: Option<Provenance>,
     #[serde(default)]
     bridge_uses: Vec<BridgeUseSummary>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    removed_connections: Vec<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -419,6 +433,7 @@ pub(crate) struct Factory<'a> {
     device: Device,
     domain: DomainConfig,
     candidate: &'a CandidateConfig,
+    repair_max_removed: usize,
     placement_page: usize,
     anchor_prior_mass: f64,
     pool: rayon::ThreadPool,
@@ -454,12 +469,17 @@ struct ActionScores {
 }
 
 impl Factory<'_> {
+    pub(crate) fn apply_action(&self, action: &MacroAction, session: &Session) -> Result<Session> {
+        action.apply(session, self.candidate, self.repair_max_removed)
+    }
+
     pub(crate) fn new<'a>(
         guidance: &'a GuidanceModel,
         guidance_version: &'a str,
         device: Device,
         domain: DomainConfig,
         candidate: &'a CandidateConfig,
+        repair_max_removed: usize,
         placement_page: usize,
         cpu_threads: usize,
         anchor_prior_mass: f64,
@@ -477,6 +497,7 @@ impl Factory<'_> {
             device,
             domain,
             candidate,
+            repair_max_removed,
             placement_page,
             anchor_prior_mass,
             pool: rayon::ThreadPoolBuilder::new()
@@ -1896,13 +1917,42 @@ impl MacroAction {
                     .position(|connection| connection.id == route.connection)
                     .map(|index| problem.blocks.len() + problem.terminals.len() + index)
             }),
+            Self::Repair { request, .. } => request.selected_connections.first().and_then(|id| {
+                problem
+                    .connections
+                    .iter()
+                    .position(|connection| connection.id == *id)
+                    .map(|index| problem.blocks.len() + problem.terminals.len() + index)
+            }),
         };
         index.map(|index| index as i64).context(
             "aic-learning.hierarchical-action-entity: action entity is absent from problem",
         )
     }
 
-    pub(crate) fn apply(&self, session: &Session) -> Result<Session> {
+    /// Reconstruct repair authority from the live state and trusted search
+    /// configuration before accepting an action from a serialized record.
+    pub(crate) fn apply(
+        &self,
+        session: &Session,
+        candidate_config: &CandidateConfig,
+        repair_max_removed: usize,
+    ) -> Result<Session> {
+        if let Self::Repair { request, candidate } = self {
+            let trusted = session.repair_request_for_policy(
+                &request.selected_connections,
+                repair_max_removed,
+                candidate_config,
+            )?;
+            ensure!(
+                trusted == *request,
+                "aic-learning.hierarchical-repair-authority: serialized repair request differs from trusted state and policy"
+            );
+            return session
+                .repaired_candidate(&trusted, candidate)
+                .map(|(draft, _)| draft)
+                .map_err(anyhow::Error::new);
+        }
         let mut fork = session.clone();
         match self {
             Self::Command(command) => {
@@ -1921,6 +1971,7 @@ impl MacroAction {
                 fork.apply_network_candidate(candidate)
                     .map_err(anyhow::Error::new)?;
             }
+            Self::Repair { .. } => unreachable!("repair was applied transactionally above"),
         }
         ensure!(
             fork.observe().active.is_none(),
@@ -1938,6 +1989,7 @@ impl MacroAction {
                 steps: None,
                 provenance: None,
                 bridge_uses: vec![],
+                removed_connections: vec![],
             },
             Self::Command(Command::PlaceTerminal { terminal, .. }) => ActionSummary {
                 kind: "place-terminal".into(),
@@ -1946,6 +1998,7 @@ impl MacroAction {
                 steps: None,
                 provenance: None,
                 bridge_uses: vec![],
+                removed_connections: vec![],
             },
             Self::Command(_) => unreachable!("macro command generator exposes only placements"),
             Self::Route(candidate) => ActionSummary {
@@ -1955,6 +2008,7 @@ impl MacroAction {
                 steps: Some(candidate.steps),
                 provenance: Some(candidate.provenance.clone()),
                 bridge_uses: bridge_uses(std::iter::once(candidate)),
+                removed_connections: vec![],
             },
             Self::Network(candidate) => ActionSummary {
                 kind: "network".into(),
@@ -1963,6 +2017,16 @@ impl MacroAction {
                 steps: Some(candidate.steps),
                 provenance: None,
                 bridge_uses: bridge_uses(candidate.routes.iter()),
+                removed_connections: vec![],
+            },
+            Self::Repair { request, candidate } => ActionSummary {
+                kind: "repair".into(),
+                entity: request.selected_connections.join(","),
+                state_revision: request.state_revision,
+                steps: Some(candidate.replacements.iter().map(|route| route.steps).sum()),
+                provenance: None,
+                bridge_uses: bridge_uses(candidate.replacements.iter()),
+                removed_connections: candidate.removed.clone(),
             },
         }
     }
@@ -1987,6 +2051,14 @@ impl MacroAction {
                     / candidate.routes.len() as f64;
                 progress + success + candidate.shared_cells as f64 * 0.002
                     - candidate.steps as f64 * 0.001
+            }
+            Self::Repair { candidate, .. } => {
+                let steps = candidate
+                    .replacements
+                    .iter()
+                    .map(|route| route.steps)
+                    .sum::<i64>();
+                progress + 0.5 - steps as f64 * 0.001 - candidate.removed.len() as f64 * 0.02
             }
         }
     }
@@ -2118,6 +2190,84 @@ impl MacroAction {
                 row[22] = cells.len() as f32 / (bounds.width() * bounds.height()) as f32;
                 row[24..30]
                     .copy_from_slice(&bridge_action_features(after, candidate.routes.iter()));
+            }
+            Self::Repair { request, candidate } => {
+                // The route-kind channel uses 2 for a transactional repair;
+                // ordinary route and network witnesses use 1.
+                row[2] = 2.0;
+                let connection = request
+                    .selected_connections
+                    .first()
+                    .and_then(|id| {
+                        before
+                            .problem()
+                            .connections
+                            .iter()
+                            .position(|connection| connection.id == *id)
+                    })
+                    .unwrap_or(0);
+                row[6] = connection as f32 / before.problem().connections.len().max(1) as f32;
+                let steps = candidate
+                    .replacements
+                    .iter()
+                    .map(|route| route.steps)
+                    .sum::<i64>();
+                row[7] = steps as f32 / scale;
+                row[8] = candidate.removed.len() as f32
+                    / before.problem().connections.len().max(1) as f32;
+                let cells = candidate
+                    .replacements
+                    .iter()
+                    .flat_map(|route| route.cells.iter().copied())
+                    .collect::<BTreeSet<_>>();
+                row[9] = candidate.expanded as f32 / 100_000.0;
+                row[10] = (candidate
+                    .replacements
+                    .iter()
+                    .map(|route| route.learned_cost)
+                    .sum::<u64>() as f32)
+                    .ln_1p()
+                    / 16.0;
+                row[11] = candidate
+                    .replacements
+                    .iter()
+                    .map(|route| route.predicted_success.unwrap_or(0.5))
+                    .sum::<f32>()
+                    / candidate.replacements.len().max(1) as f32;
+                row[12] = candidate
+                    .replacements
+                    .iter()
+                    .map(|route| route.guidance_uncertainty.unwrap_or(1.0))
+                    .sum::<f32>()
+                    / candidate.replacements.len().max(1) as f32;
+                for route in &candidate.replacements {
+                    match route.provenance {
+                        Provenance::Anchor => row[13] = 1.0,
+                        Provenance::Guided { .. } => row[14] = 1.0,
+                        Provenance::Diversified { .. } => row[15] = 1.0,
+                    }
+                }
+                row[16] = candidate
+                    .replacements
+                    .iter()
+                    .any(|route| route.source_port.is_some()) as u8
+                    as f32;
+                row[17] = candidate
+                    .replacements
+                    .iter()
+                    .any(|route| route.target_port.is_some()) as u8
+                    as f32;
+                if let Some(min_x) = cells.iter().map(|point| point.x).min() {
+                    row[18] = min_x as f32 / scale;
+                    row[19] = cells.iter().map(|point| point.x).max().unwrap() as f32 / scale;
+                    row[20] = cells.iter().map(|point| point.y).min().unwrap() as f32 / scale;
+                    row[21] = cells.iter().map(|point| point.y).max().unwrap() as f32 / scale;
+                }
+                row[22] = cells.len() as f32 / (bounds.width() * bounds.height()) as f32;
+                row[24..30].copy_from_slice(&bridge_action_features(
+                    after,
+                    candidate.replacements.iter(),
+                ));
             }
         }
         row
@@ -2452,6 +2602,7 @@ fn collect_and_publish(
             extension_lengths: config.extension_lengths.clone(),
         },
         &config.candidate,
+        config.repair_max_removed,
         config.placement_page,
         config.cpu_threads,
         config.anchor_prior_mass,
@@ -2680,7 +2831,7 @@ fn beam_search(root: Session, factory: &Factory<'_>, config: &Config) -> Result<
                 }
             }
             for action in batch.actions {
-                let child = action.apply(session)?;
+                let child = action.apply(session, &config.candidate, config.repair_max_removed)?;
                 let mut child_trace = trace.clone();
                 child_trace.push(action.summary(session.revision()));
                 if state_value(&child, config.bounds) > state_value(&best.0, config.bounds) {
@@ -2867,7 +3018,7 @@ fn mcts_search(
             later_fully_validated: false,
             later_termination: SearchTermination::MoveBudgetExhausted,
         });
-        working = action.apply(&working)?;
+        working = action.apply(&working, &config.candidate, config.repair_max_removed)?;
         trace.push(action.summary(revision));
     }
     let final_observation = working.observe();
@@ -3169,6 +3320,19 @@ fn physical_action_identity(action: &MacroAction) -> Result<Vec<u8>> {
                 .collect::<Vec<_>>();
             Ok(serde_json::to_vec(&("network", commands))?)
         }
+        MacroAction::Repair { request, candidate } => {
+            let commands = candidate
+                .replacements
+                .iter()
+                .map(|route| &route.commands)
+                .collect::<Vec<_>>();
+            Ok(serde_json::to_vec(&(
+                "repair",
+                &request.state_sha256,
+                &candidate.removed,
+                commands,
+            ))?)
+        }
     }
 }
 
@@ -3231,7 +3395,11 @@ fn simulate(
         }
         let child_session = nodes[current].actions.as_ref().unwrap()[edge]
             .action
-            .apply(&nodes[current].session)?;
+            .apply(
+                &nodes[current].session,
+                &config.candidate,
+                config.repair_max_removed,
+            )?;
         let child = nodes.len();
         nodes.push(Node {
             session: child_session,
@@ -3308,7 +3476,13 @@ fn ensure_node_expanded(
     }
     let children = actions
         .iter()
-        .map(|action| action.apply(&nodes[node].session))
+        .map(|action| {
+            action.apply(
+                &nodes[node].session,
+                factory.candidate,
+                factory.repair_max_removed,
+            )
+        })
         .collect::<Result<Vec<_>>>()?;
     let scores = factory.score_actions(&nodes[node].session, &actions, &children)?;
     // Expansion already paid for and natively applied every exposed macro.
@@ -3377,7 +3551,7 @@ fn maybe_widen_placements(
     actions.extend(additional.iter().cloned());
     let children = actions
         .iter()
-        .map(|action| action.apply(&session))
+        .map(|action| action.apply(&session, factory.candidate, factory.repair_max_removed))
         .collect::<Result<Vec<_>>>()?;
     let scores = factory.score_actions(&session, &actions, &children)?;
     let existing_count = existing.len();
@@ -3577,6 +3751,7 @@ fn validate_config(config: &Config) -> Result<()> {
     ensure!(
         config.schema == CONFIG_SCHEMA
             && config.bounds == config.candidate.bounds
+            && config.repair_max_removed <= 32768
             && !config.extension_lengths.is_empty()
             && config
                 .extension_lengths
@@ -3889,6 +4064,87 @@ mod tests {
     }
 
     #[test]
+    fn repair_macro_replays_one_complete_native_transaction() -> Result<()> {
+        let fixture: Value = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-repair/fixture.json"
+        ))?;
+        let mut session = Session::new(
+            serde_json::from_value(fixture["problem"].clone())?,
+            crate::constructive::test_support::catalogs(),
+            serde_json::from_value(fixture["limits"].clone())?,
+        )?;
+        for command in fixture["prefix"].as_array().expect("fixture prefix") {
+            assert!(
+                session
+                    .step(serde_json::from_value(command.clone())?)
+                    .accepted
+            );
+        }
+        let original = session.observe();
+        let config: CandidateConfig = serde_json::from_value(fixture["candidate"].clone())?;
+        let request = session.repair_request(&["second".into()], &["first".into()], 1, &config)?;
+        let mut allowance = RequestAllowance::new(request.allowance_caps.clone());
+        let (mut draft, reserved_bytes) = session.prepare_repair_draft_with_allowance(
+            &request,
+            &["first".into()],
+            &mut allowance,
+        )?;
+        allowance.release_peak(reserved_bytes);
+        let next = draft
+            .route_candidates(
+                &Request {
+                    state_revision: draft.revision(),
+                    connection: "second".into(),
+                },
+                &config,
+            )?
+            .candidates
+            .remove(0);
+        draft.apply_route_candidate(&next)?;
+        let restored = draft
+            .route_candidates(
+                &Request {
+                    state_revision: draft.revision(),
+                    connection: "first".into(),
+                },
+                &config,
+            )?
+            .candidates
+            .remove(0);
+        let action = MacroAction::Repair {
+            request: request.clone(),
+            candidate: RepairCandidate {
+                schema: aic_pilot_native::constructive::routing_candidates::REPAIR_CANDIDATE_SCHEMA
+                    .into(),
+                state_revision: request.state_revision,
+                removed: vec!["first".into()],
+                replacements: vec![next, restored],
+                expanded: 0,
+            },
+        };
+        let child = action.apply(&session, &config, 1)?;
+        assert!(child.observe().fully_validated);
+        let mut tampered = action.clone();
+        if let MacroAction::Repair { request, .. } = &mut tampered {
+            request.max_removed = 2;
+        }
+        assert!(tampered.apply(&session, &config, 1).is_err());
+        assert!(action.apply(&session, &config, 0).is_err());
+        assert_eq!(session.observe(), original);
+        let decoded: MacroAction = serde_json::from_value(serde_json::to_value(&action)?)?;
+        assert_eq!(
+            physical_action_identity(&decoded)?,
+            physical_action_identity(&action)?
+        );
+        assert_eq!(
+            action.summary(session.revision()).removed_connections,
+            vec!["first"]
+        );
+        assert_eq!(action.features(&session, &child, config.bounds)[2], 2.0);
+        Ok(())
+    }
+
+    #[test]
     fn zero_candidate_route_cutoffs_reach_outer_diagnostic() -> Result<()> {
         let _guard = crate::TORCH_TEST.lock().unwrap();
         let panel: Value = serde_json::from_str(include_str!(
@@ -3949,6 +4205,7 @@ mod tests {
                     extension_lengths: vec![1, 2, 4],
                 },
                 &candidate,
+                0,
                 4,
                 1,
                 0.0,
@@ -4019,6 +4276,7 @@ mod tests {
                 extension_lengths: vec![1, 2, 4],
             },
             &candidate,
+            0,
             4,
             1,
             0.0,
@@ -4434,6 +4692,7 @@ mod tests {
             bounds,
             extension_lengths: vec![1, 2, 4],
             candidate: candidate.clone(),
+            repair_max_removed: 0,
             cpu_threads: 1,
             placement_page: 4,
             beam_width: 1,

@@ -191,6 +191,7 @@ pub fn run(
         device,
         domain.clone(),
         &config.search.candidate,
+        config.search.repair_max_removed,
         config.search.placement_page,
         config.search.cpu_threads,
         config.search.anchor_prior_mass,
@@ -375,7 +376,7 @@ fn collect_panel(
                 .map(|action| action.entity_index(session.problem()))
                 .collect::<Result<Vec<_>>>()?;
             for action in &actions {
-                let child = action.apply(&session)?;
+                let child = factory.apply_action(action, &session)?;
                 features.push(action.features(&session, &child, config.search.bounds));
                 outcomes.push(best_outcome(
                     &child,
@@ -484,7 +485,7 @@ fn best_outcome(
         turns: session.metrics().map_or(0, |metrics| metrics.turns),
     };
     for action in actions.into_iter().take(64) {
-        let child = action.apply(session)?;
+        let child = factory.apply_action(&action, session)?;
         let outcome = best_outcome(&child, factory, bounds, horizon - 1, moves + 1)?;
         if utility(outcome, bounds) > utility(best, bounds) {
             best = outcome;

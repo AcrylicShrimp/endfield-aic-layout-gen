@@ -23,6 +23,9 @@ use serde::{Deserialize, Serialize};
 
 use super::{Command, Diagnostic, Direction, ReplayMeter, ReplayWork, Session, Step, error};
 
+mod repair;
+pub use repair::{REPAIR_CANDIDATE_SCHEMA, RepairCandidate, RepairRequest};
+
 pub const SCHEMA: &str = "aic-constructive-route-candidates-v4";
 pub const GUIDANCE_SCHEMA: &str = "aic-constructive-route-guidance-v2";
 pub const GUIDANCE_GRID_CHANNELS: usize = 16;
@@ -1576,7 +1579,12 @@ impl Session {
                         continue;
                     }
                     let Some(cells) = result.cells else {
-                        if anchor && result.status == "no-path" {
+                        if anchor
+                            && matches!(
+                                result.status,
+                                "no-path" | "blocked-endpoint" | "same-endpoint"
+                            )
+                        {
                             anchor_no_path += 1;
                         }
                         continue;

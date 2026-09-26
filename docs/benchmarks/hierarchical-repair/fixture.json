@@ -1,0 +1,384 @@
+{
+  "allowed_removals": [
+    "first"
+  ],
+  "candidate": {
+    "bounds": {
+      "maxX": 20,
+      "maxY": 20,
+      "minX": 0,
+      "minY": 0
+    },
+    "max_candidates": 3,
+    "max_crossings_per_route": 441,
+    "max_expanded": 400000,
+    "max_searches": 512,
+    "overlap_penalty": 8,
+    "request_allowance": {
+      "blocked_visits": 10000000,
+      "catalog_visits": 10000000,
+      "copied_bytes": 536870912,
+      "deadline_ms": 60000,
+      "endpoint_visits": 1000000,
+      "expansions": 100000000,
+      "frontier_entries": 10000000,
+      "graph_rows": 10000000,
+      "inference_elements": 100000000,
+      "max_candidates": 64,
+      "max_inference_batch": 8,
+      "max_variants": 64,
+      "peak_live_bytes": 1073741824,
+      "published_bytes": 67108864,
+      "raster_cells": 10000000,
+      "replay_route_cells": 50000000,
+      "replay_users": 10000000,
+      "route_cells": 50000000,
+      "routing_scans": 100000000,
+      "validation_records": 10000000
+    },
+    "work_per_search": 10000
+  },
+  "first_route_cells": [
+    {
+      "x": 5,
+      "y": 2
+    },
+    {
+      "x": 5,
+      "y": 1
+    },
+    {
+      "x": 6,
+      "y": 1
+    },
+    {
+      "x": 7,
+      "y": 1
+    },
+    {
+      "x": 8,
+      "y": 1
+    },
+    {
+      "x": 9,
+      "y": 1
+    },
+    {
+      "x": 10,
+      "y": 1
+    },
+    {
+      "x": 10,
+      "y": 2
+    },
+    {
+      "x": 10,
+      "y": 3
+    },
+    {
+      "x": 10,
+      "y": 4
+    },
+    {
+      "x": 10,
+      "y": 5
+    },
+    {
+      "x": 11,
+      "y": 5
+    },
+    {
+      "x": 12,
+      "y": 5
+    },
+    {
+      "x": 13,
+      "y": 5
+    },
+    {
+      "x": 13,
+      "y": 6
+    },
+    {
+      "x": 13,
+      "y": 7
+    },
+    {
+      "x": 13,
+      "y": 8
+    },
+    {
+      "x": 13,
+      "y": 9
+    },
+    {
+      "x": 13,
+      "y": 10
+    },
+    {
+      "x": 13,
+      "y": 11
+    },
+    {
+      "x": 13,
+      "y": 12
+    },
+    {
+      "x": 14,
+      "y": 12
+    },
+    {
+      "x": 15,
+      "y": 12
+    },
+    {
+      "x": 15,
+      "y": 13
+    },
+    {
+      "x": 15,
+      "y": 14
+    },
+    {
+      "x": 15,
+      "y": 15
+    },
+    {
+      "x": 15,
+      "y": 16
+    },
+    {
+      "x": 15,
+      "y": 17
+    },
+    {
+      "x": 16,
+      "y": 17
+    },
+    {
+      "x": 16,
+      "y": 16
+    }
+  ],
+  "limits": {
+    "max_extension": 32,
+    "max_turns": 10000
+  },
+  "prefix": [
+    {
+      "block": "a-src-0",
+      "kind": "place",
+      "position": {
+        "x": 3,
+        "y": 3
+      },
+      "rotation": 0
+    },
+    {
+      "block": "a-dst-1",
+      "kind": "place",
+      "position": {
+        "x": 16,
+        "y": 13
+      },
+      "rotation": 0
+    },
+    {
+      "block": "b-src-2",
+      "kind": "place",
+      "position": {
+        "x": 14,
+        "y": 6
+      },
+      "rotation": 0
+    },
+    {
+      "block": "b-dst-3",
+      "kind": "place",
+      "position": {
+        "x": 11,
+        "y": 2
+      },
+      "rotation": 0
+    },
+    {
+      "block": "wall-4",
+      "kind": "place",
+      "position": {
+        "x": 0,
+        "y": 1
+      },
+      "rotation": 0
+    },
+    {
+      "block": "wall-5",
+      "kind": "place",
+      "position": {
+        "x": 7,
+        "y": 14
+      },
+      "rotation": 0
+    },
+    {
+      "block": "wall-6",
+      "kind": "place",
+      "position": {
+        "x": 2,
+        "y": 12
+      },
+      "rotation": 0
+    },
+    {
+      "block": "wall-7",
+      "kind": "place",
+      "position": {
+        "x": 6,
+        "y": 7
+      },
+      "rotation": 0
+    },
+    {
+      "block": "wall-8",
+      "kind": "place",
+      "position": {
+        "x": 11,
+        "y": 13
+      },
+      "rotation": 0
+    },
+    {
+      "block": "wall-9",
+      "kind": "place",
+      "position": {
+        "x": 9,
+        "y": 6
+      },
+      "rotation": 0
+    },
+    {
+      "connection": "first",
+      "kind": "begin-route",
+      "source_port": "output-belt-2",
+      "target_port": "input-belt-0"
+    },
+    {
+      "direction": "north",
+      "kind": "extend",
+      "length": 1
+    },
+    {
+      "direction": "east",
+      "kind": "extend",
+      "length": 5
+    },
+    {
+      "direction": "south",
+      "kind": "extend",
+      "length": 4
+    },
+    {
+      "direction": "east",
+      "kind": "extend",
+      "length": 3
+    },
+    {
+      "direction": "south",
+      "kind": "extend",
+      "length": 7
+    },
+    {
+      "direction": "east",
+      "kind": "extend",
+      "length": 2
+    },
+    {
+      "direction": "south",
+      "kind": "extend",
+      "length": 5
+    },
+    {
+      "direction": "east",
+      "kind": "extend",
+      "length": 1
+    },
+    {
+      "direction": "north",
+      "kind": "extend",
+      "length": 1
+    },
+    {
+      "kind": "connect"
+    }
+  ],
+  "problem": {
+    "blocks": [
+      {
+        "facility": "grinder-1-mode-normal",
+        "id": "a-src-0"
+      },
+      {
+        "facility": "grinder-1-mode-normal",
+        "id": "a-dst-1"
+      },
+      {
+        "facility": "grinder-1-mode-normal",
+        "id": "b-src-2"
+      },
+      {
+        "facility": "grinder-1-mode-normal",
+        "id": "b-dst-3"
+      },
+      {
+        "facility": "grinder-1-mode-normal",
+        "id": "wall-4"
+      },
+      {
+        "facility": "grinder-1-mode-normal",
+        "id": "wall-5"
+      },
+      {
+        "facility": "grinder-1-mode-normal",
+        "id": "wall-6"
+      },
+      {
+        "facility": "grinder-1-mode-normal",
+        "id": "wall-7"
+      },
+      {
+        "facility": "grinder-1-mode-normal",
+        "id": "wall-8"
+      },
+      {
+        "facility": "grinder-1-mode-normal",
+        "id": "wall-9"
+      }
+    ],
+    "connections": [
+      {
+        "commodity": "item-a",
+        "id": "first",
+        "rate": {
+          "denominator": 2,
+          "numerator": 1
+        },
+        "source": "a-src-0",
+        "target": "a-dst-1",
+        "transport": "belt"
+      },
+      {
+        "commodity": "item-b",
+        "id": "second",
+        "rate": {
+          "denominator": 2,
+          "numerator": 1
+        },
+        "source": "b-src-2",
+        "target": "b-dst-3",
+        "transport": "belt"
+      }
+    ],
+    "terminals": []
+  },
+  "schema": "aic-hierarchical-repair-fixture-v1",
+  "selected": "second"
+}

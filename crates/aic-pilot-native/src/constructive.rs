@@ -2195,6 +2195,228 @@ mod tests {
     }
 
     #[test]
+    fn repair_replaces_committed_route_atomically() {
+        let panel: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../docs/benchmarks/hierarchical-network/panel.json"
+        )))
+        .unwrap();
+        let case = &panel["cases"][0];
+        let mut session = Session::new(
+            serde_json::from_value(case["problem"].clone()).unwrap(),
+            catalogs(),
+            serde_json::from_value(panel["limits"].clone()).unwrap(),
+        )
+        .unwrap();
+        for command in case["prefix"].as_array().unwrap() {
+            assert!(
+                session
+                    .step(serde_json::from_value(command.clone()).unwrap())
+                    .accepted
+            );
+        }
+        let mut config = route_candidate_config();
+        config.bounds.max_x = 20;
+        config.bounds.max_y = 20;
+        config.max_candidates = 6;
+        config.max_searches = 48;
+        config.max_expanded = 400_000;
+        let first = session
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: session.revision(),
+                    connection: "output-a".into(),
+                },
+                &config,
+            )
+            .unwrap()
+            .candidates[0]
+            .clone();
+        session.apply_route_candidate(&first).unwrap();
+        let original = session.observe();
+        let request = session
+            .repair_request(&["output-b".into()], &["output-a".into()], 1, &config)
+            .unwrap();
+        let mut allowance =
+            routing_candidates::RequestAllowance::new(request.allowance_caps.clone());
+        let (mut draft, reserved_bytes) = session
+            .prepare_repair_draft_with_allowance(&request, &["output-a".into()], &mut allowance)
+            .unwrap();
+        allowance.release_peak(reserved_bytes);
+        assert!(!draft.route_is_complete(draft.connections["output-a"]));
+        let next = draft
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: draft.revision(),
+                    connection: "output-b".into(),
+                },
+                &config,
+            )
+            .unwrap()
+            .candidates[0]
+            .clone();
+        draft.apply_route_candidate(&next).unwrap();
+        let restored = draft
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: draft.revision(),
+                    connection: "output-a".into(),
+                },
+                &config,
+            )
+            .unwrap()
+            .candidates[0]
+            .clone();
+        let candidate = routing_candidates::RepairCandidate {
+            schema: routing_candidates::REPAIR_CANDIDATE_SCHEMA.into(),
+            state_revision: request.state_revision,
+            removed: vec!["output-a".into()],
+            replacements: vec![next, restored],
+            expanded: 0,
+        };
+        let original_bytes = serde_json::to_vec(&original).unwrap();
+        let mut invalid = candidate.clone();
+        invalid.replacements.pop();
+        assert_eq!(
+            session
+                .apply_repair_candidate(&request, &invalid)
+                .unwrap_err()
+                .code,
+            "constructive.repair-coverage"
+        );
+        assert_eq!(
+            serde_json::to_vec(&session.observe()).unwrap(),
+            original_bytes
+        );
+        let mut unauthorized = candidate.clone();
+        unauthorized.removed = vec!["supply-flow".into()];
+        assert_eq!(
+            session
+                .apply_repair_candidate(&request, &unauthorized)
+                .unwrap_err()
+                .code,
+            "constructive.repair-removals"
+        );
+        let mut stale = request.clone();
+        stale.state_revision += 1;
+        assert_eq!(
+            session
+                .apply_repair_candidate(&stale, &candidate)
+                .unwrap_err()
+                .code,
+            "constructive.repair-stale-request"
+        );
+        let mut bad_member = candidate.clone();
+        bad_member.replacements[1].commands.pop();
+        assert!(
+            session
+                .apply_repair_candidate(&request, &bad_member)
+                .is_err()
+        );
+        let mut wrong_revision = candidate.clone();
+        wrong_revision.replacements[1].state_revision += 1;
+        assert_eq!(
+            session
+                .apply_repair_candidate(&request, &wrong_revision)
+                .unwrap_err()
+                .code,
+            "constructive.repair-revision"
+        );
+        assert_eq!(
+            serde_json::to_vec(&session.observe()).unwrap(),
+            original_bytes
+        );
+        session
+            .apply_repair_candidate(&request, &candidate)
+            .unwrap();
+        assert!(session.observe().fully_validated);
+        assert_eq!(session.observe().completed, 3);
+        assert_eq!(session.observe().bridges, original.bridges);
+    }
+
+    #[test]
+    fn repair_unblocks_frozen_corridor() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../docs/benchmarks/hierarchical-repair/fixture.json"
+        )))
+        .unwrap();
+        let mut session = Session::new(
+            serde_json::from_value(fixture["problem"].clone()).unwrap(),
+            catalogs(),
+            serde_json::from_value(fixture["limits"].clone()).unwrap(),
+        )
+        .unwrap();
+        let config: routing_candidates::Config =
+            serde_json::from_value(fixture["candidate"].clone()).unwrap();
+        for command in fixture["prefix"].as_array().unwrap() {
+            let step = session.step(serde_json::from_value(command.clone()).unwrap());
+            assert!(step.accepted, "{step:?}");
+        }
+        let first_route = session.observe().routes[0].clone().unwrap();
+        let blocked = session
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: session.revision(),
+                    connection: "second".into(),
+                },
+                &config,
+            )
+            .unwrap();
+        assert!(blocked.candidates.is_empty());
+        assert_eq!(blocked.expanded, 0);
+        assert_eq!(
+            blocked.termination,
+            routing_candidates::Termination::FrontierExhausted
+        );
+        assert!(blocked.fixed_request_proven_infeasible);
+        let request = session
+            .repair_request(&["second".into()], &["first".into()], 1, &config)
+            .unwrap();
+        let mut allowance =
+            routing_candidates::RequestAllowance::new(request.allowance_caps.clone());
+        let (mut draft, reserved_bytes) = session
+            .prepare_repair_draft_with_allowance(&request, &["first".into()], &mut allowance)
+            .unwrap();
+        allowance.release_peak(reserved_bytes);
+        let second = draft
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: draft.revision(),
+                    connection: "second".into(),
+                },
+                &config,
+            )
+            .unwrap()
+            .candidates[0]
+            .clone();
+        draft.apply_route_candidate(&second).unwrap();
+        let replacement = draft
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: draft.revision(),
+                    connection: "first".into(),
+                },
+                &config,
+            )
+            .unwrap()
+            .candidates[0]
+            .clone();
+        let candidate = routing_candidates::RepairCandidate {
+            schema: routing_candidates::REPAIR_CANDIDATE_SCHEMA.into(),
+            state_revision: request.state_revision,
+            removed: vec!["first".into()],
+            expanded: second.expanded + replacement.expanded,
+            replacements: vec![second, replacement],
+        };
+        session
+            .apply_repair_candidate(&request, &candidate)
+            .unwrap();
+        assert!(session.observe().fully_validated);
+        assert_ne!(session.observe().routes[0], Some(first_route));
+    }
+
+    #[test]
     fn route_candidates_are_diverse_native_valid_and_revision_atomic() {
         let mut session = session();
         for command in [
@@ -3260,7 +3482,7 @@ mod tests {
                     transport: TransportKind::Belt,
                     rate: Rate {
                         numerator: 1,
-                        denominator: 2,
+                        denominator: 4,
                     },
                 },
             ],
@@ -3414,6 +3636,116 @@ mod tests {
             vec!["vertical"]
         );
         assert_eq!(session.observe().bridges, layout.solution.bridges);
+        let mut repair_base = session.clone();
+        repair_base.problem.connections.push(Connection {
+            id: "extra".into(),
+            source: "south".into(),
+            target: "north".into(),
+            commodity: "vertical-item".into(),
+            transport: TransportKind::Belt,
+            rate: Rate {
+                numerator: 1,
+                denominator: 4,
+            },
+        });
+        repair_base.connections.insert("extra".into(), 2);
+        repair_base.routes.push(None);
+        repair_base.metrics = None;
+        let mut repair_config = route_candidate_config();
+        repair_config.bounds.max_x = 20;
+        repair_config.bounds.max_y = 20;
+        repair_config.max_crossings_per_route = 441;
+        repair_config.max_searches = 512;
+        let repair_request = repair_base
+            .repair_request(&["extra".into()], &["vertical".into()], 1, &repair_config)
+            .unwrap();
+        let mut repair_allowance =
+            routing_candidates::RequestAllowance::new(repair_request.allowance_caps.clone());
+        let (mut repair_draft, repair_bytes) = repair_base
+            .prepare_repair_draft_with_allowance(
+                &repair_request,
+                &["vertical".into()],
+                &mut repair_allowance,
+            )
+            .unwrap();
+        repair_allowance.release_peak(repair_bytes);
+        assert!(repair_draft.observe().bridges.is_empty());
+        let vertical_probe = repair_draft
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: repair_draft.revision(),
+                    connection: "vertical".into(),
+                },
+                &repair_config,
+            )
+            .unwrap();
+        let restored_vertical = vertical_probe
+            .candidates
+            .into_iter()
+            .find(|candidate| {
+                candidate
+                    .crossings
+                    .iter()
+                    .any(|bridge_use| bridge_use.position == crossing)
+            })
+            .expect("restored route crosses the original bridge");
+        repair_draft
+            .apply_route_candidate(&restored_vertical)
+            .unwrap();
+        let extra = repair_draft
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: repair_draft.revision(),
+                    connection: "extra".into(),
+                },
+                &repair_config,
+            )
+            .unwrap()
+            .candidates
+            .remove(0);
+        let repair_candidate = routing_candidates::RepairCandidate {
+            schema: routing_candidates::REPAIR_CANDIDATE_SCHEMA.into(),
+            state_revision: repair_request.state_revision,
+            removed: vec!["vertical".into()],
+            expanded: restored_vertical.expanded + extra.expanded,
+            replacements: vec![restored_vertical, extra],
+        };
+        repair_base
+            .apply_repair_candidate(&repair_request, &repair_candidate)
+            .unwrap();
+        assert!(repair_base.observe().fully_validated);
+        let retained_bridge = repair_base
+            .observe()
+            .bridges
+            .into_iter()
+            .find(|bridge| bridge.position == crossing)
+            .expect("the original bridge survives replacement of its vertical route");
+        assert_eq!(retained_bridge.id, layout.solution.bridges[0].id);
+        assert_eq!(
+            retained_bridge.component,
+            layout.solution.bridges[0].component
+        );
+        assert_eq!(
+            retained_bridge.rotation,
+            layout.solution.bridges[0].rotation
+        );
+        assert_eq!(retained_bridge.channels[0].connections, vec!["horizontal"]);
+        assert_eq!(
+            retained_bridge.channels[1].connections,
+            vec!["extra", "vertical"]
+        );
+        let mut retained = session.clone();
+        let mut allowance = routing_candidates::RequestAllowance::new(Default::default());
+        retained
+            .rebuild_after_route_removal(&mut allowance)
+            .unwrap();
+        assert_eq!(retained.observe().bridges, layout.solution.bridges);
+        retained.routes[1] = None;
+        retained
+            .rebuild_after_route_removal(&mut allowance)
+            .unwrap();
+        assert!(retained.observe().bridges.is_empty());
+        assert_eq!(retained.observe().routes[0], session.observe().routes[0]);
         let learning = session.macro_learning_input(&learning_config()).unwrap();
         assert_eq!(learning.bridge_resources, layout.solution.bridges);
         assert!(learning.spatial_features.iter().any(|row| row[9] == 1.0));

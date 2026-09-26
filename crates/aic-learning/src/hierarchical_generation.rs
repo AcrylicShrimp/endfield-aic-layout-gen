@@ -784,7 +784,13 @@ fn collect_examples(
             let children = record
                 .actions
                 .iter()
-                .map(|action| action.action.apply(&session))
+                .map(|action| {
+                    action.action.apply(
+                        &session,
+                        &outer_config.search.candidate,
+                        outer_config.search.repair_max_removed,
+                    )
+                })
                 .collect::<Result<Vec<_>>>()?;
             let features = record
                 .actions
@@ -913,6 +919,33 @@ fn collect_lower_examples(
             MacroAction::Network(candidate) => {
                 let mut intermediate = session.clone();
                 for route in &candidate.routes {
+                    add_lower_candidate(
+                        &intermediate,
+                        index,
+                        route,
+                        lower_config.model.heads,
+                        source_lower_checkpoint_sha256,
+                        &mut groups,
+                    )?;
+                    intermediate
+                        .apply_route_candidate(route)
+                        .map_err(anyhow::Error::new)?;
+                }
+            }
+            MacroAction::Repair { request, candidate } => {
+                let mut allowance =
+                    aic_pilot_native::constructive::routing_candidates::RequestAllowance::new(
+                        request.allowance_caps.clone(),
+                    );
+                let (mut intermediate, reserved_bytes) = session
+                    .prepare_repair_draft_with_allowance(
+                        request,
+                        &candidate.removed,
+                        &mut allowance,
+                    )
+                    .map_err(anyhow::Error::new)?;
+                allowance.release_peak(reserved_bytes);
+                for route in &candidate.replacements {
                     add_lower_candidate(
                         &intermediate,
                         index,
