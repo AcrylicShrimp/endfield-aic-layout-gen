@@ -1,0 +1,23 @@
+{
+  "schema": "aic-experiment-cleanup-v1",
+  "experiment": "inert-search-horizon-2026-09-26",
+  "server": "ashrimp-arch",
+  "removed_root": "/home/ashrimp/Srv/aic-target-causal-20260925/artifacts/uncapped-search-20260926",
+  "removed_children": [
+    "raw/",
+    "smoke/",
+    "source/",
+    "models/",
+    "configs/",
+    "panels/",
+    "logs/",
+    "progress.json",
+    "smoke-progress.json",
+    "protocol.json"
+  ],
+  "removed_root_bytes_before": 1423616511,
+  "filesystem_available_bytes_before": 161830010880,
+  "filesystem_available_bytes_after": 163253944320,
+  "retained_source_archive": "/home/ashrimp/Srv/aic-target-causal-20260925/artifacts/recovery-lower-restored-v2/final-evidence.tar.gz",
+  "retained_source_archive_sha256": "488d68b57343550be13fca36f8bb0456ae32e5876811cdf62e528207f04232b3"
+}
