@@ -24,7 +24,10 @@ use serde::{Deserialize, Serialize};
 use super::{Command, Diagnostic, Direction, ReplayMeter, ReplayWork, Session, Step, error};
 
 mod repair;
-pub use repair::{REPAIR_CANDIDATE_SCHEMA, RepairCandidate, RepairRequest};
+pub use repair::{
+    REPAIR_CANDIDATE_SCHEMA, RepairCandidate, RepairDraft, RepairRequest, RepairScope,
+    publish_repair_candidate,
+};
 
 pub const SCHEMA: &str = "aic-constructive-route-candidates-v4";
 pub const GUIDANCE_SCHEMA: &str = "aic-constructive-route-guidance-v2";
@@ -144,6 +147,7 @@ pub struct RequestAllowance {
     deadline: Instant,
     reserved_bytes: usize,
     peak_live_bytes: usize,
+    last_stop: std::cell::RefCell<Option<AllowanceStop>>,
 }
 
 #[derive(Debug)]
@@ -208,6 +212,7 @@ impl RequestAllowance {
             deadline,
             reserved_bytes: 0,
             peak_live_bytes: 0,
+            last_stop: std::cell::RefCell::new(None),
         }
     }
 
@@ -224,9 +229,18 @@ impl RequestAllowance {
         self.deadline
     }
 
+    pub fn last_stop(&self) -> Option<AllowanceStop> {
+        self.last_stop.borrow().clone()
+    }
+
+    fn note_stop(&self, stop: AllowanceStop) -> AllowanceStop {
+        *self.last_stop.borrow_mut() = Some(stop.clone());
+        stop
+    }
+
     pub fn check_deadline(&self) -> Result<(), AllowanceStop> {
         if let Some(overrun) = Instant::now().checked_duration_since(self.deadline) {
-            return Err(AllowanceStop {
+            return Err(self.note_stop(AllowanceStop {
                 reason: "deadline",
                 category: None,
                 limit: self.caps.deadline_ms as usize,
@@ -235,7 +249,7 @@ impl RequestAllowance {
                     .deadline_ms
                     .saturating_add(overrun.as_millis() as u64) as usize,
                 deadline_overshoot_ms: overrun.as_millis() as u64,
-            });
+            }));
         }
         Ok(())
     }
@@ -246,13 +260,13 @@ impl RequestAllowance {
         let old = self.used.get(&kind).copied().unwrap_or(0);
         let used = old.saturating_add(count);
         if used > limit {
-            return Err(AllowanceStop {
+            return Err(self.note_stop(AllowanceStop {
                 reason: "work-limit",
                 category: Some(kind),
                 limit,
                 used: old,
                 deadline_overshoot_ms: 0,
-            });
+            }));
         }
         self.used.insert(kind, used);
         Ok(())
@@ -270,13 +284,13 @@ impl RequestAllowance {
             .saturating_add(count);
         self.used.insert(kind, used);
         if used > limit {
-            return Err(AllowanceStop {
+            return Err(self.note_stop(AllowanceStop {
                 reason: "work-limit",
                 category: Some(kind),
                 limit,
                 used,
                 deadline_overshoot_ms: 0,
-            });
+            }));
         }
         self.check_deadline()
     }
@@ -288,25 +302,25 @@ impl RequestAllowance {
         let used = self.used.get(&kind).copied().unwrap_or(0).max(count);
         self.used.insert(kind, used);
         if used > limit {
-            return Err(AllowanceStop {
+            return Err(self.note_stop(AllowanceStop {
                 reason: "work-limit",
                 category: Some(kind),
                 limit,
                 used,
                 deadline_overshoot_ms: 0,
-            });
+            }));
         }
         self.check_deadline()
     }
 
     pub fn exhausted_stop(&self, kind: WorkKind) -> AllowanceStop {
-        AllowanceStop {
+        self.note_stop(AllowanceStop {
             reason: "work-limit",
             category: Some(kind),
             limit: self.limit(kind),
             used: self.used.get(&kind).copied().unwrap_or(0),
             deadline_overshoot_ms: 0,
-        }
+        })
     }
 
     pub fn preflight(&self, kind: WorkKind, upper_bound: usize) -> Result<(), AllowanceStop> {
@@ -319,13 +333,13 @@ impl RequestAllowance {
             .unwrap_or(0)
             .saturating_add(upper_bound);
         if used > limit {
-            return Err(AllowanceStop {
+            return Err(self.note_stop(AllowanceStop {
                 reason: "work-limit",
                 category: Some(kind),
                 limit,
                 used: self.used.get(&kind).copied().unwrap_or(0),
                 deadline_overshoot_ms: 0,
-            });
+            }));
         }
         Ok(())
     }
@@ -334,13 +348,13 @@ impl RequestAllowance {
         self.check_deadline()?;
         let peak = self.reserved_bytes.saturating_add(bytes);
         if peak > self.caps.peak_live_bytes {
-            return Err(AllowanceStop {
+            return Err(self.note_stop(AllowanceStop {
                 reason: "peak-memory-limit",
                 category: None,
                 limit: self.caps.peak_live_bytes,
                 used: self.reserved_bytes,
                 deadline_overshoot_ms: 0,
-            });
+            }));
         }
         self.reserved_bytes = peak;
         self.peak_live_bytes = self.peak_live_bytes.max(peak);
@@ -977,7 +991,7 @@ impl Session {
         config: &Config,
     ) -> Result<Report, Diagnostic> {
         let mut allowance = RequestAllowance::new(config.request_allowance.clone());
-        self.route_candidates_inner(request, config, None, &mut allowance, true)
+        self.route_candidates_inner(request, config, None, &mut allowance, true, true)
     }
 
     pub fn route_candidates_with_guidance(
@@ -987,7 +1001,7 @@ impl Session {
         guidance: &Guidance,
     ) -> Result<Report, Diagnostic> {
         let mut allowance = RequestAllowance::new(config.request_allowance.clone());
-        self.route_candidates_inner(request, config, Some(guidance), &mut allowance, true)
+        self.route_candidates_inner(request, config, Some(guidance), &mut allowance, true, true)
     }
 
     pub fn route_candidates_with_guidance_allowance(
@@ -997,7 +1011,16 @@ impl Session {
         guidance: &Guidance,
         allowance: &mut RequestAllowance,
     ) -> Result<Report, Diagnostic> {
-        self.route_candidates_inner(request, config, Some(guidance), allowance, true)
+        self.route_candidates_inner(request, config, Some(guidance), allowance, true, true)
+    }
+
+    pub fn route_candidates_with_allowance(
+        &self,
+        request: &Request,
+        config: &Config,
+        allowance: &mut RequestAllowance,
+    ) -> Result<Report, Diagnostic> {
+        self.route_candidates_inner(request, config, None, allowance, true, true)
     }
 
     pub fn route_candidates_for_network_with_allowance(
@@ -1007,7 +1030,16 @@ impl Session {
         guidance: &Guidance,
         allowance: &mut RequestAllowance,
     ) -> Result<Report, Diagnostic> {
-        self.route_candidates_inner(request, config, Some(guidance), allowance, false)
+        self.route_candidates_inner(request, config, Some(guidance), allowance, false, true)
+    }
+
+    pub fn route_candidates_for_network_anchor_with_allowance(
+        &self,
+        request: &Request,
+        config: &Config,
+        allowance: &mut RequestAllowance,
+    ) -> Result<Report, Diagnostic> {
+        self.route_candidates_inner(request, config, None, allowance, false, true)
     }
 
     fn route_candidates_inner(
@@ -1017,6 +1049,7 @@ impl Session {
         guidance: Option<&Guidance>,
         allowance: &mut RequestAllowance,
         publish_candidates: bool,
+        replay_candidates: bool,
     ) -> Result<Report, Diagnostic> {
         config.validate()?;
         if request.state_revision != self.revision {
@@ -1667,42 +1700,47 @@ impl Session {
                         allowance,
                     );
                     let commands = keep_or_stop!('rounds, commands);
-                    match self.replay_route_witness_with_allowance(
-                        request.state_revision,
-                        &commands,
-                        &request.connection,
-                        cells.len(),
-                        found_crossings.len(),
-                        allowance,
-                    ) {
-                        Ok(_) => {}
-                        Err(RequestFailure::Invalid(diagnostic)) => {
-                            rejections.push(Rejection {
-                                source_port,
-                                target_port,
-                                diagnostic,
-                            });
-                            let retained =
-                                penalty_bytes.saturating_add(key_bytes).saturating_add(2048);
-                            let slack = postprocess_bytes.saturating_sub(retained);
-                            allowance.release_peak(slack);
-                            persistent_bytes -= slack;
-                            continue;
-                        }
-                        Err(RequestFailure::Stopped(stop)) => {
-                            let termination = stop_termination(&stop);
-                            allowance_stop = Some(stop);
-                            break 'rounds termination;
-                        }
-                        Err(RequestFailure::PendingPlacement { endpoints }) => {
-                            return Err(error(
-                                "route-request-not-ready",
-                                &request.connection,
-                                format!("route endpoints are pending: {}", endpoints.join(", ")),
-                            ));
-                        }
-                        Err(RequestFailure::NoCompatibleEndpoints { .. }) => {
-                            unreachable!("native replay does not prepare endpoints")
+                    if replay_candidates {
+                        match self.replay_route_witness_with_allowance(
+                            request.state_revision,
+                            &commands,
+                            &request.connection,
+                            cells.len(),
+                            found_crossings.len(),
+                            allowance,
+                        ) {
+                            Ok(_) => {}
+                            Err(RequestFailure::Invalid(diagnostic)) => {
+                                rejections.push(Rejection {
+                                    source_port,
+                                    target_port,
+                                    diagnostic,
+                                });
+                                let retained =
+                                    penalty_bytes.saturating_add(key_bytes).saturating_add(2048);
+                                let slack = postprocess_bytes.saturating_sub(retained);
+                                allowance.release_peak(slack);
+                                persistent_bytes -= slack;
+                                continue;
+                            }
+                            Err(RequestFailure::Stopped(stop)) => {
+                                let termination = stop_termination(&stop);
+                                allowance_stop = Some(stop);
+                                break 'rounds termination;
+                            }
+                            Err(RequestFailure::PendingPlacement { endpoints }) => {
+                                return Err(error(
+                                    "route-request-not-ready",
+                                    &request.connection,
+                                    format!(
+                                        "route endpoints are pending: {}",
+                                        endpoints.join(", ")
+                                    ),
+                                ));
+                            }
+                            Err(RequestFailure::NoCompatibleEndpoints { .. }) => {
+                                unreachable!("native replay does not prepare endpoints")
+                            }
                         }
                     }
                     candidates.push(Candidate {
@@ -1848,6 +1886,18 @@ impl Session {
         &mut self,
         candidate: &Candidate,
     ) -> Result<Vec<Step>, Diagnostic> {
+        let connection = self.validate_route_candidate_before_replay(candidate)?;
+        let (fork, steps) =
+            self.replay_route_witness(candidate.state_revision, &candidate.commands)?;
+        self.validate_route_candidate_after_replay(candidate, connection, &fork)?;
+        *self = fork;
+        Ok(steps)
+    }
+
+    fn validate_route_candidate_before_replay(
+        &self,
+        candidate: &Candidate,
+    ) -> Result<usize, Diagnostic> {
         let Some(&connection) = self.connections.get(&candidate.connection) else {
             return Err(error(
                 "route-candidate-connection",
@@ -1979,8 +2029,15 @@ impl Session {
                 "bridge metadata does not match the reserved native commands",
             ));
         }
-        let (fork, steps) =
-            self.replay_route_witness(candidate.state_revision, &candidate.commands)?;
+        Ok(connection)
+    }
+
+    fn validate_route_candidate_after_replay(
+        &self,
+        candidate: &Candidate,
+        connection: usize,
+        fork: &Session,
+    ) -> Result<(), Diagnostic> {
         let geometry_matches = if let Some(route) = fork.routes[connection].as_ref() {
             if route.cells.len() != candidate.cells.len() {
                 false
@@ -2036,8 +2093,7 @@ impl Session {
                 "replayed bridge axes do not match the candidate witness",
             ));
         }
-        *self = fork;
-        Ok(steps)
+        Ok(())
     }
 
     /// Atomically applies a complete same-commodity network witness. Each

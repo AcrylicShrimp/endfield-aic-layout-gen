@@ -52,6 +52,8 @@ pub const REPORT_SCHEMA: &str = "aic-hierarchical-search-report-v9";
 const MAX_INPUT_BYTES: u64 = 16 * 1024 * 1024;
 const ROUTE_ATTEMPT_SAMPLE_LIMIT: usize = 32;
 
+mod negotiated;
+
 fn default_anchor_prior_mass() -> f64 {
     0.25
 }
@@ -295,6 +297,22 @@ pub(crate) struct Counters {
     pending_route_connections: usize,
     network_samples: usize,
     shared_network_samples: usize,
+    #[serde(default)]
+    repair_tasks: usize,
+    #[serde(default)]
+    repair_attempts: usize,
+    #[serde(default)]
+    repair_samples: usize,
+    #[serde(default)]
+    repair_unknown: usize,
+    #[serde(default)]
+    repair_legalization_failures: usize,
+    #[serde(default)]
+    repair_guidance_fallbacks: usize,
+    #[serde(default)]
+    repair_priced_edges: usize,
+    #[serde(default, skip_deserializing, skip_serializing_if = "Vec::is_empty")]
+    repair_attempt_samples: Vec<negotiated::NegotiationSummary>,
     route_candidate_limit: usize,
     route_search_limit: usize,
     route_work_budget: usize,
@@ -536,6 +554,7 @@ impl Factory<'_> {
             counters.route_search_limit,
             counters.route_work_budget,
             counters.route_candidate_limit,
+            counters.repair_unknown,
         );
         let mut actions = Vec::new();
         let mut placement_pages = PlacementPages {
@@ -626,12 +645,20 @@ impl Factory<'_> {
                     &self.domain,
                     &mut allowance,
                 ) {
-                    Ok(input) => prepared.push((request.clone(), input, allowance)),
+                    Ok(input) => prepared.push((request.clone(), Some(input), allowance)),
                     Err(RequestFailure::Invalid(diagnostic)) => {
-                        return Err(anyhow::Error::new(diagnostic));
+                        if !diagnostic.code.starts_with("constructive.route-guidance") {
+                            return Err(anyhow::Error::new(diagnostic));
+                        }
+                        counters.repair_guidance_fallbacks += 1;
+                        prepared.push((request.clone(), None, allowance));
                     }
                     Err(RequestFailure::Stopped(stop)) => {
-                        record_request_stop(counters, request, &allowance, stop)
+                        let can_fallback = stop.reason != "deadline";
+                        record_request_stop(counters, request, &allowance, stop);
+                        if can_fallback {
+                            prepared.push((request.clone(), None, allowance));
+                        }
                     }
                     Err(RequestFailure::PendingPlacement { .. }) => {
                         counters.pending_route_networks += 1;
@@ -640,6 +667,7 @@ impl Factory<'_> {
                     Err(RequestFailure::NoCompatibleEndpoints { connection }) => {
                         counters.route_no_compatible_endpoints += 1;
                         counters.route_no_compatible_connection = Some(connection);
+                        prepared.push((request.clone(), None, allowance));
                     }
                 }
             }
@@ -647,6 +675,9 @@ impl Factory<'_> {
             let mut valid = Vec::new();
             let mut inference_reservations = vec![0usize; chunk.len()];
             for (index, (request, input, allowance)) in chunk.iter_mut().enumerate() {
+                let Some(input) = input.as_ref() else {
+                    continue;
+                };
                 let elements = input
                     .grid
                     .len()
@@ -677,33 +708,51 @@ impl Factory<'_> {
                     Err(stop) => record_request_stop(counters, request, allowance, stop),
                 }
             }
-            if valid.is_empty() {
-                continue;
-            }
-            let inputs = valid
-                .iter()
-                .map(|&index| &chunk[index].1)
-                .collect::<Vec<_>>();
-            let guidance =
-                self.guidance
-                    .predict_native(&inputs, self.guidance_version, self.device)?;
-            counters.guidance_batches += 1;
-            counters.guidance_inputs += inputs.len();
-            drop(inputs);
             let mut guidance_by_index = vec![None; chunk.len()];
             let mut guidance_reservations = vec![0usize; chunk.len()];
-            for (index, guide) in valid.into_iter().zip(guidance) {
-                let (request, _, allowance) = &mut chunk[index];
-                allowance.release_peak(inference_reservations[index]);
-                let bytes = guide.heads.iter().fold(0usize, |total, head| {
-                    total.saturating_add(head.directed_costs.len().saturating_mul(32))
-                });
-                match allowance.reserve_peak(bytes) {
-                    Ok(()) => {
-                        guidance_reservations[index] = bytes;
-                        guidance_by_index[index] = Some(guide);
+            if !valid.is_empty() {
+                let inputs = valid
+                    .iter()
+                    .map(|&index| chunk[index].1.as_ref().expect("prepared input"))
+                    .collect::<Vec<_>>();
+                let guidance =
+                    self.guidance
+                        .predict_native(&inputs, self.guidance_version, self.device);
+                drop(inputs);
+                for (index, (_, input, allowance)) in chunk.iter_mut().enumerate() {
+                    allowance.release_peak(inference_reservations[index]);
+                    if let Some(input) = input.take() {
+                        allowance.release_peak(input.reserved_bytes);
                     }
-                    Err(stop) => record_request_stop(counters, request, allowance, stop),
+                }
+                match guidance {
+                    Ok(guidance) => {
+                        counters.guidance_batches += 1;
+                        counters.guidance_inputs += valid.len();
+                        for (index, guide) in valid.iter().copied().zip(guidance) {
+                            let (request, _, allowance) = &mut chunk[index];
+                            let bytes = guide.heads.iter().fold(0usize, |total, head| {
+                                total.saturating_add(head.directed_costs.len().saturating_mul(32))
+                            });
+                            match allowance.reserve_peak(bytes) {
+                                Ok(()) => {
+                                    guidance_reservations[index] = bytes;
+                                    guidance_by_index[index] = Some(guide);
+                                }
+                                Err(stop) => {
+                                    record_request_stop(counters, request, allowance, stop)
+                                }
+                            }
+                        }
+                    }
+                    Err(_) => counters.repair_guidance_fallbacks += valid.len(),
+                }
+            }
+            if valid.is_empty() {
+                for (_, input, allowance) in chunk.iter_mut() {
+                    if let Some(input) = input.take() {
+                        allowance.release_peak(input.reserved_bytes);
+                    }
                 }
             }
             let reports = self.pool.install(|| {
@@ -727,14 +776,24 @@ impl Factory<'_> {
                     })
                     .collect::<Vec<_>>()
             });
-            for ((request, _, allowance), report) in chunk.iter_mut().zip(reports) {
+            let mut direct_counts = vec![0usize; chunk.len()];
+            let mut guided_searched = vec![false; chunk.len()];
+            for (index, ((request, _, allowance), report)) in
+                chunk.iter_mut().zip(reports).enumerate()
+            {
                 match report {
                     Some(Ok(report)) => {
+                        guided_searched[index] = true;
+                        direct_counts[index] = report.candidates.len();
                         record_route_report(counters, &report);
                         actions.extend(report.candidates.into_iter().map(MacroAction::Route));
                     }
                     Some(Err(RequestFailure::Invalid(diagnostic))) => {
-                        return Err(anyhow::Error::new(diagnostic));
+                        if !diagnostic.code.starts_with("constructive.route-guidance") {
+                            return Err(anyhow::Error::new(diagnostic));
+                        }
+                        counters.repair_guidance_fallbacks += 1;
+                        guidance_by_index[index] = None;
                     }
                     Some(Err(RequestFailure::Stopped(stop))) => {
                         record_request_stop(counters, request, allowance, stop)
@@ -750,7 +809,49 @@ impl Factory<'_> {
                 }
             }
             for (index, (_, _, allowance)) in chunk.iter_mut().enumerate() {
+                guidance_by_index[index] = None;
                 allowance.release_peak(guidance_reservations[index]);
+            }
+            for (index, (request, _, allowance)) in chunk.iter_mut().enumerate() {
+                if guided_searched[index] {
+                    continue;
+                }
+                match session.route_candidates_with_allowance(request, self.candidate, allowance) {
+                    Ok(report) => {
+                        direct_counts[index] = report.candidates.len();
+                        record_route_report(counters, &report);
+                        actions.extend(report.candidates.into_iter().map(MacroAction::Route));
+                    }
+                    Err(diagnostic)
+                        if diagnostic.code.starts_with("constructive.route-guidance") =>
+                    {
+                        counters.repair_guidance_fallbacks += 1;
+                    }
+                    Err(diagnostic) => return Err(anyhow::Error::new(diagnostic)),
+                }
+            }
+            if self.repair_max_removed > 0 {
+                for (index, (request, _, allowance)) in chunk.iter_mut().enumerate() {
+                    if direct_counts[index] >= self.candidate.max_candidates {
+                        continue;
+                    }
+                    let report = self.negotiated_repair_actions(
+                        session,
+                        std::slice::from_ref(&request.connection),
+                        self.candidate.max_candidates - direct_counts[index],
+                        counters,
+                        allowance,
+                    )?;
+                    negotiated::record_negotiation_report(counters, &report);
+                    if let Some(repair_request) = report.request {
+                        actions.extend(report.actions.into_iter().map(|candidate| {
+                            MacroAction::Repair {
+                                request: repair_request.clone(),
+                                candidate,
+                            }
+                        }));
+                    }
+                }
             }
         }
         for (requests, allowance) in &mut ready_networks {
@@ -758,11 +859,27 @@ impl Factory<'_> {
                 .iter()
                 .map(|request| request.connection.clone())
                 .collect::<Vec<_>>();
-            actions.extend(
-                self.network_actions(session, &connections, counters, allowance)?
-                    .into_iter()
-                    .map(MacroAction::Network),
-            );
+            let network = self.network_actions(session, &connections, counters, allowance)?;
+            let direct_count = network.len();
+            actions.extend(network.into_iter().map(MacroAction::Network));
+            if self.repair_max_removed > 0 && direct_count < self.candidate.max_candidates {
+                let report = self.negotiated_repair_actions(
+                    session,
+                    &connections,
+                    self.candidate.max_candidates - direct_count,
+                    counters,
+                    allowance,
+                )?;
+                negotiated::record_negotiation_report(counters, &report);
+                if let Some(repair_request) = report.request {
+                    actions.extend(report.actions.into_iter().map(|candidate| {
+                        MacroAction::Repair {
+                            request: repair_request.clone(),
+                            candidate,
+                        }
+                    }));
+                }
+            }
         }
         counters.expansions += 1;
         counters.generated_macro_samples += actions.len();
@@ -972,6 +1089,10 @@ impl Factory<'_> {
                         state_revision: partial.session.revision(),
                         connection: partial.order[depth].clone(),
                     };
+                    if partial.variant == 0 {
+                        prepared.push(Some((member, None)));
+                        continue;
+                    }
                     match partial.session.route_guidance_input_with_allowance(
                         &member,
                         self.candidate,
@@ -980,15 +1101,23 @@ impl Factory<'_> {
                     ) {
                         Ok(input) => {
                             reserved = reserved.saturating_add(input.reserved_bytes);
-                            prepared.push(Some((member, input)));
+                            prepared.push(Some((member, Some(input))));
                         }
                         Err(RequestFailure::Invalid(diagnostic)) => {
-                            return Err(anyhow::Error::new(diagnostic));
+                            if !diagnostic.code.starts_with("constructive.route-guidance") {
+                                return Err(anyhow::Error::new(diagnostic));
+                            }
+                            counters.repair_guidance_fallbacks += 1;
+                            prepared.push(Some((member, None)));
                         }
                         Err(RequestFailure::Stopped(stop)) => {
+                            if stop.reason == "deadline" {
+                                record_page_stop!(&member, stop);
+                                page_stopped = true;
+                                break;
+                            }
                             record_page_stop!(&member, stop);
-                            page_stopped = true;
-                            break;
+                            prepared.push(Some((member, None)));
                         }
                         Err(RequestFailure::PendingPlacement { .. }) => {
                             counters.pending_route_networks += 1;
@@ -1024,7 +1153,11 @@ impl Factory<'_> {
                                     break;
                                 }
                                 Err(RequestFailure::Invalid(diagnostic)) => {
-                                    return Err(anyhow::Error::new(diagnostic));
+                                    if !diagnostic.code.starts_with("constructive.route-guidance") {
+                                        return Err(anyhow::Error::new(diagnostic));
+                                    }
+                                    counters.repair_guidance_fallbacks += 1;
+                                    prepared.push(None);
                                 }
                                 Err(RequestFailure::PendingPlacement { .. }) => {
                                     counters.pending_route_networks += 1;
@@ -1039,7 +1172,11 @@ impl Factory<'_> {
                 if page_stopped {
                     break;
                 }
+                let mut inference_unavailable = false;
                 for (member, input) in prepared.iter().flatten() {
+                    let Some(input) = input.as_ref() else {
+                        continue;
+                    };
                     let elements = input
                         .grid
                         .len()
@@ -1056,20 +1193,17 @@ impl Factory<'_> {
                                 * aic_pilot_native::constructive::learning::SPATIAL_FEATURES,
                         );
                     if let Err(stop) = allowance.charge(WorkKind::InferenceElements, elements) {
+                        let deadline = stop.reason == "deadline";
                         record_page_stop!(member, stop);
-                        page_stopped = true;
+                        page_stopped = deadline;
+                        inference_unavailable = true;
                         break;
                     }
                 }
                 if page_stopped {
                     break;
                 }
-                let inputs = prepared
-                    .iter()
-                    .flatten()
-                    .map(|(_, input)| input)
-                    .collect::<Vec<_>>();
-                if inputs.is_empty() {
+                if prepared.iter().all(Option::is_none) {
                     for partial in partials.drain(..) {
                         let bytes = clone_bytes.saturating_add(partial.retained_bytes);
                         allowance.release_peak(bytes);
@@ -1078,42 +1212,88 @@ impl Factory<'_> {
                     partials.clear();
                     break;
                 }
-                let inference_bytes = inputs.iter().fold(0usize, |total, input| {
-                    total.saturating_add(inference_reservation_bytes(input, self.guidance_heads))
-                });
-                if let Err(stop) = allowance.reserve_peak(inference_bytes) {
-                    record_page_stop!(&request, stop);
-                    page_stopped = true;
+                let had_input = prepared
+                    .iter()
+                    .map(|item| item.as_ref().is_some_and(|(_, input)| input.is_some()))
+                    .collect::<Vec<_>>();
+                let mut guidance = None;
+                if !inference_unavailable && had_input.iter().any(|&present| present) {
+                    let inputs = prepared
+                        .iter()
+                        .flatten()
+                        .filter_map(|(_, input)| input.as_ref())
+                        .collect::<Vec<_>>();
+                    let inference_bytes = inputs.iter().fold(0usize, |total, input| {
+                        total
+                            .saturating_add(inference_reservation_bytes(input, self.guidance_heads))
+                    });
+                    match allowance.reserve_peak(inference_bytes) {
+                        Ok(()) => {
+                            reserved = reserved.saturating_add(inference_bytes);
+                            let predicted = self.guidance.predict_native(
+                                &inputs,
+                                self.guidance_version,
+                                self.device,
+                            );
+                            allowance.release_peak(inference_bytes);
+                            reserved -= inference_bytes;
+                            match predicted {
+                                Ok(guides) => {
+                                    counters.guidance_batches += 1;
+                                    counters.guidance_inputs += inputs.len();
+                                    guidance = Some(guides);
+                                }
+                                Err(_) => counters.repair_guidance_fallbacks += inputs.len(),
+                            }
+                        }
+                        Err(stop) => {
+                            let deadline = stop.reason == "deadline";
+                            record_page_stop!(&request, stop);
+                            page_stopped = deadline;
+                        }
+                    }
+                }
+                if page_stopped {
                     break;
                 }
-                reserved = reserved.saturating_add(inference_bytes);
-                let guidance =
-                    self.guidance
-                        .predict_native(&inputs, self.guidance_version, self.device)?;
-                allowance.release_peak(inference_bytes);
-                reserved -= inference_bytes;
-                let guidance_bytes = guidance.iter().fold(0usize, |total, guide| {
-                    total.saturating_add(guide.heads.iter().fold(0usize, |head_total, head| {
-                        head_total.saturating_add(head.directed_costs.len().saturating_mul(32))
-                    }))
+                let input_bytes = prepared
+                    .iter_mut()
+                    .flatten()
+                    .filter_map(|(_, input)| input.take())
+                    .map(|input| input.reserved_bytes)
+                    .sum::<usize>();
+                allowance.release_peak(input_bytes);
+                reserved = reserved.saturating_sub(input_bytes);
+                let mut guidance_bytes = guidance.as_ref().map_or(0, |guides| {
+                    guides.iter().fold(0usize, |total, guide| {
+                        total.saturating_add(guide.heads.iter().fold(0usize, |head_total, head| {
+                            head_total.saturating_add(head.directed_costs.len().saturating_mul(32))
+                        }))
+                    })
                 });
                 if let Err(stop) = allowance.reserve_peak(guidance_bytes) {
+                    let deadline = stop.reason == "deadline";
                     record_page_stop!(&request, stop);
-                    page_stopped = true;
+                    page_stopped = deadline;
+                    guidance = None;
+                    guidance_bytes = 0;
+                } else {
+                    reserved = reserved.saturating_add(guidance_bytes);
+                }
+                if page_stopped {
                     break;
                 }
-                reserved = reserved.saturating_add(guidance_bytes);
-                counters.guidance_batches += 1;
-                counters.guidance_inputs += inputs.len();
                 if let Err(stop) = allowance.check_deadline() {
                     record_page_stop!(&request, stop);
                     page_stopped = true;
                     break;
                 }
                 let mut next = Vec::with_capacity(partials.len());
-                let mut guides = guidance.iter();
-                for (mut partial, prepared) in
-                    std::mem::take(&mut partials).into_iter().zip(&prepared)
+                let mut guide_index = 0usize;
+                for (index, (mut partial, prepared)) in std::mem::take(&mut partials)
+                    .into_iter()
+                    .zip(&prepared)
+                    .enumerate()
                 {
                     let Some((member, _)) = prepared else {
                         let bytes = clone_bytes.saturating_add(partial.retained_bytes);
@@ -1121,16 +1301,54 @@ impl Factory<'_> {
                         reserved -= bytes;
                         continue;
                     };
-                    let guide = guides.next().expect("one guide per prepared input");
-                    let report = partial
-                        .session
-                        .route_candidates_for_network_with_allowance(
+                    let guide = if had_input[index] {
+                        let selected = guidance.as_ref().and_then(|guides| guides.get(guide_index));
+                        guide_index += 1;
+                        selected
+                    } else {
+                        None
+                    };
+                    let routed = if let Some(guide) = guide {
+                        partial.session.route_candidates_for_network_with_allowance(
                             member,
                             self.candidate,
                             guide,
                             allowance,
                         )
-                        .map_err(anyhow::Error::new)?;
+                    } else {
+                        partial
+                            .session
+                            .route_candidates_for_network_anchor_with_allowance(
+                                member,
+                                self.candidate,
+                                allowance,
+                            )
+                    };
+                    let report = match routed {
+                        Ok(report) if guide.is_some() && report.candidates.is_empty() => partial
+                            .session
+                            .route_candidates_for_network_anchor_with_allowance(
+                                member,
+                                self.candidate,
+                                allowance,
+                            )
+                            .map_err(anyhow::Error::new)?,
+                        Ok(report) => report,
+                        Err(diagnostic)
+                            if diagnostic.code.starts_with("constructive.route-guidance") =>
+                        {
+                            counters.repair_guidance_fallbacks += 1;
+                            partial
+                                .session
+                                .route_candidates_for_network_anchor_with_allowance(
+                                    member,
+                                    self.candidate,
+                                    allowance,
+                                )
+                                .map_err(anyhow::Error::new)?
+                        }
+                        Err(diagnostic) => return Err(anyhow::Error::new(diagnostic)),
+                    };
                     let report_bytes = route_report_reservation_bytes(&report);
                     if let Err(stop) = allowance.reserve_peak(report_bytes) {
                         record_page_stop!(member, stop);
@@ -1239,13 +1457,6 @@ impl Factory<'_> {
                     allowance.release_peak(report_bytes);
                     reserved -= report_bytes;
                 }
-                let input_bytes = prepared
-                    .iter()
-                    .flatten()
-                    .map(|(_, input)| input.reserved_bytes)
-                    .sum::<usize>();
-                allowance.release_peak(input_bytes);
-                reserved = reserved.saturating_sub(input_bytes);
                 allowance.release_peak(guidance_bytes);
                 reserved -= guidance_bytes;
                 if page_stopped {
@@ -1289,33 +1500,7 @@ impl Factory<'_> {
                     .iter()
                     .map(|route| route.cells.len())
                     .sum::<usize>();
-                let route_commands = partial
-                    .routes
-                    .iter()
-                    .map(|route| route.commands.len())
-                    .sum::<usize>();
-                let key_bytes = route_cells
-                    .saturating_mul(64)
-                    .saturating_add(route_commands.saturating_mul(64))
-                    .saturating_add(partial.routes.iter().fold(0usize, |total, route| {
-                        total
-                            .saturating_add(128)
-                            .saturating_add(route.connection.len().saturating_mul(2))
-                            .saturating_add(
-                                route
-                                    .source_port
-                                    .as_ref()
-                                    .map_or(0, String::len)
-                                    .saturating_mul(2),
-                            )
-                            .saturating_add(
-                                route
-                                    .target_port
-                                    .as_ref()
-                                    .map_or(0, String::len)
-                                    .saturating_mul(2),
-                            )
-                    }));
+                let key_bytes = network_witness_key_reservation_bytes(&partial.routes);
                 if let Err(stop) = allowance.reserve_peak(key_bytes) {
                     record_page_stop!(&request, stop);
                     page_stopped = true;
@@ -1792,6 +1977,7 @@ fn no_macro_reason(
         usize,
         usize,
         usize,
+        usize,
     ),
     revision: u64,
 ) -> MacroDiagnostic {
@@ -1856,6 +2042,12 @@ fn no_macro_reason(
             "hierarchical.network-unknown",
             "macro-state".into(),
             "finite network variants produced no completed candidate or stopped early".into(),
+        )
+    } else if counters.repair_unknown > before.11 {
+        (
+            "hierarchical.repair-unknown",
+            "macro-state".into(),
+            "bounded repair search stopped without a complete legal candidate".into(),
         )
     } else if counters.route_resource_limit > before.7 {
         (
@@ -2379,6 +2571,36 @@ fn reserve_network_clone_page(
             Err(stop) => return Err(stop),
         }
     }
+}
+
+fn network_witness_key_reservation_bytes(routes: &[Candidate]) -> usize {
+    let route_cells = routes.iter().map(|route| route.cells.len()).sum::<usize>();
+    let route_commands = routes
+        .iter()
+        .map(|route| route.commands.len())
+        .sum::<usize>();
+    route_cells
+        .saturating_mul(64)
+        .saturating_add(route_commands.saturating_mul(64))
+        .saturating_add(routes.iter().fold(0usize, |total, route| {
+            total
+                .saturating_add(128)
+                .saturating_add(route.connection.len().saturating_mul(2))
+                .saturating_add(
+                    route
+                        .source_port
+                        .as_ref()
+                        .map_or(0, String::len)
+                        .saturating_mul(2),
+                )
+                .saturating_add(
+                    route
+                        .target_port
+                        .as_ref()
+                        .map_or(0, String::len)
+                        .saturating_mul(2),
+                )
+        }))
 }
 
 fn network_witness_key_bounded(
@@ -4008,7 +4230,7 @@ mod tests {
             }],
             ..Counters::default()
         };
-        let reason = no_macro_reason(&counters, (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 7);
+        let reason = no_macro_reason(&counters, (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), 7);
         assert_eq!(reason.code, "hierarchical.no-compatible-endpoints");
         assert_eq!(reason.entity, "output-b");
     }
@@ -4030,7 +4252,7 @@ mod tests {
         }
         assert_eq!(counters.request_stops.len(), ROUTE_ATTEMPT_SAMPLE_LIMIT);
         assert_eq!(counters.request_stops_total, ROUTE_ATTEMPT_SAMPLE_LIMIT + 1);
-        let before = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        let before = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         let reason = no_macro_reason(&counters, before, 7);
         assert_eq!(reason.code, "hierarchical.request-work-limit");
         assert_eq!(reason.entity, format!("route-{ROUTE_ATTEMPT_SAMPLE_LIMIT}"));
@@ -4040,6 +4262,7 @@ mod tests {
             counters.request_stops_total,
             counters.route_deadline,
             counters.route_work_limit,
+            0,
             0,
             0,
             0,
@@ -4111,6 +4334,7 @@ mod tests {
             )?
             .candidates
             .remove(0);
+        let expanded = next.expanded + restored.expanded;
         let action = MacroAction::Repair {
             request: request.clone(),
             candidate: RepairCandidate {
@@ -4119,7 +4343,7 @@ mod tests {
                 state_revision: request.state_revision,
                 removed: vec!["first".into()],
                 replacements: vec![next, restored],
-                expanded: 0,
+                expanded,
             },
         };
         let child = action.apply(&session, &config, 1)?;
@@ -4141,6 +4365,215 @@ mod tests {
             vec!["first"]
         );
         assert_eq!(action.features(&session, &child, config.bounds)[2], 2.0);
+        Ok(())
+    }
+
+    #[test]
+    fn negotiated_repair_reaches_the_outer_action_batch() -> Result<()> {
+        let _guard = crate::TORCH_TEST.lock().unwrap();
+        let fixture: Value = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-repair/fixture.json"
+        ))?;
+        let mut session = Session::new(
+            serde_json::from_value(fixture["problem"].clone())?,
+            crate::constructive::test_support::catalogs(),
+            serde_json::from_value(fixture["limits"].clone())?,
+        )?;
+        for command in fixture["prefix"].as_array().expect("fixture prefix") {
+            assert!(
+                session
+                    .step(serde_json::from_value(command.clone())?)
+                    .accepted
+            );
+        }
+        let candidate: CandidateConfig = serde_json::from_value(fixture["candidate"].clone())?;
+        let bounds = candidate.bounds;
+        let model_config = crate::schema::RouteGuidanceModelConfig {
+            schema: crate::schema::RouteGuidanceModelConfig::SCHEMA.into(),
+            encoder: crate::schema::ConstructiveModelConfig {
+                schema: crate::schema::ConstructiveModelConfig::SCHEMA.into(),
+                width: 16,
+                message_rounds: 1,
+            },
+            raster_width: 8,
+            heads: 2,
+            maximum_edge_cost: 32,
+        };
+        let (order, state) = GuidanceModel::initial_state(&model_config, 17)?;
+        let model = GuidanceModel::load(&model_config, &order, &state, Device::Cpu)?;
+        let domain = DomainConfig {
+            placement: bounds,
+            extension_lengths: vec![1, 2, 4],
+        };
+        let forbidden = Factory::new(
+            &model,
+            "test",
+            Device::Cpu,
+            domain.clone(),
+            &candidate,
+            0,
+            4,
+            1,
+            0.0,
+            false,
+            None,
+        )?;
+        let mut forbidden_counters = Counters::default();
+        let baseline_start = std::time::Instant::now();
+        let forbidden_batch = forbidden.action_batch(&session, &mut forbidden_counters, false)?;
+        let baseline_elapsed = baseline_start.elapsed();
+        assert!(forbidden_batch.actions.is_empty());
+        assert_eq!(forbidden_counters.repair_tasks, 0);
+        let factory = Factory::new(
+            &model,
+            "test",
+            Device::Cpu,
+            domain.clone(),
+            &candidate,
+            1,
+            4,
+            1,
+            0.0,
+            false,
+            None,
+        )?;
+        let mut counters = Counters::default();
+        let negotiated_start = std::time::Instant::now();
+        let batch = factory.action_batch(&session, &mut counters, false)?;
+        let negotiated_elapsed = negotiated_start.elapsed();
+        let repairs = batch
+            .actions
+            .iter()
+            .filter_map(|action| match action {
+                MacroAction::Repair { request, candidate } => Some((request, candidate)),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert!(
+            !repairs.is_empty(),
+            "repair report: {:?}",
+            counters.repair_attempt_samples
+        );
+        assert!(
+            repairs.len() >= 2,
+            "priced guided variants should survive semantic dedup"
+        );
+        assert!(repairs.iter().any(|(_, repair)| {
+            repair
+                .replacements
+                .iter()
+                .any(|route| matches!(route.provenance, Provenance::Guided { .. }))
+        }));
+        assert_eq!(repairs[0].0.allowed_removals, vec!["first"]);
+        assert_eq!(repairs[0].1.removed, vec!["first"]);
+        let commit_start = std::time::Instant::now();
+        let child = batch
+            .actions
+            .iter()
+            .find_map(|action| match action {
+                MacroAction::Repair { .. } => Some(action.apply(&session, &candidate, 1)),
+                _ => None,
+            })
+            .expect("repair action")?;
+        let commit_elapsed = commit_start.elapsed();
+        if std::env::var_os("AIC_PLAN04_MEASURE").is_some() {
+            let storage_start = std::time::Instant::now();
+            let stored = serde_json::to_vec(&batch.actions)?;
+            eprintln!(
+                "plan04-local baseline_ms={} negotiated_ms={} commit_ms={} storage_ms={} stored_bytes={} actions={} request_peak_bytes={}",
+                baseline_elapsed.as_millis(),
+                negotiated_elapsed.as_millis(),
+                commit_elapsed.as_millis(),
+                storage_start.elapsed().as_millis(),
+                stored.len(),
+                batch.actions.len(),
+                counters
+                    .repair_attempt_samples
+                    .first()
+                    .map_or(0, |sample| sample.allowance.peak_live_bytes)
+            );
+        }
+        assert!(child.observe().fully_validated);
+        assert_eq!(counters.repair_samples, repairs.len());
+        assert!(counters.repair_priced_edges > 0);
+
+        let mut capped = candidate.clone();
+        capped.request_allowance.max_variants = 1;
+        let capped_factory = Factory::new(
+            &model,
+            "test",
+            Device::Cpu,
+            domain,
+            &capped,
+            1,
+            4,
+            1,
+            0.0,
+            false,
+            None,
+        )?;
+        let mut capped_counters = Counters::default();
+        let mut allowance = RequestAllowance::new(capped.request_allowance.clone());
+        let report = capped_factory.negotiated_repair_actions(
+            &session,
+            &["second".into()],
+            capped.max_candidates,
+            &mut capped_counters,
+            &mut allowance,
+        )?;
+        assert_eq!(report.summary.attempts, 1);
+        assert_eq!(
+            report.summary.termination,
+            negotiated::NegotiationTermination::Unknown
+        );
+        assert!(
+            !report.actions.is_empty(),
+            "later limit must retain legal candidates"
+        );
+        assert_eq!(
+            report.summary.stop.as_ref().and_then(|stop| stop.category),
+            Some(WorkKind::Variants)
+        );
+
+        let mut anchor_only = capped.clone();
+        anchor_only.request_allowance.inference_elements = 1;
+        let anchor_factory = Factory::new(
+            &model,
+            "test",
+            Device::Cpu,
+            DomainConfig {
+                placement: bounds,
+                extension_lengths: vec![1, 2, 4],
+            },
+            &anchor_only,
+            1,
+            4,
+            1,
+            0.0,
+            false,
+            None,
+        )?;
+        let mut anchor_counters = Counters::default();
+        let mut anchor_allowance = RequestAllowance::new(anchor_only.request_allowance.clone());
+        let anchor_report = anchor_factory.negotiated_repair_actions(
+            &session,
+            &["second".into()],
+            anchor_only.max_candidates,
+            &mut anchor_counters,
+            &mut anchor_allowance,
+        )?;
+        assert!(!anchor_report.actions.is_empty());
+        assert!(anchor_counters.repair_guidance_fallbacks >= 2);
+        let mut outer_fallback_counters = Counters::default();
+        let outer_fallback =
+            anchor_factory.action_batch(&session, &mut outer_fallback_counters, false)?;
+        assert!(
+            outer_fallback
+                .actions
+                .iter()
+                .any(|action| matches!(action, MacroAction::Repair { .. }))
+        );
+        assert!(outer_fallback_counters.repair_guidance_fallbacks > 0);
         Ok(())
     }
 
@@ -4300,6 +4733,39 @@ mod tests {
             Some(WorkKind::Variants)
         );
         assert!(allowance.usage().peak_live_bytes > 0);
+        let mut anchor_candidate = candidate.clone();
+        anchor_candidate.request_allowance.inference_elements = 1;
+        anchor_candidate.request_allowance.max_variants = 2;
+        let anchor_factory = Factory::new(
+            &model,
+            "test",
+            Device::Cpu,
+            DomainConfig {
+                placement: bounds,
+                extension_lengths: vec![1, 2, 4],
+            },
+            &anchor_candidate,
+            0,
+            4,
+            1,
+            0.0,
+            false,
+            None,
+        )?;
+        let mut outer_counters = Counters::default();
+        let outer = anchor_factory.action_batch(&session, &mut outer_counters, false)?;
+        assert!(
+            outer
+                .actions
+                .iter()
+                .any(|action| matches!(action, MacroAction::Network(_)))
+        );
+        assert!(
+            outer_counters
+                .request_stops
+                .iter()
+                .any(|sample| sample.stop.category == Some(WorkKind::InferenceElements))
+        );
         let mut tiny_identity_caps = candidate.request_allowance.clone();
         tiny_identity_caps.routing_scans = 1;
         let mut tiny_allowance = RequestAllowance::new(tiny_identity_caps);

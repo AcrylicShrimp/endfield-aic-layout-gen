@@ -2072,6 +2072,7 @@ mod tests {
         rate::Rate,
     };
     use serde::de::DeserializeOwned;
+    use sha2::Digest;
     use std::{fs::File, path::Path};
 
     fn read<T: DeserializeOwned>(root: &Path, name: &str) -> T {
@@ -2267,12 +2268,13 @@ mod tests {
             .unwrap()
             .candidates[0]
             .clone();
+        let expanded = next.expanded + restored.expanded;
         let candidate = routing_candidates::RepairCandidate {
             schema: routing_candidates::REPAIR_CANDIDATE_SCHEMA.into(),
             state_revision: request.state_revision,
             removed: vec!["output-a".into()],
             replacements: vec![next, restored],
-            expanded: 0,
+            expanded,
         };
         let original_bytes = serde_json::to_vec(&original).unwrap();
         let mut invalid = candidate.clone();
@@ -2353,6 +2355,19 @@ mod tests {
             let step = session.step(serde_json::from_value(command.clone()).unwrap());
             assert!(step.accepted, "{step:?}");
         }
+        let legacy_identity = serde_json::to_vec(&(
+            &session.problem,
+            &session.catalogs.identity,
+            &session.limits,
+            &session.final_failure,
+            session.observe(),
+        ))
+        .unwrap();
+        let legacy_digest = sha2::Sha256::digest(legacy_identity)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        assert_eq!(session.repair_state_sha256().unwrap(), legacy_digest);
         let first_route = session.observe().routes[0].clone().unwrap();
         let blocked = session
             .route_candidates(
@@ -2414,6 +2429,222 @@ mod tests {
             .unwrap();
         assert!(session.observe().fully_validated);
         assert_ne!(session.observe().routes[0], Some(first_route));
+
+        // An unfinished factory still needs the native stable-state check;
+        // only a complete factory can enter the independent full validator.
+        let mut partial_problem = fixture["problem"].clone();
+        let mut spare = partial_problem["blocks"][0].clone();
+        spare["id"] = "unplaced-spare".into();
+        partial_problem["blocks"]
+            .as_array_mut()
+            .unwrap()
+            .push(spare);
+        let mut partial = Session::new(
+            serde_json::from_value(partial_problem).unwrap(),
+            catalogs(),
+            serde_json::from_value(fixture["limits"].clone()).unwrap(),
+        )
+        .unwrap();
+        for command in fixture["prefix"].as_array().unwrap() {
+            assert!(
+                partial
+                    .step(serde_json::from_value(command.clone()).unwrap())
+                    .accepted
+            );
+        }
+        let partial_request = partial
+            .repair_request(&["second".into()], &["first".into()], 1, &config)
+            .unwrap();
+        let (mut partial_draft, reserved) = partial
+            .prepare_repair_draft_with_allowance(
+                &partial_request,
+                &["first".into()],
+                &mut routing_candidates::RequestAllowance::new(
+                    partial_request.allowance_caps.clone(),
+                ),
+            )
+            .unwrap();
+        let _ = reserved;
+        let second = partial_draft
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: partial_draft.revision(),
+                    connection: "second".into(),
+                },
+                &config,
+            )
+            .unwrap()
+            .candidates[0]
+            .clone();
+        partial_draft.apply_route_candidate(&second).unwrap();
+        let first = partial_draft
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: partial_draft.revision(),
+                    connection: "first".into(),
+                },
+                &config,
+            )
+            .unwrap()
+            .candidates[0]
+            .clone();
+        let partial_source = partial.clone();
+        partial
+            .apply_repair_candidate(
+                &partial_request,
+                &routing_candidates::RepairCandidate {
+                    schema: routing_candidates::REPAIR_CANDIDATE_SCHEMA.into(),
+                    state_revision: partial_request.state_revision,
+                    removed: vec!["first".into()],
+                    expanded: second.expanded + first.expanded,
+                    replacements: vec![second, first],
+                },
+            )
+            .unwrap();
+        assert!(!partial.observe().fully_validated);
+        assert!(partial.observe().routes.iter().all(Option::is_some));
+        let mut broken_path = partial.clone();
+        broken_path.routes[0].as_mut().unwrap().cells[1].x += 100;
+        let mut check_allowance =
+            routing_candidates::RequestAllowance::new(config.request_allowance.clone());
+        assert_eq!(
+            broken_path
+                .validate_incomplete_repair_state(&partial_source, &mut check_allowance)
+                .unwrap_err()
+                .code,
+            "constructive.repair-stable-state"
+        );
+        let mut broken_component = partial.clone();
+        let point = broken_component.routes[0].as_ref().unwrap().cells[1];
+        let junction_component = broken_component
+            .catalogs
+            .components
+            .catalog()
+            .components
+            .iter()
+            .find(|definition| {
+                definition.transport == aic_layout::logistics::TransportKind::Belt
+                    && matches!(
+                        definition.kind,
+                        aic_layout::logistics::LogisticsComponentKind::Splitter
+                            | aic_layout::logistics::LogisticsComponentKind::Converger
+                    )
+            })
+            .unwrap()
+            .id
+            .clone();
+        broken_component.junctions.insert(
+            (aic_layout::logistics::TransportKind::Belt, point),
+            aic_layout::physical::Junction {
+                id: "bad-junction".into(),
+                component: junction_component,
+                position: point,
+                rotation: 45,
+                connections: vec!["first".into()],
+            },
+        );
+        let mut check_allowance =
+            routing_candidates::RequestAllowance::new(config.request_allowance.clone());
+        assert_eq!(
+            broken_component
+                .validate_incomplete_repair_state(&partial_source, &mut check_allowance)
+                .unwrap_err()
+                .code,
+            "constructive.repair-stable-state"
+        );
+    }
+
+    #[test]
+    fn many_route_repair_prices_and_survivor_rebuild_obey_separate_caps() {
+        let panel: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../docs/benchmarks/hierarchical-network/panel.json"
+        )))
+        .unwrap();
+        let case = &panel["cases"][0];
+        let mut problem = serde_json::json!({
+            "blocks": [], "terminals": [], "connections": []
+        });
+        let mut prefix = Vec::new();
+        for unit in 0..10 {
+            let name = |id: &str| format!("unit-{unit}-{id}");
+            for category in ["blocks", "terminals", "connections"] {
+                for entry in case["problem"][category].as_array().unwrap() {
+                    let mut entry = entry.clone();
+                    for field in ["id", "source", "target"] {
+                        if let Some(id) = entry[field].as_str() {
+                            entry[field] = name(id).into();
+                        }
+                    }
+                    problem[category].as_array_mut().unwrap().push(entry);
+                }
+            }
+            for command in case["prefix"].as_array().unwrap() {
+                let mut command = command.clone();
+                for field in ["block", "terminal", "connection"] {
+                    if let Some(id) = command[field].as_str() {
+                        command[field] = name(id).into();
+                    }
+                }
+                if let Some(x) = command["position"]["x"].as_i64() {
+                    command["position"]["x"] = (x + 20 * unit).into();
+                }
+                prefix.push(command);
+            }
+        }
+        let mut session = Session::new(
+            serde_json::from_value(problem).unwrap(),
+            catalogs(),
+            serde_json::from_value(panel["limits"].clone()).unwrap(),
+        )
+        .unwrap();
+        for command in prefix {
+            let step = session.step(serde_json::from_value(command).unwrap());
+            assert!(step.accepted, "{step:?}");
+        }
+        assert_eq!(session.observe().completed, 10);
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../docs/benchmarks/hierarchical-repair/fixture.json"
+        )))
+        .unwrap();
+        let mut config: routing_candidates::Config =
+            serde_json::from_value(fixture["candidate"].clone()).unwrap();
+        config.bounds.max_x = 219;
+        let selected = vec!["unit-0-output-a".into()];
+        config.request_allowance.route_cells = 1;
+        let mut price_allowance =
+            routing_candidates::RequestAllowance::new(config.request_allowance.clone());
+        let (scope, scope_bytes) = session
+            .repair_scope_for_policy(&selected, 1, &config, &mut price_allowance)
+            .unwrap();
+        let failure = scope.conflict_order(&mut price_allowance).unwrap_err();
+        assert_eq!(failure.code, "constructive.repair-work-limit");
+        assert_eq!(
+            price_allowance.last_stop().unwrap().category,
+            Some(routing_candidates::WorkKind::RouteCells)
+        );
+        drop(scope);
+        price_allowance.release_peak(scope_bytes);
+
+        config.request_allowance.route_cells = 50_000_000;
+        config.request_allowance.replay_route_cells = 1;
+        let mut rebuild_allowance =
+            routing_candidates::RequestAllowance::new(config.request_allowance.clone());
+        let (scope, scope_bytes) = session
+            .repair_scope_for_policy(&selected, 1, &config, &mut rebuild_allowance)
+            .unwrap();
+        let failure = scope
+            .start_draft(&["unit-0-supply-flow".into()], &mut rebuild_allowance)
+            .err()
+            .expect("survivor rebuild should hit its own route-cell cap");
+        assert_eq!(failure.code, "constructive.repair-work-limit");
+        assert_eq!(
+            rebuild_allowance.last_stop().unwrap().category,
+            Some(routing_candidates::WorkKind::ReplayRouteCells)
+        );
+        drop(scope);
+        rebuild_allowance.release_peak(scope_bytes);
     }
 
     #[test]
