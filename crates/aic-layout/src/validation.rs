@@ -68,6 +68,18 @@ pub fn junction_options(
     uses: &[SiteArmUse<'_>],
     catalogs: &Catalogs,
 ) -> Result<Option<Vec<(String, i64)>>> {
+    junction_options_with_visit(transport, point, uses, catalogs, || true)
+}
+
+/// The visit hook is used by bounded native replay to stop inside catalog
+/// enumeration. The ordinary validator passes a no-op hook.
+pub fn junction_options_with_visit(
+    transport: TransportKind,
+    point: Point,
+    uses: &[SiteArmUse<'_>],
+    catalogs: &Catalogs,
+    mut visit: impl FnMut() -> bool,
+) -> Result<Option<Vec<(String, i64)>>> {
     if uses.is_empty() {
         return Err(error(
             "topology",
@@ -183,6 +195,13 @@ pub fn junction_options(
     }
     let mut options = Vec::new();
     for definition in &catalogs.components.catalog().components {
+        if !visit() {
+            return Err(error(
+                "route-request-work-limit",
+                format!("{},{}", point.x, point.y),
+                "Catalog visit allowance or deadline reached",
+            ));
+        }
         if definition.transport != transport
             || definition.kind != kind
             || definition.footprint.width != 1
@@ -196,6 +215,13 @@ pub fn junction_options(
             continue;
         }
         for &rotation in &definition.allowed_rotations {
+            if !visit() {
+                return Err(error(
+                    "route-request-work-limit",
+                    format!("{},{}", point.x, point.y),
+                    "Catalog visit allowance or deadline reached",
+                ));
+            }
             let rotated = |direction: &crate::logistics::CardinalDirection| {
                 (cardinal_index(*direction) + rotation as usize / 90) % 4
             };
@@ -229,6 +255,15 @@ pub fn junction_options(
 /// Validate actual geometry and obligations, never caller-supplied metrics/flags.
 /// Count/materialization guards are operational limits, not game limits.
 pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
+    validate_with_visit(layout, catalogs, || Ok(()))
+}
+
+/// Validate while allowing a caller to meter and interrupt record visits.
+pub fn validate_with_visit(
+    layout: &Layout,
+    catalogs: &Catalogs,
+    mut visit: impl FnMut() -> Result<()>,
+) -> Result<Metrics> {
     let problem = &layout.problem;
     let solution = &layout.solution;
     if layout.schema != SCHEMA
@@ -260,6 +295,7 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
     }
     let mut blocks = BTreeMap::new();
     for (i, block) in problem.blocks.iter().enumerate() {
+        visit()?;
         if !is_stable_id(&block.id)
             || blocks.insert(block.id.as_str(), i).is_some()
             || catalogs.facilities.facility(&block.facility).is_none()
@@ -273,6 +309,7 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
     }
     let mut terminals = BTreeMap::new();
     for (i, terminal) in problem.terminals.iter().enumerate() {
+        visit()?;
         if !is_stable_id(&terminal.id)
             || !is_stable_id(&terminal.commodity)
             || blocks.contains_key(terminal.id.as_str())
@@ -299,6 +336,7 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
         hi.y = hi.y.max(p.y);
     };
     for pose in &solution.poses {
+        visit()?;
         let Some(&i) = blocks.get(pose.block.as_str()) else {
             return Err(error(
                 "pose",
@@ -349,6 +387,7 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
         include(pose.position.shifted(w - 1, h - 1));
         for y in pose.position.y..pose.position.y + h {
             for x in pose.position.x..pose.position.x + w {
+                visit()?;
                 if !body.insert(Point { x, y }) {
                     return Err(error("overlap", pose.block.clone(), "Block bodies overlap"));
                 }
@@ -360,6 +399,7 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
     let mut occupied_terminal_positions = HashSet::new();
     let mut terminal_at = HashMap::new();
     for pose in &solution.terminal_poses {
+        visit()?;
         let Some(&i) = terminals.get(pose.terminal.as_str()) else {
             return Err(error(
                 "terminal-pose",
@@ -388,6 +428,7 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
     let mut outgoing = vec![0; blocks.len()];
     let mut transports = [0; 2];
     for (i, connection) in problem.connections.iter().enumerate() {
+        visit()?;
         let source_block = blocks.get(connection.source.as_str()).copied();
         let target_block = blocks.get(connection.target.as_str()).copied();
         let source_terminal = terminals.get(connection.source.as_str()).copied();
@@ -453,6 +494,7 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
     let mut distance_sum = 0i64;
     let mut detour_sum = 0f64;
     for (ri, route) in solution.routes.iter().enumerate() {
+        visit()?;
         let Some(&ci) = connection_ids.get(route.connection.as_str()) else {
             return Err(error(
                 "route",
@@ -558,6 +600,7 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
         }
         let mut local = HashSet::new();
         for (pi, &p) in route.cells.iter().enumerate() {
+            visit()?;
             if let Some(&terminal) = terminal_at.get(&p) {
                 if problem.terminals[terminal].id != connection.source
                     && problem.terminals[terminal].id != connection.target
@@ -598,6 +641,7 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
     let mut bridge_sites = HashSet::new();
     let mut bridge_ids = HashSet::new();
     for bridge in &solution.bridges {
+        visit()?;
         let Some(definition) = catalogs.components.component(&bridge.component) else {
             return Err(error(
                 "bridge",
@@ -639,6 +683,7 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
         let mut load = [Rate::zero(), Rate::zero()];
         let mut directions = [None, None];
         for &(ci, pi) in users {
+            visit()?;
             let route = &solution.routes[route_indices[ci]];
             if pi == 0 || pi + 1 == route.cells.len() {
                 return Err(error(
@@ -711,6 +756,7 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
     let mut junction_sites = HashMap::new();
     let mut junction_ids = HashSet::new();
     for junction in &solution.junctions {
+        visit()?;
         let definition = catalogs
             .components
             .component(&junction.component)
@@ -746,6 +792,7 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
         }
     }
     for (&(transport, point), users) in &visits {
+        visit()?;
         if bridge_sites.contains(&(transport, point)) {
             if junction_sites.contains_key(&(transport, point)) {
                 return Err(error("junction", "routes", "Junction overlaps bridge"));
@@ -757,6 +804,7 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
         }
         let mut arm_uses = Vec::with_capacity(users.len());
         for &(ci, pi) in users {
+            visit()?;
             let connection = &problem.connections[ci];
             let route = &solution.routes[route_indices[ci]];
             let mut external_incoming = false;
@@ -799,7 +847,19 @@ pub fn validate(layout: &Layout, catalogs: &Catalogs) -> Result<Metrics> {
                 external_outgoing,
             });
         }
-        let required = junction_options(transport, point, &arm_uses, catalogs)?;
+        let mut interrupted = None;
+        let required_result =
+            junction_options_with_visit(transport, point, &arm_uses, catalogs, || match visit() {
+                Ok(()) => true,
+                Err(failure) => {
+                    interrupted = Some(failure);
+                    false
+                }
+            });
+        if let Some(failure) = interrupted {
+            return Err(failure);
+        }
+        let required = required_result?;
         let selected: Option<&&Junction> = junction_sites.get(&(transport, point));
         match (required, selected) {
             (None, None) => {}

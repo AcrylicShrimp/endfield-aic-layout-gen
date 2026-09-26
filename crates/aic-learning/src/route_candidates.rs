@@ -9,7 +9,9 @@ use aic_layout::{
 };
 use aic_pilot_native::constructive::{
     Command, Limits, Session,
-    routing_candidates::{Candidate, Config as CandidateConfig, Request, Termination},
+    routing_candidates::{
+        AllowanceStop, AllowanceUsage, Candidate, Config as CandidateConfig, Request, Termination,
+    },
 };
 use anyhow::{Context, Result, ensure};
 use rayon::prelude::*;
@@ -18,7 +20,7 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
 const PANEL_SCHEMA: &str = "aic-route-candidate-panel-v1";
-const REPORT_SCHEMA: &str = "aic-route-candidate-harness-report-v2";
+const REPORT_SCHEMA: &str = "aic-route-candidate-harness-report-v3";
 const MAX_INPUT_BYTES: u64 = 16 * 1024 * 1024;
 
 #[derive(Clone, Debug, Deserialize)]
@@ -95,6 +97,8 @@ struct CaseReport {
     preflight_expanded: usize,
     guides_found: usize,
     duplicate_guides: usize,
+    allowance: Option<AllowanceUsage>,
+    allowance_stop: Option<AllowanceStop>,
     native_rejection_codes: Vec<String>,
     minimum_pairwise_dissimilarity: Option<f64>,
     mean_pairwise_dissimilarity: Option<f64>,
@@ -386,6 +390,8 @@ fn evaluate_case(case: &Case, panel: &Panel, catalogs: Arc<Catalogs>) -> Result<
         preflight_expanded: root.preflight_expanded,
         guides_found: root.guides_found,
         duplicate_guides: root.duplicate_guides,
+        allowance: root.allowance,
+        allowance_stop: root.allowance_stop,
         native_rejection_codes: root
             .native_rejections
             .into_iter()

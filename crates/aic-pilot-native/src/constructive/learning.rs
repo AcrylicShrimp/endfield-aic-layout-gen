@@ -10,6 +10,7 @@ use aic_layout::{
 };
 use serde::{Deserialize, Serialize};
 
+use super::routing_candidates::{AllowanceStop, RequestAllowance, RequestFailure, WorkKind};
 use super::{Command, Diagnostic, Direction, Session, error};
 
 pub const SCHEMA: &str = "aic-constructive-learning-v3";
@@ -331,6 +332,29 @@ impl Session {
             ));
         }
         Ok(Arc::new(Input::new_for_route(self, config, connection)))
+    }
+
+    pub fn route_guidance_learning_input_with_allowance(
+        &self,
+        config: &Config,
+        connection: usize,
+        allowance: &mut RequestAllowance,
+    ) -> Result<Arc<Input>, RequestFailure> {
+        config.validate(self)?;
+        if self.active.is_some()
+            || connection >= self.problem.connections.len()
+            || self.routes[connection].is_some()
+        {
+            return Err(error(
+                "route-guidance-target",
+                "learning-domain",
+                "route guidance requires an unresolved connection in a stable state",
+            )
+            .into());
+        }
+        Ok(Arc::new(Input::new_for_route_bounded(
+            self, config, connection, allowance,
+        )?))
     }
 
     /// Encodes a stable macro-search state without inheriting the most recent
@@ -1252,7 +1276,34 @@ impl Input {
         input
     }
 
+    fn new_for_route_bounded(
+        session: &Session,
+        config: &Config,
+        connection: usize,
+        allowance: &mut RequestAllowance,
+    ) -> Result<Self, AllowanceStop> {
+        let mut input = Self::new_bounded(session, config, Some(allowance))?;
+        for row in &mut input.entity_features {
+            allowance.charge(WorkKind::ValidationRecords, 1)?;
+            row[7] = 0.;
+        }
+        let entity = session.problem.blocks.len() + session.problem.terminals.len() + connection;
+        input.entity_features[entity][7] = 1.;
+        input.focus_features = [0.; FOCUS_FEATURES];
+        input.focus_features[2] = 1.;
+        input.focus_entity = entity as i64;
+        Ok(input)
+    }
+
     fn new(session: &Session, config: &Config) -> Self {
+        Self::new_bounded(session, config, None).expect("unbounded graph construction cannot stop")
+    }
+
+    fn new_bounded(
+        session: &Session,
+        config: &Config,
+        mut allowance: Option<&mut RequestAllowance>,
+    ) -> Result<Self, AllowanceStop> {
         let scale = config
             .placement
             .width()
@@ -1264,6 +1315,7 @@ impl Input {
         let mut entity_features =
             Vec::with_capacity(connection_offset + session.problem.connections.len());
         for (index, block) in session.problem.blocks.iter().enumerate() {
+            charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
             let definition = session
                 .catalogs
                 .facilities
@@ -1287,6 +1339,7 @@ impl Input {
             entity_features.push(row);
         }
         for (index, terminal) in session.problem.terminals.iter().enumerate() {
+            charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
             let mut row = [0.; ENTITY_FEATURES];
             row[16
                 + matches!(
@@ -1308,6 +1361,7 @@ impl Input {
         let mut relation_index = Vec::with_capacity(session.problem.connections.len() * 2);
         let mut relation_features = Vec::with_capacity(session.problem.connections.len() * 2);
         for (index, connection) in session.problem.connections.iter().enumerate() {
+            charge_graph(&mut allowance, WorkKind::GraphRows, 3)?;
             let entity = connection_offset + index;
             let mut row = [0.; ENTITY_FEATURES];
             row[1] = 1.;
@@ -1348,6 +1402,7 @@ impl Input {
             let (width, height, _) = rotate(definition, pose.rotation, pose.position);
             for y in pose.position.y..pose.position.y + height {
                 for x in pose.position.x..pose.position.x + width {
+                    charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
                     push_spatial(
                         &mut spatial_features,
                         &mut spatial_owners,
@@ -1363,6 +1418,8 @@ impl Input {
             let Some(route) = route else { continue };
             let kind = 3 + layer(session.problem.connections[connection].transport);
             for &point in &route.cells {
+                charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
+                charge_graph(&mut allowance, WorkKind::RouteCells, 1)?;
                 push_spatial(
                     &mut spatial_features,
                     &mut spatial_owners,
@@ -1376,6 +1433,20 @@ impl Input {
         let mut bridge_resources = session.bridges.values().cloned().collect::<Vec<_>>();
         bridge_resources.sort_by(|left, right| left.id.cmp(&right.id));
         for bridge in &bridge_resources {
+            charge_graph(
+                &mut allowance,
+                WorkKind::CatalogVisits,
+                session.catalogs.components.catalog().components.len(),
+            )?;
+            charge_graph(
+                &mut allowance,
+                WorkKind::ValidationRecords,
+                bridge
+                    .channels
+                    .iter()
+                    .map(|channel| channel.connections.len())
+                    .sum(),
+            )?;
             let (component_code, loads) = session.bridge_component_features(bridge);
             for (axis, channel) in bridge.channels.iter().enumerate() {
                 let kind = match channel.axis {
@@ -1383,6 +1454,7 @@ impl Input {
                     BridgeAxis::Vertical => 10,
                 };
                 for connection in &channel.connections {
+                    charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
                     let owner = session.connections[connection] + connection_offset;
                     push_spatial(
                         &mut spatial_features,
@@ -1401,6 +1473,7 @@ impl Input {
         }
         for (terminal, pose) in session.terminal_poses.iter().enumerate() {
             let Some(pose) = pose else { continue };
+            charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
             push_spatial(
                 &mut spatial_features,
                 &mut spatial_owners,
@@ -1412,6 +1485,8 @@ impl Input {
         }
         if let Some(active) = &session.active {
             for &point in &active.cells {
+                charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
+                charge_graph(&mut allowance, WorkKind::RouteCells, 1)?;
                 push_spatial(
                     &mut spatial_features,
                     &mut spatial_owners,
@@ -1422,6 +1497,7 @@ impl Input {
                 );
             }
             let endpoint = *active.cells.last().expect("active route contains source");
+            charge_graph(&mut allowance, WorkKind::GraphRows, 2)?;
             push_spatial(
                 &mut spatial_features,
                 &mut spatial_owners,
@@ -1473,24 +1549,21 @@ impl Input {
                 focus_entity = (connection_offset + connection) as i64;
             }
         }
-        let occupied: BTreeSet<_> = session
-            .bodies
-            .iter()
-            .copied()
-            .chain(
-                session
-                    .occupied
-                    .iter()
-                    .flat_map(|occupied| occupied.keys().copied()),
-            )
-            .chain(
-                session
-                    .terminal_poses
-                    .iter()
-                    .flatten()
-                    .map(|pose| pose.position),
-            )
-            .collect();
+        let mut occupied = BTreeSet::new();
+        for &point in &session.bodies {
+            charge_graph(&mut allowance, WorkKind::ValidationRecords, 1)?;
+            occupied.insert(point);
+        }
+        for layer in &session.occupied {
+            for &point in layer.keys() {
+                charge_graph(&mut allowance, WorkKind::ValidationRecords, 1)?;
+                occupied.insert(point);
+            }
+        }
+        for pose in session.terminal_poses.iter().flatten() {
+            charge_graph(&mut allowance, WorkKind::ValidationRecords, 1)?;
+            occupied.insert(pose.position);
+        }
         let placed = session.poses.iter().filter(|pose| pose.is_some()).count()
             + session
                 .terminal_poses
@@ -1508,7 +1581,7 @@ impl Input {
             config.placement.width() as f32 / scale,
             config.placement.height() as f32 / scale,
         ];
-        Self {
+        Ok(Self {
             schema: SCHEMA,
             entity_features,
             relation_index,
@@ -1519,8 +1592,19 @@ impl Input {
             focus_features,
             focus_entity,
             bridge_resources,
-        }
+        })
     }
+}
+
+fn charge_graph(
+    allowance: &mut Option<&mut RequestAllowance>,
+    kind: WorkKind,
+    count: usize,
+) -> Result<(), AllowanceStop> {
+    if let Some(allowance) = allowance.as_deref_mut() {
+        allowance.charge(kind, count)?;
+    }
+    Ok(())
 }
 
 fn push_spatial(

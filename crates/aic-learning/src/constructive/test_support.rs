@@ -20,7 +20,7 @@ fn read<T: DeserializeOwned>(root: &Path, name: &str) -> T {
     serde_json::from_reader(File::open(root.join(name)).unwrap()).unwrap()
 }
 
-fn catalogs() -> Arc<Catalogs> {
+pub(crate) fn catalogs() -> Arc<Catalogs> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/game/normalized");
     Arc::new(Catalogs {
         identity: "1".repeat(64),

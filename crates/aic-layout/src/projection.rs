@@ -1,5 +1,7 @@
 //! Catalog-backed port projection; rotations are validated by the caller.
-use crate::facilities::{FacilityDefinition, FacilityPortDirection, FacilityPortEdge};
+use crate::facilities::{
+    FacilityDefinition, FacilityPortDefinition, FacilityPortDirection, FacilityPortEdge,
+};
 use crate::geometry::Point;
 use crate::logistics::{CardinalDirection, TransportKind};
 use serde::Serialize;
@@ -30,42 +32,54 @@ pub fn cardinal_index(edge: CardinalDirection) -> usize {
         CardinalDirection::North => 3,
     }
 }
+
+pub fn project_port(
+    spec: &FacilityDefinition,
+    port: &FacilityPortDefinition,
+    rotation: i64,
+    origin: Point,
+) -> Port {
+    let mut width = spec.footprint.width;
+    let mut height = spec.footprint.height;
+    let mut position = Point {
+        x: port.position.x,
+        y: port.position.y,
+    };
+    let mut edge = port.edge;
+    for _ in 0..rotation / 90 {
+        position = Point {
+            x: height - 1 - position.y,
+            y: position.x,
+        };
+        edge = [
+            FacilityPortEdge::East,
+            FacilityPortEdge::South,
+            FacilityPortEdge::West,
+            FacilityPortEdge::North,
+        ][(edge_index(edge) + 1) % 4];
+        std::mem::swap(&mut width, &mut height);
+    }
+    position = position.shifted(origin.x, origin.y);
+    Port {
+        id: port.id.clone(),
+        direction: port.direction,
+        transport: port.transport,
+        position,
+        edge,
+        connection: position.offset(edge_index(edge)),
+    }
+}
+
 pub fn rotate(spec: &FacilityDefinition, rotation: i64, origin: Point) -> (i64, i64, Vec<Port>) {
     let mut width = spec.footprint.width;
     let mut height = spec.footprint.height;
-    let mut ports: Vec<_> = spec
-        .ports
-        .iter()
-        .map(|p| Port {
-            id: p.id.clone(),
-            direction: p.direction,
-            transport: p.transport,
-            position: Point {
-                x: p.position.x,
-                y: p.position.y,
-            },
-            edge: p.edge,
-            connection: Point::default(),
-        })
-        .collect();
     for _ in 0..rotation / 90 {
-        for p in &mut ports {
-            p.position = Point {
-                x: height - 1 - p.position.y,
-                y: p.position.x,
-            };
-            p.edge = [
-                FacilityPortEdge::East,
-                FacilityPortEdge::South,
-                FacilityPortEdge::West,
-                FacilityPortEdge::North,
-            ][(edge_index(p.edge) + 1) % 4];
-        }
         std::mem::swap(&mut width, &mut height);
     }
-    for p in &mut ports {
-        p.position = p.position.shifted(origin.x, origin.y);
-        p.connection = p.position.offset(edge_index(p.edge));
-    }
+    let ports: Vec<_> = spec
+        .ports
+        .iter()
+        .map(|p| project_port(spec, p, rotation, origin))
+        .collect();
     (width, height, ports)
 }

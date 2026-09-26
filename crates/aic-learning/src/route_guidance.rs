@@ -635,6 +635,8 @@ mod tests {
             bridge_resources: vec![],
             grid: vec![0.; GUIDANCE_GRID_CHANNELS * 8 * 6],
             graph,
+            pending_connections: vec![],
+            reserved_bytes: 0,
         };
         let native = model.predict_native(&[&input], "random-v1", Device::Cpu)?;
         assert_eq!(native.len(), 1);

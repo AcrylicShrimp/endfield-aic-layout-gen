@@ -6,7 +6,11 @@
 
 use std::{
     collections::{BTreeMap, HashMap, HashSet},
-    sync::Arc,
+    sync::{
+        Arc,
+        atomic::{AtomicU8, AtomicUsize, Ordering},
+    },
+    time::Instant,
 };
 
 use aic_layout::rate::Rate;
@@ -18,9 +22,9 @@ use aic_layout::{
         Bridge, BridgeAxis, BridgeChannel, Junction, Layout, Metrics, Pose, Problem, Route, SCHEMA,
         Solution, TerminalDirection, TerminalPose,
     },
-    projection::{Port, cardinal_index, rotate},
+    projection::{Port, cardinal_index, project_port, rotate},
     stable_id::is_stable_id,
-    validation::{Catalogs, SiteArmUse, junction_options, validate, within_capacity},
+    validation::{Catalogs, SiteArmUse, junction_options_with_visit, validate, within_capacity},
 };
 use serde::{Deserialize, Serialize};
 
@@ -221,6 +225,46 @@ pub struct Session {
     revision: u64,
     metrics: Option<Metrics>,
     final_failure: Option<Diagnostic>,
+    replay_deadline: Option<Instant>,
+    replay_meter: Option<Arc<ReplayMeter>>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ReplayWork {
+    RouteCells = 0,
+    Users = 1,
+    Catalog = 2,
+    Validation = 3,
+}
+
+struct ReplayMeter {
+    limits: [usize; 4],
+    used: [AtomicUsize; 4],
+    stopped: AtomicU8,
+    visits: AtomicUsize,
+}
+
+impl ReplayMeter {
+    fn new(limits: [usize; 4]) -> Self {
+        Self {
+            limits,
+            used: std::array::from_fn(|_| AtomicUsize::new(0)),
+            stopped: AtomicU8::new(0),
+            visits: AtomicUsize::new(0),
+        }
+    }
+    fn usage(&self) -> [usize; 4] {
+        std::array::from_fn(|index| self.used[index].load(Ordering::Relaxed))
+    }
+    fn stopped(&self) -> Option<ReplayWork> {
+        match self.stopped.load(Ordering::Relaxed) {
+            1 => Some(ReplayWork::RouteCells),
+            2 => Some(ReplayWork::Users),
+            3 => Some(ReplayWork::Catalog),
+            4 => Some(ReplayWork::Validation),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -232,6 +276,64 @@ struct UsedPort {
 }
 
 impl Session {
+    /// Conservative reservation for one independently mutable search fork.
+    /// Catalog tables are shared through Arc and are not copied.
+    pub fn clone_reservation_bytes(&self) -> usize {
+        let route_cells = self
+            .routes
+            .iter()
+            .flatten()
+            .map(|route| route.cells.len())
+            .sum::<usize>();
+        let occupied_users = self
+            .occupied
+            .iter()
+            .flat_map(|layer| layer.values())
+            .map(Vec::len)
+            .sum::<usize>();
+        let records = self
+            .problem
+            .blocks
+            .len()
+            .saturating_add(self.problem.terminals.len())
+            .saturating_add(self.problem.connections.len().saturating_mul(3))
+            .saturating_add(self.bodies.len())
+            .saturating_add(self.terminal_at.len())
+            .saturating_add(self.junctions.len().saturating_mul(4))
+            .saturating_add(self.bridges.len().saturating_mul(8))
+            .saturating_add(route_cells.saturating_mul(2))
+            .saturating_add(occupied_users.saturating_mul(2))
+            .saturating_add(self.used_ports.len().saturating_mul(3));
+        let string_bytes = self
+            .problem
+            .blocks
+            .iter()
+            .map(|block| block.id.len() + block.facility.len())
+            .sum::<usize>()
+            .saturating_add(
+                self.problem
+                    .terminals
+                    .iter()
+                    .map(|terminal| terminal.id.len())
+                    .sum::<usize>(),
+            )
+            .saturating_add(
+                self.problem
+                    .connections
+                    .iter()
+                    .map(|connection| {
+                        connection.id.len()
+                            + connection.source.len()
+                            + connection.target.len()
+                            + connection.commodity.len()
+                    })
+                    .sum::<usize>(),
+            );
+        std::mem::size_of::<Self>()
+            .saturating_add(records.saturating_mul(512))
+            .saturating_add(string_bytes.saturating_mul(8))
+    }
+
     pub fn new(
         problem: Problem,
         catalogs: Arc<Catalogs>,
@@ -382,7 +484,50 @@ impl Session {
             revision: 0,
             metrics: None,
             final_failure: None,
+            replay_deadline: None,
+            replay_meter: None,
         })
+    }
+
+    fn check_replay_deadline(&self) -> Result<(), Diagnostic> {
+        if self
+            .replay_deadline
+            .is_some_and(|deadline| Instant::now() >= deadline)
+        {
+            return Err(error(
+                "route-request-deadline",
+                "route-candidate",
+                "request deadline reached during native replay",
+            ));
+        }
+        Ok(())
+    }
+
+    fn charge_replay(&self, kind: ReplayWork, count: usize) -> Result<(), Diagnostic> {
+        let Some(meter) = &self.replay_meter else {
+            return Ok(());
+        };
+        let index = kind as usize;
+        let used = meter.used[index]
+            .load(Ordering::Relaxed)
+            .saturating_add(count);
+        if used > meter.limits[index] {
+            meter.stopped.store(index as u8 + 1, Ordering::Relaxed);
+            return Err(error(
+                "route-request-work-limit",
+                "route-candidate",
+                format!("native replay {:?} visit limit reached", kind),
+            ));
+        }
+        meter.used[index].store(used, Ordering::Relaxed);
+        let visits = meter
+            .visits
+            .fetch_add(count, Ordering::Relaxed)
+            .saturating_add(count);
+        if visits / 256 != visits.saturating_sub(count) / 256 {
+            self.check_replay_deadline()?;
+        }
+        Ok(())
     }
 
     pub fn observe(&self) -> Observation {
@@ -410,6 +555,24 @@ impl Session {
             completion_ratio: self.progress(),
             fully_validated: self.metrics.is_some(),
         }
+    }
+
+    /// Read the immutable state identity without cloning a public observation.
+    pub fn revision(&self) -> u64 {
+        self.revision
+    }
+
+    /// Cheap macro-state checks used before preparing route requests.
+    pub fn has_active_route(&self) -> bool {
+        self.active.is_some()
+    }
+
+    pub fn route_is_complete(&self, index: usize) -> bool {
+        self.routes[index].is_some()
+    }
+
+    pub fn has_unplaced_entities(&self) -> bool {
+        self.poses.iter().any(Option::is_none) || self.terminal_poses.iter().any(Option::is_none)
     }
 
     pub fn metrics(&self) -> Option<&Metrics> {
@@ -534,15 +697,44 @@ impl Session {
         if accepted {
             self.revision += 1;
             if self.is_complete() {
-                match validate(&self.complete_layout(), &self.catalogs) {
-                    Ok(metrics) => self.metrics = Some(metrics),
-                    Err(failure) => {
-                        self.final_failure = Some(error(
-                            "final-validation",
-                            failure.entity.to_string(),
-                            failure.message,
-                        ));
+                let layout = if self.replay_meter.is_some() {
+                    self.complete_layout_bounded()
+                } else {
+                    Ok(self.complete_layout())
+                };
+                match layout {
+                    Ok(layout) => {
+                        let validation = if self.replay_meter.is_some() {
+                            aic_layout::validation::validate_with_visit(
+                                &layout,
+                                &self.catalogs,
+                                || {
+                                    self.charge_replay(ReplayWork::Validation, 1).map_err(
+                                        |failure| {
+                                            aic_layout::validation::error(
+                                                "request-work-limit",
+                                                "final-validation",
+                                                failure.message,
+                                            )
+                                        },
+                                    )
+                                },
+                            )
+                        } else {
+                            validate(&layout, &self.catalogs)
+                        };
+                        match validation {
+                            Ok(metrics) => self.metrics = Some(metrics),
+                            Err(failure) => {
+                                self.final_failure = Some(error(
+                                    "final-validation",
+                                    failure.entity.to_string(),
+                                    failure.message,
+                                ));
+                            }
+                        }
                     }
+                    Err(failure) => self.final_failure = Some(failure),
                 }
             }
         }
@@ -633,6 +825,87 @@ impl Session {
                 },
             },
         }
+    }
+
+    fn complete_layout_bounded(&self) -> Result<Layout, Diagnostic> {
+        let mut blocks = Vec::with_capacity(self.problem.blocks.len());
+        for block in &self.problem.blocks {
+            self.charge_replay(ReplayWork::Validation, 1)?;
+            blocks.push(block.clone());
+        }
+        let mut terminals = Vec::with_capacity(self.problem.terminals.len());
+        for terminal in &self.problem.terminals {
+            self.charge_replay(ReplayWork::Validation, 1)?;
+            terminals.push(terminal.clone());
+        }
+        let mut connections = Vec::with_capacity(self.problem.connections.len());
+        for connection in &self.problem.connections {
+            self.charge_replay(ReplayWork::Validation, 1)?;
+            connections.push(connection.clone());
+        }
+        let mut poses = Vec::with_capacity(self.poses.len());
+        for pose in self.poses.iter().flatten() {
+            self.charge_replay(ReplayWork::Validation, 1)?;
+            poses.push(pose.clone());
+        }
+        let mut terminal_poses = Vec::with_capacity(self.terminal_poses.len());
+        for pose in self.terminal_poses.iter().flatten() {
+            self.charge_replay(ReplayWork::Validation, 1)?;
+            terminal_poses.push(pose.clone());
+        }
+        let mut routes = Vec::with_capacity(self.routes.len());
+        for route in self.routes.iter().flatten() {
+            self.charge_replay(ReplayWork::Validation, 1)?;
+            let mut cells = Vec::with_capacity(route.cells.len());
+            for chunk in route.cells.chunks(256) {
+                self.charge_replay(ReplayWork::Validation, chunk.len())?;
+                cells.extend_from_slice(chunk);
+            }
+            routes.push(Route {
+                connection: route.connection.clone(),
+                source_port: route.source_port.clone(),
+                target_port: route.target_port.clone(),
+                cells,
+            });
+        }
+        let mut bridges = Vec::with_capacity(self.bridges.len());
+        for bridge in self.bridges.values() {
+            self.charge_replay(
+                ReplayWork::Validation,
+                1 + bridge
+                    .channels
+                    .iter()
+                    .map(|channel| channel.connections.len())
+                    .sum::<usize>(),
+            )?;
+            bridges.push(bridge.clone());
+        }
+        self.check_replay_deadline()?;
+        bridges.sort_by(|a, b| a.id.cmp(&b.id));
+        let mut junctions = Vec::with_capacity(self.junctions.len());
+        for junction in self.junctions.values() {
+            self.charge_replay(ReplayWork::Validation, 1 + junction.connections.len())?;
+            junctions.push(junction.clone());
+        }
+        self.check_replay_deadline()?;
+        junctions.sort_by(|a, b| a.id.cmp(&b.id));
+        self.check_replay_deadline()?;
+        Ok(Layout {
+            schema: SCHEMA.into(),
+            catalog_sha256: self.catalogs.identity.clone(),
+            problem: Problem {
+                blocks,
+                terminals,
+                connections,
+            },
+            solution: Solution {
+                poses,
+                terminal_poses,
+                routes,
+                bridges,
+                junctions,
+            },
+        })
     }
 
     fn place(&mut self, block: &str, position: Point, rotation: i64) -> Result<(), Diagnostic> {
@@ -787,7 +1060,12 @@ impl Session {
             .facilities
             .facility(&self.problem.blocks[block].facility)
             .expect("problem admission checked facilities");
-        Ok(rotate(definition, pose.rotation, pose.position).2)
+        let mut ports = Vec::with_capacity(definition.ports.len());
+        for port in &definition.ports {
+            self.charge_replay(ReplayWork::Catalog, 1)?;
+            ports.push(project_port(definition, port, pose.rotation, pose.position));
+        }
+        Ok(ports)
     }
 
     fn selected_port(
@@ -800,10 +1078,27 @@ impl Session {
         rate: Rate,
         connection: &str,
     ) -> Result<Port, Diagnostic> {
-        let port = self
-            .projected_ports(block)?
-            .into_iter()
-            .find(|port| port.id == id)
+        let pose = self.poses[block].as_ref().ok_or_else(|| {
+            error(
+                "unplaced-endpoint",
+                &self.problem.blocks[block].id,
+                "route endpoint facility is not placed",
+            )
+        })?;
+        let definition = self
+            .catalogs
+            .facilities
+            .facility(&self.problem.blocks[block].facility)
+            .expect("problem admission checked facilities");
+        let mut selected = None;
+        for port in &definition.ports {
+            self.charge_replay(ReplayWork::Catalog, 1)?;
+            if port.id == id {
+                selected = Some(project_port(definition, port, pose.rotation, pose.position));
+                break;
+            }
+        }
+        let port = selected
             .ok_or_else(|| error("unknown-port", connection, "selected port does not exist"))?;
         if port.direction != expected || port.transport != transport {
             return Err(error(
@@ -884,29 +1179,54 @@ impl Session {
     }
 
     fn shared_cell_available(&self, point: Point, connection: usize) -> bool {
+        self.shared_cell_available_checked(point, connection, || Ok(()))
+            .expect("unchecked availability has no fallible visits")
+    }
+
+    fn shared_cell_available_replay(
+        &self,
+        point: Point,
+        connection: usize,
+    ) -> Result<bool, Diagnostic> {
+        self.shared_cell_available_checked(point, connection, || {
+            self.charge_replay(ReplayWork::Users, 1)
+        })
+    }
+
+    fn shared_cell_available_checked(
+        &self,
+        point: Point,
+        connection: usize,
+        mut visit: impl FnMut() -> Result<(), Diagnostic>,
+    ) -> Result<bool, Diagnostic> {
         let obligation = &self.problem.connections[connection];
         if let Some(&terminal) = self.terminal_at.get(&point) {
             if self.problem.terminals[terminal].id != obligation.source
                 && self.problem.terminals[terminal].id != obligation.target
             {
-                return false;
+                return Ok(false);
             }
         }
         let users = self.occupied[layer(obligation.transport)].get(&point);
-        let Some(users) = users else { return true };
+        let Some(users) = users else { return Ok(true) };
         let mut load = obligation.rate;
         for &other in users {
+            visit()?;
             let existing = &self.problem.connections[other];
             if existing.commodity != obligation.commodity {
-                return false;
+                return Ok(false);
             }
             let Some(total) = load.checked_add(existing.rate).ok() else {
-                return false;
+                return Ok(false);
             };
             load = total;
         }
         let capacity = self.catalogs.transports.capacity(obligation.transport);
-        within_capacity(load, capacity.quantity, capacity.duration_ms)
+        Ok(within_capacity(
+            load,
+            capacity.quantity,
+            capacity.duration_ms,
+        ))
     }
 
     fn begin_route(
@@ -956,7 +1276,8 @@ impl Session {
                 "a selected port connection cell is covered by a facility body",
             ));
         }
-        if !self.shared_cell_available(source, index) || !self.shared_cell_available(target, index)
+        if !self.shared_cell_available_replay(source, index)?
+            || !self.shared_cell_available_replay(target, index)?
         {
             return Err(error(
                 "occupied-port",
@@ -1051,15 +1372,20 @@ impl Session {
                 && installed.component == component
                 && installed.rotation == rotation;
             for owner in &channel.connections {
+                self.charge_replay(ReplayWork::Users, 1)?;
                 let ci = self.connections[owner];
                 let route = self.routes[ci]
                     .as_ref()
                     .expect("bridge owner route is committed");
-                let pi = route
-                    .cells
-                    .iter()
-                    .position(|&point| point == position)
-                    .expect("bridge owner visits its component");
+                let mut pi = None;
+                for (index, &cell) in route.cells.iter().enumerate() {
+                    self.charge_replay(ReplayWork::RouteCells, 1)?;
+                    if cell == position {
+                        pi = Some(index);
+                        break;
+                    }
+                }
+                let pi = pi.expect("bridge owner visits its component");
                 matches_axis &= pi > 0
                     && pi + 1 < route.cells.len()
                     && point_direction(route.cells[pi - 1], position) == Some(direction)
@@ -1106,11 +1432,20 @@ impl Session {
         let mut carrier_rate = Rate::zero();
         let carrier_commodity = &self.problem.connections[users[0]].commodity;
         for &ci in users {
+            self.charge_replay(ReplayWork::Users, 1)?;
             let existing = &self.problem.connections[ci];
             let route = self.routes[ci]
                 .as_ref()
                 .expect("occupied route is committed");
-            let Some(pi) = route.cells.iter().position(|&point| point == position) else {
+            let mut pi = None;
+            for (index, &cell) in route.cells.iter().enumerate() {
+                self.charge_replay(ReplayWork::RouteCells, 1)?;
+                if cell == position {
+                    pi = Some(index);
+                    break;
+                }
+            }
+            let Some(pi) = pi else {
                 return Err(error(
                     "bridge-reservation",
                     &obligation.id,
@@ -1226,7 +1561,11 @@ impl Session {
             .expect("active route always has a source");
         let mut added = Vec::with_capacity(length as usize);
         let mut new_cells = HashSet::with_capacity(length as usize);
-        for _ in 0..length {
+        for step_index in 0..length {
+            self.charge_replay(ReplayWork::RouteCells, 1)?;
+            if step_index % 256 == 0 {
+                self.check_replay_deadline()?;
+            }
             if active
                 .bridge_reservations
                 .iter()
@@ -1297,7 +1636,7 @@ impl Session {
                     && (self.bridges.contains_key(&(
                         self.problem.connections[focus_connection].transport,
                         point,
-                    )) || !self.shared_cell_available(point, focus_connection))
+                    )) || !self.shared_cell_available_replay(point, focus_connection)?)
             {
                 return Err(error(
                     "same-layer-intersection",
@@ -1396,19 +1735,30 @@ impl Session {
         Diagnostic,
     > {
         let transport = self.problem.connections[pending_index].transport;
-        let touched = pending.cells.iter().copied().collect::<HashSet<_>>();
+        let mut touched = HashSet::new();
+        for &point in &pending.cells {
+            self.charge_replay(ReplayWork::RouteCells, 1)?;
+            touched.insert(point);
+        }
         let mut existing_connections = HashSet::new();
         for point in &touched {
+            self.check_replay_deadline()?;
             if let Some(users) = self.occupied[layer(transport)].get(point) {
+                self.charge_replay(ReplayWork::Users, users.len())?;
                 existing_connections.extend(users.iter().copied());
             }
         }
         let mut old_indices = HashMap::new();
         for ci in existing_connections {
+            self.check_replay_deadline()?;
             let route = self.routes[ci]
                 .as_ref()
                 .expect("occupied route is committed");
             for (pi, &point) in route.cells.iter().enumerate() {
+                self.charge_replay(ReplayWork::RouteCells, 1)?;
+                if pi % 256 == 0 {
+                    self.check_replay_deadline()?;
+                }
                 if touched.contains(&point) {
                     old_indices.insert((ci, point), pi);
                 }
@@ -1416,6 +1766,10 @@ impl Session {
         }
         let mut updates = Vec::with_capacity(pending.cells.len());
         for (pi, &point) in pending.cells.iter().enumerate() {
+            self.charge_replay(ReplayWork::RouteCells, 1)?;
+            if pi % 256 == 0 {
+                self.check_replay_deadline()?;
+            }
             if self.active.as_ref().is_some_and(|active| {
                 active
                     .bridge_reservations
@@ -1431,6 +1785,8 @@ impl Session {
             let mut uses = Vec::new();
             if let Some(users) = users {
                 for &ci in users {
+                    self.charge_replay(ReplayWork::Users, 1)?;
+                    self.check_replay_deadline()?;
                     let route = self.routes[ci]
                         .as_ref()
                         .expect("occupied route is committed");
@@ -1440,9 +1796,21 @@ impl Session {
             }
             uses.push(self.site_arm_use(pending_index, pending, pi)?);
             let options =
-                junction_options(transport, point, &uses, &self.catalogs).map_err(|failure| {
-                    error("topology", failure.entity.to_string(), failure.message)
+                junction_options_with_visit(transport, point, &uses, &self.catalogs, || {
+                    self.charge_replay(ReplayWork::Catalog, 1).is_ok()
+                })
+                .map_err(|failure| {
+                    error(
+                        if failure.code == "route-request-work-limit" {
+                            "route-request-work-limit"
+                        } else {
+                            "topology"
+                        },
+                        failure.entity.to_string(),
+                        failure.message,
+                    )
                 })?;
+            self.check_replay_deadline()?;
             let key = (transport, point);
             let junction = options.map(|options| {
                 let selected = self
@@ -1486,11 +1854,19 @@ impl Session {
         let transport = self.problem.connections[pending_index].transport;
         let mut bridges = Vec::with_capacity(active.bridge_reservations.len());
         for reserved in &active.bridge_reservations {
-            let Some(pi) = pending
-                .cells
-                .iter()
-                .position(|&point| point == reserved.position)
-            else {
+            self.check_replay_deadline()?;
+            let mut found = None;
+            for (pi, &point) in pending.cells.iter().enumerate() {
+                self.charge_replay(ReplayWork::RouteCells, 1)?;
+                if pi % 256 == 0 {
+                    self.check_replay_deadline()?;
+                }
+                if point == reserved.position {
+                    found = Some(pi);
+                    break;
+                }
+            }
+            let Some(pi) = found else {
                 return Err(error(
                     "bridge-reservation",
                     &pending.connection,
@@ -1511,6 +1887,10 @@ impl Session {
                 ));
             }
             if let Some(installed) = self.bridges.get(&(transport, reserved.position)) {
+                self.charge_replay(
+                    ReplayWork::Users,
+                    installed.channels[reserved.direction % 2].connections.len(),
+                )?;
                 let mut bridge = installed.clone();
                 let owners = &mut bridge.channels[reserved.direction % 2].connections;
                 owners.push(pending.connection.clone());
@@ -1522,6 +1902,7 @@ impl Session {
             let users = self.occupied[layer(transport)]
                 .get(&reserved.position)
                 .expect("reserved bridge has committed carrier users");
+            self.charge_replay(ReplayWork::Users, users.len())?;
             let mut owners = users
                 .iter()
                 .map(|&ci| self.problem.connections[ci].id.clone())
@@ -1603,6 +1984,7 @@ impl Session {
         self.active_cells.clear();
         let obligation = &self.problem.connections[active.connection];
         for &cell in &route.cells {
+            self.charge_replay(ReplayWork::RouteCells, 1)?;
             self.occupied[layer(obligation.transport)]
                 .entry(cell)
                 .or_default()
@@ -1808,6 +2190,7 @@ mod tests {
             max_expanded: 100_000,
             overlap_penalty: 8,
             max_crossings_per_route: 0,
+            request_allowance: Default::default(),
         }
     }
 
@@ -1854,6 +2237,45 @@ mod tests {
             Some(&Command::Connect)
         );
 
+        let mut tiny_publication = route_candidate_config();
+        tiny_publication.request_allowance.published_bytes = 16;
+        let stopped = session
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: revision,
+                    connection: "connection-0".into(),
+                },
+                &tiny_publication,
+            )
+            .unwrap();
+        assert!(stopped.candidates.is_empty());
+        assert_eq!(
+            stopped.termination,
+            routing_candidates::Termination::WorkLimit
+        );
+        assert_eq!(
+            stopped
+                .allowance_stop
+                .as_ref()
+                .and_then(|stop| stop.category),
+            Some(routing_candidates::WorkKind::PublishedBytes)
+        );
+
+        let mut capped = session.clone();
+        let mut caps = route_candidate_config().request_allowance;
+        caps.replay_route_cells = 1;
+        let mut allowance = routing_candidates::RequestAllowance::new(caps);
+        let failure = capped
+            .apply_route_candidate_with_allowance(&report.candidates[0], &mut allowance)
+            .unwrap_err();
+        assert!(matches!(
+            failure,
+            routing_candidates::RequestFailure::Stopped(stop)
+                if stop.category == Some(routing_candidates::WorkKind::ReplayRouteCells)
+        ));
+        assert_eq!(capped.observe().revision, revision);
+        assert!(capped.observe().active.is_none());
+
         let mut committed = session.clone();
         let steps = committed
             .apply_route_candidate(&report.candidates[0])
@@ -1864,6 +2286,119 @@ mod tests {
             .apply_route_candidate(&report.candidates[1])
             .unwrap_err();
         assert_eq!(stale.code, "constructive.stale-route-candidate");
+    }
+
+    #[test]
+    fn route_readiness_and_endpoint_allowance_preserve_unknown() {
+        use routing_candidates::{Request, RouteReadiness, Termination, WorkKind};
+
+        let mut session = session();
+        let request = Request {
+            state_revision: session.observe().revision,
+            connection: "connection-0".into(),
+        };
+        assert_eq!(
+            session.route_request_readiness(&request).unwrap(),
+            RouteReadiness::PendingPlacement {
+                endpoints: vec!["source".into(), "target".into()]
+            }
+        );
+        place_pair(&mut session);
+        let request = Request {
+            state_revision: session.observe().revision,
+            ..request
+        };
+        assert_eq!(
+            session.route_request_readiness(&request).unwrap(),
+            RouteReadiness::Ready
+        );
+
+        let mut config = route_candidate_config();
+        config.request_allowance.endpoint_visits = 1;
+        let report = session.route_candidates(&request, &config).unwrap();
+        assert_eq!(report.termination, Termination::WorkLimit);
+        assert!(!report.fixed_request_proven_infeasible);
+        assert!(report.candidates.is_empty());
+        assert_eq!(
+            report.allowance_stop.unwrap().category,
+            Some(WorkKind::EndpointVisits)
+        );
+    }
+
+    #[test]
+    fn guidance_raster_cap_stops_before_input_allocation() {
+        use routing_candidates::{Request, RequestAllowance, RequestFailure, WorkKind};
+
+        let mut session = session();
+        place_pair(&mut session);
+        let request = Request {
+            state_revision: session.observe().revision,
+            connection: "connection-0".into(),
+        };
+        let mut config = route_candidate_config();
+        config.request_allowance.raster_cells = 15;
+        let mut allowance = RequestAllowance::new(config.request_allowance.clone());
+        let failure = session
+            .route_guidance_input_with_allowance(
+                &request,
+                &config,
+                &learning_config(),
+                &mut allowance,
+            )
+            .unwrap_err();
+        assert!(
+            matches!(failure, RequestFailure::Stopped(stop) if stop.category == Some(WorkKind::RasterCells))
+        );
+        assert!(allowance.usage().peak_live_bytes > 0);
+        assert_eq!(
+            allowance
+                .usage()
+                .categories
+                .get(&WorkKind::RasterCells)
+                .copied()
+                .unwrap_or(0),
+            0
+        );
+        let mut tiny_peak = route_candidate_config();
+        tiny_peak.request_allowance.peak_live_bytes = 1;
+        let mut peak_allowance = RequestAllowance::new(tiny_peak.request_allowance.clone());
+        let failure = session
+            .route_guidance_input_with_allowance(
+                &request,
+                &tiny_peak,
+                &learning_config(),
+                &mut peak_allowance,
+            )
+            .unwrap_err();
+        assert!(matches!(
+            failure,
+            RequestFailure::Stopped(stop) if stop.reason == "peak-memory-limit"
+        ));
+        assert_eq!(peak_allowance.usage().peak_live_bytes, 0);
+    }
+
+    #[test]
+    fn sequential_frontier_peaks_share_one_live_limit() {
+        let mut caps = routing_candidates::AllowanceCaps::default();
+        caps.frontier_entries = 3;
+        let mut allowance = routing_candidates::RequestAllowance::new(caps);
+        allowance
+            .record_peak(routing_candidates::WorkKind::FrontierEntries, 3)
+            .unwrap();
+        allowance
+            .record_peak(routing_candidates::WorkKind::FrontierEntries, 3)
+            .unwrap();
+        assert_eq!(
+            allowance.usage().categories[&routing_candidates::WorkKind::FrontierEntries],
+            3
+        );
+        assert_eq!(
+            allowance
+                .record_peak(routing_candidates::WorkKind::FrontierEntries, 4)
+                .unwrap_err()
+                .used,
+            4
+        );
     }
 
     #[test]
@@ -1903,7 +2438,7 @@ mod tests {
             .unwrap()
             .candidates
             .remove(0);
-        let directed_costs = anchor
+        let directed_costs: Vec<_> = anchor
             .cells
             .windows(2)
             .map(|edge| {
@@ -1921,23 +2456,31 @@ mod tests {
                 }
             })
             .collect();
+        let guidance = routing_candidates::Guidance {
+            schema: routing_candidates::GUIDANCE_SCHEMA.into(),
+            state_revision: request.state_revision,
+            connection: request.connection.clone(),
+            model_version: "test-guidance-v1".into(),
+            heads: vec![routing_candidates::GuidanceHead {
+                id: "preserve-anchor-corridor".into(),
+                directed_costs,
+                predicted_success: 0.75,
+                uncertainty: 0.25,
+            }],
+        };
+        let mut tiny_map = config.clone();
+        tiny_map.request_allowance.peak_live_bytes =
+            guidance.heads[0].directed_costs.len() * 96 - 1;
+        let stopped = session
+            .route_candidates_with_guidance(&request, &tiny_map, &guidance)
+            .unwrap();
+        assert_eq!(
+            stopped.termination,
+            routing_candidates::Termination::WorkLimit
+        );
+        assert_eq!(stopped.allowance_stop.unwrap().reason, "peak-memory-limit");
         let report = session
-            .route_candidates_with_guidance(
-                &request,
-                &config,
-                &routing_candidates::Guidance {
-                    schema: routing_candidates::GUIDANCE_SCHEMA.into(),
-                    state_revision: request.state_revision,
-                    connection: request.connection.clone(),
-                    model_version: "test-guidance-v1".into(),
-                    heads: vec![routing_candidates::GuidanceHead {
-                        id: "preserve-anchor-corridor".into(),
-                        directed_costs,
-                        predicted_success: 0.75,
-                        uncertainty: 0.25,
-                    }],
-                },
-            )
+            .route_candidates_with_guidance(&request, &config, &guidance)
             .unwrap();
 
         assert!(matches!(
@@ -2902,6 +3445,63 @@ mod tests {
         assert_eq!(report.crossing_limit, 1);
         assert_eq!(report.candidates.len(), 1, "{report:?}");
         assert_eq!(report.candidates[0].crossings.len(), 1);
+        config.max_crossings_per_route = 0;
+        let clipped = stable_before_vertical
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: stable_before_vertical.revision,
+                    connection: "vertical".into(),
+                },
+                &config,
+            )
+            .unwrap();
+        assert!(clipped.candidates.is_empty());
+        assert_eq!(
+            clipped.termination,
+            routing_candidates::Termination::ResourceLimit
+        );
+        assert!(!clipped.fixed_request_proven_infeasible);
+        let mut occupied_probe = stable_before_vertical.clone();
+        occupied_probe.replay_meter = Some(Arc::new(ReplayMeter::new([
+            usize::MAX,
+            0,
+            usize::MAX,
+            usize::MAX,
+        ])));
+        assert_eq!(
+            occupied_probe
+                .shared_cell_available_replay(crossing, occupied_probe.connections["vertical"])
+                .unwrap_err()
+                .code,
+            "constructive.route-request-work-limit"
+        );
+        let mut port_capped = stable_before_vertical.clone();
+        let mut caps = route_candidate_config().request_allowance;
+        caps.catalog_visits = 0;
+        let mut allowance = routing_candidates::RequestAllowance::new(caps);
+        let stopped = port_capped
+            .apply_route_candidate_with_allowance(&report.candidates[0], &mut allowance)
+            .unwrap_err();
+        assert!(matches!(
+            stopped,
+            routing_candidates::RequestFailure::Stopped(stop)
+                if stop.category == Some(routing_candidates::WorkKind::CatalogVisits)
+        ));
+        assert_eq!(port_capped.revision(), stable_before_vertical.revision());
+        let mut metered = stable_before_vertical.clone();
+        let mut caps = route_candidate_config().request_allowance;
+        caps.validation_records = 1;
+        let mut allowance = routing_candidates::RequestAllowance::new(caps);
+        let before_revision = metered.revision();
+        let stopped = metered
+            .apply_route_candidate_with_allowance(&report.candidates[0], &mut allowance)
+            .unwrap_err();
+        assert!(matches!(
+            stopped,
+            routing_candidates::RequestFailure::Stopped(stop)
+                if stop.category == Some(routing_candidates::WorkKind::ValidationRecords)
+        ));
+        assert_eq!(metered.revision(), before_revision);
         let mut replay = stable_before_vertical;
         let mut tampered = report.candidates[0].clone();
         tampered.crossings[0].position.x += 1;

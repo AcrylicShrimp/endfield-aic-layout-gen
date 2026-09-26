@@ -3,6 +3,38 @@ use std::collections::{HashSet, VecDeque};
 use super::*;
 
 #[test]
+fn expired_deadline_cannot_be_reported_as_local_infeasibility() {
+    let result = shortest_path(
+        Point { x: 0, y: 0 },
+        Point { x: 2, y: 2 },
+        &IndexSet::new(),
+        Bounds {
+            min_x: 0,
+            min_y: 0,
+            max_x: 2,
+            max_y: 2,
+        },
+        PathOptions {
+            first: None,
+            last: None,
+            work_budget: 100,
+            scan_budget: 100,
+            frontier_budget: 100,
+            deadline: Some(Instant::now() - std::time::Duration::from_millis(1)),
+            crossings: &Crossings::new(),
+            crossing_limit: 0,
+            prefer_crossings: false,
+            allow_zero_length: false,
+            cell_penalties: None,
+            edge_penalties: None,
+        },
+    )
+    .unwrap();
+    assert_eq!(result.status, "deadline");
+    assert_eq!(result.expanded, 0);
+}
+
+#[test]
 fn shared_straight_trunk_offers_only_capacity_valid_bridge_sites() {
     let raw: aic_layout::logistics::LogisticsComponentCatalog = serde_json::from_slice(
         include_bytes!("../../../data/game/normalized/logistics-components.json"),
@@ -90,6 +122,9 @@ fn same_cell_share_and_bridge_are_separate_search_choices() {
                 first: Some(0),
                 last: Some(0),
                 work_budget: 100,
+                scan_budget: usize::MAX,
+                frontier_budget: usize::MAX,
+                deadline: None,
                 crossings: &crossings,
                 crossing_limit: 1,
                 prefer_crossings,
@@ -139,6 +174,9 @@ fn route_kernel_timing() {
                 first: None,
                 last: None,
                 work_budget: 100_000,
+                scan_budget: usize::MAX,
+                frontier_budget: usize::MAX,
+                deadline: None,
                 crossings: &crossings,
                 crossing_limit: 0,
                 prefer_crossings: false,
@@ -252,6 +290,9 @@ fn reverse_negative_preserves_every_forward_reachable_crossing_walk() {
                         first,
                         last,
                         work_budget: 10000,
+                        scan_budget: usize::MAX,
+                        frontier_budget: usize::MAX,
+                        deadline: None,
                         crossings: &crossings,
                         crossing_limit,
                         prefer_crossings: false,
@@ -301,6 +342,9 @@ fn sealed_goal_fails_locally_and_charges_reverse_work() {
             first: None,
             last: None,
             work_budget: 1000,
+            scan_budget: usize::MAX,
+            frontier_budget: usize::MAX,
+            deadline: None,
             crossings: &crossings,
             crossing_limit: 8,
             prefer_crossings: false,
@@ -337,6 +381,9 @@ fn reverse_cutoff_still_runs_astar_and_preserves_directed_route_quality() {
             first: Some(0),
             last: Some(1),
             work_budget: 1200,
+            scan_budget: usize::MAX,
+            frontier_budget: usize::MAX,
+            deadline: None,
             crossings: &crossings,
             crossing_limit: 0,
             prefer_crossings: false,
@@ -374,6 +421,9 @@ fn cell_penalties_select_a_distinct_equal_length_corridor() {
                 first: None,
                 last: None,
                 work_budget: 1_000,
+                scan_budget: usize::MAX,
+                frontier_budget: usize::MAX,
+                deadline: None,
                 crossings: &crossings,
                 crossing_limit: 0,
                 prefer_crossings: false,
@@ -424,6 +474,9 @@ fn directed_edge_penalties_change_ordering_without_changing_legality() {
                 first: None,
                 last: None,
                 work_budget: 1_000,
+                scan_budget: usize::MAX,
+                frontier_budget: usize::MAX,
+                deadline: None,
                 crossings: &crossings,
                 crossing_limit: 0,
                 prefer_crossings: false,

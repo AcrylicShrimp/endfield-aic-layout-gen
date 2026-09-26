@@ -2,6 +2,7 @@
 
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
+use std::time::Instant;
 
 use aic_layout::logistics::{LogisticsComponentKind, TransportKind};
 use aic_layout::rate::Rate;
@@ -51,40 +52,68 @@ pub struct Crossing {
 }
 pub type Crossings = IndexMap<(Point, usize), Crossing>;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CrossingVisit {
+    RouteCell,
+    CatalogEntry,
+    Candidate,
+}
+
 pub fn crossing_options(
     carriers: &[Carrier<'_>],
     job: &RouteJob,
     catalogs: &ValidatedLogisticsComponentCatalog,
     excluded: &IndexSet<Point>,
 ) -> Crossings {
+    match crossing_options_with_visit(carriers, job, catalogs, excluded, |_| {
+        Ok::<(), std::convert::Infallible>(())
+    }) {
+        Ok(options) => options,
+        Err(never) => match never {},
+    }
+}
+
+/// The visit hook lets a caller stop crossing preparation inside long route
+/// and catalog scans without changing the legal crossing set.
+pub fn crossing_options_with_visit<E>(
+    carriers: &[Carrier<'_>],
+    job: &RouteJob,
+    catalogs: &ValidatedLogisticsComponentCatalog,
+    excluded: &IndexSet<Point>,
+    mut visit: impl FnMut(CrossingVisit) -> std::result::Result<(), E>,
+) -> std::result::Result<Crossings, E> {
     let mut visits = IndexMap::<Point, Vec<(&Carrier<'_>, usize)>>::new();
     for c in carriers.iter().filter(|c| c.transport == job.transport) {
         for (i, p) in c.cells.iter().enumerate() {
+            visit(CrossingVisit::RouteCell)?;
             visits.entry(*p).or_default().push((c, i));
         }
     }
     let sufficient = |quantity: i64, duration: i64, rate: Rate| {
         aic_layout::validation::within_capacity(rate, quantity, duration)
     };
-    let poses: Vec<_> = catalogs
-        .catalog()
-        .components
-        .iter()
-        .filter(|c| {
-            c.kind == LogisticsComponentKind::Bridge
-                && c.transport == job.transport
-                && c.footprint.width == 1
-                && c.footprint.height == 1
-                && sufficient(c.capacity.quantity, c.capacity.duration_ms, job.rate)
-        })
-        .flat_map(|c| {
-            c.allowed_rotations
-                .iter()
-                .map(move |&rotation| (c, rotation))
-        })
-        .collect();
+    let mut poses = Vec::new();
+    for component in &catalogs.catalog().components {
+        visit(CrossingVisit::CatalogEntry)?;
+        if component.kind == LogisticsComponentKind::Bridge
+            && component.transport == job.transport
+            && component.footprint.width == 1
+            && component.footprint.height == 1
+            && sufficient(
+                component.capacity.quantity,
+                component.capacity.duration_ms,
+                job.rate,
+            )
+        {
+            for &rotation in &component.allowed_rotations {
+                visit(CrossingVisit::CatalogEntry)?;
+                poses.push((component, rotation));
+            }
+        }
+    }
     let mut options = IndexMap::new();
     for (p, xs) in visits {
+        visit(CrossingVisit::Candidate)?;
         if excluded.contains(&p) {
             continue;
         }
@@ -94,6 +123,7 @@ pub fn crossing_options(
         let mut carrier_chain = None;
         let mut straight = true;
         for (c, i) in xs {
+            visit(CrossingVisit::RouteCell)?;
             if c.id == job.id || i == 0 || i + 1 == c.cells.len() {
                 straight = false;
                 break;
@@ -123,8 +153,10 @@ pub fn crossing_options(
         }
         let Some(d) = carrier_direction else { continue };
         for next in [(d + 1) % 4, (d + 3) % 4] {
-            let pose = poses.iter().find(|&&(def, rotation)| {
-                sufficient(
+            let mut pose = None;
+            for &(def, rotation) in &poses {
+                visit(CrossingVisit::CatalogEntry)?;
+                if sufficient(
                     def.capacity.quantity,
                     def.capacity.duration_ms,
                     carrier_rate,
@@ -135,9 +167,12 @@ pub fn crossing_options(
                         .output_directions
                         .iter()
                         .any(|&e| (cardinal_index(e) + rotation as usize / 90) % 4 == axis)
-                })
-            });
-            if let Some(&(def, rotation)) = pose {
+                }) {
+                    pose = Some((def, rotation));
+                    break;
+                }
+            }
+            if let Some((def, rotation)) = pose {
                 options.insert(
                     (p, next),
                     Crossing {
@@ -154,13 +189,16 @@ pub fn crossing_options(
             }
         }
     }
-    options
+    Ok(options)
 }
 
 pub struct PathOptions<'a> {
     pub first: Option<usize>,
     pub last: Option<usize>,
     pub work_budget: usize,
+    pub scan_budget: usize,
+    pub frontier_budget: usize,
+    pub deadline: Option<Instant>,
     pub crossings: &'a Crossings,
     pub crossing_limit: usize,
     /// Tie preference between a legal shared-cell step and a bridge step.
@@ -179,6 +217,8 @@ pub struct PathResult {
     pub status: &'static str,
     pub expanded: usize,
     pub preflight_expanded: usize,
+    pub routing_scans: usize,
+    pub frontier_entries_peak: usize,
     pub preflight_status: &'static str,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cells: Option<Vec<Point>>,
@@ -197,6 +237,8 @@ impl PathResult {
             status,
             expanded,
             preflight_expanded: 0,
+            routing_scans: 0,
+            frontier_entries_peak: 0,
             preflight_status: "skipped",
             cells: None,
             crossings: None,
@@ -216,6 +258,8 @@ impl PathResult {
             status: "found",
             expanded,
             preflight_expanded: 0,
+            routing_scans: 0,
+            frontier_entries_peak: 0,
             preflight_status: "skipped",
             cells: Some(cells),
             crossings: Some(crossings),
@@ -247,6 +291,9 @@ pub fn shortest_path(
         first,
         last,
         work_budget,
+        scan_budget,
+        frontier_budget,
+        deadline,
         crossings,
         crossing_limit,
         prefer_crossings,
@@ -261,18 +308,10 @@ pub fn shortest_path(
         || height < 1
         || area > 250000
         || work_budget < 1
+        || scan_budget < 1
+        || frontier_budget < 1
         || first.is_some_and(|d| d > 3)
         || last.is_some_and(|d| d > 3)
-        || cell_penalties.is_some_and(|penalties| {
-            penalties
-                .iter()
-                .any(|(point, &penalty)| !bounds.contains(*point) || penalty > 1_000_000)
-        })
-        || edge_penalties.is_some_and(|penalties| {
-            penalties.iter().any(|(&(point, direction), &penalty)| {
-                !bounds.contains(point) || direction > 3 || penalty > 1_000_000
-            })
-        })
     {
         let mut d = Diagnostic::new(
             "path-invalid-input",
@@ -281,6 +320,56 @@ pub fn shortest_path(
         );
         d.stage = "local-path";
         return Err(d);
+    }
+    let mut penalty_scans = 0usize;
+    let invalid_penalty = || {
+        let mut diagnostic = Diagnostic::new(
+            "path-invalid-input",
+            "Invalid grid, endpoint, direction, crossing or work budget",
+            serde_json::Value::Null,
+        );
+        diagnostic.stage = "local-path";
+        diagnostic
+    };
+    if let Some(penalties) = cell_penalties {
+        for (&point, &penalty) in penalties {
+            penalty_scans += 1;
+            if penalty_scans >= scan_budget {
+                let mut result = PathResult::stopped("scan-budget", 0);
+                result.routing_scans = penalty_scans;
+                return Ok(result);
+            }
+            if penalty_scans % 256 == 0
+                && deadline.is_some_and(|deadline| Instant::now() >= deadline)
+            {
+                let mut result = PathResult::stopped("deadline", 0);
+                result.routing_scans = penalty_scans;
+                return Ok(result);
+            }
+            if !bounds.contains(point) || penalty > 1_000_000 {
+                return Err(invalid_penalty());
+            }
+        }
+    }
+    if let Some(penalties) = edge_penalties {
+        for (&(point, direction), &penalty) in penalties {
+            penalty_scans += 1;
+            if penalty_scans >= scan_budget {
+                let mut result = PathResult::stopped("scan-budget", 0);
+                result.routing_scans = penalty_scans;
+                return Ok(result);
+            }
+            if penalty_scans % 256 == 0
+                && deadline.is_some_and(|deadline| Instant::now() >= deadline)
+            {
+                let mut result = PathResult::stopped("deadline", 0);
+                result.routing_scans = penalty_scans;
+                return Ok(result);
+            }
+            if !bounds.contains(point) || direction > 3 || penalty > 1_000_000 {
+                return Err(invalid_penalty());
+            }
+        }
     }
     if !bounds.contains(start)
         || !bounds.contains(end)
@@ -296,6 +385,14 @@ pub fn shortest_path(
             PathResult::stopped("same-endpoint", 0)
         });
     }
+    if deadline.is_some_and(|deadline| Instant::now() >= deadline) {
+        return Ok(PathResult::stopped("deadline", 0));
+    }
+    if penalty_scans >= scan_budget {
+        let mut result = PathResult::stopped("scan-budget", 0);
+        result.routing_scans = penalty_scans;
+        return Ok(result);
+    }
     // Bound necessary reachability work independently, and charge it to the
     // same transaction allowance. Small calls retain most of their A* budget.
     let probe = reachability::probe(
@@ -307,6 +404,9 @@ pub fn shortest_path(
             first,
             last,
             work_budget,
+            scan_budget: scan_budget - penalty_scans,
+            frontier_budget,
+            deadline,
             crossings,
             crossing_limit,
             prefer_crossings,
@@ -316,10 +416,20 @@ pub fn shortest_path(
         },
         256.min(work_budget / 4),
     );
+    if matches!(probe.status, "deadline" | "scan-budget" | "frontier-budget") {
+        let mut result = PathResult::stopped(probe.status, probe.expanded);
+        result.preflight_expanded = probe.expanded;
+        result.preflight_status = probe.status;
+        result.routing_scans = penalty_scans.saturating_add(probe.scans);
+        result.frontier_entries_peak = probe.frontier_peak;
+        return Ok(result);
+    }
     if probe.status == "unreachable" {
         let mut result = PathResult::stopped("no-path", probe.expanded);
         result.preflight_expanded = probe.expanded;
         result.preflight_status = probe.status;
+        result.routing_scans = penalty_scans.saturating_add(probe.scans);
+        result.frontier_entries_peak = probe.frontier_peak;
         result.blocked_frontier = probe.frontier;
         return Ok(result);
     }
@@ -354,22 +464,51 @@ pub fn shortest_path(
     ))]);
     let mut best = IndexMap::from([(initial, 0)]);
     let mut expanded = probe.expanded;
+    let mut scans = penalty_scans.saturating_add(probe.scans);
+    let mut frontier_peak = probe.frontier_peak.max(heap.len());
     // Bound diagnostic collection independently of the path-state allocation.
     let mut frontier = IndexSet::new();
-    let stopped = |status, expanded, frontier: IndexSet<Point>| {
+    let stopped = |status, expanded, scans, frontier_peak, frontier: IndexSet<Point>| {
         let mut result = PathResult::stopped(status, expanded);
         result.blocked_frontier = frontier.into_iter().collect();
         result.preflight_expanded = probe.expanded;
         result.preflight_status = probe.status;
+        result.routing_scans = scans;
+        result.frontier_entries_peak = frontier_peak;
         result
     };
     while let Some(Reverse((_, _, _, _, pi))) = heap.pop() {
+        scans = scans.saturating_add(1);
+        if scans > scan_budget {
+            return Ok(stopped(
+                "scan-budget",
+                expanded,
+                scans,
+                frontier_peak,
+                frontier,
+            ));
+        }
+        if expanded % 64 == 0 && deadline.is_some_and(|deadline| Instant::now() >= deadline) {
+            return Ok(stopped(
+                "deadline",
+                expanded,
+                scans,
+                frontier_peak,
+                frontier,
+            ));
+        }
         let p = states[pi].clone();
         if best.get(&p.id) != Some(&p.g) {
             continue;
         }
         if expanded == work_budget {
-            return Ok(stopped("work-budget", expanded, frontier));
+            return Ok(stopped(
+                "work-budget",
+                expanded,
+                scans,
+                frontier_peak,
+                frontier,
+            ));
         }
         expanded += 1;
         if p.point == end && (last.is_none() || last == Some(p.direction)) {
@@ -377,6 +516,27 @@ pub fn shortest_path(
             let mut crossings = Vec::new();
             let mut current = Some(pi);
             while let Some(i) = current {
+                scans = scans.saturating_add(1);
+                if scans > scan_budget {
+                    return Ok(stopped(
+                        "scan-budget",
+                        expanded,
+                        scans,
+                        frontier_peak,
+                        frontier,
+                    ));
+                }
+                if cells.len() % 64 == 0
+                    && deadline.is_some_and(|deadline| Instant::now() >= deadline)
+                {
+                    return Ok(stopped(
+                        "deadline",
+                        expanded,
+                        scans,
+                        frontier_peak,
+                        frontier,
+                    ));
+                }
                 let s = &states[i];
                 cells.push(s.point);
                 if let Some(via) = &s.via {
@@ -386,17 +546,45 @@ pub fn shortest_path(
             }
             cells.reverse();
             crossings.reverse();
+            scans = scans.saturating_add(cells.len());
+            if scans > scan_budget {
+                return Ok(stopped(
+                    "scan-budget",
+                    expanded,
+                    scans,
+                    frontier_peak,
+                    frontier,
+                ));
+            }
             if cells.iter().collect::<IndexSet<_>>().len() != cells.len() {
-                return Ok(stopped("repeated-cell", expanded, frontier));
+                return Ok(stopped(
+                    "repeated-cell",
+                    expanded,
+                    scans,
+                    frontier_peak,
+                    frontier,
+                ));
             }
             let steps = i64::try_from(cells.len() - 1).expect("bounded path length fits i64");
             let turns = p.g % weight;
             let mut result = PathResult::found(cells, crossings, steps, turns, expanded);
             result.preflight_expanded = probe.expanded;
             result.preflight_status = probe.status;
+            result.routing_scans = scans;
+            result.frontier_entries_peak = frontier_peak;
             return Ok(result);
         }
         for d in 0..4 {
+            scans = scans.saturating_add(1);
+            if scans > scan_budget {
+                return Ok(stopped(
+                    "scan-budget",
+                    expanded,
+                    scans,
+                    frontier_peak,
+                    frontier,
+                ));
+            }
             if p.via.is_some() && d != p.direction {
                 continue;
             }
@@ -447,9 +635,25 @@ pub fn shortest_path(
                 .and_then(|step| p.g.checked_add(step))
                 .and_then(|cost| cost.checked_add(i64::from(p.direction != 4 && p.direction != d)))
             else {
-                return Ok(stopped("resource-limit", expanded, frontier));
+                return Ok(stopped(
+                    "resource-limit",
+                    expanded,
+                    scans,
+                    frontier_peak,
+                    frontier,
+                ));
             };
             for choice in 0..=usize::from(site.is_some()) {
+                scans = scans.saturating_add(1);
+                if scans > scan_budget {
+                    return Ok(stopped(
+                        "scan-budget",
+                        expanded,
+                        scans,
+                        frontier_peak,
+                        frontier,
+                    ));
+                }
                 let via = if choice == 0 { None } else { site };
                 if via.is_none() && blocked.contains(&q)
                     || via.is_some() && p.used >= crossing_limit
@@ -462,7 +666,13 @@ pub fn shortest_path(
                     continue;
                 }
                 if states.len() == MAX_PATH_STATES {
-                    return Ok(stopped("resource-limit", expanded, frontier));
+                    return Ok(stopped(
+                        "resource-limit",
+                        expanded,
+                        scans,
+                        frontier_peak,
+                        frontier,
+                    ));
                 }
                 best.insert(qid, g);
                 let qi = states.len();
@@ -485,11 +695,27 @@ pub fn shortest_path(
                     .checked_mul(weight)
                     .and_then(|distance| g.checked_add(distance))
                 else {
-                    return Ok(stopped("resource-limit", expanded, frontier));
+                    return Ok(stopped(
+                        "resource-limit",
+                        expanded,
+                        scans,
+                        frontier_peak,
+                        frontier,
+                    ));
                 };
                 heap.push(Reverse((priority, g, preference, qid, qi)));
+                frontier_peak = frontier_peak.max(heap.len());
+                if frontier_peak > frontier_budget {
+                    return Ok(stopped(
+                        "frontier-budget",
+                        expanded,
+                        scans,
+                        frontier_peak,
+                        frontier,
+                    ));
+                }
             }
         }
     }
-    Ok(stopped("no-path", expanded, frontier))
+    Ok(stopped("no-path", expanded, scans, frontier_peak, frontier))
 }

@@ -18,7 +18,7 @@ def transform(source, output, manifest, variant, scope):
     require(source.is_file() and not output.exists() and not manifest.exists(),
             "source missing or output already exists")
     report = read(source)
-    require(report["schema"] in ("aic-hierarchical-search-report-v7", "aic-hierarchical-search-report-v8")
+    require(report["schema"] in ("aic-hierarchical-search-report-v7", "aic-hierarchical-search-report-v8", "aic-hierarchical-search-report-v9")
             and report["partition"] == "training"
             and report["root_records_retained"]
             and report["status"] == "complete", "invalid frozen search report")
