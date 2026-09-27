@@ -1,0 +1,15 @@
+{
+  "schema": "aic-experiment-cleanup-v1",
+  "experiment": "generator-route-stop-classification",
+  "server": "ashrimp-arch",
+  "removed_paths": [
+    "/home/ashrimp/Srv/plan18-route-stop-20260927"
+  ],
+  "removed_tree_bytes": 176375724,
+  "server_free_bytes_before": 162755129344,
+  "server_free_bytes_after": 162941566976,
+  "retained_local_results": "artifacts/plan18-route-stop-20260927/retained-results.tar.gz",
+  "retained_local_results_sha256": "292c0e4f31d59335f9991394ed8ad04d016d96a1ed395c4885d77ae3f626c0bf",
+  "retained_archive_entries": 11,
+  "verification": "Local archive SHA-256 matched the server archive; baseline and final reports, measurements, configurations, and 100-facility layouts were present before server deletion."
+}
