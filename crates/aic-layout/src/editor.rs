@@ -902,13 +902,9 @@ pub fn validate_compiled(
             }
         }
         if let Some(path) = &draft.paths[index]
-            && (path.is_empty() || path.len() > 250_000)
+            && path.is_empty()
         {
-            return Err(invalid(
-                "path-size",
-                index.to_string(),
-                "path is empty or exceeds the materialization guard",
-            ));
+            return Err(invalid("path-size", index.to_string(), "path is empty"));
         }
         total_path_cells = total_path_cells
             .checked_add(draft.paths[index].as_ref().map_or(0, Vec::len))
@@ -1250,6 +1246,46 @@ mod tests {
     fn validates_without_external_catalogs() {
         let (problem, draft) = fixture();
         validate_compiled(&problem, &draft).unwrap();
+    }
+
+    #[test]
+    fn admits_a_structural_path_longer_than_the_old_per_path_guard() {
+        let (mut problem, mut draft) = fixture();
+        let far = Point { x: 250_001, y: 0 };
+        problem.nodes.push(CompiledNode {
+            id: 1,
+            source_id: "far-node".into(),
+            network: 0,
+            baseline_position: far,
+            terminal: None,
+            components: vec![],
+        });
+        problem.edges.push(CompiledEdge {
+            id: 0,
+            source_id: "long-edge".into(),
+            network: 0,
+            source: 0,
+            target: 1,
+            rate: Rate {
+                numerator: 1,
+                denominator: 1,
+            },
+            first: None,
+            last: None,
+            zero_length: false,
+        });
+        draft.selected_ports.push(None);
+        draft.anchors.push(far);
+        draft
+            .paths
+            .push(Some((1..=250_001).map(|x| Point { x, y: 0 }).collect()));
+        validate_compiled(&problem, &draft).unwrap();
+
+        draft.paths[0] = Some(vec![]);
+        assert_eq!(
+            validate_compiled(&problem, &draft).unwrap_err().code,
+            "path-size"
+        );
     }
 
     #[test]

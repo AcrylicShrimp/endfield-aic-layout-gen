@@ -3,16 +3,223 @@ use crate::{
     Request, TopologyProfile, intent, io, packing,
 };
 use aic_layout::{
-    physical::{Layout, Problem, SCHEMA, Solution},
+    geometry::Point,
+    logistics::TransportKind,
+    physical::{
+        Block, Connection, Layout, Pose, Problem, Route, SCHEMA, Solution, Terminal,
+        TerminalDirection, TerminalPose,
+    },
     rate::Rate,
     rng::Rng,
-    validation::{validate, within_capacity},
+    validation::{
+        ValidationAdvance, ValidationCursor, ValidationReservation, ValidationVisit, validate,
+        validate_with_visit, within_capacity,
+    },
 };
+use std::cell::Cell;
 use std::path::Path;
 
 fn catalogs() -> io::LoadedCatalogs {
     io::load_catalogs(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/game/normalized"))
         .unwrap()
+}
+
+fn straight_boundary_route(catalog_sha256: String, cells: usize) -> Layout {
+    Layout {
+        schema: SCHEMA.into(),
+        catalog_sha256,
+        problem: Problem {
+            blocks: vec![Block {
+                id: "block-0".into(),
+                facility: "component-mc-1-mode-normal".into(),
+            }],
+            terminals: vec![Terminal {
+                id: "terminal-0".into(),
+                direction: TerminalDirection::Output,
+                commodity: "flow-0".into(),
+                transport: TransportKind::Belt,
+            }],
+            connections: vec![Connection {
+                id: "edge-0".into(),
+                source: "block-0".into(),
+                target: "terminal-0".into(),
+                commodity: "flow-0".into(),
+                transport: TransportKind::Belt,
+                rate: Rate {
+                    numerator: 1,
+                    denominator: 2,
+                },
+            }],
+        },
+        solution: Solution {
+            poses: vec![Pose {
+                block: "block-0".into(),
+                position: Point { x: 0, y: 1 },
+                rotation: 0,
+            }],
+            terminal_poses: vec![TerminalPose {
+                terminal: "terminal-0".into(),
+                position: Point {
+                    x: cells as i64 - 1,
+                    y: 0,
+                },
+            }],
+            routes: vec![Route {
+                connection: "edge-0".into(),
+                source_port: Some("output-belt-0".into()),
+                target_port: None,
+                cells: (0..cells).map(|x| Point { x: x as i64, y: 0 }).collect(),
+            }],
+            bridges: vec![],
+            junctions: vec![],
+        },
+    }
+}
+
+#[test]
+fn long_legal_route_matches_one_shot_and_resumed_validation() {
+    let loaded = catalogs();
+    let layout = straight_boundary_route(loaded.catalogs.identity.clone(), 250_001);
+    if let Ok(path) = std::env::var("PLAN20_WRITE_LAYOUT") {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join(path);
+        std::fs::write(path, serde_json::to_vec(&layout).unwrap()).unwrap();
+    }
+    let one_shot_visits = Cell::new(0usize);
+    let expected = validate_with_visit(&layout, &loaded.catalogs, || {
+        one_shot_visits.set(one_shot_visits.get() + 1);
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(expected.transport_cells, 250_001);
+
+    let mut cursor = ValidationCursor::new(&layout, &loaded.catalogs);
+    let page_credit = Cell::new(4096usize);
+    let visits = Cell::new(0usize);
+    let live_bytes = Cell::new(0usize);
+    let peak_bytes = Cell::new(0usize);
+    let mut pages = 0usize;
+    let result = loop {
+        match cursor.advance(
+            || {
+                if page_credit.get() == 0 {
+                    ValidationVisit::Retry
+                } else {
+                    page_credit.set(page_credit.get() - 1);
+                    visits.set(visits.get() + 1);
+                    ValidationVisit::Granted
+                }
+            },
+            |bytes| {
+                live_bytes.set(live_bytes.get() + bytes);
+                peak_bytes.set(peak_bytes.get().max(live_bytes.get()));
+                ValidationReservation::Granted
+            },
+            |bytes| live_bytes.set(live_bytes.get() - bytes),
+        ) {
+            ValidationAdvance::Pending => {
+                pages += 1;
+                page_credit.set(4096);
+            }
+            ValidationAdvance::Complete(result) => break result.unwrap(),
+        }
+    };
+    assert_eq!(result, expected);
+    assert_eq!(visits.get(), one_shot_visits.get());
+    assert!(pages > 1);
+    assert!(peak_bytes.get() > 0);
+    assert_eq!(live_bytes.get(), 0);
+    assert_eq!(cursor.reserved_bytes(), 0);
+}
+
+#[test]
+fn independent_validation_still_rejects_malformed_route_geometry() {
+    let loaded = catalogs();
+    let mut layout = straight_boundary_route(loaded.catalogs.identity.clone(), 3);
+    assert!(validate(&layout, &loaded.catalogs).is_ok());
+
+    layout.solution.routes[0].cells[1] = Point { x: 0, y: 0 };
+    assert!(validate(&layout, &loaded.catalogs).is_err());
+    layout.solution.routes[0].cells[1] = Point { x: 4, y: 0 };
+    assert!(validate(&layout, &loaded.catalogs).is_err());
+    layout.solution.routes[0].cells[1] = Point { x: -1, y: 0 };
+    assert!(validate(&layout, &loaded.catalogs).is_err());
+    layout.solution.routes[0].cells[1] = Point { x: 1, y: 0 };
+    layout.problem.blocks[0].facility = "absent-from-catalog".into();
+    assert!(validate(&layout, &loaded.catalogs).is_err());
+}
+
+#[test]
+#[ignore = "explicit layout validation calibration; set PLAN20_LAYOUT to a retained case"]
+fn layout_validation_calibration() {
+    let loaded = catalogs();
+    let path = std::env::var("PLAN20_LAYOUT").expect("PLAN20_LAYOUT must name a layout JSON");
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .join(path);
+    let layout: Layout = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+    let one_shot_visits = Cell::new(0usize);
+    let started = std::time::Instant::now();
+    let expected = validate_with_visit(&layout, &loaded.catalogs, || {
+        one_shot_visits.set(one_shot_visits.get() + 1);
+        Ok(())
+    })
+    .unwrap();
+    let one_shot_ms = started.elapsed().as_secs_f64() * 1000.0;
+
+    let mut cursor = ValidationCursor::new(&layout, &loaded.catalogs);
+    let page_credit = Cell::new(4096usize);
+    let visits = Cell::new(0usize);
+    let live_bytes = Cell::new(0usize);
+    let peak_bytes = Cell::new(0usize);
+    let mut pages = 0usize;
+    let started = std::time::Instant::now();
+    let result = loop {
+        match cursor.advance(
+            || {
+                if page_credit.get() == 0 {
+                    ValidationVisit::Retry
+                } else {
+                    page_credit.set(page_credit.get() - 1);
+                    visits.set(visits.get() + 1);
+                    ValidationVisit::Granted
+                }
+            },
+            |bytes| {
+                live_bytes.set(live_bytes.get() + bytes);
+                peak_bytes.set(peak_bytes.get().max(live_bytes.get()));
+                ValidationReservation::Granted
+            },
+            |bytes| live_bytes.set(live_bytes.get() - bytes),
+        ) {
+            ValidationAdvance::Pending => {
+                pages += 1;
+                page_credit.set(4096);
+            }
+            ValidationAdvance::Complete(result) => break result.unwrap(),
+        }
+    };
+    let resumed_ms = started.elapsed().as_secs_f64() * 1000.0;
+    assert_eq!(result, expected);
+    assert_eq!(visits.get(), one_shot_visits.get());
+    assert_eq!(live_bytes.get(), 0);
+    println!(
+        "{}",
+        serde_json::json!({
+            "path": path,
+            "facilities": layout.problem.blocks.len(),
+            "connections": layout.problem.connections.len(),
+            "route_cells": layout.solution.routes.iter().map(|r| r.cells.len()).sum::<usize>(),
+            "longest_route": layout.solution.routes.iter().map(|r| r.cells.len()).max().unwrap_or(0),
+            "metrics": result,
+            "visits": visits.get(),
+            "pages": pages,
+            "peak_live_reservation_bytes": peak_bytes.get(),
+            "one_shot_ms": one_shot_ms,
+            "resumed_ms": resumed_ms,
+        })
+    );
 }
 
 #[test]

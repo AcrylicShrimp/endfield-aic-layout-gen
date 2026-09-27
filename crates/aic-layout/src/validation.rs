@@ -642,11 +642,11 @@ where
             ));
         };
         prepare_set_insert(&mut routed, &ci, &permit).await?;
-        if !routed.insert(ci) || route.cells.is_empty() || route.cells.len() > 250_000 {
+        if !routed.insert(ci) || route.cells.is_empty() {
             return Err(error(
                 "route",
                 route.connection.clone(),
-                "Duplicate route or invalid path length",
+                "Duplicate route or empty path",
             ));
         }
         total_cells = total_cells.saturating_add(route.cells.len());
