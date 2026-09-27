@@ -191,7 +191,7 @@ pub fn execute(
     work: usize,
     limits: &routing::Limits,
 ) -> Result<Execution> {
-    if !(1..=200000).contains(&work) {
+    if work == 0 {
         return Err(Diagnostic::new(
             "factory.edit-parameters",
             "Invalid route work budget",

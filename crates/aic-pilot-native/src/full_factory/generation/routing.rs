@@ -39,6 +39,8 @@ pub struct RouteReport {
     pub last: Option<usize>,
     pub status: &'static str,
     pub expanded: usize,
+    pub routing_scans: usize,
+    pub frontier_entries_peak: usize,
     pub preflight_expanded: usize,
     pub preflight_status: &'static str,
     pub old_steps: usize,
@@ -58,6 +60,15 @@ pub struct Execution {
     pub route_expansions: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub region: Option<Report>,
+}
+pub(super) fn incomplete_diagnostic(diagnostic: &Diagnostic) -> bool {
+    matches!(
+        diagnostic.code.as_str(),
+        "region-chain-limit" | "factory.vocabulary-resource-incomplete" | "path-resource-limit"
+    )
+}
+fn complete_local_route_failure(status: &str) -> bool {
+    matches!(status, "no-path" | "blocked-endpoint" | "same-endpoint")
 }
 struct Job {
     chain: Chain,
@@ -331,7 +342,14 @@ fn attempt(
             serde_json::json!({"chains": changed.len(), "limit": limits.chains}),
         );
         d.stage = "local-region-repair";
-        return Err(d);
+        return Ok(Execution {
+            status: "search-incomplete",
+            witness: None,
+            diagnostics: vec![d],
+            routes: vec![],
+            route_expansions: 0,
+            region: None,
+        });
     }
     let body: IndexSet<_> = w.placements.iter().flat_map(body_cells).collect();
     let mut occupied: [IndexSet<Point>; 2] = Default::default();
@@ -471,6 +489,8 @@ fn attempt(
             last: c.last,
             status: result.status,
             expanded: result.expanded,
+            routing_scans: result.routing_scans,
+            frontier_entries_peak: result.frontier_entries_peak,
             preflight_expanded: result.preflight_expanded,
             preflight_status: result.preflight_status,
             old_steps: c.cells.len() - 1,
@@ -484,14 +504,24 @@ fn attempt(
                 region::blockers(chains, &changed, &paths, job, &result.blocked_frontier);
             report.port_options =
                 region::ports(&w, catalogs, edit, &eligible, job, &report.locked_ports)?;
+            let incomplete = !complete_local_route_failure(result.status);
             let mut diagnostic = Diagnostic::new(
                 format!("local-{}", result.status),
-                "Affected chain could not be restored within this candidate neighborhood",
-                c.id,
+                if incomplete {
+                    "Affected chain route search stopped before deciding reachability"
+                } else {
+                    "Affected chain has no route in this fixed candidate neighborhood"
+                },
+                serde_json::json!({"chain": c.id, "path_status": result.status,
+                    "expanded": result.expanded, "work_budget": work_budget}),
             );
             diagnostic.severity = "info";
             return Ok(Execution {
-                status: "rejected",
+                status: if incomplete {
+                    "search-incomplete"
+                } else {
+                    "rejected"
+                },
                 witness: None,
                 diagnostics: vec![diagnostic],
                 routes: vec![],

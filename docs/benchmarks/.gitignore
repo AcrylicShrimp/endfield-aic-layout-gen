@@ -58,6 +58,8 @@
 !/full-factory-pose-scale/compare-actions.py
 !/full-factory-pose-scale/generate-stress.py
 !/full-factory-pose-scale/measure.py
+!/full-factory-route-stop/baseline-panel.patch.txt
+!/full-factory-route-stop/measure.py
 !/heavy-xiranite-bottom-up-rotation-root/case.json
 !/hierarchical-crossing/panel.json
 !/hierarchical-curriculum-policy-collapse/panel-manifest.json

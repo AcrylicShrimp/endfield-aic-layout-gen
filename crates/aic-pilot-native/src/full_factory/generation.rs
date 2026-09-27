@@ -190,7 +190,11 @@ pub fn randomize(
                 &repair,
             )
             .unwrap_or_else(|d| routing::Execution {
-                status: "executor_rejected",
+                status: if routing::incomplete_diagnostic(&d) {
+                    "search-incomplete"
+                } else {
+                    "executor_rejected"
+                },
                 witness: None,
                 diagnostics: vec![d],
                 routes: vec![],
@@ -201,6 +205,29 @@ pub fn randomize(
                 execution.witness = Some(session.snapshot().current.clone());
             }
             let mut record = json!({"action":action,"executor_status":execution.status,"route_expansions":execution.route_expansions,"diagnostics":execution.diagnostics});
+            if execution.status == "search-incomplete" {
+                record["routes"] = json!(
+                    execution
+                        .routes
+                        .iter()
+                        .map(|route| json!({
+                            "id": route.id, "status": route.status, "expanded": route.expanded,
+                            "routing_scans": route.routing_scans,
+                            "frontier_entries_peak": route.frontier_entries_peak,
+                            "preflight_status": route.preflight_status,
+                            "preflight_expanded": route.preflight_expanded,
+                        }))
+                        .collect::<Vec<_>>()
+                );
+                if let Some(region) = &execution.region {
+                    record["region"] = json!({
+                        "contract": region.contract, "schema_version": region.schema_version,
+                        "termination": region.termination, "attempts": region.attempts.len(),
+                        "route_expansions": region.route_expansions, "work_budget": region.work_budget,
+                        "attempt_work": region.limits.attempt_work, "incomplete": region.incomplete,
+                    });
+                }
+            }
             if let Some(witness) = &execution.witness {
                 let remaining =
                     Duration::from_millis(config.elapsed_ms).saturating_sub(started.elapsed());

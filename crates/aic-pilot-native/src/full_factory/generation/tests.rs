@@ -4,6 +4,511 @@ use crate::full_factory::types::{Bounds, Point};
 use indexmap::{IndexMap, IndexSet};
 
 #[test]
+fn route_work_stop_keeps_incomplete_region_evidence() {
+    let (w, catalogs, _) = fixture();
+    let decomposition = chains::extract(&w, &IndexSet::new()).unwrap();
+    let chain = decomposition
+        .chains
+        .iter()
+        .find(|c| c.cells.len() > 4)
+        .unwrap();
+    let edit = routing::Edit {
+        chain_ids: vec![chain.id],
+        ..Default::default()
+    };
+    let limits = routing::Limits {
+        attempts: 1,
+        attempt_work: 1,
+        ..Default::default()
+    };
+    let outcome = routing::reembed(&w, &catalogs, &edit, 1, &limits).unwrap();
+    assert_eq!(outcome.status, "search-incomplete");
+    assert!(outcome.witness.is_none());
+    let report = outcome.region.unwrap();
+    assert_eq!(report.contract, "factory-route-region-v3");
+    assert_eq!(report.schema_version, 3);
+    assert_eq!(report.termination, "search-incomplete");
+    assert_eq!(report.route_expansions, outcome.route_expansions);
+    assert!(report.route_expansions <= 1);
+    assert!(report.incomplete.is_some());
+    assert!(
+        outcome
+            .diagnostics
+            .iter()
+            .any(|d| d.code == "region-search-incomplete")
+    );
+}
+
+#[test]
+fn route_input_work_limits_admit_large_finite_requests() {
+    let mut limits = routing::Limits::default();
+    limits.attempt_work = 1_000_001;
+    limits.chains = 129;
+    limits.validate().unwrap();
+    let (w, catalogs, _) = fixture();
+    let domain = candidates::describe(&w, &catalogs, &poses::VocabularyOptions::default()).unwrap();
+    let reroute = domain
+        .actions
+        .iter()
+        .find(|action| matches!(action, candidates::Action::Reroute { .. }))
+        .unwrap();
+    let result = candidates::execute(&w, &catalogs, reroute, 200_001, &limits).unwrap();
+    assert_eq!(result.region.unwrap().limits.attempt_work, 1_000_001);
+}
+
+#[test]
+#[ignore = "set AIC_REGION_WITNESS to a measured full-factory witness"]
+fn measure_region_chain_capacity() {
+    let path = std::env::var("AIC_REGION_WITNESS").unwrap();
+    let w: crate::full_factory::types::Witness =
+        serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+    let (_, catalogs, _) = fixture();
+    let (_, acceptance_catalogs, _) = fixture();
+    let accepted = FactoryEditSession::new(
+        fixture_request(&w),
+        w.clone(),
+        Arc::new(acceptance_catalogs),
+        FactoryEditBudget {
+            proposals: 1,
+            elapsed_ms: 30_000,
+        },
+    );
+    if let Err(e) = accepted {
+        panic!("factory admission: {e:?}");
+    }
+    let decomposition = chains::extract(&w, &IndexSet::new()).unwrap();
+    let selected = decomposition.chains.len().min(129);
+    println!(
+        "facilities={} chains={} selected={selected}",
+        w.placements.len(),
+        decomposition.chains.len()
+    );
+    if selected <= 128 {
+        return;
+    }
+    let edit = routing::Edit {
+        chain_ids: decomposition.chains[..selected]
+            .iter()
+            .map(|chain| chain.id)
+            .collect(),
+        ..Default::default()
+    };
+    for limit in [64, 128, 256] {
+        let limits = routing::Limits {
+            attempts: 1,
+            attempt_work: 1,
+            chains: limit,
+            ..Default::default()
+        };
+        let started = std::time::Instant::now();
+        let result = routing::reembed(&w, &catalogs, &edit, 1, &limits).unwrap();
+        let report = result.region.as_ref().unwrap();
+        println!(
+            "chain_limit={limit} status={} expansions={} ms={:.3} incomplete={}",
+            result.status,
+            result.route_expansions,
+            started.elapsed().as_secs_f64() * 1000.0,
+            serde_json::to_string(&report.incomplete).unwrap()
+        );
+        assert_eq!(result.status, "search-incomplete");
+        assert!(result.witness.is_none());
+        assert_eq!(report.initial_chains.len(), selected);
+        assert!(result.route_expansions <= 1);
+        if limit < selected {
+            assert_eq!(
+                report.incomplete.as_ref().unwrap().code,
+                "region-chain-limit"
+            );
+        }
+    }
+    let all = routing::Edit {
+        chain_ids: decomposition.chains.iter().map(|chain| chain.id).collect(),
+        ..Default::default()
+    };
+    let limits = routing::Limits {
+        attempts: 1,
+        attempt_work: 1,
+        chains: usize::MAX,
+        ..Default::default()
+    };
+    let started = std::time::Instant::now();
+    let result = routing::reembed(&w, &catalogs, &all, 1, &limits).unwrap();
+    let report = result.region.as_ref().unwrap();
+    println!(
+        "chain_limit=all status={} expansions={} ms={:.3} selected={}",
+        result.status,
+        result.route_expansions,
+        started.elapsed().as_secs_f64() * 1000.0,
+        report.initial_chains.len()
+    );
+    assert_eq!(result.status, "search-incomplete");
+    assert_eq!(report.initial_chains.len(), decomposition.chains.len());
+    assert!(result.route_expansions <= 1);
+}
+
+#[test]
+#[ignore = "set AIC_REGION_WITNESS to a measured full-factory witness"]
+fn measure_region_route_panel() {
+    let path = std::env::var("AIC_REGION_WITNESS").unwrap();
+    let w: crate::full_factory::types::Witness =
+        serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+    let (_, catalogs, _) = fixture();
+    let started = std::time::Instant::now();
+    let domain = candidates::describe(&w, &catalogs, &poses::VocabularyOptions::default()).unwrap();
+    println!(
+        "describe_ms={:.3} actions={}",
+        started.elapsed().as_secs_f64() * 1000.0,
+        domain.actions.len()
+    );
+    let reroutes: Vec<_> = domain
+        .actions
+        .iter()
+        .filter(|a| matches!(a, candidates::Action::Reroute { .. }))
+        .collect();
+    let first_pose = domain
+        .actions
+        .iter()
+        .find(|a| matches!(a, candidates::Action::Pose(_)))
+        .unwrap();
+    let crossing = (w.placements.len() == 5).then(|| {
+        candidates::Action::Pose(poses::action(
+            &w,
+            vec![poses::Pose {
+                member: 0,
+                x: 7,
+                y: 13,
+                rotation: 90,
+            }],
+        ))
+    });
+    let selected = [
+        ("pose", first_pose, 50_000),
+        ("reroute_first", reroutes[0], 50_000),
+        ("reroute_middle", reroutes[reroutes.len() / 2], 50_000),
+        ("reroute_last", reroutes[reroutes.len() - 1], 50_000),
+        ("reroute_middle_stop", reroutes[reroutes.len() / 2], 1),
+    ];
+    for (name, action, work) in selected.into_iter().chain(
+        crossing
+            .as_ref()
+            .map(|action| ("crossing_pose", action, 50_000)),
+    ) {
+        let started = std::time::Instant::now();
+        let result =
+            candidates::execute(&w, &catalogs, action, work, &routing::Limits::default()).unwrap();
+        let route_statuses = result
+            .region
+            .as_ref()
+            .map(|region| {
+                region
+                    .attempts
+                    .iter()
+                    .flat_map(|attempt| &attempt.routes)
+                    .map(|route| (route.id, route.status, route.steps))
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        let witness_hash = result
+            .witness
+            .as_ref()
+            .map(|w| crate::input::hash(&serde_json::to_vec(w).unwrap()));
+        let crossings = result.region.as_ref().map_or(0, |region| {
+            region
+                .attempts
+                .iter()
+                .flat_map(|attempt| &attempt.routes)
+                .map(|route| route.crossings.len())
+                .sum::<usize>()
+        });
+        println!(
+            "panel={} status={} candidate={} expansions={} ms={:.3} routes={:?} crossings={} witness_hash={:?}",
+            name,
+            result.status,
+            result.witness.is_some(),
+            result.route_expansions,
+            started.elapsed().as_secs_f64() * 1000.0,
+            route_statuses,
+            crossings,
+            witness_hash
+        );
+    }
+}
+
+#[test]
+#[ignore = "set AIC_REGION_WITNESS to a measured full-factory witness"]
+fn measure_region_action_chain_counts() {
+    let path = std::env::var("AIC_REGION_WITNESS").unwrap();
+    let w: crate::full_factory::types::Witness =
+        serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+    let (_, catalogs, _) = fixture();
+    let domain = candidates::describe(&w, &catalogs, &poses::VocabularyOptions::default()).unwrap();
+    let mut measured = Vec::new();
+    let mut errors = 0usize;
+    for (index, action) in domain.actions.iter().enumerate() {
+        if matches!(
+            action,
+            candidates::Action::Insert { .. }
+                | candidates::Action::Contract { .. }
+                | candidates::Action::RestoreBest { .. }
+        ) {
+            continue;
+        }
+        match candidates::execute(&w, &catalogs, action, 1, &routing::Limits::default()) {
+            Ok(result) => {
+                if let Some(region) = result.region {
+                    measured.push((region.initial_chains.len(), index, action.kind()));
+                } else {
+                    errors += 1;
+                }
+            }
+            Err(_) => errors += 1,
+        }
+    }
+    measured.sort_by(|a, b| b.cmp(a));
+    println!(
+        "facilities={} actions={} measured={} errors={} above64={} above128={} top={:?}",
+        w.placements.len(),
+        domain.actions.len(),
+        measured.len(),
+        errors,
+        measured.iter().filter(|row| row.0 > 64).count(),
+        measured.iter().filter(|row| row.0 > 128).count(),
+        &measured[..measured.len().min(10)]
+    );
+    assert!(!measured.is_empty());
+}
+
+#[test]
+#[ignore = "set AIC_REGION_WITNESS to a measured full-factory witness"]
+fn measure_region_default_panel() {
+    use std::collections::BTreeMap;
+    let path = std::env::var("AIC_REGION_WITNESS").unwrap();
+    let w: crate::full_factory::types::Witness =
+        serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+    let (_, catalogs, _) = fixture();
+    let work: usize =
+        std::env::var("AIC_REGION_WORK").map_or(50_000, |value| value.parse().unwrap());
+    let mut limits = routing::Limits::default();
+    if let Ok(value) = std::env::var("AIC_REGION_ATTEMPT_WORK") {
+        limits.attempt_work = value.parse().unwrap();
+    }
+    if let Ok(value) = std::env::var("AIC_REGION_ATTEMPTS") {
+        limits.attempts = value.parse().unwrap();
+    }
+    if let Ok(value) = std::env::var("AIC_REGION_PORT_TRIALS") {
+        limits.port_trials = value.parse().unwrap();
+    }
+    if let Ok(value) = std::env::var("AIC_REGION_EXTRA_CHAINS") {
+        limits.extra_chains = value.parse().unwrap();
+    }
+    limits.validate().unwrap();
+    let domain = candidates::describe(&w, &catalogs, &poses::VocabularyOptions::default()).unwrap();
+    let mut kinds = BTreeMap::<&str, Vec<&candidates::Action>>::new();
+    for action in &domain.actions {
+        kinds.entry(action.kind()).or_default().push(action);
+    }
+    let mut status = BTreeMap::<String, usize>::new();
+    let mut termination = BTreeMap::<String, usize>::new();
+    let mut reason = BTreeMap::<String, usize>::new();
+    let mut selected = BTreeMap::<&str, usize>::new();
+    let mut max_chains = 0usize;
+    let mut expansions = 0usize;
+    let started = std::time::Instant::now();
+    for (kind, quota) in [
+        ("pose", 32),
+        ("port", 16),
+        ("reroute", 16),
+        ("component", 16),
+        ("release_bridge", 16),
+    ] {
+        let Some(actions) = kinds.get(kind) else {
+            continue;
+        };
+        let count = quota.min(actions.len());
+        selected.insert(kind, count);
+        for ordinal in 0..count {
+            let index = if count == 1 {
+                0
+            } else {
+                ordinal * (actions.len() - 1) / (count - 1)
+            };
+            match candidates::execute(&w, &catalogs, actions[index], work, &limits) {
+                Ok(result) => {
+                    *status.entry(result.status.into()).or_default() += 1;
+                    expansions += result.route_expansions;
+                    if let Some(report) = result.region {
+                        if std::env::var_os("AIC_REGION_DETAIL").is_some()
+                            && result.status == "search-incomplete"
+                        {
+                            println!("detail={} ordinal={} attempts={} reason={:?} trials={}", kind, ordinal,
+                                report.attempts.len(), report.incomplete.as_ref().map(|r| &r.code),
+                                serde_json::json!(report.attempts.iter().map(|attempt| serde_json::json!({
+                                    "status": attempt.status, "extra": attempt.extra_chains,
+                                    "ports": attempt.port_assignments, "priority": attempt.prioritized_chain,
+                                    "order": attempt.route_order,
+                                })).collect::<Vec<_>>())
+                            );
+                        }
+                        max_chains = max_chains.max(report.initial_chains.len());
+                        *termination.entry(report.termination.into()).or_default() += 1;
+                        if result.status == "search-incomplete" {
+                            let code = report
+                                .incomplete
+                                .map_or("missing-reason".into(), |r| r.code);
+                            *reason.entry(code).or_default() += 1;
+                        }
+                    }
+                }
+                Err(error) => *status.entry(format!("error:{}", error.code)).or_default() += 1,
+            }
+        }
+    }
+    println!(
+        "default_panel={}",
+        serde_json::json!({
+            "facilities": w.placements.len(), "actions": domain.actions.len(), "selected": selected,
+            "work_budget": work, "attempt_work": limits.attempt_work, "attempts": limits.attempts,
+            "port_trials": limits.port_trials, "extra_chains": limits.extra_chains,
+            "status": status, "termination": termination, "incomplete_reason": reason,
+            "max_initial_chains": max_chains, "route_expansions": expansions,
+            "wall_ms": started.elapsed().as_secs_f64() * 1000.0,
+        })
+    );
+}
+
+#[test]
+fn region_retry_preserves_unknown_until_a_complete_candidate() {
+    let (w, catalogs, _) = fixture();
+    let limits = routing::Limits {
+        attempts: 3,
+        attempt_work: 25,
+        ..Default::default()
+    };
+    let cases = [
+        (
+            vec![poses::Pose {
+                member: 2,
+                x: 2,
+                y: 15,
+                rotation: 90,
+            }],
+            "candidate",
+            ["search-incomplete", "search-incomplete", "candidate"],
+        ),
+        (
+            vec![
+                poses::Pose {
+                    member: 0,
+                    x: 27,
+                    y: 13,
+                    rotation: 270,
+                },
+                poses::Pose {
+                    member: 3,
+                    x: 1,
+                    y: 10,
+                    rotation: 270,
+                },
+            ],
+            "search-incomplete",
+            ["search-incomplete", "rejected", "rejected"],
+        ),
+    ];
+    for (placements, expected, statuses) in cases {
+        let action = candidates::Action::Pose(poses::action(&w, placements));
+        let result = candidates::execute(&w, &catalogs, &action, 75, &limits).unwrap();
+        let report = result.region.as_ref().unwrap();
+        assert_eq!(result.status, expected);
+        assert_eq!(report.termination, expected);
+        assert_eq!(
+            report.attempts.iter().map(|a| a.status).collect::<Vec<_>>(),
+            statuses
+        );
+        assert_eq!(report.incomplete.as_ref().unwrap().attempt, Some(0));
+        assert_eq!(
+            report.incomplete.as_ref().unwrap().code,
+            "local-work-budget"
+        );
+        assert_eq!(result.witness.is_some(), expected == "candidate");
+        assert_eq!(
+            result.route_expansions,
+            report
+                .attempts
+                .iter()
+                .map(|a| a.route_expansions)
+                .sum::<usize>()
+        );
+        assert!(result.route_expansions <= 75);
+    }
+}
+
+#[test]
+fn randomized_setup_records_route_search_stop() {
+    let (w, catalogs, _) = fixture();
+    let setup = Setup {
+        identity_limits: physical_identity::Limits {
+            max_individualization_nodes: 100_000,
+        },
+        steps: 1,
+        elapsed_ms: 10_000,
+        route_work: 1,
+        kinds: vec!["reroute".into()],
+    };
+    let output = randomize(
+        fixture_request(&w),
+        w.clone(),
+        Arc::new(crate::input::Catalogs::new(catalogs)),
+        &setup,
+        91,
+        &|| Ok(()),
+    )
+    .unwrap_or_else(|e| panic!("{}", e.message));
+    let record = &output.records[0];
+    assert_eq!(record["changed"], false);
+    assert!(record.get("acceptance").is_none());
+    assert_eq!(record["executor_status"], "search-incomplete");
+    assert_eq!(record["route_expansions"], 1);
+    assert_eq!(record["region"]["contract"], "factory-route-region-v3");
+    assert_eq!(record["region"]["termination"], "search-incomplete");
+    assert_eq!(record["routes"][0]["status"], "work-budget");
+}
+
+#[test]
+fn crossing_route_reembedding_retains_bridge_evidence() {
+    let (w, catalogs, _) = fixture();
+    let action = candidates::Action::Pose(poses::action(
+        &w,
+        vec![poses::Pose {
+            member: 0,
+            x: 7,
+            y: 13,
+            rotation: 90,
+        }],
+    ));
+    let result =
+        candidates::execute(&w, &catalogs, &action, 50_000, &routing::Limits::default()).unwrap();
+    assert_eq!(result.status, "candidate");
+    assert!(result.witness.is_some());
+    let report = result.region.as_ref().unwrap();
+    assert_eq!(report.termination, "candidate");
+    assert!(
+        report
+            .attempts
+            .iter()
+            .flat_map(|attempt| &attempt.routes)
+            .any(|route| route.status == "found" && !route.crossings.is_empty())
+    );
+    assert_eq!(
+        result.route_expansions,
+        report
+            .attempts
+            .iter()
+            .map(|attempt| attempt.route_expansions)
+            .sum::<usize>()
+    );
+}
+
+#[test]
 fn spatial_admission_and_selected_body_exclusion() {
     let bounds = Bounds {
         min_x: 0,

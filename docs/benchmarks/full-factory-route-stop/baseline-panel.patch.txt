@@ -1,0 +1,168 @@
+--- a/crates/aic-pilot-native/src/full_factory/generation/tests.rs
++++ b/crates/aic-pilot-native/src/full_factory/generation/tests.rs
+@@ -585,3 +585,165 @@
+     );
+     std::fs::remove_dir_all(directory).unwrap();
+ }
++
++#[test]
++#[ignore = "set AIC_REGION_WITNESS to a measured full-factory witness"]
++fn measure_region_route_panel() {
++    let path = std::env::var("AIC_REGION_WITNESS").unwrap();
++    let w: crate::full_factory::types::Witness =
++        serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
++    let (_, catalogs, _) = fixture();
++    let started = std::time::Instant::now();
++    let domain = candidates::describe(&w, &catalogs, &poses::VocabularyOptions::default()).unwrap();
++    println!(
++        "describe_ms={:.3} actions={}",
++        started.elapsed().as_secs_f64() * 1000.0,
++        domain.actions.len()
++    );
++    let reroutes: Vec<_> = domain
++        .actions
++        .iter()
++        .filter(|a| matches!(a, candidates::Action::Reroute { .. }))
++        .collect();
++    let first_pose = domain
++        .actions
++        .iter()
++        .find(|a| matches!(a, candidates::Action::Pose(_)))
++        .unwrap();
++    let crossing = (w.placements.len() == 5).then(|| {
++        candidates::Action::Pose(poses::action(
++            &w,
++            vec![poses::Pose {
++                member: 0,
++                x: 7,
++                y: 13,
++                rotation: 90,
++            }],
++        ))
++    });
++    let selected = [
++        ("pose", first_pose, 50_000),
++        ("reroute_first", reroutes[0], 50_000),
++        ("reroute_middle", reroutes[reroutes.len() / 2], 50_000),
++        ("reroute_last", reroutes[reroutes.len() - 1], 50_000),
++        ("reroute_middle_stop", reroutes[reroutes.len() / 2], 1),
++    ];
++    for (name, action, work) in selected.into_iter().chain(
++        crossing
++            .as_ref()
++            .map(|action| ("crossing_pose", action, 50_000)),
++    ) {
++        let started = std::time::Instant::now();
++        let result =
++            candidates::execute(&w, &catalogs, action, work, &routing::Limits::default()).unwrap();
++        let route_statuses = result
++            .region
++            .as_ref()
++            .map(|region| {
++                region
++                    .attempts
++                    .iter()
++                    .flat_map(|attempt| &attempt.routes)
++                    .map(|route| (route.id, route.status, route.steps))
++                    .collect::<Vec<_>>()
++            })
++            .unwrap_or_default();
++        let witness_hash = result
++            .witness
++            .as_ref()
++            .map(|w| crate::input::hash(&serde_json::to_vec(w).unwrap()));
++        let crossings = result.region.as_ref().map_or(0, |region| {
++            region
++                .attempts
++                .iter()
++                .flat_map(|attempt| &attempt.routes)
++                .map(|route| route.crossings.len())
++                .sum::<usize>()
++        });
++        println!(
++            "panel={} status={} candidate={} expansions={} ms={:.3} routes={:?} crossings={} witness_hash={:?}",
++            name,
++            result.status,
++            result.witness.is_some(),
++            result.route_expansions,
++            started.elapsed().as_secs_f64() * 1000.0,
++            route_statuses,
++            crossings,
++            witness_hash
++        );
++    }
++}
++
++#[test]
++#[ignore = "set AIC_REGION_WITNESS to a measured full-factory witness"]
++fn measure_region_default_panel() {
++    use std::collections::BTreeMap;
++    let path = std::env::var("AIC_REGION_WITNESS").unwrap();
++    let w: crate::full_factory::types::Witness =
++        serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
++    let (_, catalogs, _) = fixture();
++    let domain = candidates::describe(&w, &catalogs, &poses::VocabularyOptions::default()).unwrap();
++    let mut kinds = BTreeMap::<&str, Vec<&candidates::Action>>::new();
++    for action in &domain.actions {
++        kinds.entry(action.kind()).or_default().push(action);
++    }
++    let mut status = BTreeMap::<String, usize>::new();
++    let mut termination = BTreeMap::<String, usize>::new();
++    let mut reason = BTreeMap::<String, usize>::new();
++    let mut selected = BTreeMap::<&str, usize>::new();
++    let mut max_chains = 0usize;
++    let mut expansions = 0usize;
++    let started = std::time::Instant::now();
++    for (kind, quota) in [
++        ("pose", 32),
++        ("port", 16),
++        ("reroute", 16),
++        ("component", 16),
++        ("release_bridge", 16),
++    ] {
++        let Some(actions) = kinds.get(kind) else {
++            continue;
++        };
++        let count = quota.min(actions.len());
++        selected.insert(kind, count);
++        for ordinal in 0..count {
++            let index = if count == 1 {
++                0
++            } else {
++                ordinal * (actions.len() - 1) / (count - 1)
++            };
++            match candidates::execute(
++                &w,
++                &catalogs,
++                actions[index],
++                50_000,
++                &routing::Limits::default(),
++            ) {
++                Ok(result) => {
++                    *status.entry(result.status.into()).or_default() += 1;
++                    expansions += result.route_expansions;
++                    if let Some(report) = result.region {
++                        max_chains = max_chains.max(report.initial_chains.len());
++                        *termination.entry(report.termination.into()).or_default() += 1;
++                        if result.status == "rejected" {
++                            let code = report.attempts.last()
++                                .and_then(|attempt| attempt.diagnostics.first())
++                                .map_or("missing-reason".into(), |diagnostic| diagnostic.code.clone());
++                            *reason.entry(code).or_default() += 1;
++                        }
++                    }
++                }
++                Err(error) => *status.entry(format!("error:{}", error.code)).or_default() += 1,
++            }
++        }
++    }
++    println!(
++        "default_panel={}",
++        serde_json::json!({
++            "facilities": w.placements.len(), "actions": domain.actions.len(), "selected": selected,
++            "status": status, "termination": termination, "incomplete_reason": reason,
++            "max_initial_chains": max_chains, "route_expansions": expansions,
++            "wall_ms": started.elapsed().as_secs_f64() * 1000.0,
++        })
++    );
++}

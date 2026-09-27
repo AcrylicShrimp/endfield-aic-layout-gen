@@ -6,11 +6,11 @@ use indexmap::{IndexMap, IndexSet};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use super::{Edit, Execution, Job, RouteReport, attempt};
+use super::{Edit, Execution, Job, RouteReport, attempt, incomplete_diagnostic};
 use crate::full_factory::generation::changes::PortAssignment;
 use crate::full_factory::{catalog, chains::Chain, types::*};
 
-pub const CONTRACT: &str = "factory-route-region-v2";
+pub const CONTRACT: &str = "factory-route-region-v3";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -25,9 +25,11 @@ pub struct Limits {
 impl Default for Limits {
     fn default() -> Self {
         Self {
-            attempts: 4,
+            attempts: 8,
             attempt_work: 25000,
-            chains: 64,
+            // The witness itself bounds the number of changed chains. A smaller
+            // explicit cap is available for callers that need one.
+            chains: usize::MAX,
             extra_chains: 8,
             port_trials: 4,
             crossings_per_route: 8,
@@ -36,9 +38,9 @@ impl Default for Limits {
 }
 impl Limits {
     pub fn validate(&self) -> Result<()> {
-        if !(1..=1_000_000).contains(&self.attempt_work)
-            || !(1..=8).contains(&self.attempts)
-            || !(1..=128).contains(&self.chains)
+        if self.attempt_work == 0
+            || !(1..=32).contains(&self.attempts)
+            || self.chains == 0
             || self.extra_chains > 32
             || self.port_trials > 16
             || self.crossings_per_route > 8
@@ -101,6 +103,16 @@ pub struct Report {
     pub initial_chains: Vec<usize>,
     pub attempts: Vec<Attempt>,
     pub termination: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub incomplete: Option<Incomplete>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct Incomplete {
+    pub attempt: Option<usize>,
+    pub code: String,
+    pub entity: serde_json::Value,
+    pub route_expansions: usize,
 }
 
 fn diagnostic(code: &str, message: &str, entity: serde_json::Value) -> Diagnostic {
@@ -108,6 +120,39 @@ fn diagnostic(code: &str, message: &str, entity: serde_json::Value) -> Diagnosti
     d.severity = "info";
     d.stage = "local-region-repair";
     d
+}
+
+fn remember_incomplete(
+    report: &mut Report,
+    attempt: Option<usize>,
+    code: impl Into<String>,
+    entity: serde_json::Value,
+) {
+    if report.incomplete.is_none() {
+        report.incomplete = Some(Incomplete {
+            attempt,
+            code: code.into(),
+            entity,
+            route_expansions: report.route_expansions,
+        });
+    }
+}
+
+fn retry_key(
+    extras: &IndexSet<usize>,
+    ports: &[PortAssignment],
+    priority: Option<usize>,
+    work_budget: usize,
+) -> (Vec<usize>, Vec<(String, String)>, Option<usize>, usize) {
+    (
+        extras.iter().copied().collect(),
+        ports
+            .iter()
+            .map(|port| (port.terminal.clone(), port.port.clone()))
+            .collect(),
+        priority,
+        work_budget,
+    )
 }
 
 pub(super) fn contacts(jobs: &[Job], edit: &Edit) -> Vec<Contact> {
@@ -264,7 +309,7 @@ pub fn reembed(
 ) -> Result<Execution> {
     limits.validate()?;
     let mut report = Report {
-        schema_version: 2,
+        schema_version: 3,
         contract: CONTRACT,
         limits: limits.clone(),
         work_budget,
@@ -272,12 +317,14 @@ pub fn reembed(
         initial_chains: vec![],
         attempts: vec![],
         termination: "attempts-exhausted",
+        incomplete: None,
     };
     let mut trial = edit.clone();
     let mut extras = IndexSet::new();
     let mut priority = None;
     let mut port_trials = 0;
     let mut tried_ports = IndexSet::new();
+    let mut tried_states = IndexSet::new();
     let mut last = Execution {
         status: "rejected",
         witness: None,
@@ -290,6 +337,13 @@ pub fn reembed(
         let remaining = work_budget.saturating_sub(report.route_expansions);
         if remaining == 0 {
             report.termination = "work-exhausted";
+            let last_attempt = report.attempts.last().map(|a| a.index);
+            remember_incomplete(
+                &mut report,
+                last_attempt,
+                "region-work-exhausted",
+                json!({"work_budget": work_budget}),
+            );
             break;
         }
         let mut row = Attempt {
@@ -305,6 +359,12 @@ pub fn reembed(
                 .collect(),
             ..Default::default()
         };
+        tried_states.insert(retry_key(
+            &extras,
+            &trial.port_assignments,
+            priority,
+            row.work_budget,
+        ));
         let execution = attempt(
             witness,
             catalogs,
@@ -315,14 +375,41 @@ pub fn reembed(
             &mut row,
         );
         last = execution.unwrap_or_else(|d| Execution {
-            status: "rejected",
+            status: if incomplete_diagnostic(&d) {
+                "search-incomplete"
+            } else {
+                "rejected"
+            },
             witness: None,
             diagnostics: vec![d],
             routes: vec![],
             route_expansions: row.route_expansions,
             region: None,
         });
-        report.route_expansions += row.route_expansions;
+        report.route_expansions = report
+            .route_expansions
+            .checked_add(row.route_expansions)
+            .filter(|&n| n <= work_budget)
+            .ok_or_else(|| {
+                diagnostic(
+                    "region-work-accounting",
+                    "Route expansion accounting exceeded the admitted work budget",
+                    json!({"used": report.route_expansions, "attempt": row.route_expansions,
+                        "work_budget": work_budget}),
+                )
+            })?;
+        if last.status == "search-incomplete" {
+            let (code, entity) = last.diagnostics.first().map_or_else(
+                || {
+                    (
+                        "region-search-incomplete".to_owned(),
+                        serde_json::Value::Null,
+                    )
+                },
+                |d| (d.code.clone(), d.entity.clone()),
+            );
+            remember_incomplete(&mut report, Some(index), code, entity);
+        }
         if index == 0 {
             report.initial_chains = row.chains.clone();
         }
@@ -359,14 +446,83 @@ pub fn reembed(
             .map(|b| b.chain)
             .collect();
         let expand = !additions.is_empty() && (index % 2 == 1 || port.is_none());
-        let can_reorder = failed.is_some() && priority != failed;
+        let next_work_budget = work_budget
+            .saturating_sub(report.route_expansions)
+            .min(limits.attempt_work);
+        let can_reorder = failed.is_some_and(|id| {
+            priority != Some(id)
+                && row
+                    .route_order
+                    .iter()
+                    .position(|&candidate| candidate == id)
+                    != Some(0)
+                && !tried_states.contains(&retry_key(
+                    &extras,
+                    &trial.port_assignments,
+                    Some(id),
+                    next_work_budget,
+                ))
+        });
         let has_blockers = !row.blockers.is_empty();
+        let untried_ports = row
+            .port_options
+            .iter()
+            .filter(|p| !tried_ports.contains(&(p.terminal.clone(), p.port.clone())))
+            .count();
+        let remaining_blockers = row
+            .blockers
+            .iter()
+            .filter(|b| !extras.contains(&b.chain))
+            .count();
+        if port_trials >= limits.port_trials && untried_ports > 0 {
+            remember_incomplete(
+                &mut report,
+                Some(index),
+                "region-port-trial-limit",
+                json!({"tried": port_trials, "limit": limits.port_trials,
+                    "untried_options": untried_ports}),
+            );
+        }
+        if additions.is_empty() && remaining_blockers > 0 {
+            let (code, limit) = if extras.len() >= limits.extra_chains {
+                ("region-extra-chain-limit", limits.extra_chains)
+            } else {
+                ("region-chain-limit", limits.chains)
+            };
+            remember_incomplete(
+                &mut report,
+                Some(index),
+                code,
+                json!({"remaining_blockers": remaining_blockers, "limit": limit,
+                    "selected_chains": row.chains.len(), "extra_chains": extras.len()}),
+            );
+        }
         report.attempts.push(row);
+        if !expand && port.is_none() && !can_reorder {
+            report.termination = if has_blockers {
+                "region-exhausted"
+            } else {
+                "fixed-boundary"
+            };
+            break;
+        }
         if report.route_expansions == work_budget {
             report.termination = "work-exhausted";
+            remember_incomplete(
+                &mut report,
+                Some(index),
+                "region-work-exhausted",
+                json!({"work_budget": work_budget}),
+            );
             break;
         }
         if index + 1 == limits.attempts {
+            remember_incomplete(
+                &mut report,
+                Some(index),
+                "region-attempt-limit",
+                json!({"attempts": limits.attempts}),
+            );
             break;
         }
         if expand {
@@ -384,21 +540,27 @@ pub fn reembed(
             tried_ports.insert((port.terminal.clone(), port.port.clone()));
             trial.port_assignments = edit.port_assignments.clone();
             trial.port_assignments.push(port);
-        } else if !can_reorder {
-            report.termination = if has_blockers {
-                "region-exhausted"
-            } else {
-                "fixed-boundary"
-            };
-            break;
         }
         priority = failed;
     }
     if last.witness.is_none() && last.status != "unchanged" {
-        last.diagnostics.push(diagnostic(&format!("region-{}", report.termination),
-            "Bounded transaction repair ended without a complete candidate; the original factory is preserved",
-            json!({"attempts": report.attempts.len(), "extra_chains": extras.iter().collect::<Vec<_>>(),
-                "route_expansions": report.route_expansions, "work_budget": work_budget})));
+        if let Some(reason) = &report.incomplete {
+            last.status = "search-incomplete";
+            report.termination = "search-incomplete";
+            last.diagnostics.push(diagnostic(
+                "region-search-incomplete",
+                "Bounded transaction repair ended before search completeness was established; the original factory is preserved",
+                json!({"source_attempt": reason.attempt, "source_code": reason.code,
+                    "source_entity": reason.entity, "source_route_expansions": reason.route_expansions,
+                    "attempts": report.attempts.len(), "route_expansions": report.route_expansions,
+                    "work_budget": work_budget}),
+            ));
+        } else {
+            last.diagnostics.push(diagnostic(&format!("region-{}", report.termination),
+                "Bounded transaction repair ended without a complete candidate; the original factory is preserved",
+                json!({"attempts": report.attempts.len(), "extra_chains": extras.iter().collect::<Vec<_>>(),
+                    "route_expansions": report.route_expansions, "work_budget": work_budget})));
+        }
     }
     last.routes = report
         .attempts
