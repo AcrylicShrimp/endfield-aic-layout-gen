@@ -1,5 +1,7 @@
 //! Independent validation of a complete physical problem and solution.
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
+use std::hash::{BuildHasher, Hash};
+use std::ops::Deref;
 
 use crate::facilities::{FacilityPortDirection, ValidatedFacilityCatalog};
 use crate::geometry::{Diagnostic, Point, direction};
@@ -8,9 +10,11 @@ use crate::logistics::{
     ValidatedTransportCatalog,
 };
 use crate::physical::{BridgeAxis, Junction, Layout, Metrics, SCHEMA, TerminalDirection};
-use crate::projection::{cardinal_index, rotate};
+use crate::projection::{
+    Port, PortProjectionCursor, ProjectionAdmission, ProjectionAdvance, cardinal_index,
+};
 use crate::rate::Rate;
-use crate::stable_id::is_stable_id;
+use crate::stable_id::{StableIdAdvance, StableIdCursor};
 
 /// Loaded and validated once, then borrowed by generation and validation workers.
 pub struct Catalogs {
@@ -21,6 +25,12 @@ pub struct Catalogs {
 }
 
 pub type Result<T> = std::result::Result<T, Diagnostic>;
+
+mod junction_options_cursor;
+pub use junction_options_cursor::{JunctionAdvance, JunctionOptionsCursor, JunctionReservation};
+mod resumable;
+use resumable::Permit;
+pub use resumable::{ValidationAdvance, ValidationCursor, ValidationReservation, ValidationVisit};
 
 pub fn error(
     code: &str,
@@ -78,178 +88,233 @@ pub fn junction_options_with_visit(
     point: Point,
     uses: &[SiteArmUse<'_>],
     catalogs: &Catalogs,
-    mut visit: impl FnMut() -> bool,
+    visit: impl FnMut() -> bool,
 ) -> Result<Option<Vec<(String, i64)>>> {
-    if uses.is_empty() {
-        return Err(error(
-            "topology",
+    let mut cursor = JunctionOptionsCursor::new(transport, point);
+    match cursor.advance(
+        uses,
+        catalogs,
+        || true,
+        visit,
+        |bytes| bytes,
+        |_| JunctionReservation::Granted,
+        |_| {},
+    ) {
+        JunctionAdvance::Complete(result) => result,
+        JunctionAdvance::Pending => Err(error(
+            "route-request-work-limit",
             format!("{},{}", point.x, point.y),
-            "Empty transport site",
-        ));
-    }
-    let commodity = uses[0].commodity;
-    let mut incoming = [Rate::zero(); 4];
-    let mut outgoing = [Rate::zero(); 4];
-    let mut external_incoming = Rate::zero();
-    let mut external_outgoing = Rate::zero();
-    for use_site in uses {
-        if use_site.commodity != commodity
-            || use_site.incoming.is_some() == use_site.external_incoming
-            || use_site.outgoing.is_some() == use_site.external_outgoing
-        {
-            return Err(error(
-                "topology",
-                format!("{},{}", point.x, point.y),
-                "Mixed commodity or incomplete directed route arm",
-            ));
-        }
-        if let Some(d) = use_site.incoming {
-            incoming[d] = incoming[d].checked_add(use_site.rate).map_err(|_| {
-                error(
-                    "topology",
-                    use_site.connection,
-                    "Incoming arm rate overflow",
-                )
-            })?;
-        } else {
-            external_incoming = external_incoming.checked_add(use_site.rate).map_err(|_| {
-                error(
-                    "topology",
-                    use_site.connection,
-                    "External incoming rate overflow",
-                )
-            })?;
-        }
-        if let Some(d) = use_site.outgoing {
-            outgoing[d] = outgoing[d].checked_add(use_site.rate).map_err(|_| {
-                error(
-                    "topology",
-                    use_site.connection,
-                    "Outgoing arm rate overflow",
-                )
-            })?;
-        } else {
-            external_outgoing = external_outgoing.checked_add(use_site.rate).map_err(|_| {
-                error(
-                    "topology",
-                    use_site.connection,
-                    "External outgoing rate overflow",
-                )
-            })?;
+            "Catalog visit allowance or deadline reached",
+        )),
+        JunctionAdvance::Retry | JunctionAdvance::Denied => {
+            unreachable!("unbounded catalog result allocation always admits")
         }
     }
-    let capacity = catalogs.transports.capacity(transport);
-    let mut total_in = external_incoming;
-    let mut total_out = external_outgoing;
-    for d in 0..4 {
-        if !incoming[d].is_zero() && !outgoing[d].is_zero() {
-            return Err(error(
-                "topology",
-                format!("{},{}", point.x, point.y),
-                "A physical arm carries opposing directions",
-            ));
+}
+
+async fn projected_ports(
+    definition: &crate::facilities::FacilityDefinition,
+    rotation: i64,
+    origin: Point,
+    permit: &Permit,
+) -> Result<(i64, i64, Vec<Port>)> {
+    let mut width = definition.footprint.width;
+    let mut height = definition.footprint.height;
+    for _ in 0..rotation / 90 {
+        std::mem::swap(&mut width, &mut height);
+    }
+    let mut cursor = PortProjectionCursor::new();
+    let mut grant = false;
+    loop {
+        let mut requested = None;
+        match cursor.advance(definition, rotation, origin, |bytes| {
+            if std::mem::take(&mut grant) {
+                ProjectionAdmission::Granted
+            } else {
+                requested = Some(bytes);
+                ProjectionAdmission::Pending
+            }
+        }) {
+            ProjectionAdvance::Complete(ports) => return Ok((width, height, ports)),
+            ProjectionAdvance::Pending => {
+                let bytes = requested.expect("projection asks admission before yielding");
+                permit.reserve(bytes).await?;
+                permit.visit().await?;
+                grant = true;
+            }
+            ProjectionAdvance::Denied => unreachable!("the validator grants admitted projection"),
         }
-        total_in = total_in
-            .checked_add(incoming[d])
-            .map_err(|_| error("topology", "routes", "Incoming flow overflow"))?;
-        total_out = total_out
-            .checked_add(outgoing[d])
-            .map_err(|_| error("topology", "routes", "Outgoing flow overflow"))?;
     }
-    if total_in != total_out || !within_capacity(total_in, capacity.quantity, capacity.duration_ms)
-    {
-        return Err(error(
-            "topology",
-            format!("{},{}", point.x, point.y),
-            "Site flow is unbalanced or exceeds line capacity",
-        ));
-    }
-    let in_dirs = (0..4)
-        .filter(|&d| !incoming[d].is_zero())
-        .collect::<Vec<_>>();
-    let out_dirs = (0..4)
-        .filter(|&d| !outgoing[d].is_zero())
-        .collect::<Vec<_>>();
-    let in_degree = in_dirs.len() + usize::from(!external_incoming.is_zero());
-    let out_degree = out_dirs.len() + usize::from(!external_outgoing.is_zero());
-    if in_degree <= 1 && out_degree <= 1 {
-        return Ok(None);
-    }
-    let kind = match (in_degree, out_degree) {
-        (1, 2..=3) => LogisticsComponentKind::Splitter,
-        (2..=3, 1) => LogisticsComponentKind::Converger,
-        _ => {
-            return Err(error(
-                "topology",
-                format!("{},{}", point.x, point.y),
-                "No catalog junction topology supports these directed arms",
-            ));
+}
+
+async fn find_projected_port<'a>(
+    ports: &'a [Port],
+    id: &str,
+    permit: &Permit,
+) -> Result<Option<&'a Port>> {
+    for port in ports {
+        permit.visit().await?;
+        if port.id == id {
+            return Ok(Some(port));
         }
+    }
+    Ok(None)
+}
+
+async fn stable_id_resumable(value: &str, permit: &Permit) -> Result<bool> {
+    let mut cursor = StableIdCursor::new();
+    let mut grant = false;
+    loop {
+        match cursor.advance(value, || std::mem::take(&mut grant)) {
+            StableIdAdvance::Complete(valid) => return Ok(valid),
+            StableIdAdvance::Pending => {
+                permit.visit().await?;
+                grant = true;
+            }
+        }
+    }
+}
+
+fn hash_table_bytes(capacity: usize, entry_bytes: usize) -> usize {
+    if capacity == 0 {
+        0
+    } else {
+        let buckets = capacity.saturating_add(1).next_power_of_two();
+        buckets
+            .saturating_mul(entry_bytes.saturating_add(1))
+            .saturating_add(32)
+    }
+}
+
+fn next_hash_table_bytes(capacity: usize, entry_bytes: usize) -> usize {
+    let buckets = if capacity == 0 {
+        4
+    } else {
+        capacity
+            .saturating_add(1)
+            .next_power_of_two()
+            .saturating_mul(2)
     };
-    if !external_incoming.is_zero() || !external_outgoing.is_zero() {
-        return Err(error(
-            "topology",
-            format!("{},{}", point.x, point.y),
-            "A boundary terminal cannot host a junction",
-        ));
+    buckets
+        .saturating_mul(entry_bytes.saturating_add(1))
+        .saturating_add(32)
+}
+
+async fn prepare_set_insert<T: Eq + Hash, S: BuildHasher>(
+    values: &mut HashSet<T, S>,
+    key: &T,
+    permit: &Permit,
+) -> Result<()> {
+    if values.len() == values.capacity() && !values.contains(key) {
+        let old = hash_table_bytes(values.capacity(), std::mem::size_of::<T>());
+        permit
+            .reserve(next_hash_table_bytes(
+                values.capacity(),
+                std::mem::size_of::<T>(),
+            ))
+            .await?;
+        values.reserve(1);
+        permit.release(old).await;
     }
-    let mut options = Vec::new();
-    for definition in &catalogs.components.catalog().components {
-        if !visit() {
-            return Err(error(
-                "route-request-work-limit",
-                format!("{},{}", point.x, point.y),
-                "Catalog visit allowance or deadline reached",
-            ));
-        }
-        if definition.transport != transport
-            || definition.kind != kind
-            || definition.footprint.width != 1
-            || definition.footprint.height != 1
-            || !within_capacity(
-                total_in,
-                definition.capacity.quantity,
-                definition.capacity.duration_ms,
-            )
-        {
-            continue;
-        }
-        for &rotation in &definition.allowed_rotations {
-            if !visit() {
-                return Err(error(
-                    "route-request-work-limit",
-                    format!("{},{}", point.x, point.y),
-                    "Catalog visit allowance or deadline reached",
-                ));
+    Ok(())
+}
+
+async fn prepare_map_insert<K: Eq + Hash, V, S: BuildHasher>(
+    values: &mut HashMap<K, V, S>,
+    key: &K,
+    permit: &Permit,
+) -> Result<()> {
+    if values.len() == values.capacity() && !values.contains_key(key) {
+        let entry_bytes = std::mem::size_of::<(K, V)>();
+        let old = hash_table_bytes(values.capacity(), entry_bytes);
+        permit
+            .reserve(next_hash_table_bytes(values.capacity(), entry_bytes))
+            .await?;
+        values.reserve(1);
+        permit.release(old).await;
+    }
+    Ok(())
+}
+
+async fn prepare_vec_push<T>(values: &mut Vec<T>, permit: &Permit) -> Result<()> {
+    if values.len() == values.capacity() {
+        let old = values.capacity().saturating_mul(std::mem::size_of::<T>());
+        let next_capacity = values.capacity().saturating_mul(2).max(4);
+        permit
+            .reserve(next_capacity.saturating_mul(std::mem::size_of::<T>()))
+            .await?;
+        values.reserve(1);
+        permit.release(old).await;
+    }
+    Ok(())
+}
+
+async fn junction_options_resumable(
+    transport: TransportKind,
+    point: Point,
+    uses: &[SiteArmUse<'_>],
+    catalogs: &Catalogs,
+    permit: &Permit,
+) -> Result<(Option<Vec<(String, i64)>>, usize)> {
+    let mut cursor = JunctionOptionsCursor::new(transport, point);
+    let visit_grant = std::cell::Cell::new(false);
+    let copy_grant = std::cell::Cell::new(None);
+    let mut reservation_grant = None;
+    loop {
+        let mut requested = None;
+        let requested_copy = std::cell::Cell::new(None);
+        let released_bytes = std::cell::Cell::new(0usize);
+        let result = cursor.advance(
+            uses,
+            catalogs,
+            || visit_grant.replace(false),
+            || visit_grant.replace(false),
+            |bytes| {
+                if copy_grant.replace(None) == Some(bytes) {
+                    bytes
+                } else {
+                    requested_copy.set(Some(bytes));
+                    0
+                }
+            },
+            |bytes| {
+                if reservation_grant.take() == Some(bytes) {
+                    JunctionReservation::Granted
+                } else {
+                    requested = Some(bytes);
+                    JunctionReservation::Retry
+                }
+            },
+            |bytes| released_bytes.set(released_bytes.get().saturating_add(bytes)),
+        );
+        permit.release(released_bytes.get()).await;
+        match result {
+            JunctionAdvance::Complete(result) => {
+                let reserved_bytes = cursor.reserved_bytes();
+                match result {
+                    Ok(options) => return Ok((options, reserved_bytes)),
+                    Err(failure) => {
+                        permit.release(reserved_bytes).await;
+                        return Err(failure);
+                    }
+                }
             }
-            let rotated = |direction: &crate::logistics::CardinalDirection| {
-                (cardinal_index(*direction) + rotation as usize / 90) % 4
-            };
-            let valid_in = in_dirs.iter().all(|&d| {
-                definition
-                    .input_directions
-                    .iter()
-                    .any(|arm| rotated(arm) == d)
-            });
-            let valid_out = out_dirs.iter().all(|&d| {
-                definition
-                    .output_directions
-                    .iter()
-                    .any(|arm| rotated(arm) == d)
-            });
-            if valid_in && valid_out {
-                options.push((definition.id.clone(), rotation));
+            JunctionAdvance::Pending => {
+                permit.visit().await?;
+                if let Some(bytes) = requested_copy.get() {
+                    copy_grant.set(Some(bytes));
+                } else {
+                    visit_grant.set(true);
+                }
             }
+            JunctionAdvance::Retry => {
+                let bytes = requested.expect("catalog result asks reservation before retry");
+                permit.reserve(bytes).await?;
+                reservation_grant = Some(bytes);
+            }
+            JunctionAdvance::Denied => unreachable!("the validator grants admitted result memory"),
         }
     }
-    if options.is_empty() {
-        return Err(error(
-            "junction",
-            format!("{},{}", point.x, point.y),
-            "No catalog junction supports the directed arms, flow and rotation",
-        ));
-    }
-    Ok(Some(options))
 }
 
 /// Validate actual geometry and obligations, never caller-supplied metrics/flags.
@@ -264,6 +329,25 @@ pub fn validate_with_visit(
     catalogs: &Catalogs,
     mut visit: impl FnMut() -> Result<()>,
 ) -> Result<Metrics> {
+    let mut cursor = ValidationCursor::new(layout, catalogs);
+    match cursor.advance(
+        || match visit() {
+            Ok(()) => ValidationVisit::Granted,
+            Err(failure) => ValidationVisit::Denied(failure),
+        },
+        |_| ValidationReservation::Granted,
+        |_| {},
+    ) {
+        ValidationAdvance::Complete(result) => result,
+        ValidationAdvance::Pending => unreachable!("one-shot validator cannot retry"),
+    }
+}
+
+async fn validate_core<L, C>(layout: L, catalogs: C, permit: Permit) -> Result<Metrics>
+where
+    L: Deref<Target = Layout>,
+    C: Deref<Target = Catalogs>,
+{
     let problem = &layout.problem;
     let solution = &layout.solution;
     if layout.schema != SCHEMA
@@ -293,10 +377,11 @@ pub fn validate_with_visit(
             "Missing poses/routes or counts exceed physical input guards",
         ));
     }
-    let mut blocks = BTreeMap::new();
+    let mut blocks = HashMap::new();
     for (i, block) in problem.blocks.iter().enumerate() {
-        visit()?;
-        if !is_stable_id(&block.id)
+        permit.visit().await?;
+        prepare_map_insert(&mut blocks, &block.id.as_str(), &permit).await?;
+        if !stable_id_resumable(&block.id, &permit).await?
             || blocks.insert(block.id.as_str(), i).is_some()
             || catalogs.facilities.facility(&block.facility).is_none()
         {
@@ -307,11 +392,12 @@ pub fn validate_with_visit(
             ));
         }
     }
-    let mut terminals = BTreeMap::new();
+    let mut terminals = HashMap::new();
     for (i, terminal) in problem.terminals.iter().enumerate() {
-        visit()?;
-        if !is_stable_id(&terminal.id)
-            || !is_stable_id(&terminal.commodity)
+        permit.visit().await?;
+        prepare_map_insert(&mut terminals, &terminal.id.as_str(), &permit).await?;
+        if !stable_id_resumable(&terminal.id, &permit).await?
+            || !stable_id_resumable(&terminal.commodity, &permit).await?
             || blocks.contains_key(terminal.id.as_str())
             || terminals.insert(terminal.id.as_str(), i).is_some()
         {
@@ -323,6 +409,14 @@ pub fn validate_with_visit(
         }
     }
     let mut body = HashSet::new();
+    permit
+        .reserve(
+            problem
+                .blocks
+                .len()
+                .saturating_mul(std::mem::size_of::<Option<Vec<Port>>>()),
+        )
+        .await?;
     let mut ports = vec![None; problem.blocks.len()];
     let mut lo = Point {
         x: i64::MAX,
@@ -336,7 +430,7 @@ pub fn validate_with_visit(
         hi.y = hi.y.max(p.y);
     };
     for pose in &solution.poses {
-        visit()?;
+        permit.visit().await?;
         let Some(&i) = blocks.get(pose.block.as_str()) else {
             return Err(error(
                 "pose",
@@ -370,7 +464,8 @@ pub fn validate_with_visit(
                 "Block geometry exceeds the materialization guard",
             ));
         }
-        let (w, h, projected) = rotate(definition, pose.rotation, pose.position);
+        let (w, h, projected) =
+            projected_ports(definition, pose.rotation, pose.position, &permit).await?;
         if w > 1000
             || h > 1000
             || w * h > 10_000
@@ -387,19 +482,29 @@ pub fn validate_with_visit(
         include(pose.position.shifted(w - 1, h - 1));
         for y in pose.position.y..pose.position.y + h {
             for x in pose.position.x..pose.position.x + w {
-                visit()?;
-                if !body.insert(Point { x, y }) {
+                permit.visit().await?;
+                let point = Point { x, y };
+                prepare_set_insert(&mut body, &point, &permit).await?;
+                if !body.insert(point) {
                     return Err(error("overlap", pose.block.clone(), "Block bodies overlap"));
                 }
             }
         }
         ports[i] = Some(projected);
     }
+    permit
+        .reserve(
+            problem
+                .terminals
+                .len()
+                .saturating_mul(std::mem::size_of::<Option<Point>>()),
+        )
+        .await?;
     let mut terminal_positions = vec![None; problem.terminals.len()];
     let mut occupied_terminal_positions = HashSet::new();
     let mut terminal_at = HashMap::new();
     for pose in &solution.terminal_poses {
-        visit()?;
+        permit.visit().await?;
         let Some(&i) = terminals.get(pose.terminal.as_str()) else {
             return Err(error(
                 "terminal-pose",
@@ -407,6 +512,7 @@ pub fn validate_with_visit(
                 "Terminal pose references an unknown boundary terminal",
             ));
         };
+        prepare_set_insert(&mut occupied_terminal_positions, &pose.position, &permit).await?;
         if terminal_positions[i].is_some()
             || !valid_point(pose.position)
             || !occupied_terminal_positions.insert(pose.position)
@@ -420,23 +526,39 @@ pub fn validate_with_visit(
         }
         include(pose.position);
         terminal_positions[i] = Some(pose.position);
+        prepare_map_insert(&mut terminal_at, &pose.position, &permit).await?;
         terminal_at.insert(pose.position, i);
     }
-    let mut connection_ids = BTreeMap::new();
+    let mut connection_ids = HashMap::new();
+    permit
+        .reserve((blocks.len() + terminals.len()).saturating_mul(std::mem::size_of::<usize>()))
+        .await?;
     let mut parent: Vec<_> = (0..blocks.len() + terminals.len()).collect();
+    permit
+        .reserve((blocks.len() + terminals.len()).saturating_mul(std::mem::size_of::<usize>()))
+        .await?;
+    let mut component_size = vec![1usize; parent.len()];
+    permit
+        .reserve(
+            blocks
+                .len()
+                .saturating_mul(2 * std::mem::size_of::<usize>()),
+        )
+        .await?;
     let mut incoming = vec![0; blocks.len()];
     let mut outgoing = vec![0; blocks.len()];
     let mut transports = [0; 2];
     for (i, connection) in problem.connections.iter().enumerate() {
-        visit()?;
+        permit.visit().await?;
+        prepare_map_insert(&mut connection_ids, &connection.id.as_str(), &permit).await?;
         let source_block = blocks.get(connection.source.as_str()).copied();
         let target_block = blocks.get(connection.target.as_str()).copied();
         let source_terminal = terminals.get(connection.source.as_str()).copied();
         let target_terminal = terminals.get(connection.target.as_str()).copied();
         let source = source_block.or_else(|| source_terminal.map(|index| blocks.len() + index));
         let target = target_block.or_else(|| target_terminal.map(|index| blocks.len() + index));
-        if !is_stable_id(&connection.id)
-            || !is_stable_id(&connection.commodity)
+        if !stable_id_resumable(&connection.id, &permit).await?
+            || !stable_id_resumable(&connection.commodity, &permit).await?
             || connection_ids.insert(connection.id.as_str(), i).is_some()
             || source.is_none()
             || target.is_none()
@@ -475,8 +597,17 @@ pub fn validate_with_visit(
             ));
         }
         let (s, t) = (source.unwrap(), target.unwrap());
-        let (a, b) = (root(&parent, s), root(&parent, t));
-        parent[a] = b;
+        let a = root_with_visit(&parent, s, &permit).await?;
+        let b = root_with_visit(&parent, t, &permit).await?;
+        if a != b {
+            if component_size[a] < component_size[b] {
+                parent[a] = b;
+                component_size[b] += component_size[a];
+            } else {
+                parent[b] = a;
+                component_size[a] += component_size[b];
+            }
+        }
         if let Some(s) = source_block {
             outgoing[s] += 1;
         }
@@ -488,13 +619,21 @@ pub fn validate_with_visit(
     let mut routed = HashSet::new();
     let mut selected_ports = HashMap::new();
     let mut visits: HashMap<(TransportKind, Point), Vec<(usize, usize)>> = HashMap::new();
+    permit
+        .reserve(
+            problem
+                .connections
+                .len()
+                .saturating_mul(std::mem::size_of::<usize>()),
+        )
+        .await?;
     let mut route_indices = vec![0; problem.connections.len()];
     let mut total_cells = 0usize;
     let mut turns = 0u64;
     let mut distance_sum = 0i64;
     let mut detour_sum = 0f64;
     for (ri, route) in solution.routes.iter().enumerate() {
-        visit()?;
+        permit.visit().await?;
         let Some(&ci) = connection_ids.get(route.connection.as_str()) else {
             return Err(error(
                 "route",
@@ -502,6 +641,7 @@ pub fn validate_with_visit(
                 "Route references an unknown obligation",
             ));
         };
+        prepare_set_insert(&mut routed, &ci, &permit).await?;
         if !routed.insert(ci) || route.cells.is_empty() || route.cells.len() > 250_000 {
             return Err(error(
                 "route",
@@ -541,7 +681,8 @@ pub fn validate_with_visit(
                         "Facility route endpoint omitted its selected port",
                     ));
                 };
-                let port = ports[bi].as_ref().unwrap().iter().find(|p| p.id == port_id);
+                let port =
+                    find_projected_port(ports[bi].as_ref().unwrap(), port_id, &permit).await?;
                 if port.is_none_or(|p| {
                     p.direction != expected
                         || p.transport != connection.transport
@@ -553,10 +694,11 @@ pub fn validate_with_visit(
                         "Wrong port, transport, direction or endpoint position",
                     ));
                 }
-                let key = (bi, port_id.to_owned());
+                let key = (bi, port_id);
+                prepare_map_insert(&mut selected_ports, &key, &permit).await?;
                 let entry = selected_ports.entry(key).or_insert_with(|| {
                     (
-                        connection.commodity.clone(),
+                        connection.commodity.as_str(),
                         connection.transport,
                         expected,
                         Rate::zero(),
@@ -600,7 +742,7 @@ pub fn validate_with_visit(
         }
         let mut local = HashSet::new();
         for (pi, &p) in route.cells.iter().enumerate() {
-            visit()?;
+            permit.visit().await?;
             if let Some(&terminal) = terminal_at.get(&p) {
                 if problem.terminals[terminal].id != connection.source
                     && problem.terminals[terminal].id != connection.target
@@ -612,6 +754,7 @@ pub fn validate_with_visit(
                     ));
                 }
             }
+            prepare_set_insert(&mut local, &p, &permit).await?;
             if !valid_point(p)
                 || body.contains(&p)
                 || !local.insert(p)
@@ -623,17 +766,27 @@ pub fn validate_with_visit(
                     "Path leaves bounds, intersects a body, repeats or skips cells",
                 ));
             }
-            visits
-                .entry((connection.transport, p))
-                .or_default()
-                .push((ci, pi));
+            let key = (connection.transport, p);
+            if let Some(users) = visits.get_mut(&key) {
+                prepare_vec_push(users, &permit).await?;
+                users.push((ci, pi));
+            } else {
+                prepare_map_insert(&mut visits, &key, &permit).await?;
+                let users = visits.entry(key).or_default();
+                prepare_vec_push(users, &permit).await?;
+                users.push((ci, pi));
+            }
             include(p);
         }
-        turns += route
-            .cells
-            .windows(3)
-            .filter(|p| direction(p[0], p[1]) != direction(p[1], p[2]))
-            .count() as u64;
+        let local_bytes = hash_table_bytes(local.capacity(), std::mem::size_of::<Point>());
+        drop(local);
+        permit.release(local_bytes).await;
+        for window in route.cells.windows(3) {
+            permit.visit().await?;
+            if direction(window[0], window[1]) != direction(window[1], window[2]) {
+                turns += 1;
+            }
+        }
         let distance = route.cells[0].distance(*route.cells.last().unwrap());
         distance_sum += distance;
         detour_sum += (route.cells.len() - 1) as f64 / distance.max(1) as f64;
@@ -641,7 +794,7 @@ pub fn validate_with_visit(
     let mut bridge_sites = HashSet::new();
     let mut bridge_ids = HashSet::new();
     for bridge in &solution.bridges {
-        visit()?;
+        permit.visit().await?;
         let Some(definition) = catalogs.components.component(&bridge.component) else {
             return Err(error(
                 "bridge",
@@ -649,7 +802,10 @@ pub fn validate_with_visit(
                 "Unknown bridge definition",
             ));
         };
-        if !is_stable_id(&bridge.id)
+        prepare_set_insert(&mut bridge_ids, &bridge.id.as_str(), &permit).await?;
+        let site = (definition.transport, bridge.position);
+        prepare_set_insert(&mut bridge_sites, &site, &permit).await?;
+        if !stable_id_resumable(&bridge.id, &permit).await?
             || !bridge_ids.insert(bridge.id.as_str())
             || definition.kind != LogisticsComponentKind::Bridge
             || definition.footprint.width != 1
@@ -679,11 +835,11 @@ pub fn validate_with_visit(
                 "Bridge channels must declare horizontal and vertical axes",
             ));
         }
-        let mut actual = [BTreeSet::new(), BTreeSet::new()];
+        let mut actual = [HashSet::new(), HashSet::new()];
         let mut load = [Rate::zero(), Rate::zero()];
         let mut directions = [None, None];
         for &(ci, pi) in users {
-            visit()?;
+            permit.visit().await?;
             let route = &solution.routes[route_indices[ci]];
             if pi == 0 || pi + 1 == route.cells.len() {
                 return Err(error(
@@ -705,6 +861,12 @@ pub fn validate_with_visit(
                 ));
             }
             directions[axis] = Some(d);
+            prepare_set_insert(
+                &mut actual[axis],
+                &problem.connections[ci].id.as_str(),
+                &permit,
+            )
+            .await?;
             actual[axis].insert(problem.connections[ci].id.as_str());
             load[axis] = load[axis]
                 .checked_add(problem.connections[ci].rate)
@@ -729,11 +891,12 @@ pub fn validate_with_visit(
         }
         for axis in 0..2 {
             let channel = &bridge.channels[axis];
-            let named = channel
-                .connections
-                .iter()
-                .map(String::as_str)
-                .collect::<BTreeSet<_>>();
+            let mut named = HashSet::new();
+            for connection in &channel.connections {
+                permit.visit().await?;
+                prepare_set_insert(&mut named, &connection.as_str(), &permit).await?;
+                named.insert(connection.as_str());
+            }
             let line = catalogs.transports.capacity(definition.transport);
             if actual[axis].is_empty()
                 || named.len() != channel.connections.len()
@@ -751,12 +914,21 @@ pub fn validate_with_visit(
                     "Bridge axis owners or aggregate capacity do not match route flow",
                 ));
             }
+            let named_bytes = hash_table_bytes(named.capacity(), std::mem::size_of::<&str>());
+            drop(named);
+            permit.release(named_bytes).await;
         }
+        let actual_bytes = actual
+            .iter()
+            .map(|owners| hash_table_bytes(owners.capacity(), std::mem::size_of::<&str>()))
+            .sum();
+        drop(actual);
+        permit.release(actual_bytes).await;
     }
     let mut junction_sites = HashMap::new();
     let mut junction_ids = HashSet::new();
     for junction in &solution.junctions {
-        visit()?;
+        permit.visit().await?;
         let definition = catalogs
             .components
             .component(&junction.component)
@@ -767,7 +939,10 @@ pub fn validate_with_visit(
                     "Unknown junction component",
                 )
             })?;
-        if !is_stable_id(&junction.id)
+        prepare_set_insert(&mut junction_ids, &junction.id.as_str(), &permit).await?;
+        let site = (definition.transport, junction.position);
+        prepare_map_insert(&mut junction_sites, &site, &permit).await?;
+        if !stable_id_resumable(&junction.id, &permit).await?
             || !junction_ids.insert(junction.id.as_str())
             || bridge_ids.contains(junction.id.as_str())
             || !matches!(
@@ -792,7 +967,7 @@ pub fn validate_with_visit(
         }
     }
     for (&(transport, point), users) in &visits {
-        visit()?;
+        permit.visit().await?;
         if bridge_sites.contains(&(transport, point)) {
             if junction_sites.contains_key(&(transport, point)) {
                 return Err(error("junction", "routes", "Junction overlaps bridge"));
@@ -802,9 +977,13 @@ pub fn validate_with_visit(
         if users.len() == 1 && !junction_sites.contains_key(&(transport, point)) {
             continue;
         }
+        let arm_bytes = users
+            .len()
+            .saturating_mul(std::mem::size_of::<SiteArmUse<'_>>());
+        permit.reserve(arm_bytes).await?;
         let mut arm_uses = Vec::with_capacity(users.len());
         for &(ci, pi) in users {
-            visit()?;
+            permit.visit().await?;
             let connection = &problem.connections[ci];
             let route = &solution.routes[route_indices[ci]];
             let mut external_incoming = false;
@@ -812,12 +991,13 @@ pub fn validate_with_visit(
             let incoming = if pi > 0 {
                 direction(point, route.cells[pi - 1])
             } else if let Some(&bi) = blocks.get(connection.source.as_str()) {
-                let port = ports[bi]
-                    .as_ref()
-                    .unwrap()
-                    .iter()
-                    .find(|port| Some(port.id.as_str()) == route.source_port.as_deref())
-                    .expect("route port checked before topology");
+                let port = find_projected_port(
+                    ports[bi].as_ref().unwrap(),
+                    route.source_port.as_deref().unwrap(),
+                    &permit,
+                )
+                .await?
+                .expect("route port checked before topology");
                 direction(point, port.position)
             } else {
                 external_incoming = true;
@@ -826,12 +1006,13 @@ pub fn validate_with_visit(
             let outgoing = if pi + 1 < route.cells.len() {
                 direction(point, route.cells[pi + 1])
             } else if let Some(&bi) = blocks.get(connection.target.as_str()) {
-                let port = ports[bi]
-                    .as_ref()
-                    .unwrap()
-                    .iter()
-                    .find(|port| Some(port.id.as_str()) == route.target_port.as_deref())
-                    .expect("route port checked before topology");
+                let port = find_projected_port(
+                    ports[bi].as_ref().unwrap(),
+                    route.target_port.as_deref().unwrap(),
+                    &permit,
+                )
+                .await?
+                .expect("route port checked before topology");
                 direction(point, port.position)
             } else {
                 external_outgoing = true;
@@ -847,35 +1028,34 @@ pub fn validate_with_visit(
                 external_outgoing,
             });
         }
-        let mut interrupted = None;
-        let required_result =
-            junction_options_with_visit(transport, point, &arm_uses, catalogs, || match visit() {
-                Ok(()) => true,
-                Err(failure) => {
-                    interrupted = Some(failure);
-                    false
-                }
-            });
-        if let Some(failure) = interrupted {
-            return Err(failure);
-        }
-        let required = required_result?;
+        let (required, junction_bytes) =
+            junction_options_resumable(transport, point, &arm_uses, &catalogs, &permit).await?;
         let selected: Option<&&Junction> = junction_sites.get(&(transport, point));
         match (required, selected) {
             (None, None) => {}
             (Some(options), Some(junction)) => {
-                let named = junction
-                    .connections
-                    .iter()
-                    .map(String::as_str)
-                    .collect::<BTreeSet<_>>();
-                let actual = users
-                    .iter()
-                    .map(|&(ci, _)| problem.connections[ci].id.as_str())
-                    .collect::<BTreeSet<_>>();
-                if named.len() != junction.connections.len()
-                    || named != actual
-                    || !options.contains(&(junction.component.clone(), junction.rotation))
+                let mut named = HashSet::new();
+                for connection in &junction.connections {
+                    permit.visit().await?;
+                    prepare_set_insert(&mut named, &connection.as_str(), &permit).await?;
+                    named.insert(connection.as_str());
+                }
+                let mut actual = HashSet::new();
+                for &(ci, _) in users {
+                    permit.visit().await?;
+                    prepare_set_insert(&mut actual, &problem.connections[ci].id.as_str(), &permit)
+                        .await?;
+                    actual.insert(problem.connections[ci].id.as_str());
+                }
+                let mut selected_option = false;
+                for (component, rotation) in &options {
+                    permit.visit().await?;
+                    if component == &junction.component && *rotation == junction.rotation {
+                        selected_option = true;
+                        break;
+                    }
+                }
+                if named.len() != junction.connections.len() || named != actual || !selected_option
                 {
                     return Err(error(
                         "junction",
@@ -883,6 +1063,11 @@ pub fn validate_with_visit(
                         "Junction ownership, catalog geometry or flow does not match route arms",
                     ));
                 }
+                let owner_bytes = hash_table_bytes(named.capacity(), std::mem::size_of::<&str>())
+                    + hash_table_bytes(actual.capacity(), std::mem::size_of::<&str>());
+                drop(named);
+                drop(actual);
+                permit.release(owner_bytes).await;
             }
             (Some(_), None) => {
                 return Err(error(
@@ -899,10 +1084,15 @@ pub fn validate_with_visit(
                 ));
             }
         }
+        permit.release(junction_bytes).await;
+        permit.release(arm_bytes).await;
     }
-    if junction_sites.len() != solution.junctions.len()
-        || junction_sites.keys().any(|site| !visits.contains_key(site))
-    {
+    let mut unmatched_junction = junction_sites.len() != solution.junctions.len();
+    for site in junction_sites.keys() {
+        permit.visit().await?;
+        unmatched_junction |= !visits.contains_key(site);
+    }
+    if unmatched_junction {
         return Err(error(
             "junction",
             "layout",
@@ -911,17 +1101,41 @@ pub fn validate_with_visit(
     }
     let width = hi.x - lo.x + 1;
     let height = hi.y - lo.y + 1;
-    if terminal_positions.iter().flatten().any(|position| {
-        position.x != lo.x && position.x != hi.x && position.y != lo.y && position.y != hi.y
-    }) {
-        return Err(error(
-            "terminal-boundary",
-            "terminals",
-            "Every external terminal must lie on the final used layout boundary",
-        ));
+    for position in &terminal_positions {
+        permit.visit().await?;
+        if position.as_ref().is_some_and(|position| {
+            position.x != lo.x && position.x != hi.x && position.y != lo.y && position.y != hi.y
+        }) {
+            return Err(error(
+                "terminal-boundary",
+                "terminals",
+                "Every external terminal must lie on the final used layout boundary",
+            ));
+        }
     }
     let area = (width as u64) * (height as u64);
-    let unique_transport: HashSet<_> = visits.keys().map(|(_, p)| *p).collect();
+    let mut unique_transport = HashSet::new();
+    for (_, point) in visits.keys() {
+        permit.visit().await?;
+        prepare_set_insert(&mut unique_transport, point, &permit).await?;
+        unique_transport.insert(*point);
+    }
+    let mut roots = HashSet::new();
+    for index in 0..parent.len() {
+        permit.visit().await?;
+        let root = root_with_visit(&parent, index, &permit).await?;
+        prepare_set_insert(&mut roots, &root, &permit).await?;
+        roots.insert(root);
+    }
+    let mut branch_blocks = 0;
+    let mut merge_blocks = 0;
+    let mut max_degree = 0;
+    for (&incoming_count, &outgoing_count) in incoming.iter().zip(&outgoing) {
+        permit.visit().await?;
+        branch_blocks += usize::from(outgoing_count > 1);
+        merge_blocks += usize::from(incoming_count > 1);
+        max_degree = max_degree.max(incoming_count + outgoing_count);
+    }
     Ok(Metrics {
         width,
         height,
@@ -930,18 +1144,10 @@ pub fn validate_with_visit(
         transport_cells: visits.len() as u64,
         turns,
         occupancy: (body.len() + unique_transport.len()) as f64 / area as f64,
-        weak_components: (0..parent.len())
-            .map(|i| root(&parent, i))
-            .collect::<HashSet<_>>()
-            .len(),
-        branch_blocks: outgoing.iter().filter(|&&v| v > 1).count(),
-        merge_blocks: incoming.iter().filter(|&&v| v > 1).count(),
-        max_degree: incoming
-            .iter()
-            .zip(&outgoing)
-            .map(|(a, b)| a + b)
-            .max()
-            .unwrap_or(0),
+        weak_components: roots.len(),
+        branch_blocks,
+        merge_blocks,
+        max_degree,
         mean_port_distance: distance_sum as f64 / problem.connections.len().max(1) as f64,
         mean_detour: detour_sum / problem.connections.len().max(1) as f64,
         belt_connections: transports[0],
@@ -950,9 +1156,30 @@ pub fn validate_with_visit(
     })
 }
 
-fn root(parent: &[usize], mut i: usize) -> usize {
+async fn root_with_visit(parent: &[usize], mut i: usize, permit: &Permit) -> Result<usize> {
     while parent[i] != i {
+        permit.visit().await?;
         i = parent[i];
     }
-    i
+    Ok(i)
+}
+
+#[cfg(test)]
+mod reservation_tests {
+    use super::*;
+
+    #[test]
+    fn hash_growth_reservation_covers_real_capacity_steps() {
+        let mut values = HashSet::new();
+        for index in 0..50_000_u64 {
+            if values.len() == values.capacity() {
+                let predicted =
+                    next_hash_table_bytes(values.capacity(), std::mem::size_of::<u64>());
+                values.reserve(1);
+                let actual = hash_table_bytes(values.capacity(), std::mem::size_of::<u64>());
+                assert!(predicted >= actual);
+            }
+            values.insert(index);
+        }
+    }
 }
