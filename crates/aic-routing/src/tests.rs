@@ -3,6 +3,114 @@ use std::collections::{HashSet, VecDeque};
 use super::*;
 
 #[test]
+fn one_shot_router_admits_sparse_large_bounds_and_work_request() {
+    let bounds = Bounds {
+        min_x: 0,
+        min_y: 0,
+        max_x: 999,
+        max_y: 999,
+    };
+    let crossings = Crossings::new();
+    let result = shortest_path(
+        Point { x: 0, y: 0 },
+        Point { x: 2, y: 0 },
+        &IndexSet::new(),
+        bounds,
+        PathOptions {
+            first: None,
+            last: None,
+            work_budget: 1_000_001,
+            scan_budget: 10_000,
+            frontier_budget: 10_000,
+            deadline: None,
+            crossings: &crossings,
+            crossing_limit: 0,
+            prefer_crossings: false,
+            allow_zero_length: false,
+            cell_penalties: None,
+            edge_penalties: None,
+        },
+    )
+    .unwrap();
+    assert_eq!(result.status, "found");
+    assert_eq!(result.steps, Some(2));
+}
+
+#[test]
+fn one_shot_router_checks_neighbor_at_coordinate_limit() {
+    let bounds = Bounds {
+        min_x: i64::MAX - 2,
+        min_y: 0,
+        max_x: i64::MAX,
+        max_y: 0,
+    };
+    let crossings = Crossings::new();
+    let result = shortest_path(
+        Point { x: i64::MAX, y: 0 },
+        Point {
+            x: i64::MAX - 2,
+            y: 0,
+        },
+        &IndexSet::new(),
+        bounds,
+        PathOptions {
+            first: None,
+            last: None,
+            work_budget: 100,
+            scan_budget: 1_000,
+            frontier_budget: 100,
+            deadline: None,
+            crossings: &crossings,
+            crossing_limit: 0,
+            prefer_crossings: false,
+            allow_zero_length: false,
+            cell_penalties: None,
+            edge_penalties: None,
+        },
+    )
+    .unwrap();
+    assert_eq!(result.status, "found");
+    assert_eq!(result.steps, Some(2));
+}
+
+#[test]
+fn reverse_probe_frontier_stop_does_not_claim_no_path() {
+    let start = Point { x: 0, y: 0 };
+    let end = Point { x: 8, y: 8 };
+    let bounds = Bounds {
+        min_x: 0,
+        min_y: 0,
+        max_x: 9,
+        max_y: 9,
+    };
+    let blocked = (0..4).map(|direction| end.offset(direction)).collect();
+    let crossings = Crossings::new();
+    let result = shortest_path(
+        start,
+        end,
+        &blocked,
+        bounds,
+        PathOptions {
+            first: None,
+            last: None,
+            work_budget: 1_000,
+            scan_budget: 10_000,
+            frontier_budget: 1,
+            deadline: None,
+            crossings: &crossings,
+            crossing_limit: 0,
+            prefer_crossings: false,
+            allow_zero_length: false,
+            cell_penalties: None,
+            edge_penalties: None,
+        },
+    )
+    .unwrap();
+    assert_eq!(result.status, "frontier-budget");
+    assert!(result.frontier_entries_peak > 1);
+}
+
+#[test]
 fn expired_deadline_cannot_be_reported_as_local_infeasibility() {
     let result = shortest_path(
         Point { x: 0, y: 0 },
@@ -75,6 +183,37 @@ fn shared_straight_trunk_offers_only_capacity_valid_bridge_sites() {
     assert!(
         crossing_options(&carriers, &job, &catalogs, &IndexSet::new()).contains_key(&(site, 3))
     );
+    let mut uninterrupted_visits = Vec::new();
+    let uninterrupted =
+        crossing_options_with_visit(&carriers, &job, &catalogs, &IndexSet::new(), |kind| {
+            uninterrupted_visits.push(kind);
+            Ok::<(), ()>(())
+        })
+        .unwrap();
+    let mut cursor = CrossingOptionsCursor::new();
+    let mut resumed_visits = Vec::new();
+    let mut completed = false;
+    for _ in 0..=uninterrupted_visits.len() {
+        let mut remaining = 1;
+        match cursor.advance(&carriers, &job, &catalogs, &IndexSet::new(), |kind| {
+            if remaining == 0 {
+                return Err(());
+            }
+            remaining -= 1;
+            resumed_visits.push(kind);
+            Ok(())
+        }) {
+            Ok(true) => {
+                completed = true;
+                break;
+            }
+            Err(()) => {}
+            Ok(false) => unreachable!("an uninterrupted cursor completes"),
+        }
+    }
+    assert!(completed);
+    assert_eq!(cursor.finish(), uninterrupted);
+    assert_eq!(resumed_visits, uninterrupted_visits);
     carriers[1].network = 1;
     assert!(
         !crossing_options(&carriers, &job, &catalogs, &IndexSet::new()).contains_key(&(site, 3))
@@ -397,6 +536,78 @@ fn reverse_cutoff_still_runs_astar_and_preserves_directed_route_quality() {
     assert_eq!((result.steps, result.turns), (Some(16), Some(1)));
     assert!(result.preflight_expanded > 0 && result.preflight_expanded < result.expanded);
     assert!(result.expanded <= 1200);
+}
+
+#[test]
+fn reverse_probe_obeys_the_public_frontier_budget() {
+    let crossings = Crossings::new();
+    let result = shortest_path(
+        Point { x: 0, y: 0 },
+        Point { x: 9, y: 9 },
+        &IndexSet::new(),
+        Bounds {
+            min_x: 0,
+            min_y: 0,
+            max_x: 9,
+            max_y: 9,
+        },
+        PathOptions {
+            first: None,
+            last: None,
+            work_budget: 1_000,
+            scan_budget: 10_000,
+            frontier_budget: 1,
+            deadline: None,
+            crossings: &crossings,
+            crossing_limit: 0,
+            prefer_crossings: false,
+            allow_zero_length: false,
+            cell_penalties: None,
+            edge_penalties: None,
+        },
+    )
+    .unwrap();
+    assert_eq!(result.status, "frontier-budget");
+    assert_eq!(result.preflight_status, "frontier-budget");
+    assert!(result.preflight_expanded < 1_000);
+}
+
+#[test]
+fn forward_no_path_retains_blocked_cells_after_inconclusive_probe() {
+    let start = Point { x: 0, y: 0 };
+    let end = Point { x: 49, y: 49 };
+    let blocked = (0..50).map(|y| Point { x: 2, y }).collect::<IndexSet<_>>();
+    let crossings = Crossings::new();
+    let result = shortest_path(
+        start,
+        end,
+        &blocked,
+        Bounds {
+            min_x: 0,
+            min_y: 0,
+            max_x: 49,
+            max_y: 49,
+        },
+        PathOptions {
+            first: None,
+            last: None,
+            work_budget: 2_000,
+            scan_budget: 10_000,
+            frontier_budget: 2_000,
+            deadline: None,
+            crossings: &crossings,
+            crossing_limit: 0,
+            prefer_crossings: false,
+            allow_zero_length: false,
+            cell_penalties: None,
+            edge_penalties: None,
+        },
+    )
+    .unwrap();
+    assert_eq!(result.preflight_status, "unknown");
+    assert_eq!(result.status, "no-path");
+    assert!(result.blocked_frontier.contains(&Point { x: 2, y: 0 }));
+    assert!(result.blocked_frontier.contains(&Point { x: 2, y: 1 }));
 }
 
 #[test]

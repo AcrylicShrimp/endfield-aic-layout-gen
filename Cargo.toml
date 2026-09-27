@@ -8,6 +8,7 @@ license = "MIT OR Apache-2.0"
 rust-version = "1.95"
 
 [workspace.dependencies]
+ahash = "0.8"
 aic-layout = { path = "crates/aic-layout" }
 aic-layout-gen = { path = "crates/aic-layout-gen" }
 aic-recipe-layout-gen = { path = "crates/aic-recipe-layout-gen" }

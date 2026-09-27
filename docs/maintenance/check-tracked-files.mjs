@@ -29,7 +29,7 @@ export function sourceAssets(manifest) {
     throw new Error(`Invalid source asset schema in ${configPath}`);
   const files = [...manifest.inputs, ...manifest.templates];
   if (new Set(files).size !== files.length || files.some(p => typeof p !== 'string' || p.startsWith('/') ||
-      p.split('/').some(x => !x || x === '.' || x === '..') || /[\\*?\[\]\r\n]/.test(p) || !asset.test(p)))
+      p.split('/').some(x => !x || x === '.' || x === '..') || /[\\*?\[\]\r\n]/.test(p) || !(asset.test(p) || source.test(p) || p.endsWith('.rs'))))
     throw new Error(`Expected unique explicit relative source paths in ${configPath}`);
   return new Set(files);
 }

@@ -200,6 +200,8 @@
 !/layout-sequential/train.json
 !/physical-outcome-pretraining/config.json
 !/physical-outcomes/config.json
+!/route-one-shot/one_shot_probe.rs
+!/route-one-shot/run_mem.py
 !/user-layout-reconstruction/citron-powder-03.json
 !/user-layout-reconstruction/completion-envelope.json
 !/user-layout-reconstruction/enriched-iron-01.json
