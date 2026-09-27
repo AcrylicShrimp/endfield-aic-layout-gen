@@ -1,0 +1,18 @@
+{
+  "schema": "aic-experiment-cleanup-v1",
+  "experiment": "shared-layout-path-admission",
+  "host": "local-macos",
+  "removed_paths": [
+    "target/plan20-base",
+    "target/plan20-long-path"
+  ],
+  "removed_tree_bytes_approximate": 49766400,
+  "filesystem_free_bytes_before": 22700568576,
+  "filesystem_free_bytes_after": 22768738304,
+  "retained_evidence": [
+    "docs/reports/2026-09-27-layout-path-materialization-guard.md",
+    "crates/aic-layout-gen/src/tests.rs",
+    "artifacts/plan22-scale-20260927/retained-results.tar.gz"
+  ],
+  "verification": "The test-generated long layout, derived 30-facility output and disposable baseline worktree were reproducible; both temporary directories were absent after cleanup."
+}
