@@ -44,7 +44,7 @@ use crate::{
 };
 
 const CONFIG_SCHEMA: &str = "aic-hierarchical-generation-training-v1";
-const REPORT_SCHEMA: &str = "aic-hierarchical-generation-training-report-v3";
+pub(crate) const REPORT_SCHEMA: &str = "aic-hierarchical-generation-training-report-v3";
 const MAX_INPUT_BYTES: u64 = 64 * 1024 * 1024;
 
 fn default_checkpoint_interval_epochs() -> usize {
@@ -177,6 +177,16 @@ impl ReplayWindow {
             loaded.catalogs.identity == collection.value.catalog_sha256,
             "aic-learning.hierarchical-replay-catalog: replay catalog differs"
         );
+        crate::input::verify_training_artifact(
+            lower_training_output,
+            &loaded.catalogs.identity,
+            &collection.value.lower_checkpoint_sha256,
+        )?;
+        crate::input::verify_training_artifact(
+            outer_training_output,
+            &loaded.catalogs.identity,
+            &collection.value.outer_checkpoint_sha256,
+        )?;
         let domain = DomainConfig {
             placement: outer_config.search.bounds,
             extension_lengths: outer_config.search.extension_lengths.clone(),
