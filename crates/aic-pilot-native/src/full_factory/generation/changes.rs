@@ -74,16 +74,15 @@ pub fn facility_rotations(
             entity,
         )
     };
-    if rotations.len() > 16
-        || rotations
-            .iter()
-            .map(|r| &r.instance)
-            .collect::<IndexSet<_>>()
-            .len()
-            != rotations.len()
+    if rotations
+        .iter()
+        .map(|r| &r.instance)
+        .collect::<IndexSet<_>>()
+        .len()
+        != rotations.len()
     {
         return Err(error(
-            "Expected up to sixteen unique facility rotations",
+            "Expected unique facility rotations",
             serde_json::Value::Null,
         ));
     }

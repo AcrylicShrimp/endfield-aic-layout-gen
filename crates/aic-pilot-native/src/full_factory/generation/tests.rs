@@ -1,5 +1,295 @@
 use super::*;
 use crate::full_factory::tests::{fixture, fixture_request};
+use crate::full_factory::types::{Bounds, Point};
+use indexmap::{IndexMap, IndexSet};
+
+#[test]
+fn spatial_admission_and_selected_body_exclusion() {
+    let bounds = Bounds {
+        min_x: 0,
+        min_y: 0,
+        max_x: 2,
+        max_y: 2,
+    };
+    let body =
+        spatial::Prefix::try_new(bounds, [Point { x: 0, y: 0 }, Point { x: 1, y: 1 }]).unwrap();
+    assert!(body.occupied(0, 0, 1, 1));
+    assert!(!body.occupied_except(
+        0,
+        0,
+        1,
+        1,
+        [spatial::Rectangle {
+            x: 0,
+            y: 0,
+            width: 1,
+            height: 1
+        }]
+    ));
+    assert!(body.occupied_except(
+        0,
+        0,
+        2,
+        2,
+        [spatial::Rectangle {
+            x: 0,
+            y: 0,
+            width: 1,
+            height: 1
+        }]
+    ));
+    let sparse = spatial::Prefix::try_new(
+        Bounds {
+            min_x: 0,
+            min_y: 0,
+            max_x: 1_100_000,
+            max_y: 0,
+        },
+        [Point { x: 0, y: 0 }, Point { x: 1_100_000, y: 0 }],
+    )
+    .unwrap();
+    assert!(sparse.occupied(1_100_000, 0, 1, 1));
+    assert!(!sparse.occupied(500_000, 0, 1, 1));
+    assert_eq!(
+        spatial::Prefix::try_new(
+            Bounds {
+                min_x: 0,
+                min_y: 0,
+                max_x: i64::MAX,
+                max_y: 0
+            },
+            []
+        )
+        .err()
+        .unwrap()
+        .code,
+        "factory.vocabulary-resource-incomplete"
+    );
+    assert_eq!(
+        spatial::canvas(Bounds {
+            min_x: 0,
+            min_y: 0,
+            max_x: 4_000_000_000,
+            max_y: 4_000_000_000
+        })
+        .err()
+        .unwrap()
+        .code,
+        "factory.vocabulary-resource-incomplete"
+    );
+    let (w, _, _) = fixture();
+    assert_eq!(
+        spatial::empty_rectangles(&w, crate::full_factory::types::extent(&w).unwrap(), 1, 1024)
+            .err()
+            .unwrap()
+            .code,
+        "factory.vocabulary-resource-incomplete"
+    );
+    assert_eq!(
+        spatial::empty_rectangles(
+            &w,
+            crate::full_factory::types::extent(&w).unwrap(),
+            100_000,
+            1
+        )
+        .err()
+        .unwrap()
+        .code,
+        "factory.vocabulary-resource-incomplete"
+    );
+}
+
+#[test]
+fn compound_global_work_stop_is_incomplete() {
+    let (w, catalogs, _) = fixture();
+    let decomposition = chains::extract(&w, &IndexSet::new()).unwrap();
+    let index = movement::MovementIndex::new(&w, &decomposition.chains);
+    let opts = poses::VocabularyOptions {
+        compound_preflights: 1,
+        ..Default::default()
+    };
+    let error = poses::actions(&w, &catalogs, &opts, &decomposition, &index)
+        .err()
+        .expect("unfinished compound streams must not be published as complete");
+    assert_eq!(error.code, "factory.vocabulary-resource-incomplete");
+    assert!(error.entity["pending_streams"].as_u64().unwrap() > 0);
+}
+
+#[test]
+fn empty_compound_domain_skips_rectangle_scan() {
+    let (mut w, catalogs, _) = fixture();
+    w.placements.truncate(2);
+    w.placements[1].x = 100_000_001;
+    w.transport_networks.clear();
+    w.logistics_components.clear();
+    assert!(groups::compound_groups(&w).is_empty());
+    let decomposition = chains::extract(&w, &IndexSet::new()).unwrap();
+    let index = movement::MovementIndex::new(&w, &decomposition.chains);
+    let opts = poses::VocabularyOptions::default();
+    let (_, report) = poses::actions(&w, &catalogs, &opts, &decomposition, &index).unwrap();
+    assert_eq!(report["compound_groups"], 0);
+    assert_eq!(report["compound_streams"], 0);
+}
+
+#[test]
+#[ignore = "set AIC_POSE_VOCABULARY_WITNESS to a measured witness"]
+fn measure_pose_vocabulary_witness() {
+    let path = std::env::var("AIC_POSE_VOCABULARY_WITNESS").unwrap();
+    let w: crate::full_factory::types::Witness =
+        serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+    let (_, catalogs, _) = fixture();
+    let (_, acceptance_catalogs, _) = fixture();
+    let request = fixture_request(&w);
+    let accepted = FactoryEditSession::new(
+        request,
+        w.clone(),
+        Arc::new(acceptance_catalogs),
+        FactoryEditBudget {
+            proposals: 1,
+            elapsed_ms: 30_000,
+        },
+    );
+    println!("factory_edit_accepted={}", accepted.is_ok());
+    if let Err(e) = accepted {
+        panic!("factory edit rejected: {e:?}");
+    }
+    let before = std::time::Instant::now();
+    let mut opts = poses::VocabularyOptions::default();
+    if let Ok(limit) = std::env::var("AIC_POSE_COMPOUND_PREFLIGHTS") {
+        opts.compound_preflights = limit.parse().unwrap();
+    }
+    if std::env::var_os("AIC_POSE_REPORT").is_some() {
+        let decomposition = chains::extract(&w, &IndexSet::new()).unwrap();
+        let index = movement::MovementIndex::new(&w, &decomposition.chains);
+        match poses::actions(&w, &catalogs, &opts, &decomposition, &index) {
+            Ok((_, report)) => println!("pose_report={report}"),
+            Err(e) => panic!("pose_error={} {}", e.code, e.message),
+        }
+    }
+    let result = candidates::describe(&w, &catalogs, &opts);
+    println!("describe_ms={:.3}", before.elapsed().as_secs_f64() * 1000.0);
+    match result {
+        Ok(domain) => {
+            let encoded = serde_json::to_vec(&domain.actions).unwrap();
+            if let Some(path) = std::env::var_os("AIC_POSE_DUMP_ACTIONS") {
+                std::fs::write(path, &encoded).unwrap();
+            }
+            println!(
+                "actions={} sha256={}",
+                domain.actions.len(),
+                crate::input::hash(&encoded)
+            );
+            let groups = groups::pose_groups(&w, true);
+            let compound = groups::compound_groups(&w);
+            println!(
+                "pose_groups={} max_members={} omitted={} compound_groups={}",
+                groups.groups.len(),
+                groups
+                    .groups
+                    .iter()
+                    .map(|g| g.members.len())
+                    .max()
+                    .unwrap_or(0),
+                groups.omitted.len(),
+                compound.len()
+            );
+            if std::env::var_os("AIC_POSE_EXECUTE_FIRST").is_some() {
+                let action = domain
+                    .actions
+                    .iter()
+                    .find(|a| matches!(a, candidates::Action::Pose(_)))
+                    .unwrap();
+                let outcome =
+                    candidates::execute(&w, &catalogs, action, 5_000, &routing::Limits::default());
+                match outcome {
+                    Ok(outcome) => {
+                        println!(
+                            "route_status={} route_expansions={} candidate={}",
+                            outcome.status,
+                            outcome.route_expansions,
+                            outcome.witness.is_some()
+                        );
+                        assert_eq!(outcome.status, "candidate");
+                        assert!(outcome.witness.is_some());
+                    }
+                    Err(e) => panic!("route_error={} {}", e.code, e.message),
+                }
+            }
+        }
+        Err(e) => panic!("describe_error={} {}", e.code, e.message),
+    }
+}
+
+#[test]
+#[ignore = "set AIC_POSE_VOCABULARY_WITNESS to a structural group stress witness"]
+fn measure_pose_group_stress() {
+    let path = std::env::var("AIC_POSE_VOCABULARY_WITNESS").unwrap();
+    let w: crate::full_factory::types::Witness =
+        serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+    if std::env::var_os("AIC_POSE_VALIDATE_FACTORY").is_some() {
+        let (_, catalogs, _) = fixture();
+        let accepted = FactoryEditSession::new(
+            fixture_request(&w),
+            w.clone(),
+            Arc::new(catalogs),
+            FactoryEditBudget {
+                proposals: 1,
+                elapsed_ms: 30_000,
+            },
+        );
+        println!("factory_edit_accepted={}", accepted.is_ok());
+        if let Err(e) = accepted {
+            panic!("factory edit rejected: {e:?}");
+        }
+        if w.placements.len() >= 17 {
+            let proposed: Vec<_> = (0..17)
+                .map(|i| {
+                    let member = i * (w.placements.len() / 17);
+                    let p = &w.placements[member];
+                    poses::Pose {
+                        member,
+                        x: p.x + 1,
+                        y: p.y,
+                        rotation: p.rotation,
+                    }
+                })
+                .collect();
+            let (moves, _, changes) = poses::options(&w, &fixture().1, &proposed).unwrap();
+            let decomposition = chains::extract(&w, &IndexSet::new()).unwrap();
+            let index = movement::MovementIndex::new(&w, &decomposition.chains);
+            let selected = movement::plan(
+                &w,
+                &decomposition.chains,
+                &decomposition.anchors,
+                &moves,
+                &IndexMap::new(),
+                &changes,
+                &IndexSet::new(),
+                &index,
+                None,
+            );
+            println!("seventeen_member_movement={}", selected.is_ok());
+            if let Err(e) = selected {
+                panic!("17-member movement rejected: {e:?}");
+            }
+        }
+    }
+    let groups = groups::pose_groups(&w, true);
+    let compound = groups::compound_groups(&w);
+    println!(
+        "facilities={} pose_groups={} max_members={} omitted={} compound_groups={}",
+        w.placements.len(),
+        groups.groups.len(),
+        groups
+            .groups
+            .iter()
+            .map(|g| g.members.len())
+            .max()
+            .unwrap_or(0),
+        groups.omitted.len(),
+        compound.len()
+    );
+}
 #[test]
 fn seeded_setup_remains_valid_and_obeys_external_bounds() {
     let (w, catalogs, _) = fixture();

@@ -17,20 +17,42 @@ pub fn positive_rate(r: Rate) -> bool {
 pub fn body_cells(p: &FacilityPlacement) -> impl Iterator<Item = Point> + '_ {
     (p.y..p.y + p.height).flat_map(move |y| (p.x..p.x + p.width).map(move |x| Point { x, y }))
 }
+fn extent_resource(message: &str) -> Diagnostic {
+    let mut e = Diagnostic::new(
+        "factory.vocabulary-resource-incomplete",
+        message,
+        Value::Null,
+    );
+    e.stage = "factory-geometry";
+    e
+}
 
 pub fn extent(w: &Witness) -> Result<Bounds> {
-    let points = w
+    let mut facility_corners = Vec::new();
+    let corners = w
         .placements
-        .iter()
-        .flat_map(|p| {
-            [
-                Point { x: p.x, y: p.y },
-                Point {
-                    x: p.x + p.width - 1,
-                    y: p.y + p.height - 1,
-                },
-            ]
-        })
+        .len()
+        .checked_mul(2)
+        .ok_or_else(|| extent_resource("Facility corner count cannot be represented"))?;
+    facility_corners
+        .try_reserve_exact(corners)
+        .map_err(|_| extent_resource("Facility corner allocation refused"))?;
+    for p in &w.placements {
+        let right = p.x.checked_add(p.width).and_then(|v| v.checked_sub(1));
+        let bottom = p.y.checked_add(p.height).and_then(|v| v.checked_sub(1));
+        let (Some(right), Some(bottom)) = (right, bottom) else {
+            return Err(extent_resource("Facility extent cannot be represented"));
+        };
+        facility_corners.extend([
+            Point { x: p.x, y: p.y },
+            Point {
+                x: right,
+                y: bottom,
+            },
+        ]);
+    }
+    let points = facility_corners
+        .into_iter()
         .chain(
             w.transport_networks
                 .iter()
@@ -57,11 +79,17 @@ pub fn extent(w: &Witness) -> Result<Bounds> {
             });
         }
     }
-    bounds.ok_or_else(|| {
+    let bounds = bounds.ok_or_else(|| {
         Diagnostic::new(
             "factory-empty-geometry",
             "Cannot measure an empty witness",
             Value::Null,
         )
-    })
+    })?;
+    if i64::try_from(i128::from(bounds.max_x) - i128::from(bounds.min_x) + 1).is_err()
+        || i64::try_from(i128::from(bounds.max_y) - i128::from(bounds.min_y) + 1).is_err()
+    {
+        return Err(extent_resource("Canvas extent cannot be represented"));
+    }
+    Ok(bounds)
 }

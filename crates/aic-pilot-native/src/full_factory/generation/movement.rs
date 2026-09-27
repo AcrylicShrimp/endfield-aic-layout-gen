@@ -226,10 +226,10 @@ pub fn plan(
         ));
     }
     let selected: IndexSet<_> = instances.iter().cloned().collect();
-    if instances.len() > 16 || selected.len() != instances.len() {
+    if selected.len() != instances.len() {
         return Err(error(
             "local-move-input",
-            "Expected at most sixteen distinct selected facilities",
+            "Expected distinct selected facilities",
             serde_json::to_value(moves).expect("typed moves"),
         ));
     }

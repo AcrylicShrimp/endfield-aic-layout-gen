@@ -54,6 +54,10 @@
 !/fixtures/heavy-layout.json
 !/fixtures/manifest.json
 !/fixtures/order-certificate.json
+!/full-factory-pose-scale/baseline-measure.patch.txt
+!/full-factory-pose-scale/compare-actions.py
+!/full-factory-pose-scale/generate-stress.py
+!/full-factory-pose-scale/measure.py
 !/heavy-xiranite-bottom-up-rotation-root/case.json
 !/hierarchical-crossing/panel.json
 !/hierarchical-curriculum-policy-collapse/panel-manifest.json

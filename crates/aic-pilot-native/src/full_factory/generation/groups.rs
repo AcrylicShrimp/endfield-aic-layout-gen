@@ -182,16 +182,11 @@ fn add(
     if !seen.insert(members.clone()) {
         return;
     }
-    if members.len() > 16 || members.iter().any(|i| frozen.contains(i)) {
-        let code = if members.len() > 16 {
-            "factory.group-member-budget"
-        } else {
-            "factory.group-external-anchor"
-        };
+    if members.iter().any(|i| frozen.contains(i)) {
         groups.omitted.push(Omitted {
             members,
             source: source.into(),
-            code: code.into(),
+            code: "factory.group-external-anchor".into(),
         });
     } else {
         groups.groups.push(Group {
@@ -303,7 +298,7 @@ pub fn compound_groups(w: &Witness) -> Vec<Group> {
     let mut add = |mut members: Vec<usize>, source: String| {
         members.sort_unstable();
         members.dedup();
-        if (2..=4).contains(&members.len()) {
+        if members.len() >= 2 && (members.len() <= 4 || !source.starts_with("aligned-")) {
             groups
                 .entry(members.clone())
                 .or_insert(Group { members, source });

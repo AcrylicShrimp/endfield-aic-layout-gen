@@ -93,7 +93,6 @@ pub fn options(
     IndexMap<String, FacilityChange>,
 )> {
     if poses.is_empty()
-        || poses.len() > 16
         || poses
             .iter()
             .any(|q| q.member >= w.placements.len() || ![0, 90, 180, 270].contains(&q.rotation))
@@ -106,7 +105,7 @@ pub fn options(
     {
         return Err(fail(
             "factory.pose-parameters",
-            "Pose requires 1..16 distinct current placement indices, integer destinations and catalog rotations",
+            "Pose requires distinct current placement indices, integer destinations and catalog rotations",
         ));
     }
     let mut vectors = IndexMap::<Point, Move>::new();
@@ -154,6 +153,8 @@ pub struct VocabularyOptions {
     pub compound_scans: usize,
     pub compound_candidates: usize,
     pub compound_preflights: usize,
+    pub rectangle_scan_work: u64,
+    pub rectangle_candidate_bytes: usize,
 }
 impl Default for VocabularyOptions {
     fn default() -> Self {
@@ -164,7 +165,11 @@ impl Default for VocabularyOptions {
             pose_domain: "compound".into(),
             compound_scans: 256,
             compound_candidates: 8,
-            compound_preflights: 512,
+            // Per-stream scan/candidate limits already bound the total work.
+            // The global limit is an optional explicit resource stop.
+            compound_preflights: usize::MAX,
+            rectangle_scan_work: 100_000_000,
+            rectangle_candidate_bytes: 512 * 1024 * 1024,
         }
     }
 }
@@ -182,7 +187,9 @@ impl VocabularyOptions {
         if !["basic", "compound"].contains(&self.pose_domain.as_str())
             || !(8..=4096).contains(&self.compound_scans)
             || !(1..=32).contains(&self.compound_candidates)
-            || !(1..=4096).contains(&self.compound_preflights)
+            || self.compound_preflights == 0
+            || self.rectangle_scan_work == 0
+            || self.rectangle_candidate_bytes == 0
         {
             return Err(fail(
                 "factory.vocabulary-options",
@@ -192,24 +199,24 @@ impl VocabularyOptions {
         Ok(())
     }
 }
-struct Preflight {
+struct Preflight<'a> {
     bounds: Bounds,
     box_: Bounds,
     bodies: Vec<FacilityPlacement>,
-    occupied: Prefix,
-    body: Prefix,
+    body: &'a Prefix,
     fixed: [IndexSet<Point>; 2],
     moving: [IndexSet<Point>; 2],
     join_vectors: Vec<Point>,
     join_origins: IndexMap<(usize, Point, Point), Point>,
 }
-impl Preflight {
+impl<'a> Preflight<'a> {
     fn new(
         w: &Witness,
         group: &Group,
         d: &Decomposition,
         bounds: Bounds,
         index: &MovementIndex,
+        body: &'a Prefix,
     ) -> Result<Self> {
         let ids: Vec<_> = group
             .members
@@ -237,12 +244,6 @@ impl Preflight {
             .iter()
             .filter(|p| selected.contains(&p.instance))
             .cloned()
-            .collect();
-        let stationary: Vec<_> = w
-            .placements
-            .iter()
-            .filter(|p| !selected.contains(&p.instance))
-            .flat_map(body_cells)
             .collect();
         let mut fixed: [IndexSet<Point>; 2] = Default::default();
         let mut moving: [IndexSet<Point>; 2] = Default::default();
@@ -307,14 +308,6 @@ impl Preflight {
                     height: 1,
                 })),
         );
-        let occupied = Prefix::new(
-            bounds,
-            stationary
-                .iter()
-                .copied()
-                .chain(fixed.iter().flatten().copied()),
-        );
-        let body = Prefix::new(bounds, stationary);
         Ok(Self {
             bounds,
             box_: Bounds {
@@ -324,7 +317,6 @@ impl Preflight {
                 max_y: box_.y + box_.height - 1,
             },
             bodies,
-            occupied,
             body,
             fixed,
             moving,
@@ -343,17 +335,35 @@ impl Preflight {
             return Some("bounds");
         }
         if self.bodies.iter().any(|p| {
-            self.occupied
-                .occupied(p.x + dx, p.y + dy, p.width, p.height)
+            let x = p.x + dx;
+            let y = p.y + dy;
+            self.body.occupied_except(
+                x,
+                y,
+                p.width,
+                p.height,
+                self.bodies.iter().map(spatial::placement_rectangle),
+            ) || (y..y + p.height).any(|cy| {
+                (x..x + p.width).any(|cx| {
+                    self.fixed
+                        .iter()
+                        .any(|set| set.contains(&Point { x: cx, y: cy }))
+                })
+            })
         }) {
             return Some("body_or_anchor");
         }
         for tr in 0..2 {
             for &p in &self.moving[tr] {
                 let q = p.shifted(dx, dy);
-                if self.body.occupied(q.x, q.y, 1, 1)
-                    || (self.fixed[tr].contains(&q)
-                        && self.join_origins.get(&(tr, p, delta)) != Some(&q))
+                if self.body.occupied_except(
+                    q.x,
+                    q.y,
+                    1,
+                    1,
+                    self.bodies.iter().map(spatial::placement_rectangle),
+                ) || (self.fixed[tr].contains(&q)
+                    && self.join_origins.get(&(tr, p, delta)) != Some(&q))
                 {
                     return Some("carried_or_terminal");
                 }
@@ -373,7 +383,8 @@ fn translations(
     d: &Decomposition,
     bounds: Bounds,
     index: &MovementIndex,
-) -> (Vec<PoseAction>, Value) {
+    body: &Prefix,
+) -> Result<(Vec<PoseAction>, Value)> {
     let generated = if opts.mode == "local" {
         Groups {
             groups: (0..w.placements.len())
@@ -387,20 +398,23 @@ fn translations(
     } else {
         groups::pose_groups(w, opts.mode == "groups")
     };
-    let group_count = generated.groups.len().min(512);
+    let group_count = generated.groups.len();
     let mut diagnostics = generated.omitted;
     let mut actions = Vec::new();
     let mut rejected = serde_json::Map::new();
     let mut examined = 0;
     let mut capped = 0;
     let mut join_examined = 0;
-    for group in generated.groups.iter().take(512) {
+    for group in &generated.groups {
         let preflight = if opts.mode == "local" {
             None
         } else {
-            match Preflight::new(w, group, d, bounds, index) {
+            match Preflight::new(w, group, d, bounds, index, body) {
                 Ok(p) => Some(p),
                 Err(e) => {
+                    if e.code == "factory.vocabulary-resource-incomplete" {
+                        return Err(e);
+                    }
                     diagnostics.push(Omitted {
                         members: group.members.clone(),
                         source: group.source.clone(),
@@ -459,14 +473,16 @@ fn translations(
         let lo_y = bounds.min_y - b.min_y;
         let nx = bounds.max_x - b.max_x - lo_x + 1;
         let ny = bounds.max_y - b.max_y - lo_y + 1;
-        let total = nx * ny;
-        if total <= 0 {
+        if nx <= 0 || ny <= 0 {
             continue;
         }
+        let total = nx
+            .checked_mul(ny)
+            .ok_or_else(|| spatial::resource("Translation scan size cannot be represented"))?;
         let stride = spatial::stride(total);
         let mut i = 0;
         while i < total && i < opts.scans_per_group as i64 && retained < opts.candidates_per_group {
-            let position = (i * stride) % total;
+            let position = spatial::modular_product(i, stride, total);
             examine(
                 Point {
                     x: lo_x + position % nx,
@@ -482,10 +498,10 @@ fn translations(
     }
     let omitted: Vec<_> = diagnostics.iter().map(|d| json!({"members": d.members, "source": d.source, "code": d.code, "severity": "info", "stage": "factory-pose-vocabulary",
         "message": "Group omitted from the bounded retained-terminal relocation vocabulary", "entity": {"members": d.members, "source": d.source}})).collect();
-    let report = json!({"mode": opts.mode, "groups": group_count, "groups_generated": generated.groups.len(), "groups_budget_omitted": generated.groups.len() - group_count,
+    let report = json!({"mode": opts.mode, "groups": group_count, "groups_generated": generated.groups.len(), "groups_budget_omitted": 0,
         "omitted": omitted, "examined": examined, "static_rejected": rejected, "capped_groups": capped, "join_vectors_examined": join_examined,
         "actions": actions.len(), "scans_per_group": opts.scans_per_group, "candidates_per_group": opts.candidates_per_group});
-    (actions, report)
+    Ok((actions, report))
 }
 
 fn rigid(
@@ -539,7 +555,12 @@ fn rigid(
         })
         .collect()
 }
-fn origins(box_: Rectangle, bounds: Bounds, voids: &[Rectangle], limit: usize) -> Vec<Point> {
+fn origins(
+    box_: Rectangle,
+    bounds: Bounds,
+    voids: &[Rectangle],
+    limit: usize,
+) -> Result<Vec<Point>> {
     let mut seen = IndexSet::new();
     let mut offer = |x, y| {
         if seen.len() < limit {
@@ -559,23 +580,31 @@ fn origins(box_: Rectangle, bounds: Bounds, voids: &[Rectangle], limit: usize) -
             }
         }
     }
-    let nx = bounds.max_x - bounds.min_x - box_.width + 2;
-    let ny = bounds.max_y - bounds.min_y - box_.height + 2;
-    let total = nx * ny;
+    let nx = i64::try_from(
+        i128::from(bounds.max_x) - i128::from(bounds.min_x) - i128::from(box_.width) + 2,
+    )
+    .map_err(|_| spatial::resource("Origin scan width cannot be represented"))?;
+    let ny = i64::try_from(
+        i128::from(bounds.max_y) - i128::from(bounds.min_y) - i128::from(box_.height) + 2,
+    )
+    .map_err(|_| spatial::resource("Origin scan height cannot be represented"))?;
     if nx > 0 && ny > 0 {
+        let total = nx
+            .checked_mul(ny)
+            .ok_or_else(|| spatial::resource("Origin scan size cannot be represented"))?;
         let stride = spatial::stride(total);
         for i in 0..total {
             if seen.len() >= limit {
                 break;
             }
-            let p = (i * stride) % total;
+            let p = spatial::modular_product(i, stride, total);
             seen.insert(Point {
                 x: bounds.min_x + p % nx,
                 y: bounds.min_y + p / nx,
             });
         }
     }
-    seen.into_iter().collect()
+    Ok(seen.into_iter().collect())
 }
 
 pub fn actions(
@@ -587,13 +616,8 @@ pub fn actions(
 ) -> Result<(Vec<PoseAction>, Value)> {
     opts.validate()?;
     let bounds = extent(w)?;
-    if i128::from(bounds.width()) * i128::from(bounds.height()) > 200000 {
-        return Err(fail(
-            "factory.vocabulary-area-budget",
-            "Current observation/enumeration area exceeds the explicit 200000-cell guard",
-        ));
-    }
-    let (mut actions, translation) = translations(w, opts, d, bounds, index);
+    let body = Prefix::try_new(bounds, w.placements.iter().flat_map(body_cells))?;
+    let (mut actions, translation) = translations(w, opts, d, bounds, index, &body)?;
     let mut rejected = serde_json::Map::new();
     let preflight = |poses: &[Pose], rejected: &mut serde_json::Map<String, Value>| -> bool {
         let attempt = || -> Result<bool> {
@@ -636,14 +660,6 @@ pub fn actions(
     let mut single_examined = 0;
     let mut single_retained = 0;
     for (member, p) in w.placements.iter().enumerate() {
-        let stationary = Prefix::new(
-            bounds,
-            w.placements
-                .iter()
-                .enumerate()
-                .filter(|(i, _)| *i != member)
-                .flat_map(|(_, p)| body_cells(p)),
-        );
         let spec = catalogs.facilities.facility(&p.facility).ok_or_else(|| {
             fail(
                 "factory-unknown-facility",
@@ -664,7 +680,13 @@ pub fn actions(
                     rotation,
                 }],
             );
-            if stationary.occupied(a.x, a.y, a.width, a.height) {
+            if body.occupied_except(
+                a.x,
+                a.y,
+                a.width,
+                a.height,
+                std::iter::once(spatial::placement_rectangle(p)),
+            ) {
                 reject(&mut rejected, "factory.pose-body-or-bounds");
                 continue;
             }
@@ -676,7 +698,6 @@ pub fn actions(
     }
     struct Stream {
         group: Group,
-        stationary: Prefix,
         template: Vec<FacilityPlacement>,
         origin: Point,
         origins: Vec<Point>,
@@ -692,10 +713,10 @@ pub fn actions(
     let mut retained = 0;
     if opts.pose_domain == "compound" {
         let all = groups::compound_groups(w);
-        group_count = all.len().min(128);
-        group_omitted = all.len() - group_count;
-        let voids = spatial::empty_rectangles(w, bounds);
-        for group in all.into_iter().take(128) {
+        group_count = all.len();
+        group_omitted = 0;
+        let mut templates = Vec::new();
+        for group in all {
             let origin = Point {
                 x: group
                     .members
@@ -713,32 +734,33 @@ pub fn actions(
             for turns in [1, 2, 3] {
                 match rigid(w, catalogs, &group, turns, origin) {
                     Err(e) => reject(&mut rejected, &e.code),
-                    Ok(template) => {
-                        let b = spatial::envelope(template.iter().map(|p| Rectangle {
-                            x: p.x,
-                            y: p.y,
-                            width: p.width,
-                            height: p.height,
-                        }));
-                        streams.push(Stream {
-                            stationary: Prefix::new(
-                                bounds,
-                                w.placements
-                                    .iter()
-                                    .enumerate()
-                                    .filter(|(i, _)| !group.members.contains(i))
-                                    .flat_map(|(_, p)| body_cells(p)),
-                            ),
-                            group: group.clone(),
-                            template,
-                            origin,
-                            origins: origins(b, bounds, &voids, opts.compound_scans),
-                            examined: 0,
-                            retained: 0,
-                            done: false,
-                        });
-                    }
+                    Ok(template) => templates.push((group.clone(), template, origin)),
                 }
+            }
+        }
+        if !templates.is_empty() {
+            let voids = spatial::empty_rectangles(
+                w,
+                bounds,
+                opts.rectangle_scan_work,
+                opts.rectangle_candidate_bytes,
+            )?;
+            for (group, template, origin) in templates {
+                let b = spatial::envelope(template.iter().map(|p| Rectangle {
+                    x: p.x,
+                    y: p.y,
+                    width: p.width,
+                    height: p.height,
+                }));
+                streams.push(Stream {
+                    group,
+                    template,
+                    origin,
+                    origins: origins(b, bounds, &voids, opts.compound_scans)?,
+                    examined: 0,
+                    retained: 0,
+                    done: false,
+                });
             }
         }
         let mut active = true;
@@ -758,10 +780,18 @@ pub fn actions(
                     examined += 1;
                     let dx = next.x - s.origin.x;
                     let dy = next.y - s.origin.y;
-                    if s.template
-                        .iter()
-                        .any(|p| s.stationary.occupied(p.x + dx, p.y + dy, p.width, p.height))
-                    {
+                    if s.template.iter().any(|p| {
+                        body.occupied_except(
+                            p.x + dx,
+                            p.y + dy,
+                            p.width,
+                            p.height,
+                            s.group
+                                .members
+                                .iter()
+                                .map(|&i| spatial::placement_rectangle(&w.placements[i])),
+                        )
+                    }) {
                         reject(&mut rejected, "factory.pose-body-or-bounds");
                         continue;
                     }
@@ -789,17 +819,32 @@ pub fn actions(
                 }
             }
         }
+        let pending = streams
+            .iter()
+            .filter(|s| s.retained < opts.compound_candidates && s.examined < s.origins.len())
+            .count();
+        if pending > 0 && preflights >= opts.compound_preflights {
+            let mut e = spatial::resource("Compound pose preflight work budget exhausted");
+            e.entity = json!({"preflights": preflights, "preflight_limit": opts.compound_preflights,
+                "pending_streams": pending, "compound_streams": streams.len()});
+            return Err(e);
+        }
     }
-    let capped = streams
+    let candidate_limited = streams
         .iter()
-        .filter(|s| !s.done || s.examined >= opts.compound_scans)
+        .filter(|s| s.retained >= opts.compound_candidates)
+        .count();
+    let scan_limited = streams
+        .iter()
+        .filter(|s| s.retained < opts.compound_candidates && s.examined >= opts.compound_scans)
         .count();
     let count = actions.len();
     let mut seen = IndexSet::new();
     actions.retain(|a| seen.insert(a.poses.clone()));
     let report = json!({"pose_domain": opts.pose_domain, "single_rotations_examined": single_examined, "single_rotations": single_retained, "compound_groups": group_count,
         "compound_groups_omitted": group_omitted, "compound_examined": examined, "compound_preflights": preflights, "compound_actions": retained,
-        "compound_streams": streams.len(), "compound_streams_capped": capped, "compound_preflight_limit": opts.compound_preflights,
+        "compound_streams": streams.len(), "compound_streams_candidate_limited": candidate_limited,
+        "compound_streams_scan_limited": scan_limited, "compound_preflight_limit": opts.compound_preflights,
         "compound_scans": opts.compound_scans, "compound_candidates": opts.compound_candidates, "static_rejected": rejected,
         "translation": translation, "duplicates": count - actions.len(), "actions": actions.len()});
     Ok((actions, report))

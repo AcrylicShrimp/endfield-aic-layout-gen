@@ -1,0 +1,52 @@
+diff --git a/crates/aic-pilot-native/src/full_factory/generation/tests.rs b/crates/aic-pilot-native/src/full_factory/generation/tests.rs
+index f9fce14d..6a16ac50 100644
+--- a/crates/aic-pilot-native/src/full_factory/generation/tests.rs
++++ b/crates/aic-pilot-native/src/full_factory/generation/tests.rs
+@@ -1,5 +1,47 @@
+ use super::*;
+ use crate::full_factory::tests::{fixture, fixture_request};
++
++#[test]
++#[ignore = "set AIC_POSE_VOCABULARY_WITNESS to a measured witness"]
++fn measure_pose_vocabulary_witness() {
++    let path = std::env::var("AIC_POSE_VOCABULARY_WITNESS").unwrap();
++    let w: crate::full_factory::types::Witness =
++        serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
++    let (_, catalogs, _) = fixture();
++    let (_, acceptance_catalogs, _) = fixture();
++    let request = fixture_request(&w);
++    let accepted = FactoryEditSession::new(
++        request,
++        w.clone(),
++        Arc::new(acceptance_catalogs),
++        FactoryEditBudget {
++            proposals: 1,
++            elapsed_ms: 30_000,
++        },
++    );
++    println!("factory_edit_accepted={}", accepted.is_ok());
++    if let Err(e) = accepted {
++        panic!("factory edit rejected: {e:?}");
++    }
++    let before = std::time::Instant::now();
++    let result = candidates::describe(&w, &catalogs, &poses::VocabularyOptions::default());
++    println!("describe_ms={:.3}", before.elapsed().as_secs_f64() * 1000.0);
++    match result {
++        Ok(domain) => {
++            let encoded = serde_json::to_vec(&domain.actions).unwrap();
++            if let Some(path) = std::env::var_os("AIC_POSE_DUMP_ACTIONS") {
++                std::fs::write(path, &encoded).unwrap();
++            }
++            println!("actions={} sha256={}", domain.actions.len(), crate::input::hash(&encoded));
++            let groups = groups::pose_groups(&w, true);
++            let compound = groups::compound_groups(&w);
++            println!("pose_groups={} max_members={} omitted={} compound_groups={}",
++                groups.groups.len(), groups.groups.iter().map(|g| g.members.len()).max().unwrap_or(0),
++                groups.omitted.len(), compound.len());
++        }
++        Err(e) => println!("describe_error={} {}", e.code, e.message),
++    }
++}
+ #[test]
+ fn seeded_setup_remains_valid_and_obeys_external_bounds() {
+     let (w, catalogs, _) = fixture();

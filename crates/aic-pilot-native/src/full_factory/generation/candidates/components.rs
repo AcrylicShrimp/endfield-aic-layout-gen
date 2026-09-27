@@ -12,10 +12,9 @@ pub fn actions(w: &Witness, catalogs: &FactoryEditCatalogs) -> Result<(Vec<Actio
     const LIMIT: usize = 32;
     const SCANS: usize = 256;
     let bounds = extent(w)?;
-    let width = bounds.width();
-    let total = width * bounds.height();
+    let (width, _, total) = spatial::canvas(bounds)?;
     let stride = spatial::stride(total);
-    let bodies = spatial::Prefix::new(bounds, w.placements.iter().flat_map(body_cells));
+    let bodies = spatial::Prefix::try_new(bounds, w.placements.iter().flat_map(body_cells))?;
     let mut actions = Vec::new();
     let mut examined = 0;
     let mut rejected = 0;
@@ -53,7 +52,7 @@ pub fn actions(w: &Witness, catalogs: &FactoryEditCatalogs) -> Result<(Vec<Actio
                 if distant >= total {
                     break;
                 }
-                let offset = (distant * stride) % total;
+                let offset = spatial::modular_product(distant, stride, total);
                 distant += 1;
                 Point {
                     x: bounds.min_x + offset % width,
