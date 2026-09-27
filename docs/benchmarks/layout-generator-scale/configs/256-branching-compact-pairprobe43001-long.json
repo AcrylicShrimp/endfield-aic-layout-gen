@@ -1,0 +1,33 @@
+{
+  "schema": "aic-layout-generation-survey-v2",
+  "generator": {
+    "topology_profiles": [
+      "branching"
+    ],
+    "packing_profiles": [
+      "compact"
+    ],
+    "long_connection_preference": [
+      0.1,
+      0.4
+    ],
+    "effort": "standard",
+    "crossings": "allowed",
+    "minimum_connections": {},
+    "transports": [
+      "belt",
+      "pipe"
+    ],
+    "facility_ids": [],
+    "acyclic": false
+  },
+  "facility_buckets": [
+    [
+      256,
+      256
+    ]
+  ],
+  "slots_per_bucket": 1,
+  "workers": 1,
+  "max_elapsed_seconds": 1200
+}

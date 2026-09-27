@@ -1,0 +1,15 @@
+{
+  "schema": "aic-experiment-cleanup-v1",
+  "experiment": "generator-scale-budget-contract",
+  "server": "ashrimp-arch",
+  "removed_paths": [
+    "/home/ashrimp/Srv/plan22-scale-20260927"
+  ],
+  "removed_tree_bytes": 1154907502,
+  "server_free_bytes_before": 161732800512,
+  "server_free_bytes_after": 162941566976,
+  "retained_local_results": "artifacts/plan22-scale-20260927/retained-results.tar.gz",
+  "retained_local_results_sha256": "a214a87c81c18e30b4ffb2e4e88f67c531ca579d2d7458693e8b69a0b8c7285e",
+  "retained_archive_entries": 78,
+  "verification": "Local archive SHA-256 matched server archive; selected final reports and generated layout JSON files were present before server deletion."
+}

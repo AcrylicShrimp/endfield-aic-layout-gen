@@ -1,0 +1,213 @@
+--- a/crates/aic-layout-gen/src/packing.rs
++++ b/crates/aic-layout-gen/src/packing.rs
+@@ -53,7 +53,7 @@
+         let def = pool[rng.index(pool.len())];
+         let rotation = def.allowed_rotations[rng.index(def.allowed_rotations.len())];
+         let (w, h, _) = rotate(def, rotation, Point::default());
+-        if w > 1000 || h > 1000 || w * h > 10_000 {
++        if w > 1000 || h > 1000 || w.checked_mul(h).is_none_or(|area| area > 10_000) {
+             return Err(failure(
+                 "body-guard",
+                 def.id.clone(),
+@@ -114,7 +114,10 @@
+         .max()
+         .unwrap()
+         + config.margin;
+-    if width * height > config.max_cells as i64 {
++    if width
++        .checked_mul(height)
++        .is_none_or(|area| area > config.max_cells as i64)
++    {
+         return Err(failure(
+             "canvas-guard",
+             "packing",
+--- a/crates/aic-layout-gen/src/intent.rs
++++ b/crates/aic-layout-gen/src/intent.rs
+@@ -209,8 +209,15 @@
+                         long_connection_preference: self.intent.long_connection_preference[1],
+                     };
+                     let (resolved, _) = resolve(&self.intent, request, false)?;
+-                    let estimate =
+-                        resolved.route_work_per_call as u64 * 640 + resolved.max_cells as u64 * 256;
++                    let route = u64::try_from(resolved.route_work_per_call)?
++                        .checked_mul(640)
++                        .context("route workspace estimate overflow")?;
++                    let canvas = u64::try_from(resolved.max_cells)?
++                        .checked_mul(256)
++                        .context("canvas workspace estimate overflow")?;
++                    let estimate = route
++                        .checked_add(canvas)
++                        .context("workspace estimate overflow")?;
+                     maximum = maximum.max(estimate);
+                 }
+             }
+@@ -371,8 +378,7 @@
+         Effort::Thorough => (
+             base_call
+                 .checked_mul(2)
+-                .context("per-call route work overflow")?
+-                .min(1_000_000),
++                .context("per-call route work overflow")?,
+             8,
+             96,
+             16,
+@@ -393,7 +399,7 @@
+         .checked_mul(n)
+         .and_then(|v| v.checked_mul(16))
+         .context("canvas guard overflow")?
+-        .clamp(65_536, 250_000);
++        .max(65_536);
+     let density = (target_connections as f64 - 0.5) / n as f64;
+     let max_attempts = if one_attempt { 1 } else { attempts };
+     let mechanism = MechanismConfig {
+@@ -476,6 +482,8 @@
+ #[cfg(test)]
+ mod tests {
+     use super::*;
++    use crate::io;
++    use std::path::Path;
+ 
+     fn request(facilities: usize, topology: TopologyProfile) -> Request {
+         Request {
+@@ -542,4 +550,58 @@
+         assert!(config.intent.topology_profiles.contains(&request.topology));
+         assert!(config.intent.packing_profiles.contains(&request.packing));
+     }
+-}
++
++    #[test]
++    fn every_declared_scale_resolves_and_thorough_keeps_standard_work() {
++        let loaded = io::load_catalogs(
++            &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/game/normalized"),
++        )
++        .unwrap();
++        let mut intent = Intent::default();
++        for effort in [Effort::Fast, Effort::Standard, Effort::Thorough] {
++            intent.effort = effort;
++            Config {
++                schema: SCHEMA.into(),
++                facilities: [2, 256],
++                intent: intent.clone(),
++            }
++            .validate(&loaded.catalogs)
++            .unwrap();
++        }
++        for n in 2..=256 {
++            for topology in [
++                TopologyProfile::Tree,
++                TopologyProfile::LightCycles,
++                TopologyProfile::Branching,
++            ] {
++                for packing in [
++                    PackingProfile::Compact,
++                    PackingProfile::Balanced,
++                    PackingProfile::Spacious,
++                ] {
++                    let mut request = request(n, topology);
++                    request.packing = packing;
++                    intent.effort = Effort::Standard;
++                    let (standard, _) = resolve(&intent, request.clone(), false).unwrap();
++                    intent.effort = Effort::Thorough;
++                    let (thorough, _) = resolve(&intent, request, false).unwrap();
++                    assert!(thorough.route_work_per_call >= standard.route_work_per_call);
++                    assert!(thorough.route_work_per_attempt >= standard.route_work_per_attempt);
++                }
++            }
++        }
++        let (upper, _) = resolve(
++            &intent,
++            Request {
++                facilities: 256,
++                topology: TopologyProfile::Branching,
++                packing: PackingProfile::Spacious,
++                long_connection_preference: 0.25,
++            },
++            false,
++        )
++        .unwrap();
++        assert_eq!(upper.max_cells, 1_048_576);
++        assert_eq!(upper.route_work_per_call, 5_242_880);
++    }
++}
+--- a/crates/aic-layout-gen/src/io.rs
++++ b/crates/aic-layout-gen/src/io.rs
+@@ -14,14 +14,16 @@
+     path::Path,
+ };
+ 
++pub(crate) const MAX_JSON_BYTES: usize = 16 * 1024 * 1024;
++
+ pub fn bytes(path: &Path) -> Result<Vec<u8>> {
+     let mut bytes = vec![];
+     File::open(path)
+         .with_context(|| format!("open {}", path.display()))?
+-        .take(16 * 1024 * 1024 + 1)
++        .take(MAX_JSON_BYTES as u64 + 1)
+         .read_to_end(&mut bytes)?;
+     anyhow::ensure!(
+-        bytes.len() <= 16 * 1024 * 1024,
++        bytes.len() <= MAX_JSON_BYTES,
+         "{} exceeds the 16 MiB input guard",
+         path.display()
+     );
+--- a/crates/aic-layout-gen/src/placement.rs
++++ b/crates/aic-layout-gen/src/placement.rs
+@@ -86,7 +86,18 @@
+         let rotation = definition.allowed_rotations[rng.index(definition.allowed_rotations.len())];
+         let (width, height, _) = rotate(definition, rotation, Point::default());
+         body_cells = body_cells
+-            .checked_add((width * height) as u64)
++            .checked_add(
++                width
++                    .checked_mul(height)
++                    .and_then(|area| u64::try_from(area).ok())
++                    .ok_or_else(|| {
++                        failure(
++                            "body-guard",
++                            block.id.clone(),
++                            "facility body area overflow",
++                        )
++                    })?,
++            )
+             .ok_or_else(|| {
+                 failure(
+                     "body-guard",
+@@ -147,7 +158,10 @@
+         .unwrap();
+     let body_width = max_x - min_x;
+     let body_height = max_y - min_y;
+-    let body_bounding_area = (body_width * body_height) as u64;
++    let body_bounding_area = body_width
++        .checked_mul(body_height)
++        .and_then(|area| u64::try_from(area).ok())
++        .ok_or_else(|| failure("canvas-guard", "placement", "body bounding area overflow"))?;
+     let canvas_width = max_x + request.margin;
+     let canvas_height = max_y + request.margin;
+     if canvas_width
+--- a/crates/aic-layout-gen/src/batch.rs
++++ b/crates/aic-layout-gen/src/batch.rs
+@@ -102,7 +102,7 @@
+                         let generated = intent_generated.generated;
+                         let bytes = serde_json::to_vec(&generated.layout)?;
+                         anyhow::ensure!(
+-                            bytes.len() <= 16 * 1024 * 1024,
++                            bytes.len() <= io::MAX_JSON_BYTES,
+                             "layout slot {index} exceeds the 16 MiB publication/input guard"
+                         );
+                         io::write(&output.join(format!("layout-{index:05}.json")), &bytes)?;
+--- a/crates/aic-layout-gen/src/config.rs
++++ b/crates/aic-layout-gen/src/config.rs
+@@ -81,11 +81,11 @@
+             || self.gap[1] < self.gap[0]
+             || self.gap[1] > 128
+             || !(1..=128).contains(&self.margin)
+-            || !(16..=250_000).contains(&self.max_cells)
++            || !(16..=250_000_000).contains(&self.max_cells)
+             || !(1..=64).contains(&self.max_attempts)
+             || !(1..=8192).contains(&self.max_pair_trials)
+             || !(1..=64).contains(&self.ports_per_pair)
+-            || !(1..=1_000_000).contains(&self.route_work_per_call)
++            || self.route_work_per_call == 0
+             || self.route_work_per_attempt < self.route_work_per_call
+             || self.route_work_per_attempt > 250_000_000
+             || self.max_bridges_per_route > 8

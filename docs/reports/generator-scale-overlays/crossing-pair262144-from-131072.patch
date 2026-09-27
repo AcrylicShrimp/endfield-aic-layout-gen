@@ -1,0 +1,31 @@
+--- a/crates/aic-layout-gen/src/intent.rs
++++ b/crates/aic-layout-gen/src/intent.rs
+@@ -6,7 +6,7 @@
+ use std::collections::BTreeMap;
+ 
+ pub const SCHEMA: &str = "aic-layout-generator-v2";
+-pub const SCALE_POLICY: &str = "aic-layout-generator-scale-policy-crossing-pair131072-probe";
++pub const SCALE_POLICY: &str = "aic-layout-generator-scale-policy-crossing-pair262144-probe";
+ 
+ #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+ #[serde(rename_all = "kebab-case")]
+@@ -415,7 +415,7 @@
+     let max_pair_trials = target_connections
+         .checked_mul(pair_factor)
+         .context("pair-trial overflow")?
+-        .max(131_072);
++        .max(262_144);
+     let margin = 6 + ((n as f64).sqrt().floor() as i64) / 2;
+     let max_cells = n
+         .checked_mul(n)
+--- a/crates/aic-layout-gen/src/config.rs
++++ b/crates/aic-layout-gen/src/config.rs
+@@ -83,7 +83,7 @@
+             || !(1..=128).contains(&self.margin)
+             || !(16..=250_000_000).contains(&self.max_cells)
+             || !(1..=64).contains(&self.max_attempts)
+-            || !(1..=131_072).contains(&self.max_pair_trials)
++            || !(1..=262_144).contains(&self.max_pair_trials)
+             || !(1..=64).contains(&self.ports_per_pair)
+             || self.route_work_per_call == 0
+             || self.route_work_per_attempt < self.route_work_per_call

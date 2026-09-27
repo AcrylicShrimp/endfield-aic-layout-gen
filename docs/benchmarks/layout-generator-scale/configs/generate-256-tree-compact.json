@@ -1,0 +1,26 @@
+{
+  "schema": "aic-layout-generator-v2",
+  "facilities": [
+    256,
+    256
+  ],
+  "topology_profiles": [
+    "tree"
+  ],
+  "packing_profiles": [
+    "compact"
+  ],
+  "long_connection_preference": [
+    0.1,
+    0.4
+  ],
+  "effort": "standard",
+  "crossings": "allowed",
+  "minimum_connections": {},
+  "transports": [
+    "belt",
+    "pipe"
+  ],
+  "facility_ids": [],
+  "acyclic": false
+}
