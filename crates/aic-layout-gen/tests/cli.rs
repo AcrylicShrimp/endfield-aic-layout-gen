@@ -166,6 +166,7 @@ fn survey_records_equal_slots_without_persisting_layouts() {
     );
     let report: serde_json::Value =
         serde_json::from_slice(&fs::read(output.join("report.json")).unwrap()).unwrap();
+    assert_eq!(report["schema"], "aic-layout-generation-survey-report-v3");
     assert_eq!(report["requested"], 4);
     assert_eq!(report["completed"], 4);
     assert_eq!(report["incomplete"], 0);
@@ -173,14 +174,12 @@ fn survey_records_equal_slots_without_persisting_layouts() {
     assert_eq!(report["summaries"][1]["requested"], 2);
     assert_eq!(report["rows"][0]["seed"], 4000);
     assert_eq!(report["rows"][3]["seed"], 4003);
-    assert!(
-        report["rows"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .all(|row| row["attempt_count"].as_u64().unwrap() <= 1
-                && row["resolved"]["schema"] == "aic-layout-generator-scale-policy-v4")
-    );
+    assert!(report["rows"].as_array().unwrap().iter().all(|row| {
+        row["attempt_count"].as_u64().unwrap() <= 1
+            && row["resolved"]["schema"] == "aic-layout-generator-scale-policy-v4"
+            && row["routing_statuses"].is_object()
+            && row["attempt_statuses"].is_object()
+    }));
     assert!(!output.join("layout-00000.json").exists());
     fs::remove_dir_all(&dir).unwrap();
 }

@@ -127,6 +127,33 @@ fn cancellation_retains_an_explicit_generation_failure() {
 }
 
 #[test]
+fn cancellation_inside_connect_is_not_retried() {
+    let loaded = catalogs();
+    let generator = Generator::new(
+        &loaded.catalogs,
+        Config {
+            max_attempts: 2,
+            ..Config::default()
+        },
+    )
+    .unwrap();
+    let mut checks = 0;
+    let failure = generator
+        .generate_until(1000, || {
+            checks += 1;
+            checks == 3
+        })
+        .unwrap_err();
+    assert_eq!(
+        failure.diagnostic.code,
+        "aic-layout-gen.generation-interrupted"
+    );
+    assert_eq!(failure.attempts.len(), 1);
+    assert_eq!(failure.attempts[0].status, "interrupted");
+    assert_eq!(failure.attempts[0].route_calls, 0);
+}
+
+#[test]
 fn independent_validation_rejects_corrupted_obligations_ports_capacity_and_bridges() {
     let loaded = catalogs();
     let good = Generator::new(&loaded.catalogs, Config::default())
@@ -352,11 +379,158 @@ fn work_exhaustion_never_publishes_a_partial_layout_or_claims_infeasibility() {
         .unwrap_err();
     assert_eq!(
         failed.diagnostic.code,
-        "aic-layout-gen.generation-exhausted"
+        "aic-layout-gen.generation-search-incomplete"
     );
     assert_eq!(failed.attempts.len(), 1);
     assert!(failed.attempts[0].route_expansions <= 1);
     assert!(failed.attempts[0].connected < failed.attempts[0].target_connections);
+}
+
+#[test]
+fn pair_and_route_stops_keep_their_work_and_unknown_outcome() {
+    let loaded = catalogs();
+    let pair_limited = Generator::new(
+        &loaded.catalogs,
+        Config {
+            max_attempts: 1,
+            max_pair_trials: 1,
+            ..Config::default()
+        },
+    )
+    .unwrap()
+    .generate(1000)
+    .unwrap_err();
+    assert_eq!(
+        pair_limited.diagnostic.code,
+        "aic-layout-gen.generation-search-incomplete"
+    );
+    let pair = &pair_limited.attempts[0];
+    assert_eq!(pair.status, "pair-trials-exhausted");
+    assert_eq!(pair.pair_trials, 1);
+    assert_eq!(
+        pair.route_calls,
+        pair.routing_statuses.values().sum::<usize>()
+    );
+    assert!(pair.routing_statuses.keys().all(|status| matches!(
+        status.as_str(),
+        "found" | "no-path" | "blocked-endpoint" | "same-endpoint"
+    )));
+
+    let route_limited = Generator::new(
+        &loaded.catalogs,
+        Config {
+            max_attempts: 1,
+            max_pair_trials: 64,
+            route_work_per_call: 1,
+            route_work_per_attempt: 128,
+            ..Config::default()
+        },
+    )
+    .unwrap()
+    .generate(1000)
+    .unwrap_err();
+    assert_eq!(
+        route_limited.diagnostic.code,
+        "aic-layout-gen.generation-search-incomplete"
+    );
+    let route = &route_limited.attempts[0];
+    assert!(route.pair_trials > 1);
+    assert!(route.route_calls > 1);
+    assert!(
+        route
+            .routing_statuses
+            .get("work-budget")
+            .copied()
+            .unwrap_or(0)
+            > 1
+    );
+    assert_eq!(
+        route.route_calls,
+        route.routing_statuses.values().sum::<usize>()
+    );
+    assert!(route.route_expansions <= 128);
+}
+
+#[test]
+fn total_work_stop_after_a_complete_route_remains_unknown() {
+    let loaded = catalogs();
+    // This seed's first complete route uses exactly 1,362 expansions. The
+    // attempt has no remaining work for the next pair, without a censored path.
+    let failure = Generator::new(
+        &loaded.catalogs,
+        Config {
+            max_attempts: 1,
+            max_pair_trials: 64,
+            route_work_per_call: 1_362,
+            route_work_per_attempt: 1_362,
+            ..Config::default()
+        },
+    )
+    .unwrap()
+    .generate(1000)
+    .unwrap_err();
+    assert_eq!(
+        failure.diagnostic.code,
+        "aic-layout-gen.generation-search-incomplete"
+    );
+    let attempt = &failure.attempts[0];
+    assert_eq!(attempt.status, "route-work-budget");
+    assert_eq!(attempt.pair_trials, 1);
+    assert_eq!(attempt.route_calls, 1);
+    assert_eq!(attempt.route_expansions, 1_362);
+    assert_eq!(attempt.routing_statuses.get("found"), Some(&1));
+    assert_eq!(attempt.routing_statuses.len(), 1);
+}
+
+#[test]
+fn canvas_resource_stop_is_not_fully_evaluated_construction() {
+    let loaded = catalogs();
+    let failure = Generator::new(
+        &loaded.catalogs,
+        Config {
+            max_attempts: 1,
+            max_cells: 16,
+            ..Config::default()
+        },
+    )
+    .unwrap()
+    .generate(1000)
+    .unwrap_err();
+    assert_eq!(failure.attempts[0].status, "aic-layout-gen.canvas-guard");
+    assert_eq!(
+        failure.diagnostic.code,
+        "aic-layout-gen.generation-search-incomplete"
+    );
+}
+
+#[test]
+fn generator_accepts_zero_length_route_without_changing_identity() {
+    let loaded = catalogs();
+    let generator = Generator::new(
+        &loaded.catalogs,
+        Config {
+            blocks: [2, 2],
+            edges_per_block: [0.5, 0.5],
+            gap: [1, 1],
+            max_attempts: 1,
+            max_pair_trials: 64,
+            min_branch_blocks: 0,
+            min_merge_blocks: 0,
+            ..Config::default()
+        },
+    )
+    .unwrap();
+    let generated = generator.generate(9).unwrap();
+    assert_eq!(generated.layout.solution.routes.len(), 1);
+    assert_eq!(generated.layout.solution.routes[0].cells.len(), 1);
+    assert_eq!(
+        generated.attempts[0].routing_statuses.get("found"),
+        Some(&1)
+    );
+    assert_eq!(
+        validate(&generated.layout, &loaded.catalogs).unwrap(),
+        generated.metrics
+    );
 }
 
 #[test]

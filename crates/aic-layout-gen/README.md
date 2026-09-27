@@ -40,6 +40,14 @@ extremes. Interrupted and not-started slots remain explicit and make the command
 exit with status 2. A terminal generation failure is measured evidence, so it
 does not make a completed survey command fail.
 
+The survey report uses `aic-layout-generation-survey-report-v3`. `completed`
+means that the raw slot was executed; a `generation-search-incomplete` row is
+executed but does not resolve whether the requested layout can be built. An
+interrupted slot has `completed=false`. Each row retains aggregate
+`routing_statuses` and `attempt_statuses` from its attempts, while the bucket
+and topology/packing `failure_reasons` count final diagnostic codes. This keeps
+an earlier budget stop visible even if the last attempt ended differently.
+
 Open the output's `index.html` for the gallery. Individual pages offer belt, pipe
 and port visibility controls, route isolation by clicking, and hover descriptions.
 Orange lines are belts, blue lines are pipes; outlined squares mark catalog bridges.
@@ -48,7 +56,10 @@ Orange lines are belts, blue lines are pipes; outlined squares mark catalog brid
 generation directories must be new. Exit status is 0 when every requested seed
 completes, 2 when some seeds exhaust their limits, and 1 for command/input failures.
 Structured diagnostics identify the code, severity, stage, message and entity.
-An exhausted seed is not a proof that no layout exists.
+`generation-search-incomplete` means route work, pair trials or another
+resource limit prevented a conclusive construction attempt.
+`generation-exhausted` means the configured attempts ended after only fully
+evaluated alternatives. Neither code proves global infeasibility.
 
 Each batch stores one `layout-NNNNN.json` per success, SVG and HTML previews,
 `case-NNNNN.json` metadata or failure details, the configuration, a `report.json`,
@@ -92,13 +103,14 @@ which trials succeed. Each attempt records the threshold and accepted count.
 `packing_profiles` contains `compact`, `balanced` and `spacious`. These select
 versioned internal spacing policies; final spatial occupancy remains a measured
 result. `effort` selects `fast`, `standard` or `thorough`. The versioned
-`scale-policy-v1` derives retry count, pair trials, routing work, margin and canvas
+`scale-policy-v4` derives retry count, pair trials, routing work, margin and canvas
 guard from the facility and target-connection counts. Every case records the
 resolved values. Callers do not scale internal work limits themselves.
 
 After publication, every connection is a fixed obligation: later rearrangement
 must preserve it. The CLI limits count to 4096, workers to 16 and applies a
 conservative 2 GiB workspace estimate over all configured semantic profiles.
+Use `--workspace-budget-gib` to admit a larger finite aggregate estimate.
 Files read by the CLI and published physical layouts are limited to 16 MiB.
 
 ## Library and shared format
@@ -108,7 +120,7 @@ let loaded = aic_layout_gen::io::load_catalogs(catalog_directory)?;
 let generator = aic_layout_gen::IntentGenerator::new(&loaded.catalogs, config)?;
 let result = generator.generate(seed)?;
 // result.generated.layout already passed independent physical validation.
-// result.resolved records every mechanism value derived by scale-policy-v1.
+// result.resolved records every mechanism value derived by scale-policy-v4.
 ```
 
 The retained semantic generator borrows validated catalogs. The low-level

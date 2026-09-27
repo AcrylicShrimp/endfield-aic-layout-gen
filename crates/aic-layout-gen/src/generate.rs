@@ -180,6 +180,10 @@ impl<'a> Generator<'a> {
                         validation_ms,
                     });
                 }
+                Ok(None) if attempt.status == "interrupted" => {
+                    attempts.push(attempt);
+                    return Err(interrupted(seed, attempts));
+                }
                 Ok(None) => attempts.push(attempt),
                 Err(diagnostic) => {
                     attempt.status = "routing-error".into();
@@ -192,12 +196,21 @@ impl<'a> Generator<'a> {
                 }
             }
         }
+        let search_incomplete = attempts.iter().any(attempt_search_incomplete);
         Err(Failure {
             seed,
             diagnostic: failure(
-                "generation-exhausted",
+                if search_incomplete {
+                    "generation-search-incomplete"
+                } else {
+                    "generation-exhausted"
+                },
                 seed,
-                "Requested routed graph was not constructed within the attempt/work limits",
+                if search_incomplete {
+                    "Requested routed graph was not constructed before a search budget or resource stop"
+                } else {
+                    "Requested routed graph was not constructed from fully evaluated alternatives"
+                },
             ),
             attempts,
         })
@@ -518,10 +531,30 @@ impl<'a> Generator<'a> {
             }));
         }
         if attempt.status == "pending" {
-            attempt.status = "pair-trials-exhausted".into();
+            attempt.status = if attempt.route_expansions >= c.route_work_per_attempt {
+                "route-work-budget"
+            } else {
+                "pair-trials-exhausted"
+            }
+            .into();
         }
         Ok(None)
     }
+}
+
+fn attempt_search_incomplete(attempt: &Attempt) -> bool {
+    matches!(
+        attempt.status.as_str(),
+        "pair-trials-exhausted"
+            | "route-work-budget"
+            | "aic-layout-gen.canvas-guard"
+            | "aic-layout-gen.body-guard"
+    ) || attempt.routing_statuses.keys().any(|status| {
+        !matches!(
+            status.as_str(),
+            "found" | "no-path" | "blocked-endpoint" | "same-endpoint"
+        )
+    })
 }
 
 fn interrupted(seed: u64, attempts: Vec<Attempt>) -> Failure {

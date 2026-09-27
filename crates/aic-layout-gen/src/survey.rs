@@ -19,7 +19,7 @@ use std::{
 };
 
 const SCHEMA: &str = "aic-layout-generation-survey-v2";
-const REPORT_SCHEMA: &str = "aic-layout-generation-survey-report-v2";
+const REPORT_SCHEMA: &str = "aic-layout-generation-survey-report-v3";
 const INTERRUPTED: &str = "aic-layout-gen.generation-interrupted";
 const NOT_STARTED: &str = "aic-layout-generation-survey.deadline-not-started";
 
@@ -92,6 +92,8 @@ pub struct Row {
     pub attempt_count: usize,
     pub total_routing_work: u64,
     pub last_attempt_status: Option<String>,
+    pub routing_statuses: BTreeMap<String, usize>,
+    pub attempt_statuses: BTreeMap<String, usize>,
     pub diagnostic: Option<Diagnostic>,
     pub resolved: Option<ResolvedPolicy>,
 }
@@ -120,6 +122,8 @@ impl Row {
             attempt_count: 0,
             total_routing_work: 0,
             last_attempt_status: None,
+            routing_statuses: BTreeMap::new(),
+            attempt_statuses: BTreeMap::new(),
             diagnostic: None,
             resolved: Some(resolved),
         }
@@ -347,6 +351,7 @@ fn row_from_result(
         Ok(intent_generated) => {
             let generated = intent_generated.generated;
             let total_routing_work = route_work(&generated.attempts);
+            let (routing_statuses, attempt_statuses) = attempt_statuses(&generated.attempts);
             let last = generated.attempts.last();
             Row {
                 bucket_index,
@@ -364,6 +369,8 @@ fn row_from_result(
                 attempt_count: generated.attempts.len(),
                 total_routing_work,
                 last_attempt_status: last.map(|attempt| attempt.status.clone()),
+                routing_statuses,
+                attempt_statuses,
                 diagnostic: None,
                 resolved: Some(intent_generated.resolved),
             }
@@ -371,6 +378,7 @@ fn row_from_result(
         Err(intent_failed) => {
             let failed = intent_failed.failure;
             let total_routing_work = route_work(&failed.attempts);
+            let (routing_statuses, attempt_statuses) = attempt_statuses(&failed.attempts);
             let last = failed.attempts.last();
             let completed = failed.diagnostic.code != INTERRUPTED;
             Row {
@@ -389,6 +397,8 @@ fn row_from_result(
                 attempt_count: failed.attempts.len(),
                 total_routing_work,
                 last_attempt_status: last.map(|attempt| attempt.status.clone()),
+                routing_statuses,
+                attempt_statuses,
                 diagnostic: Some(failed.diagnostic),
                 resolved: Some(intent_failed.resolved),
             }
@@ -418,14 +428,7 @@ fn profile_summaries(rows: &[Row]) -> Vec<ProfileSummary> {
                 .collect();
             for row in &rows {
                 if row.completed && row.metrics.is_none() {
-                    *failure_reasons
-                        .entry(
-                            row.last_attempt_status
-                                .as_deref()
-                                .unwrap_or("no-attempt")
-                                .to_owned(),
-                        )
-                        .or_default() += 1;
+                    *failure_reasons.entry(row.status.clone()).or_default() += 1;
                 }
             }
             occupancy.sort_by(f64::total_cmp);
@@ -454,6 +457,18 @@ fn route_work(attempts: &[Attempt]) -> u64 {
         .sum()
 }
 
+fn attempt_statuses(attempts: &[Attempt]) -> (BTreeMap<String, usize>, BTreeMap<String, usize>) {
+    let mut routing = BTreeMap::new();
+    let mut ends = BTreeMap::new();
+    for attempt in attempts {
+        *ends.entry(attempt.status.clone()).or_default() += 1;
+        for (status, count) in &attempt.routing_statuses {
+            *routing.entry(status.clone()).or_default() += count;
+        }
+    }
+    (routing, ends)
+}
+
 fn summarize(bucket_index: usize, bucket: [usize; 2], rows: &[Row]) -> BucketSummary {
     let completed = rows.iter().filter(|row| row.completed).count();
     let successes = rows.iter().filter(|row| row.metrics.is_some()).count();
@@ -466,12 +481,7 @@ fn summarize(bucket_index: usize, bucket: [usize; 2], rows: &[Row]) -> BucketSum
     for row in rows {
         *status_counts.entry(row.status.clone()).or_default() += 1;
         if row.completed && row.metrics.is_none() {
-            let reason = row
-                .last_attempt_status
-                .as_deref()
-                .unwrap_or("no-attempt")
-                .to_owned();
-            *failure_reasons.entry(reason).or_default() += 1;
+            *failure_reasons.entry(row.status.clone()).or_default() += 1;
         }
     }
     occupancy.sort_by(f64::total_cmp);
@@ -508,4 +518,123 @@ fn quantiles(sorted: &[f64]) -> Option<OccupancyQuantiles> {
         p95: at(95),
         max: sorted[sorted.len() - 1],
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Failure, Request, intent};
+
+    fn attempt(status: &str, routes: &[(&str, usize)]) -> Attempt {
+        Attempt {
+            ordinal: 0,
+            seed: 1,
+            status: status.into(),
+            blocks: 12,
+            target_connections: 11,
+            connected: 10,
+            weak_components: 2,
+            pair_trials: 8,
+            route_calls: routes.iter().map(|(_, count)| count).sum(),
+            route_expansions: 20,
+            long_distance_threshold: 0,
+            long_connections: 0,
+            routing_statuses: routes
+                .iter()
+                .map(|(name, count)| ((*name).into(), *count))
+                .collect(),
+            elapsed_ms: 1.0,
+        }
+    }
+
+    #[test]
+    fn rows_keep_earlier_search_stop_and_summaries_use_final_diagnostic() {
+        let intent = Intent {
+            topology_profiles: vec![TopologyProfile::Tree],
+            packing_profiles: vec![PackingProfile::Compact],
+            ..Intent::default()
+        };
+        let (resolved, _) = intent::resolve(
+            &intent,
+            Request {
+                facilities: 12,
+                topology: TopologyProfile::Tree,
+                packing: PackingProfile::Compact,
+                long_connection_preference: 0.1,
+            },
+            true,
+        )
+        .unwrap();
+        let row = row_from_result(
+            0,
+            1,
+            [12, 12],
+            2.0,
+            Err(IntentFailure {
+                request_seed: 4,
+                resolved,
+                failure: Failure {
+                    seed: 4,
+                    diagnostic: crate::config::failure(
+                        "generation-search-incomplete",
+                        4,
+                        "search stopped",
+                    ),
+                    attempts: vec![
+                        attempt("pair-trials-exhausted", &[("work-budget", 1), ("found", 2)]),
+                        attempt("graph-target-missed", &[("no-path", 1)]),
+                    ],
+                },
+            }),
+        );
+        assert!(row.completed);
+        assert_eq!(
+            row.last_attempt_status.as_deref(),
+            Some("graph-target-missed")
+        );
+        assert_eq!(row.routing_statuses.get("work-budget"), Some(&1));
+        assert_eq!(row.attempt_statuses.get("pair-trials-exhausted"), Some(&1));
+        assert_eq!(row.attempt_statuses.get("graph-target-missed"), Some(&1));
+        let code = "aic-layout-gen.generation-search-incomplete";
+        assert_eq!(
+            summarize(0, [12, 12], std::slice::from_ref(&row))
+                .failure_reasons
+                .get(code),
+            Some(&1)
+        );
+        assert_eq!(
+            profile_summaries(&[row])[0].failure_reasons.get(code),
+            Some(&1)
+        );
+    }
+
+    #[test]
+    fn mid_attempt_cancellation_marks_survey_slot_incomplete() {
+        let loaded = io::load_catalogs(
+            &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/game/normalized"),
+        )
+        .unwrap();
+        let config = Config {
+            schema: intent::SCHEMA.into(),
+            facilities: [12, 12],
+            intent: Intent {
+                topology_profiles: vec![TopologyProfile::Tree],
+                packing_profiles: vec![PackingProfile::Compact],
+                ..Intent::default()
+            },
+        };
+        let generator = IntentGenerator::new(&loaded.catalogs, config).unwrap();
+        let mut checks = 0;
+        let result = generator.generate_once_until(1000, || {
+            checks += 1;
+            checks == 3
+        });
+        let row = row_from_result(0, 1, [12, 12], 1.0, result);
+        assert_eq!(row.status, INTERRUPTED);
+        assert!(!row.completed);
+        assert_eq!(row.attempt_statuses.get("interrupted"), Some(&1));
+        let summary = summarize(0, [12, 12], &[row]);
+        assert_eq!(summary.incomplete, 1);
+        assert_eq!(summary.completed, 0);
+    }
 }
