@@ -178,6 +178,7 @@ pub struct Report {
     pub catalog_sha256: String,
     pub config: SurveyConfig,
     pub seed: u64,
+    pub workspace_budget_gib: u64,
     pub requested: usize,
     pub completed: usize,
     pub successes: usize,
@@ -189,7 +190,13 @@ pub struct Report {
     pub rows: Vec<Row>,
 }
 
-pub fn run(config: SurveyConfig, catalog_dir: &Path, seed: u64, output: &Path) -> Result<Report> {
+pub fn run(
+    config: SurveyConfig,
+    catalog_dir: &Path,
+    seed: u64,
+    workspace_budget_gib: u64,
+    output: &Path,
+) -> Result<Report> {
     let requested = config.validate_shape()?;
     let loaded = io::load_catalogs(catalog_dir)?;
     config.generator.validate()?;
@@ -202,18 +209,14 @@ pub fn run(config: SurveyConfig, catalog_dir: &Path, seed: u64, output: &Path) -
         };
         generator_configs.push(generator_config);
     }
-    let estimate = config.workers as u64
-        * generator_configs
-            .iter()
-            .map(Config::conservative_workspace_bytes)
-            .collect::<Result<Vec<_>>>()?
-            .into_iter()
-            .max()
-            .unwrap_or(0);
-    anyhow::ensure!(
-        estimate <= 2 * 1024 * 1024 * 1024,
-        "configured workers/route work exceed the 2 GiB conservative workspace guard"
-    );
+    let per_worker = generator_configs
+        .iter()
+        .map(Config::conservative_workspace_bytes)
+        .collect::<Result<Vec<_>>>()?
+        .into_iter()
+        .max()
+        .unwrap_or(0);
+    crate::intent::admit_workspace(config.workers, per_worker, workspace_budget_gib)?;
     anyhow::ensure!(
         !output.exists(),
         "output must be a new directory: {}",
@@ -316,6 +319,7 @@ pub fn run(config: SurveyConfig, catalog_dir: &Path, seed: u64, output: &Path) -
         catalog_sha256: loaded.catalogs.identity.clone(),
         config,
         seed,
+        workspace_budget_gib,
         requested,
         completed,
         successes,

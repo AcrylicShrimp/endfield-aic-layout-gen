@@ -81,13 +81,13 @@ impl Config {
             || self.gap[1] < self.gap[0]
             || self.gap[1] > 128
             || !(1..=128).contains(&self.margin)
-            || !(16..=250_000).contains(&self.max_cells)
+            || !(16..=250_000_000).contains(&self.max_cells)
             || !(1..=64).contains(&self.max_attempts)
-            || !(1..=8192).contains(&self.max_pair_trials)
+            || !(1..=131_072).contains(&self.max_pair_trials)
             || !(1..=64).contains(&self.ports_per_pair)
-            || !(1..=1_000_000).contains(&self.route_work_per_call)
+            || self.route_work_per_call == 0
             || self.route_work_per_attempt < self.route_work_per_call
-            || self.route_work_per_attempt > 250_000_000
+            || self.route_work_per_attempt > u32::MAX as usize
             || self.max_bridges_per_route > 8
             || !(2..=32).contains(&self.max_degree)
             || !self.long_link_fraction.is_finite()

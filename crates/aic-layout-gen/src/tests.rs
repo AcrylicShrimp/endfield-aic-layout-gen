@@ -1,5 +1,6 @@
 use crate::{
-    Config as PublicConfig, Generator, IntentGenerator, MechanismConfig as Config, io, packing,
+    Config as PublicConfig, Generator, IntentGenerator, MechanismConfig as Config, PackingProfile,
+    Request, TopologyProfile, intent, io, packing,
 };
 use aic_layout::{
     physical::{Layout, Problem, SCHEMA, Solution},
@@ -12,6 +13,31 @@ use std::path::Path;
 fn catalogs() -> io::LoadedCatalogs {
     io::load_catalogs(&Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/game/normalized"))
         .unwrap()
+}
+
+#[test]
+fn mechanism_packing_admits_sparse_canvas_above_legacy_limit() {
+    let loaded = catalogs();
+    let (_, mut config) = intent::resolve(
+        &intent::Intent::default(),
+        Request {
+            facilities: 256,
+            topology: TopologyProfile::Tree,
+            packing: PackingProfile::Spacious,
+            long_connection_preference: 0.25,
+        },
+        false,
+    )
+    .unwrap();
+    config.gap = [20, 20];
+    config.validate(&loaded.catalogs).unwrap();
+    let mut rng = Rng::new(17);
+    let packed = packing::sample(&loaded.catalogs, &config, 256, &mut rng).unwrap();
+    let area = packed.width * packed.height;
+    assert!(
+        area > 250_000 && area <= config.max_cells as i64,
+        "area {area}"
+    );
 }
 
 #[test]

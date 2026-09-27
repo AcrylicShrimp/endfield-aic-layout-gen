@@ -114,7 +114,10 @@ pub(crate) fn sample(
         .max()
         .unwrap()
         + config.margin;
-    if width * height > config.max_cells as i64 {
+    if width
+        .checked_mul(height)
+        .is_none_or(|area| area > config.max_cells as i64)
+    {
         return Err(failure(
             "canvas-guard",
             "packing",

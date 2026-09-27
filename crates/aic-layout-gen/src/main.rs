@@ -28,6 +28,9 @@ enum Command {
         count: usize,
         #[arg(long, default_value_t = 1)]
         workers: usize,
+        /// Aggregate conservative workspace admission in GiB.
+        #[arg(long, default_value_t = 2)]
+        workspace_budget_gib: u64,
         #[arg(long)]
         output: PathBuf,
     },
@@ -39,6 +42,9 @@ enum Command {
         catalog_dir: PathBuf,
         #[arg(long)]
         seed: u64,
+        /// Aggregate conservative workspace admission in GiB.
+        #[arg(long, default_value_t = 2)]
+        workspace_budget_gib: u64,
         #[arg(long)]
         output: PathBuf,
     },
@@ -63,10 +69,19 @@ fn run() -> anyhow::Result<bool> {
             seed,
             count,
             workers,
+            workspace_budget_gib,
             output,
         } => {
             let config: Config = io::read(&config)?;
-            let report = batch::run(config, &catalog_dir, seed, count, workers, &output)?;
+            let report = batch::run(
+                config,
+                &catalog_dir,
+                seed,
+                count,
+                workers,
+                workspace_budget_gib,
+                &output,
+            )?;
             println!(
                 "{}",
                 serde_json::json!({"complete":report.complete,"requested":report.requested,
@@ -79,10 +94,11 @@ fn run() -> anyhow::Result<bool> {
             config,
             catalog_dir,
             seed,
+            workspace_budget_gib,
             output,
         } => {
             let config: survey::SurveyConfig = io::read(&config)?;
-            let report = survey::run(config, &catalog_dir, seed, &output)?;
+            let report = survey::run(config, &catalog_dir, seed, workspace_budget_gib, &output)?;
             println!(
                 "{}",
                 serde_json::json!({"completed":report.completed,"requested":report.requested,

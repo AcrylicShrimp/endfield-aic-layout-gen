@@ -86,7 +86,18 @@ pub fn sample(
         let rotation = definition.allowed_rotations[rng.index(definition.allowed_rotations.len())];
         let (width, height, _) = rotate(definition, rotation, Point::default());
         body_cells = body_cells
-            .checked_add((width * height) as u64)
+            .checked_add(
+                width
+                    .checked_mul(height)
+                    .and_then(|area| u64::try_from(area).ok())
+                    .ok_or_else(|| {
+                        failure(
+                            "body-guard",
+                            block.id.clone(),
+                            "facility body area overflow",
+                        )
+                    })?,
+            )
             .ok_or_else(|| {
                 failure(
                     "body-guard",
@@ -147,7 +158,10 @@ pub fn sample(
         .unwrap();
     let body_width = max_x - min_x;
     let body_height = max_y - min_y;
-    let body_bounding_area = (body_width * body_height) as u64;
+    let body_bounding_area = body_width
+        .checked_mul(body_height)
+        .and_then(|area| u64::try_from(area).ok())
+        .ok_or_else(|| failure("canvas-guard", "placement", "body bounding area overflow"))?;
     let canvas_width = max_x + request.margin;
     let canvas_height = max_y + request.margin;
     if canvas_width
@@ -365,6 +379,33 @@ mod tests {
     use super::*;
     use crate::io;
     use std::path::Path;
+
+    #[test]
+    fn sparse_placement_admits_canvas_above_legacy_generator_guard() {
+        let loaded = io::load_catalogs(
+            &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/game/normalized"),
+        )
+        .unwrap();
+        let blocks = (0..64)
+            .map(|index| Block {
+                id: format!("facility-{index}"),
+                facility: "component-mc-1-mode-normal".into(),
+            })
+            .collect::<Vec<_>>();
+        let placement = sample(
+            &loaded.catalogs,
+            &blocks,
+            &PlacementRequest {
+                seed: 17,
+                gap: [128, 128],
+                margin: 4,
+                max_cells: 250_000_000,
+            },
+        )
+        .unwrap();
+        assert!(placement.canvas_width * placement.canvas_height > 250_000);
+        assert_eq!(placement.poses.len(), blocks.len());
+    }
 
     #[test]
     fn preserves_frozen_blocks_and_reports_body_density() {

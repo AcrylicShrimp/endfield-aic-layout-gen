@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub const SCHEMA: &str = "aic-layout-generator-v2";
-pub const SCALE_POLICY: &str = "aic-layout-generator-scale-policy-v1";
+pub const SCALE_POLICY: &str = "aic-layout-generator-scale-policy-v4";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -209,8 +209,15 @@ impl Config {
                         long_connection_preference: self.intent.long_connection_preference[1],
                     };
                     let (resolved, _) = resolve(&self.intent, request, false)?;
-                    let estimate =
-                        resolved.route_work_per_call as u64 * 640 + resolved.max_cells as u64 * 256;
+                    let route = u64::try_from(resolved.route_work_per_call)?
+                        .checked_mul(640)
+                        .context("route workspace estimate overflow")?;
+                    let canvas = u64::try_from(resolved.max_cells)?
+                        .checked_mul(256)
+                        .context("canvas workspace estimate overflow")?;
+                    let estimate = route
+                        .checked_add(canvas)
+                        .context("workspace estimate overflow")?;
                     maximum = maximum.max(estimate);
                 }
             }
@@ -225,6 +232,24 @@ impl Config {
     ) -> anyhow::Result<(ResolvedPolicy, MechanismConfig)> {
         resolve(&self.intent, request, one_attempt)
     }
+}
+
+pub(crate) fn admit_workspace(
+    workers: usize,
+    per_worker_bytes: u64,
+    budget_gib: u64,
+) -> anyhow::Result<u64> {
+    let budget_bytes = budget_gib
+        .checked_mul(1024 * 1024 * 1024)
+        .context("workspace budget GiB overflow")?;
+    let estimate = u64::try_from(workers)?
+        .checked_mul(per_worker_bytes)
+        .context("total workspace estimate overflow")?;
+    anyhow::ensure!(
+        budget_bytes > 0 && estimate <= budget_bytes,
+        "estimated workspace {estimate} bytes for {workers} workers exceeds the configured {budget_gib} GiB budget; adjust workers or --workspace-budget-gib"
+    );
+    Ok(estimate)
 }
 
 impl Intent {
@@ -344,6 +369,14 @@ pub fn resolve(
     let target_connections = (n - 1)
         .checked_add(extra)
         .ok_or_else(|| anyhow::anyhow!("target connection overflow"))?;
+    if intent.acyclic {
+        let maximum = n * (n - 1) / 2;
+        anyhow::ensure!(
+            target_connections <= maximum,
+            "acyclic {:?} request with {n} facilities requires {target_connections} connections but permits at most {maximum}",
+            request.topology
+        );
+    }
     let (gap, max_degree, branch, merge) = match request.topology {
         TopologyProfile::Tree => (packing_gap(request.packing), 4, 0, 0),
         TopologyProfile::LightCycles => (packing_gap(request.packing), 5, 0, 0),
@@ -367,14 +400,13 @@ pub fn resolve(
         .max(12_000);
     let (route_work_per_call, attempts, pair_factor, ports) = match intent.effort {
         Effort::Fast => ((base_call / 2).max(6_000), 1usize, 32usize, 4usize),
-        Effort::Standard => (base_call, 4, 64, 8),
+        Effort::Standard => (base_call, 4, 192, 8),
         Effort::Thorough => (
             base_call
                 .checked_mul(2)
-                .context("per-call route work overflow")?
-                .min(1_000_000),
+                .context("per-call route work overflow")?,
             8,
-            96,
+            288,
             16,
         ),
     };
@@ -382,18 +414,17 @@ pub fn resolve(
         .checked_mul(target_connections)
         .and_then(|v| v.checked_mul(2))
         .context("per-attempt route work overflow")?
-        .max(route_work_per_call)
-        .min(250_000_000);
+        .max(route_work_per_call);
     let max_pair_trials = target_connections
         .checked_mul(pair_factor)
         .context("pair-trial overflow")?
-        .clamp(512, 8192);
+        .max(512);
     let margin = 6 + ((n as f64).sqrt().floor() as i64) / 2;
     let max_cells = n
         .checked_mul(n)
         .and_then(|v| v.checked_mul(16))
         .context("canvas guard overflow")?
-        .clamp(65_536, 250_000);
+        .max(65_536);
     let density = (target_connections as f64 - 0.5) / n as f64;
     let max_attempts = if one_attempt { 1 } else { attempts };
     let mechanism = MechanismConfig {
@@ -476,6 +507,8 @@ impl<T> OptionContext<T> for Option<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::io;
+    use std::path::Path;
 
     fn request(facilities: usize, topology: TopologyProfile) -> Request {
         Request {
@@ -541,5 +574,91 @@ mod tests {
         assert!((2..=100).contains(&request.facilities));
         assert!(config.intent.topology_profiles.contains(&request.topology));
         assert!(config.intent.packing_profiles.contains(&request.packing));
+    }
+
+    #[test]
+    fn every_declared_scale_resolves_and_thorough_keeps_standard_work() {
+        let loaded = io::load_catalogs(
+            &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/game/normalized"),
+        )
+        .unwrap();
+        let mut intent = Intent::default();
+        for effort in [Effort::Fast, Effort::Standard, Effort::Thorough] {
+            intent.effort = effort;
+            Config {
+                schema: SCHEMA.into(),
+                facilities: [2, 256],
+                intent: intent.clone(),
+            }
+            .validate(&loaded.catalogs)
+            .unwrap();
+        }
+        for acyclic in [false, true] {
+            intent.acyclic = acyclic;
+            for n in 2..=256 {
+                for topology in [
+                    TopologyProfile::Tree,
+                    TopologyProfile::LightCycles,
+                    TopologyProfile::Branching,
+                ] {
+                    for packing in [
+                        PackingProfile::Compact,
+                        PackingProfile::Balanced,
+                        PackingProfile::Spacious,
+                    ] {
+                        let mut request = request(n, topology);
+                        request.packing = packing;
+                        intent.effort = Effort::Standard;
+                        let standard = resolve(&intent, request.clone(), false);
+                        if acyclic
+                            && ((n == 2 && topology != TopologyProfile::Tree)
+                                || (n == 3 && topology == TopologyProfile::Branching))
+                        {
+                            assert!(standard.unwrap_err().to_string().contains("acyclic"));
+                            continue;
+                        }
+                        let (standard, mechanism) = standard.unwrap();
+                        mechanism.validate(&loaded.catalogs).unwrap();
+                        intent.effort = Effort::Thorough;
+                        let (thorough, mechanism) = resolve(&intent, request, false).unwrap();
+                        mechanism.validate(&loaded.catalogs).unwrap();
+                        assert!(thorough.route_work_per_call >= standard.route_work_per_call);
+                        assert!(thorough.route_work_per_attempt >= standard.route_work_per_attempt);
+                    }
+                }
+            }
+        }
+        let upper_request = Request {
+            facilities: 256,
+            topology: TopologyProfile::Branching,
+            packing: PackingProfile::Spacious,
+            long_connection_preference: 0.25,
+        };
+        intent.effort = Effort::Standard;
+        let (standard_upper, _) = resolve(&intent, upper_request.clone(), false).unwrap();
+        assert_eq!(standard_upper.max_pair_trials, 73_536);
+        assert_eq!(standard_upper.route_work_per_attempt, 2_008_023_040);
+        intent.effort = Effort::Thorough;
+        let (upper, _) = resolve(&intent, upper_request, false).unwrap();
+        assert_eq!(upper.max_cells, 1_048_576);
+        assert_eq!(upper.route_work_per_call, 5_242_880);
+        assert_eq!(upper.max_pair_trials, 110_304);
+        assert_eq!(upper.route_work_per_attempt, 4_016_046_080);
+    }
+
+    #[test]
+    fn upper_scale_workspace_is_admitted_with_an_explicit_resource_budget() {
+        let config = Config {
+            schema: SCHEMA.into(),
+            facilities: [256, 256],
+            intent: Intent {
+                effort: Effort::Thorough,
+                ..Intent::default()
+            },
+        };
+        let estimate = config.conservative_workspace_bytes().unwrap();
+        assert!(estimate > 2 * 1024 * 1024 * 1024);
+        assert_eq!(admit_workspace(1, estimate, 8).unwrap(), estimate);
+        assert!(admit_workspace(1, estimate, 2).is_err());
     }
 }

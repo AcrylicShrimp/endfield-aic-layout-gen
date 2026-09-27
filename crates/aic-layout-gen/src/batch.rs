@@ -35,6 +35,7 @@ pub struct Report {
     pub config: Config,
     pub seed: u64,
     pub workers: usize,
+    pub workspace_budget_gib: u64,
     pub requested: usize,
     pub complete: usize,
     pub elapsed_seconds: f64,
@@ -48,6 +49,7 @@ pub fn run(
     seed: u64,
     count: usize,
     workers: usize,
+    workspace_budget_gib: u64,
     output: &Path,
 ) -> Result<Report> {
     let started = Instant::now();
@@ -57,11 +59,11 @@ pub fn run(
     );
     let loaded = io::load_catalogs(catalog_dir)?;
     let generator = IntentGenerator::new(&loaded.catalogs, config.clone())?;
-    let estimate = workers as u64 * config.conservative_workspace_bytes()?;
-    anyhow::ensure!(
-        estimate <= 2 * 1024 * 1024 * 1024,
-        "configured workers/route work exceed the 2 GiB conservative workspace guard"
-    );
+    crate::intent::admit_workspace(
+        workers,
+        config.conservative_workspace_bytes()?,
+        workspace_budget_gib,
+    )?;
     if let Some(parent) = output.parent() {
         fs::create_dir_all(parent)?;
     }
@@ -102,10 +104,10 @@ pub fn run(
                         let generated = intent_generated.generated;
                         let bytes = serde_json::to_vec(&generated.layout)?;
                         anyhow::ensure!(
-                            bytes.len() <= 16 * 1024 * 1024,
+                            bytes.len() <= io::MAX_JSON_BYTES,
                             "layout slot {index} exceeds the 16 MiB publication/input guard"
                         );
-                        io::write(&output.join(format!("layout-{index:05}.json")), &bytes)?;
+                        io::write_atomic(&output.join(format!("layout-{index:05}.json")), &bytes)?;
                         let svg = render::svg(&generated.layout, &loaded.catalogs);
                         io::write(&output.join(format!("case-{index:05}.svg")), svg.as_bytes())?;
                         io::write(
@@ -179,6 +181,7 @@ pub fn run(
         config,
         seed,
         workers,
+        workspace_budget_gib,
         requested: count,
         complete,
         elapsed_seconds,

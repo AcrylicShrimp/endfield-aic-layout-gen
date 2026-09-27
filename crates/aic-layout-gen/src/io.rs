@@ -14,14 +14,16 @@ use std::{
     path::Path,
 };
 
+pub(crate) const MAX_JSON_BYTES: usize = 16 * 1024 * 1024;
+
 pub fn bytes(path: &Path) -> Result<Vec<u8>> {
     let mut bytes = vec![];
     File::open(path)
         .with_context(|| format!("open {}", path.display()))?
-        .take(16 * 1024 * 1024 + 1)
+        .take(MAX_JSON_BYTES as u64 + 1)
         .read_to_end(&mut bytes)?;
     anyhow::ensure!(
-        bytes.len() <= 16 * 1024 * 1024,
+        bytes.len() <= MAX_JSON_BYTES,
         "{} exceeds the 16 MiB input guard",
         path.display()
     );
@@ -121,7 +123,10 @@ pub fn write(path: &Path, content: &[u8]) -> Result<()> {
     Ok(())
 }
 
-pub fn write_json(path: &Path, value: &impl Serialize) -> Result<()> {
+fn publish(
+    path: &Path,
+    write_content: impl FnOnce(&mut BufWriter<File>) -> Result<()>,
+) -> Result<()> {
     anyhow::ensure!(!path.exists(), "output already exists: {}", path.display());
     let temporary = path.with_extension("json.tmp");
     let file = OpenOptions::new()
@@ -130,10 +135,25 @@ pub fn write_json(path: &Path, value: &impl Serialize) -> Result<()> {
         .open(&temporary)
         .with_context(|| format!("create {}", temporary.display()))?;
     let mut out = BufWriter::new(file);
-    serde_json::to_writer_pretty(&mut out, value)?;
-    out.write_all(b"\n")?;
+    write_content(&mut out)?;
     out.flush()?;
+    drop(out);
     // Output directories are exclusively created by this command.
     fs::rename(&temporary, path).with_context(|| format!("publish {}", path.display()))?;
     Ok(())
+}
+
+pub fn write_atomic(path: &Path, content: &[u8]) -> Result<()> {
+    publish(path, |out| {
+        out.write_all(content)?;
+        Ok(())
+    })
+}
+
+pub fn write_json(path: &Path, value: &impl Serialize) -> Result<()> {
+    publish(path, |out| {
+        serde_json::to_writer_pretty(&mut *out, value)?;
+        out.write_all(b"\n")?;
+        Ok(())
+    })
 }

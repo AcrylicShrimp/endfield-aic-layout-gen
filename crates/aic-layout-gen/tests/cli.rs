@@ -179,7 +179,7 @@ fn survey_records_equal_slots_without_persisting_layouts() {
             .unwrap()
             .iter()
             .all(|row| row["attempt_count"].as_u64().unwrap() <= 1
-                && row["resolved"]["schema"] == "aic-layout-generator-scale-policy-v1")
+                && row["resolved"]["schema"] == "aic-layout-generator-scale-policy-v4")
     );
     assert!(!output.join("layout-00000.json").exists());
     fs::remove_dir_all(&dir).unwrap();
