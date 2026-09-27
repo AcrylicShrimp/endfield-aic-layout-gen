@@ -6,10 +6,15 @@ use super::{
 use crate::outcomes::{
     config::Split,
     sample::{Assignment, SelectedAction},
-    storage::{ObservedOutcome, Row, WorkRecord},
+    storage::{
+        ObservedOutcome, Row, WorkRecord, observed_factory_outcome, observed_physical_outcome,
+    },
 };
 use aic_layout::physical::Metrics;
-use aic_pilot_native::learning::{Input, schema::*};
+use aic_pilot_native::{
+    learning::{Domain, Input, Limits, Observation, schema::*},
+    physical_editor::{EditWork, PhysicalEditorDiagnostic, PhysicalSessionOutcome, RouteWork},
+};
 use aic_torch::tch::{Device, Kind, Tensor};
 
 fn metrics(area: u64, transport_cells: u64, turns: u64) -> Metrics {
@@ -125,6 +130,156 @@ fn split_isolation_and_label_masks_match_observed_native_outcomes() {
     let logits = Tensor::zeros([4, 12], (Kind::Float, Device::Cpu));
     let (_, denominators) = masked_loss(&logits, &labels, &[1.0; 12], Device::Cpu).unwrap();
     assert_eq!(denominators, [1, 3, 1, 1, 3, 3, 1, 1, 1, 1, 1, 0]);
+}
+
+#[test]
+fn route_stops_and_resource_failures_keep_their_learning_masks() {
+    let physical =
+        |status: &'static str, route: Option<&str>, diagnostic: Option<&str>, expanded| {
+            observed_physical_outcome(
+                PhysicalSessionOutcome {
+                    schema: "physical-editor-outcome-v1",
+                    status,
+                    charged: true,
+                    attempts: 1,
+                    revision: 1,
+                    done: false,
+                    work: EditWork {
+                        expanded,
+                        pending: 1,
+                        routes: route
+                            .into_iter()
+                            .map(|status| RouteWork {
+                                edge: 0,
+                                status: status.into(),
+                                expanded,
+                                preflight_expanded: 0,
+                                preflight_status: "not-run".into(),
+                            })
+                            .collect(),
+                        ..EditWork::default()
+                    },
+                    best_metrics: metrics(100, 20, 10),
+                    current_pending: (status == "draft_accepted").then_some(1),
+                    current_conflicts: (status == "draft_accepted").then_some(0),
+                    current_metrics: None,
+                    diagnostics: diagnostic
+                        .into_iter()
+                        .map(|code| PhysicalEditorDiagnostic {
+                            code: code.into(),
+                            severity: "error",
+                            stage: "routing",
+                            source: "aic-physical-layout-v3",
+                            entity: "edge".into(),
+                            message: "resource failure".into(),
+                        })
+                        .collect(),
+                },
+                50_000,
+            )
+        };
+    let next = Observation {
+        input: std::sync::Arc::new(Input {
+            pending: 1,
+            ..Input::default()
+        }),
+        domain: std::sync::Arc::new(Domain { groups: vec![] }),
+        handle: 0,
+        blueprint_sha256: String::new(),
+        revision: 1,
+        attempts: 1,
+        done: false,
+    };
+    let limits = Limits {
+        schema: "declarative-edit-v2".into(),
+        max_actions: 32,
+        elapsed_ms: 60_000,
+        route_expansions: 50_000,
+        max_total_route_expansions: 1_600_000,
+        search_padding: 4,
+    };
+    let factory = |status: &str, route: Option<&str>, diagnostic: Option<&str>, expanded| {
+        observed_factory_outcome(
+            &serde_json::json!({
+                "status": status,
+                "charged": true,
+                "attempts": 1,
+                "revision": 1,
+                "done": false,
+                "best_metrics": {"score": [100, 20, 10], "width": 1, "height": 1},
+                "details": {
+                    "route_expansions": expanded,
+                    "repair_batch_applied": false,
+                    "routes": route.into_iter().map(|status| serde_json::json!({
+                        "edge": 0, "status": status, "expanded": expanded,
+                        "preflight_expanded": 0, "preflight_status": "not-run"
+                    })).collect::<Vec<_>>()
+                },
+                "diagnostics": diagnostic.into_iter().map(|code| serde_json::json!({
+                    "code": code, "severity": "error", "stage": "declarative-edit",
+                    "entity": "edge", "message": "resource failure"
+                })).collect::<Vec<_>>()
+            }),
+            &next,
+            &limits,
+        )
+        .unwrap()
+    };
+    for outcome in [
+        physical("draft_accepted", Some("resource-limit"), None, 10),
+        physical("draft_accepted", Some("deadline"), None, 10),
+        physical("draft_accepted", Some("repeated-cell"), None, 10),
+        physical(
+            "draft_accepted",
+            Some("found"),
+            Some("physical-editor.route-internal-error"),
+            10,
+        ),
+        physical("rejected", None, Some("physical-editor.route-resource"), 0),
+        factory("draft_accepted", Some("resource-limit"), None, 10),
+        factory("draft_accepted", Some("deadline"), None, 10),
+        factory("draft_accepted", Some("repeated-cell"), None, 10),
+        factory(
+            "draft_accepted",
+            Some("found"),
+            Some("declarative.common-routing"),
+            10,
+        ),
+        factory("rejected", None, Some("declarative.route-resource"), 0),
+    ] {
+        assert!(outcome.censored);
+        assert_eq!(outcome.route_budget_exhausted, None);
+        let mut row = label_row("resource", "rejected", false);
+        row.outcome = outcome;
+        assert_eq!(labels_for(&row, 64.0).unwrap().1, [0.0; 12]);
+    }
+    for outcome in [
+        physical("draft_accepted", Some("work-budget"), None, 10),
+        factory("draft_accepted", Some("work-budget"), None, 10),
+    ] {
+        assert!(!outcome.censored);
+        assert_eq!(outcome.route_budget_exhausted, Some(false));
+        assert!(!outcome.work.committed);
+        let mut row = label_row("budget", "rejected", false);
+        row.outcome = outcome;
+        let (target, mask) = labels_for(&row, 64.0).unwrap();
+        assert_eq!(target[0], 0.0);
+        assert_eq!(mask[0], 1.0);
+        assert_eq!(target[11], 0.0);
+        assert_eq!(mask[11], 1.0);
+    }
+    for outcome in [
+        physical("draft_accepted", Some("work-budget"), None, 50_000),
+        factory("draft_accepted", Some("work-budget"), None, 50_000),
+    ] {
+        assert!(!outcome.censored);
+        assert_eq!(outcome.route_budget_exhausted, Some(true));
+        let mut row = label_row("full-budget", "rejected", false);
+        row.outcome = outcome;
+        let (target, mask) = labels_for(&row, 64.0).unwrap();
+        assert_eq!((target[0], mask[0]), (0.0, 1.0));
+        assert_eq!((target[11], mask[11]), (1.0, 1.0));
+    }
 }
 
 fn model_row(swapped: bool) -> Row {

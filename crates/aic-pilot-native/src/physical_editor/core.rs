@@ -17,6 +17,58 @@ use super::{Result, compiled_error, error};
 
 const GUARD: i64 = 1_000_000;
 
+#[cfg(test)]
+thread_local! {
+    static FAIL_RESERVATION: std::cell::Cell<Option<(&'static str, usize)>> = const {
+        std::cell::Cell::new(None)
+    };
+}
+
+#[cfg(test)]
+pub(crate) fn fail_reservation_after(stage: &'static str, successful_calls: usize) {
+    FAIL_RESERVATION.with(|slot| slot.set(Some((stage, successful_calls))));
+}
+
+#[cfg(test)]
+pub(crate) fn clear_reservation_failure() {
+    FAIL_RESERVATION.with(|slot| slot.set(None));
+}
+
+fn reserve_cells(
+    set: &mut IndexSet<Point>,
+    additional: usize,
+    entity: &str,
+    stage: &'static str,
+) -> Result<()> {
+    #[cfg(not(test))]
+    let _ = stage;
+    #[cfg(test)]
+    if FAIL_RESERVATION.with(|slot| match slot.get() {
+        Some((target, 0)) if target == stage => {
+            slot.set(None);
+            true
+        }
+        Some((target, remaining)) if target == stage => {
+            slot.set(Some((target, remaining - 1)));
+            false
+        }
+        _ => false,
+    }) {
+        return Err(error(
+            "route-resource",
+            entity,
+            format!("test reservation failure in {stage}"),
+        ));
+    }
+    set.try_reserve(additional).map_err(|failure| {
+        error(
+            "route-resource",
+            entity,
+            format!("cannot reserve {stage} cells: {failure}"),
+        )
+    })
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum Axis {
@@ -96,6 +148,18 @@ pub struct RouteWork {
     pub expanded: usize,
     pub preflight_expanded: usize,
     pub preflight_status: String,
+}
+
+#[derive(Debug)]
+pub(crate) struct RepairFailure {
+    pub(crate) diagnostic: super::PhysicalEditorDiagnostic,
+    pub(crate) work: EditWork,
+}
+
+impl RepairFailure {
+    pub(crate) fn into_parts(self) -> (super::PhysicalEditorDiagnostic, EditWork) {
+        (self.diagnostic, self.work)
+    }
 }
 
 fn facility<'a>(
@@ -472,53 +536,87 @@ fn bodies<'a>(
         })
 }
 
+fn extend_reserved(
+    set: &mut IndexSet<Point>,
+    points: impl IntoIterator<Item = Point>,
+    entity: &str,
+) -> Result<()> {
+    const BATCH: usize = 4096;
+    let mut points = points.into_iter().peekable();
+    while points.peek().is_some() {
+        reserve_cells(set, BATCH, entity, "blocked")?;
+        set.extend(points.by_ref().take(BATCH));
+    }
+    Ok(())
+}
+
 fn blocked(
     problem: &CompiledProblemV1,
     draft: &PhysicalDraftV1,
     edge: &aic_layout::editor::CompiledEdge,
 ) -> Result<IndexSet<Point>> {
-    let positions: Vec<_> = problem
-        .nodes
-        .iter()
-        .map(|node| node_position(problem, draft, node))
-        .collect::<Result<_>>()?;
+    let mut positions = Vec::new();
+    positions
+        .try_reserve(problem.nodes.len())
+        .map_err(|failure| {
+            error(
+                "route-resource",
+                &edge.source_id,
+                format!("cannot reserve node positions: {failure}"),
+            )
+        })?;
+    for node in &problem.nodes {
+        positions.push(node_position(problem, draft, node)?);
+    }
     let permits = |other: usize, point: Point| {
         [edge.source, edge.target].iter().any(|&endpoint| {
             positions[endpoint] == point
                 && compatible(&problem.nodes[endpoint], &problem.nodes[other])
         })
     };
-    let mut result: IndexSet<_> = bodies(problem, draft).collect();
+    let mut result = IndexSet::new();
+    extend_reserved(&mut result, bodies(problem, draft), &edge.source_id)?;
     let transport = problem.networks[edge.network].transport;
-    for node in &problem.nodes {
-        if problem.networks[node.network].transport == transport
-            && !permits(node.id, positions[node.id])
-        {
-            result.insert(positions[node.id]);
-        }
-    }
-    for (index, component) in problem.components.iter().enumerate() {
-        if component.transport == transport {
-            let point = draft.component_positions[index];
-            if ![edge.source, edge.target].iter().any(|&endpoint| {
-                positions[endpoint] == point && problem.nodes[endpoint].components.contains(&index)
-            }) {
-                result.insert(point);
-            }
-        }
-    }
+    extend_reserved(
+        &mut result,
+        problem.nodes.iter().filter_map(|node| {
+            (problem.networks[node.network].transport == transport
+                && !permits(node.id, positions[node.id]))
+            .then_some(positions[node.id])
+        }),
+        &edge.source_id,
+    )?;
+    extend_reserved(
+        &mut result,
+        problem
+            .components
+            .iter()
+            .enumerate()
+            .filter_map(|(index, component)| {
+                let point = draft.component_positions[index];
+                (component.transport == transport
+                    && ![edge.source, edge.target].iter().any(|&endpoint| {
+                        positions[endpoint] == point
+                            && problem.nodes[endpoint].components.contains(&index)
+                    }))
+                .then_some(point)
+            }),
+        &edge.source_id,
+    )?;
     for other in &problem.edges {
         if other.id == edge.id || problem.networks[other.network].transport != transport {
             continue;
         }
         if let Some(cells) = &draft.paths[other.id] {
-            for (index, &point) in cells.iter().enumerate() {
-                if !((index == 0 && permits(other.source, point))
-                    || (index + 1 == cells.len() && permits(other.target, point)))
-                {
-                    result.insert(point);
-                }
-            }
+            extend_reserved(
+                &mut result,
+                cells.iter().enumerate().filter_map(|(index, &point)| {
+                    (!((index == 0 && permits(other.source, point))
+                        || (index + 1 == cells.len() && permits(other.target, point))))
+                    .then_some(point)
+                }),
+                &edge.source_id,
+            )?;
         }
     }
     Ok(result)
@@ -530,12 +628,8 @@ fn check_path(
     edge: &aic_layout::editor::CompiledEdge,
     cells: &[Point],
 ) -> Result<()> {
-    if cells.is_empty() || cells.len() > 250_000 {
-        return Err(error(
-            "route-geometry",
-            &edge.source_id,
-            "path is empty or too large",
-        ));
+    if cells.is_empty() {
+        return Err(error("route-geometry", &edge.source_id, "path is empty"));
     }
     let start = node_position(problem, draft, &problem.nodes[edge.source])?;
     let end = node_position(problem, draft, &problem.nodes[edge.target])?;
@@ -562,7 +656,10 @@ fn check_path(
             "path violates an endpoint heading",
         ));
     }
-    if cells.iter().collect::<IndexSet<_>>().len() != cells.len()
+    let mut visited = IndexSet::new();
+    reserve_cells(&mut visited, cells.len(), &edge.source_id, "path")?;
+    let simple = cells.iter().all(|&point| visited.insert(point));
+    if !simple
         || cells
             .windows(2)
             .any(|pair| direction(pair[0], pair[1]).is_none())
@@ -773,16 +870,33 @@ pub(crate) fn apply_edit_in_place(
         }
     }
     canonicalize(problem, draft)?;
-    let detached: Vec<_> = problem
-        .edges
-        .iter()
-        .filter(|edge| {
-            draft.paths[edge.id]
-                .as_ref()
-                .is_some_and(|path| check_path(problem, draft, edge, path).is_err())
-        })
-        .map(|edge| edge.id)
-        .collect();
+    let mut detached = Vec::new();
+    detached
+        .try_reserve(problem.edges.len())
+        .map_err(|failure| {
+            error(
+                "route-resource",
+                "action",
+                format!("cannot reserve detached edges: {failure}"),
+            )
+        })?;
+    for edge in &problem.edges {
+        if let Some(path) = &draft.paths[edge.id] {
+            if let Err(failure) = check_path(problem, draft, edge, path) {
+                if matches!(
+                    failure.code.as_str(),
+                    "physical-editor.route-geometry"
+                        | "physical-editor.route-endpoint"
+                        | "physical-editor.route-direction"
+                        | "physical-editor.route-intersection"
+                ) {
+                    detached.push(edge.id);
+                } else {
+                    return Err(failure);
+                }
+            }
+        }
+    }
     for edge in detached {
         draft.paths[edge] = None;
     }
@@ -959,6 +1073,7 @@ pub(crate) fn repair_pending_validated(
     limits: PhysicalEditLimits,
 ) -> Result<EditWork> {
     repair_pending_validated_until(problem, draft, limits, || false)
+        .map_err(|failure| failure.diagnostic)
 }
 
 pub(crate) fn repair_pending_validated_until(
@@ -966,7 +1081,7 @@ pub(crate) fn repair_pending_validated_until(
     draft: &mut PhysicalDraftV1,
     limits: PhysicalEditLimits,
     mut expired: impl FnMut() -> bool,
-) -> Result<EditWork> {
+) -> std::result::Result<EditWork, RepairFailure> {
     let mut work = EditWork::default();
     let mut remaining = limits.route_expansions;
     let mut candidate = draft.clone();
@@ -993,43 +1108,78 @@ pub(crate) fn repair_pending_validated_until(
             work.pending = candidate.paths.iter().filter(|path| path.is_none()).count();
             return Ok(work);
         }
-        let start = node_position(problem, &candidate, &problem.nodes[edge.source])?;
-        let end = node_position(problem, &candidate, &problem.nodes[edge.target])?;
-        let (low, high) = extents(problem, &candidate)?;
+        if remaining == 0 {
+            work.routes.push(RouteWork {
+                edge: edge.id,
+                status: "work-budget".into(),
+                expanded: 0,
+                preflight_expanded: 0,
+                preflight_status: "not-run".into(),
+            });
+            work.pending = candidate.paths.iter().filter(|path| path.is_none()).count();
+            return Ok(work);
+        }
+        let carry = |diagnostic| RepairFailure {
+            diagnostic,
+            work: work.clone(),
+        };
+        let start =
+            node_position(problem, &candidate, &problem.nodes[edge.source]).map_err(carry)?;
+        let end = node_position(problem, &candidate, &problem.nodes[edge.target]).map_err(carry)?;
+        let (low, high) = extents(problem, &candidate).map_err(carry)?;
         let padding = limits.search_padding;
         if !(0..=1000).contains(&padding) {
-            return Err(error(
+            return Err(carry(error(
                 "coordinate-guard",
                 "routing",
                 "invalid search padding",
-            ));
+            )));
         }
         let bounds = Bounds {
             min_x: low.x.checked_sub(padding).ok_or_else(|| {
-                error("coordinate-overflow", "routing", "routing bound overflows")
+                carry(error(
+                    "coordinate-overflow",
+                    "routing",
+                    "routing bound overflows",
+                ))
             })?,
             min_y: low.y.checked_sub(padding).ok_or_else(|| {
-                error("coordinate-overflow", "routing", "routing bound overflows")
+                carry(error(
+                    "coordinate-overflow",
+                    "routing",
+                    "routing bound overflows",
+                ))
             })?,
             max_x: high.x.checked_add(padding).ok_or_else(|| {
-                error("coordinate-overflow", "routing", "routing bound overflows")
+                carry(error(
+                    "coordinate-overflow",
+                    "routing",
+                    "routing bound overflows",
+                ))
             })?,
             max_y: high.y.checked_add(padding).ok_or_else(|| {
-                error("coordinate-overflow", "routing", "routing bound overflows")
+                carry(error(
+                    "coordinate-overflow",
+                    "routing",
+                    "routing bound overflows",
+                ))
             })?,
         };
-        if i128::from(bounds.width()) * i128::from(bounds.height()) > 250_000 {
-            return Err(error(
-                "routing-area-guard",
+        if i128::from(bounds.max_x) - i128::from(bounds.min_x) + 1 <= 0
+            || i128::from(bounds.max_y) - i128::from(bounds.min_y) + 1 <= 0
+        {
+            return Err(carry(error(
+                "coordinate-overflow",
                 &edge.source_id,
-                "routing region exceeds 250000 cells",
-            ));
+                "routing region has nonpositive extents",
+            )));
         }
-        let headings = edge_headings(problem, &candidate, edge)?;
+        let headings = edge_headings(problem, &candidate, edge).map_err(carry)?;
+        let blocked = blocked(problem, &candidate, edge).map_err(carry)?;
         let result = aic_routing::shortest_path(
             start,
             end,
-            &blocked(problem, &candidate, edge)?,
+            &blocked,
             bounds,
             aic_routing::PathOptions {
                 first: headings.0,
@@ -1046,7 +1196,13 @@ pub(crate) fn repair_pending_validated_until(
                 edge_penalties: None,
             },
         )
-        .map_err(|failure| error("routing", failure.entity.to_string(), failure.message))?;
+        .map_err(|failure| {
+            carry(error(
+                "routing",
+                failure.entity.to_string(),
+                format!("{}: {}", failure.code, failure.message),
+            ))
+        })?;
         work.route_calls += 1;
         work.expanded += result.expanded;
         work.preflight_expanded += result.preflight_expanded;
@@ -1061,13 +1217,22 @@ pub(crate) fn repair_pending_validated_until(
         let Some(cells) = result.cells else {
             break;
         };
-        check_path(problem, &candidate, edge, &cells)?;
+        check_path(problem, &candidate, edge, &cells).map_err(|diagnostic| RepairFailure {
+            diagnostic,
+            work: work.clone(),
+        })?;
         candidate.paths[edge.id] = Some(cells);
     }
     work.pending = candidate.paths.iter().filter(|path| path.is_none()).count();
     if work.pending == 0 {
-        canonicalize(problem, &mut candidate)?;
-        validate_draft_validated(problem, &candidate)?;
+        canonicalize(problem, &mut candidate).map_err(|diagnostic| RepairFailure {
+            diagnostic,
+            work: work.clone(),
+        })?;
+        validate_draft_validated(problem, &candidate).map_err(|diagnostic| RepairFailure {
+            diagnostic,
+            work: work.clone(),
+        })?;
         *draft = candidate;
         work.committed = true;
     }

@@ -591,7 +591,10 @@ fn execute(
                 let (selected, pre_action) = pending.remove(&stream).unwrap();
                 let charged = outcome.charged;
                 let done = outcome.done;
-                let observed = super::storage::ObservedOutcome::from(outcome);
+                let observed = super::storage::observed_physical_outcome(
+                    outcome,
+                    config.session.route_expansions,
+                );
                 if charged {
                     let active_root = &mut active.get_mut(&stream).unwrap();
                     active_root.rows.push(Row {

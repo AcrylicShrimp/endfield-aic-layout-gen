@@ -12,6 +12,41 @@ use super::{
 
 pub const SNAPSHOT_SCHEMA: &str = "physical-editor-checkpoint-v4";
 
+#[cfg(test)]
+thread_local! {
+    static EXPIRE_ROUTE_CHECK: std::cell::Cell<Option<usize>> = const {
+        std::cell::Cell::new(None)
+    };
+}
+
+#[cfg(test)]
+pub(super) fn expire_route_after_checks(successful_checks: usize) {
+    EXPIRE_ROUTE_CHECK.with(|slot| slot.set(Some(successful_checks)));
+}
+
+#[cfg(test)]
+pub(super) fn clear_route_expiration() {
+    EXPIRE_ROUTE_CHECK.with(|slot| slot.set(None));
+}
+
+fn route_expired(deadline: Instant) -> bool {
+    #[cfg(test)]
+    if EXPIRE_ROUTE_CHECK.with(|slot| match slot.get() {
+        Some(0) => {
+            slot.set(None);
+            true
+        }
+        Some(remaining) => {
+            slot.set(Some(remaining - 1));
+            false
+        }
+        None => false,
+    }) {
+        return true;
+    }
+    Instant::now() >= deadline
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct PhysicalSessionLimits {
@@ -300,11 +335,21 @@ impl ProceduralSession {
                                 route_expansions: available,
                                 search_padding: self.limits.search_padding,
                             },
-                            || Instant::now() >= deadline,
+                            || route_expired(deadline),
                         ) {
                             Err(failure) => {
-                                let elapsed = failure.code == "physical-editor.elapsed";
-                                diagnostics.push(failure);
+                                let (diagnostic, work) = failure.into_parts();
+                                step_work = work;
+                                self.work.route_expansions += step_work.expanded;
+                                self.work.preflight_expansions += step_work.preflight_expanded;
+                                self.work.route_calls += step_work.route_calls;
+                                let elapsed = diagnostic.code == "physical-editor.elapsed";
+                                diagnostics.push(error(
+                                    "route-internal-error",
+                                    "routing",
+                                    "route repair failed after the edit action",
+                                ));
+                                diagnostics.push(diagnostic);
                                 if !elapsed {
                                     status = "draft_accepted";
                                     current_pending = Some(
@@ -323,6 +368,27 @@ impl ProceduralSession {
                                 self.work.route_expansions += step_work.expanded;
                                 self.work.preflight_expansions += step_work.preflight_expanded;
                                 self.work.route_calls += step_work.route_calls;
+                                for route in &step_work.routes {
+                                    if matches!(
+                                        route.status.as_str(),
+                                        "resource-limit"
+                                            | "work-budget"
+                                            | "scan-budget"
+                                            | "frontier-budget"
+                                            | "deadline"
+                                            | "elapsed"
+                                            | "repeated-cell"
+                                    ) {
+                                        diagnostics.push(error(
+                                            &format!("route-{}", route.status),
+                                            route.edge.to_string(),
+                                            format!(
+                                                "route stopped after {} expansions and {} preflight expansions",
+                                                route.expanded, route.preflight_expanded
+                                            ),
+                                        ));
+                                    }
+                                }
                                 if self.elapsed() >= Duration::from_millis(self.limits.elapsed_ms) {
                                     diagnostics.push(error(
                                         "elapsed",

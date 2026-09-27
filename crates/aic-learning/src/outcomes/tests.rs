@@ -185,50 +185,54 @@ fn observed_outcome_masks_unobserved_route_labels() {
     )
     .unwrap();
     let metrics = session.checkpoint().best_metrics;
-    let censored: storage::ObservedOutcome = PhysicalSessionOutcome {
-        schema: "physical-editor-outcome-v1",
-        status: "draft_accepted",
-        charged: true,
-        attempts: 1,
-        revision: 0,
-        done: false,
-        work: EditWork::default(),
-        best_metrics: metrics.clone(),
-        current_pending: None,
-        current_conflicts: None,
-        current_metrics: None,
-        diagnostics: vec![PhysicalEditorDiagnostic {
-            code: "physical-editor.elapsed".into(),
-            severity: "error",
-            stage: "session",
-            source: "physical-editor",
-            entity: "test".into(),
-            message: "deadline".into(),
-        }],
-    }
-    .into();
+    let censored = storage::observed_physical_outcome(
+        PhysicalSessionOutcome {
+            schema: "physical-editor-outcome-v1",
+            status: "draft_accepted",
+            charged: true,
+            attempts: 1,
+            revision: 0,
+            done: false,
+            work: EditWork::default(),
+            best_metrics: metrics.clone(),
+            current_pending: None,
+            current_conflicts: None,
+            current_metrics: None,
+            diagnostics: vec![PhysicalEditorDiagnostic {
+                code: "physical-editor.elapsed".into(),
+                severity: "error",
+                stage: "session",
+                source: "physical-editor",
+                entity: "test".into(),
+                message: "deadline".into(),
+            }],
+        },
+        50_000,
+    );
     assert!(censored.censored);
     assert_eq!(censored.route_budget_exhausted, None);
 
-    let observed: storage::ObservedOutcome = PhysicalSessionOutcome {
-        schema: "physical-editor-outcome-v1",
-        status: "validated",
-        charged: true,
-        attempts: 1,
-        revision: 1,
-        done: true,
-        work: EditWork {
-            expanded: 50_000,
-            committed: true,
-            ..EditWork::default()
+    let observed = storage::observed_physical_outcome(
+        PhysicalSessionOutcome {
+            schema: "physical-editor-outcome-v1",
+            status: "validated",
+            charged: true,
+            attempts: 1,
+            revision: 1,
+            done: true,
+            work: EditWork {
+                expanded: 50_000,
+                committed: true,
+                ..EditWork::default()
+            },
+            best_metrics: metrics.clone(),
+            current_pending: Some(0),
+            current_conflicts: Some(0),
+            current_metrics: Some(metrics),
+            diagnostics: vec![],
         },
-        best_metrics: metrics.clone(),
-        current_pending: Some(0),
-        current_conflicts: Some(0),
-        current_metrics: Some(metrics),
-        diagnostics: vec![],
-    }
-    .into();
+        50_000,
+    );
     assert!(!observed.censored);
     assert_eq!(observed.route_budget_exhausted, Some(true));
     assert!(observed.current_metrics.is_some());

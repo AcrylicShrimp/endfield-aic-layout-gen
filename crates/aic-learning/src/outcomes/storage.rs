@@ -65,39 +65,51 @@ pub struct ObservedOutcome {
     pub diagnostics: Vec<DiagnosticRecord>,
 }
 
-impl From<PhysicalSessionOutcome> for ObservedOutcome {
-    fn from(value: PhysicalSessionOutcome) -> Self {
-        let censored = value.diagnostics.iter().any(|diagnostic| {
-            diagnostic.code == "physical-editor.elapsed"
-                || diagnostic.code == "physical-editor.budget-exhausted"
-                || diagnostic.stage == "compiled-boundary"
-                || diagnostic.code == "physical-editor.export-validation"
-        });
-        let observed =
-            matches!(value.status, "draft_accepted" | "validated" | "improved") && !censored;
-        let route_budget_exhausted = observed.then(|| {
-            value.work.expanded >= 50_000
-                || value
-                    .work
-                    .routes
-                    .iter()
-                    .any(|route| route.status == "work-budget")
-        });
-        Self {
-            status: value.status.into(),
-            charged: value.charged,
-            censored,
-            attempts: value.attempts,
-            revision: value.revision,
-            done: value.done,
-            work: value.work.into(),
-            best_metrics: value.best_metrics,
-            current_pending: value.current_pending,
-            current_conflicts: value.current_conflicts,
-            current_metrics: value.current_metrics,
-            route_budget_exhausted,
-            diagnostics: value.diagnostics.into_iter().map(Into::into).collect(),
-        }
+fn operational_route_stop(status: &str) -> bool {
+    matches!(
+        status,
+        "resource-limit"
+            | "scan-budget"
+            | "frontier-budget"
+            | "deadline"
+            | "elapsed"
+            | "repeated-cell"
+    )
+}
+
+pub fn observed_physical_outcome(
+    value: PhysicalSessionOutcome,
+    declared_per_action_route_limit: usize,
+) -> ObservedOutcome {
+    let censored = value.diagnostics.iter().any(|diagnostic| {
+        diagnostic.code == "physical-editor.elapsed"
+            || diagnostic.code == "physical-editor.budget-exhausted"
+            || diagnostic.stage == "compiled-boundary"
+            || diagnostic.code == "physical-editor.export-validation"
+            || diagnostic.code == "physical-editor.route-internal-error"
+            || diagnostic.code == "physical-editor.route-resource"
+    }) || value
+        .work
+        .routes
+        .iter()
+        .any(|route| operational_route_stop(&route.status));
+    let observed = matches!(value.status, "draft_accepted" | "validated" | "improved") && !censored;
+    let route_budget_exhausted =
+        observed.then_some(value.work.expanded >= declared_per_action_route_limit);
+    ObservedOutcome {
+        status: value.status.into(),
+        charged: value.charged,
+        censored,
+        attempts: value.attempts,
+        revision: value.revision,
+        done: value.done,
+        work: value.work.into(),
+        best_metrics: value.best_metrics,
+        current_pending: value.current_pending,
+        current_conflicts: value.current_conflicts,
+        current_metrics: value.current_metrics,
+        route_budget_exhausted,
+        diagnostics: value.diagnostics.into_iter().map(Into::into).collect(),
     }
 }
 
@@ -149,11 +161,27 @@ pub fn observed_factory_outcome(
         .context("aic-learning.factory-outcome: missing status")?
         .to_owned();
     let diagnostics = value["diagnostics"].as_array().cloned().unwrap_or_default();
+    let routes: Vec<RouteRecord> = value["details"]["routes"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|route| {
+            serde_json::from_value(route.clone())
+                .context("aic-learning.factory-outcome: invalid route work")
+        })
+        .collect::<Result<_>>()?;
     let censored = diagnostics.iter().any(|diagnostic| {
-        diagnostic["code"]
-            .as_str()
-            .is_some_and(|code| code.ends_with(".elapsed") || code.ends_with(".budget-exhausted"))
-    });
+        diagnostic["code"].as_str().is_some_and(|code| {
+            code.ends_with(".elapsed")
+                || code.ends_with(".budget-exhausted")
+                || matches!(
+                    code,
+                    "declarative.common-routing" | "declarative.route-resource"
+                )
+        })
+    }) || routes
+        .iter()
+        .any(|route| operational_route_stop(&route.status));
     let changed = matches!(status.as_str(), "draft_accepted" | "validated" | "improved");
     let expanded = value["details"]["route_expansions"].as_u64().unwrap_or(0) as usize;
     let current_metrics = matches!(status.as_str(), "validated" | "improved")
@@ -173,16 +201,34 @@ pub fn observed_factory_outcome(
                 .unwrap_or(0) as usize,
             route_calls: value["details"]["route_calls"].as_u64().unwrap_or(0) as usize,
             pending: next.input.pending,
-            routes: vec![],
-            committed: changed,
+            routes,
+            committed: value["details"]["repair_batch_applied"]
+                .as_bool()
+                .unwrap_or(changed),
         },
         best_metrics: factory_metric(&value["best_metrics"])
             .context("aic-learning.factory-outcome: invalid retained best")?,
         current_pending: changed.then_some(next.input.pending),
         current_conflicts: changed.then_some(next.input.conflicts),
         current_metrics,
-        route_budget_exhausted: changed.then_some(expanded >= limits.route_expansions),
-        diagnostics: vec![],
+        route_budget_exhausted: (changed && !censored)
+            .then_some(expanded >= limits.route_expansions),
+        diagnostics: diagnostics
+            .into_iter()
+            .map(|diagnostic| DiagnosticRecord {
+                code: diagnostic["code"].as_str().unwrap_or_default().to_owned(),
+                severity: diagnostic["severity"]
+                    .as_str()
+                    .unwrap_or_default()
+                    .to_owned(),
+                stage: diagnostic["stage"].as_str().unwrap_or_default().to_owned(),
+                entity: diagnostic["entity"].to_string(),
+                message: diagnostic["message"]
+                    .as_str()
+                    .unwrap_or_default()
+                    .to_owned(),
+            })
+            .collect(),
     })
 }
 

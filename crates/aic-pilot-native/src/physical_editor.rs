@@ -32,6 +32,8 @@ pub use core::{
     edge_headings, endpoint_rule, node_position, query_directions, repair_pending, validate_draft,
 };
 pub(crate) use core::{apply_edit_in_place, conflicts_validated, repair_pending_validated_until};
+#[cfg(test)]
+pub(crate) use core::{clear_reservation_failure, fail_reservation_after};
 pub use session::{
     PhysicalSessionLimits, PhysicalSessionOutcome, PhysicalSessionSnapshot, ProceduralSession,
     SessionWork,
@@ -145,7 +147,11 @@ impl ProceduralAdmission {
             return Err(error(
                 "source-size",
                 "source",
-                "procedural JSON exceeds the 16 MiB admission guard",
+                format!(
+                    "procedural JSON has {} bytes; admission limit is {} bytes",
+                    source.len(),
+                    MAX_SOURCE_BYTES
+                ),
             ));
         }
         let original: Layout = serde_json::from_slice(source).map_err(|failure| {
@@ -1359,6 +1365,414 @@ mod tests {
         assert!(work.expanded > 0);
         assert_eq!(work.routes.last().unwrap().status, "elapsed");
         assert!(!work.committed);
+        assert_eq!(draft, before);
+    }
+
+    #[test]
+    fn session_exposes_between_edge_elapsed_and_charges_first_route() {
+        let catalogs = catalogs();
+        let base = ProceduralSession::new(NO_BRIDGE, &catalogs, learning_limits()).unwrap();
+        let mut snapshot = base.checkpoint();
+        snapshot.current.paths.fill(None);
+        let mut session =
+            ProceduralSession::from_checkpoint(snapshot, NO_BRIDGE, &catalogs).unwrap();
+        let source = session.source_sha256().to_owned();
+        session::expire_route_after_checks(1);
+        let outcome = session.step(
+            &source,
+            0,
+            PhysicalEdit::InsertBand {
+                axis: Axis::X,
+                at: 1,
+                count: 1,
+            },
+            &catalogs,
+        );
+        session::clear_route_expiration();
+        assert_eq!(outcome.status, "draft_accepted", "{outcome:?}");
+        assert_eq!(outcome.work.routes[0].status, "found");
+        assert_eq!(outcome.work.routes[1].status, "elapsed");
+        assert!(outcome.work.expanded > 0);
+        assert!(
+            outcome
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == "physical-editor.route-elapsed")
+        );
+        assert_eq!(
+            session.checkpoint().work.route_expansions,
+            outcome.work.expanded
+        );
+    }
+
+    #[test]
+    fn repair_keeps_prior_work_and_draft_on_post_search_resource_failure() {
+        let catalogs = catalogs();
+        let session = pending_session(NO_BRIDGE, &catalogs);
+        let problem = session.problem().clone();
+        let mut draft = session.current().clone();
+        draft.paths.fill(None);
+        let before = draft.clone();
+        core::fail_reservation_after("path", 0);
+        let failure = repair_pending_validated_until(
+            &problem,
+            &mut draft,
+            PhysicalEditLimits {
+                route_expansions: 100_000,
+                search_padding: 5,
+            },
+            || false,
+        )
+        .unwrap_err();
+        core::clear_reservation_failure();
+        let (diagnostic, work) = failure.into_parts();
+        assert_eq!(diagnostic.code, "physical-editor.route-resource");
+        assert_eq!(work.routes[0].status, "found");
+        assert!(work.expanded > 0);
+        assert_eq!(work.route_calls, 1);
+        assert_eq!(draft, before);
+    }
+
+    #[test]
+    fn action_path_reservation_failure_does_not_detach_an_existing_route() {
+        let catalogs = catalogs();
+        let mut admitted = ProceduralAdmission::compile(NO_BRIDGE, &catalogs).unwrap();
+        let original = admitted.draft.clone();
+        let max_x = original
+            .paths
+            .iter()
+            .flatten()
+            .flatten()
+            .map(|point| point.x)
+            .max()
+            .unwrap();
+        let action = (1..max_x)
+            .map(|at| PhysicalEdit::InsertBand {
+                axis: Axis::X,
+                at,
+                count: 1,
+            })
+            .find(|action| {
+                let mut candidate = original.clone();
+                apply_edit(&admitted.problem, &mut candidate, action.clone()).is_ok()
+                    && candidate != original
+            })
+            .unwrap();
+        core::fail_reservation_after("path", 0);
+        let failure = admitted
+            .edit(
+                action.clone(),
+                PhysicalEditLimits {
+                    route_expansions: 100_000,
+                    search_padding: 5,
+                },
+            )
+            .unwrap_err();
+        core::clear_reservation_failure();
+        assert_eq!(failure.code, "physical-editor.route-resource");
+        assert_eq!(admitted.draft, original);
+
+        let mut session = ProceduralSession::new(NO_BRIDGE, &catalogs, learning_limits()).unwrap();
+        let source = session.source_sha256().to_owned();
+        core::fail_reservation_after("path", 0);
+        let outcome = session.step(&source, 0, action, &catalogs);
+        core::clear_reservation_failure();
+        assert_eq!(outcome.status, "rejected");
+        assert_eq!(
+            outcome.diagnostics[0].code,
+            "physical-editor.route-resource"
+        );
+        assert_eq!(session.current(), &original);
+    }
+
+    #[test]
+    fn later_blocked_set_resource_failure_retains_prior_route_work() {
+        let catalogs = catalogs();
+        let session = pending_session(NO_BRIDGE, &catalogs);
+        let problem = session.problem().clone();
+        let mut draft = session.current().clone();
+        draft.paths.fill(None);
+        let before = draft.clone();
+        let mut checks = 0;
+        let failure = repair_pending_validated_until(
+            &problem,
+            &mut draft,
+            PhysicalEditLimits {
+                route_expansions: 100_000,
+                search_padding: 5,
+            },
+            || {
+                checks += 1;
+                if checks == 2 {
+                    core::fail_reservation_after("blocked", 0);
+                }
+                false
+            },
+        )
+        .unwrap_err();
+        core::clear_reservation_failure();
+        let (diagnostic, work) = failure.into_parts();
+        assert_eq!(diagnostic.code, "physical-editor.route-resource");
+        assert_eq!(work.routes[0].status, "found");
+        assert!(work.expanded > 0);
+        assert_eq!(work.route_calls, 1);
+        assert_eq!(draft, before);
+    }
+
+    #[test]
+    fn session_charges_post_search_failure_before_accepting_incomplete_edit() {
+        let catalogs = catalogs();
+        let base = ProceduralSession::new(NO_BRIDGE, &catalogs, learning_limits()).unwrap();
+        let mut snapshot = base.checkpoint();
+        snapshot.current.paths.fill(None);
+        let mut session =
+            ProceduralSession::from_checkpoint(snapshot, NO_BRIDGE, &catalogs).unwrap();
+        let source = session.source_sha256().to_owned();
+        core::fail_reservation_after("path", 0);
+        let outcome = session.step(
+            &source,
+            0,
+            PhysicalEdit::InsertBand {
+                axis: Axis::X,
+                at: 1,
+                count: 1,
+            },
+            &catalogs,
+        );
+        core::clear_reservation_failure();
+        assert_eq!(outcome.status, "draft_accepted", "{outcome:?}");
+        assert_eq!(outcome.work.routes[0].status, "found");
+        assert!(outcome.work.expanded > 0);
+        assert!(
+            outcome
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == "physical-editor.route-internal-error")
+        );
+        assert_eq!(
+            session.checkpoint().work.route_expansions,
+            outcome.work.expanded
+        );
+        assert!(session.current().paths.iter().all(Option::is_none));
+        let mut snapshot = session.checkpoint();
+        snapshot.limits.max_total_route_expansions = outcome.work.expanded;
+        let mut exhausted =
+            ProceduralSession::from_checkpoint(snapshot, NO_BRIDGE, &catalogs).unwrap();
+        let retry = exhausted.step(
+            &source,
+            exhausted.revision(),
+            PhysicalEdit::InsertBand {
+                axis: Axis::X,
+                at: 1,
+                count: 1,
+            },
+            &catalogs,
+        );
+        assert!(!retry.charged);
+    }
+
+    #[test]
+    #[ignore = "set AIC_PLAN17_LAYOUT to a retained upper-band physical layout"]
+    fn upper_band_editor_repair_probe() {
+        let source = std::fs::read(std::env::var("AIC_PLAN17_LAYOUT").unwrap()).unwrap();
+        let catalogs = catalogs();
+        let started = std::time::Instant::now();
+        let mut admitted = ProceduralAdmission::compile(&source, &catalogs).unwrap();
+        let compile_ms = started.elapsed().as_secs_f64() * 1000.0;
+        let spans: Vec<_> = admitted
+            .draft
+            .paths
+            .iter()
+            .flatten()
+            .map(|path| {
+                let low = path.iter().map(|point| point.x).min().unwrap();
+                let high = path.iter().map(|point| point.x).max().unwrap();
+                (low, high)
+            })
+            .collect();
+        let high = spans.iter().map(|(_, high)| *high).max().unwrap();
+        let (at, affected) = (high / 4..=high * 3 / 4)
+            .filter_map(|at| {
+                let affected = spans
+                    .iter()
+                    .filter(|&&(low, high)| low < at && at <= high)
+                    .count();
+                (affected > 0
+                    && band_allowed(&admitted.problem, &admitted.draft, Axis::X, at, 1, false)
+                        .unwrap())
+                .then_some((at, affected))
+            })
+            .min_by_key(|&(_, affected)| affected)
+            .expect("upper-band source must expose an editable routing cut");
+        let started = std::time::Instant::now();
+        let work = admitted
+            .edit(
+                PhysicalEdit::InsertBand {
+                    axis: Axis::X,
+                    at,
+                    count: 1,
+                },
+                PhysicalEditLimits {
+                    route_expansions: 1_000_000,
+                    search_padding: 8,
+                },
+            )
+            .unwrap();
+        let edit_ms = started.elapsed().as_secs_f64() * 1000.0;
+        assert!(work.route_calls > 0);
+        if work.committed {
+            let layout = admitted.export(&catalogs).unwrap();
+            let edited = serde_json::to_vec(&layout).unwrap();
+            assert_ne!(edited, source, "upper-band edit must change the layout");
+            if let Ok(path) = std::env::var("AIC_PLAN17_OUTPUT") {
+                std::fs::write(path, edited).unwrap();
+            }
+        }
+        println!(
+            "plan17_upper_band={}",
+            serde_json::json!({
+                "source_bytes": source.len(),
+                "facilities": admitted.problem.blocks.len(),
+                "at": at,
+                "affected_routes": affected,
+                "compile_ms": compile_ms,
+                "edit_ms": edit_ms,
+                "route_calls": work.route_calls,
+                "route_expansions": work.expanded,
+                "pending": work.pending,
+                "committed": work.committed,
+                "statuses": work.routes.iter().map(|route| route.status.as_str()).collect::<Vec<_>>(),
+            })
+        );
+    }
+
+    #[test]
+    #[ignore = "explicit long legal path admission probe"]
+    fn editor_admits_a_legal_path_longer_than_the_old_guard() {
+        let catalogs = catalogs();
+        let mut admitted = ProceduralAdmission::compile(NO_BRIDGE, &catalogs).unwrap();
+        let problem = std::sync::Arc::make_mut(&mut admitted.problem);
+        let network = problem.edges[0].network;
+        let rate = problem.edges[0].rate.clone();
+        let source = problem.nodes.len();
+        let target = source + 1;
+        for (id, point) in [
+            (source, Point { x: 1000, y: 0 }),
+            (target, Point { x: 251_001, y: 0 }),
+        ] {
+            problem.nodes.push(aic_layout::editor::CompiledNode {
+                id,
+                source_id: format!("long-node-{id}"),
+                network,
+                baseline_position: point,
+                terminal: None,
+                components: vec![],
+            });
+            admitted.draft.anchors.push(point);
+            admitted.draft.selected_ports.push(None);
+        }
+        problem.edges.push(aic_layout::editor::CompiledEdge {
+            id: problem.edges.len(),
+            source_id: "long-edge".into(),
+            network,
+            source,
+            target,
+            rate,
+            first: None,
+            last: None,
+            zero_length: false,
+        });
+        admitted
+            .draft
+            .paths
+            .push(Some((1000..=251_001).map(|x| Point { x, y: 0 }).collect()));
+        validate_draft(&admitted.problem, &admitted.draft).unwrap();
+        assert!(admitted.draft.paths.last().unwrap().as_ref().unwrap().len() > 250_000);
+    }
+
+    #[test]
+    fn sparse_region_above_old_area_guard_routes_with_small_actual_work() {
+        let catalogs = catalogs();
+        let session = pending_session(NO_BRIDGE, &catalogs);
+        let mut problem = session.problem().clone();
+        let mut draft = session.current().clone();
+        draft.paths.fill(None);
+        let node = problem.nodes.len();
+        let far = Point { x: 1000, y: 1000 };
+        problem.nodes.push(aic_layout::editor::CompiledNode {
+            id: node,
+            source_id: "far-sparse-anchor".into(),
+            network: problem.edges[0].network,
+            baseline_position: far,
+            terminal: None,
+            components: vec![],
+        });
+        draft.anchors.push(far);
+        draft.selected_ports.push(None);
+        aic_layout::editor::validate_compiled(&problem, &draft).unwrap();
+        let work = repair_pending_validated_until(
+            &problem,
+            &mut draft,
+            PhysicalEditLimits {
+                route_expansions: 100_000,
+                search_padding: 5,
+            },
+            || false,
+        )
+        .unwrap();
+        assert!(work.committed);
+        assert!(work.expanded < 100_000);
+        assert_eq!(work.pending, 0);
+    }
+
+    #[test]
+    fn repair_stops_before_zero_budget_second_route() {
+        let catalogs = catalogs();
+        let session = pending_session(NO_BRIDGE, &catalogs);
+        let problem = session.problem().clone();
+        let mut draft = session.current().clone();
+        draft.paths.fill(None);
+        let before = draft.clone();
+        let mut checks = 0;
+        let first = repair_pending_validated_until(
+            &problem,
+            &mut draft,
+            PhysicalEditLimits {
+                route_expansions: 100_000,
+                search_padding: 5,
+            },
+            || {
+                checks += 1;
+                checks > 1
+            },
+        )
+        .unwrap();
+        assert_eq!(first.routes[0].status, "found");
+        assert!(first.expanded > 0);
+        let work = (1..=first.expanded.saturating_add(100))
+            .find_map(|budget| {
+                let work = repair_pending_validated_until(
+                    &problem,
+                    &mut draft,
+                    PhysicalEditLimits {
+                        route_expansions: budget,
+                        search_padding: 5,
+                    },
+                    || false,
+                )
+                .unwrap();
+                (work.routes.len() == 2
+                    && work.routes[0].status == "found"
+                    && work.routes[1].status == "work-budget"
+                    && work.routes[1].expanded == 0)
+                    .then_some(work)
+            })
+            .expect("a first route must be able to consume the shared work allowance");
+        assert_eq!(work.routes.len(), 2);
+        assert_eq!(work.routes[0].status, "found");
+        assert_eq!(work.routes[1].status, "work-budget");
+        assert_eq!(work.routes[1].expanded, 0);
+        assert_eq!(work.route_calls, 1);
         assert_eq!(draft, before);
     }
 

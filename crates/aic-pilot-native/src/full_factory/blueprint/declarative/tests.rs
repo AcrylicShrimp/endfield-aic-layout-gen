@@ -189,6 +189,7 @@ fn exhausted_routing_budget_retains_edited_draft_and_valid_best() {
     let action = place(&s, "C1", 27, 13, 90);
     let result = step(&mut s, action);
     assert_eq!(result["status"], "draft_accepted", "{result}");
+    assert_eq!(result["details"]["repair_batch_applied"], false);
     assert_eq!(result["done"], true);
     assert!(
         s.state
@@ -203,6 +204,50 @@ fn exhausted_routing_budget_retains_edited_draft_and_valid_best() {
     let result = s.retained_result();
     let witness = serde_json::from_value(result["best"].clone()).unwrap();
     assert!(validate_factory_layout(&s.request, &witness, &s.catalogs.data).factory_validated);
+}
+
+#[test]
+fn automatic_repair_charges_post_search_resource_failure_and_reports_found_work() {
+    let mut session = session();
+    let mut draft = session.common_state.clone();
+    draft.paths.fill(None);
+    let before = draft.clone();
+    let mut details = json!({"routes": []});
+    let mut diagnostics = Vec::new();
+    crate::physical_editor::fail_reservation_after("path", 0);
+    let (_, accepted) = session
+        .automatic(&mut draft, &mut details, &mut diagnostics)
+        .unwrap();
+    crate::physical_editor::clear_reservation_failure();
+    assert!(accepted.is_none());
+    assert_eq!(details["routes"][0]["status"], "found");
+    assert_eq!(details["repair_batch_applied"], false);
+    assert!(session.work.route_expansions > 0);
+    assert_eq!(
+        session.work.route_expansions,
+        details["routes"][0]["expanded"].as_u64().unwrap() as usize
+    );
+    assert_eq!(diagnostics[0].code, "declarative.common-routing");
+    assert_eq!(draft, before);
+    session.config.max_total_route_expansions = session.work.route_expansions;
+    assert!(session.done());
+}
+
+#[test]
+fn action_resource_failure_maps_to_factory_diagnostic_without_committing() {
+    let mut session = session();
+    let before = session.common_state.clone();
+    let action = place(&session, "A0", 2, 7, 90);
+    crate::physical_editor::fail_reservation_after("path", 0);
+    let outcome = step(&mut session, action);
+    crate::physical_editor::clear_reservation_failure();
+    assert_eq!(outcome["status"], "rejected", "{outcome}");
+    assert_eq!(
+        outcome["diagnostics"][0]["code"],
+        "declarative.route-resource"
+    );
+    assert_eq!(outcome["details"]["route_expansions"], 0);
+    assert_eq!(session.common_state, before);
 }
 
 #[test]

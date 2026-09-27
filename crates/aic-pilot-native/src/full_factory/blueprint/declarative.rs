@@ -306,15 +306,11 @@ impl Session {
             },
             || Instant::now() >= deadline,
         );
-        let routed = match routed {
-            Ok(routed) => routed,
+        let (routed, failure) = match routed {
+            Ok(routed) => (routed, None),
             Err(failure) => {
-                diagnostics.push(error("common-routing", failure.message, failure.entity));
-                details["repair_batch_applied"] = json!(false);
-                return Ok((
-                    common::project(&self.common_problem, draft, &self.blueprint),
-                    None,
-                ));
+                let (diagnostic, work) = failure.into_parts();
+                (work, Some(diagnostic))
             }
         };
         self.work.route_calls += routed.route_calls;
@@ -330,6 +326,17 @@ impl Session {
             }));
         }
         details["repair_batch_applied"] = json!(routed.committed);
+        if let Some(failure) = failure {
+            diagnostics.push(error(
+                "common-routing",
+                format!("{}: {}", failure.code, failure.message),
+                failure.entity,
+            ));
+            return Ok((
+                common::project(&self.common_problem, draft, &self.blueprint),
+                None,
+            ));
+        }
         if !routed.committed {
             if let Some(route) = routed.routes.last() {
                 diagnostics.push(error(
