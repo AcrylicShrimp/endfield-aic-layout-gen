@@ -1,0 +1,338 @@
+diff --git a/crates/aic-pilot-native/src/full_factory/generation/source.rs b/crates/aic-pilot-native/src/full_factory/generation/source.rs
+index f88fdd7e..e02585aa 100644
+--- a/crates/aic-pilot-native/src/full_factory/generation/source.rs
++++ b/crates/aic-pilot-native/src/full_factory/generation/source.rs
+@@ -8 +8 @@ use super::{
+-use crate::input::{Catalogs, hash, read};
++use crate::input::{Catalogs, hash, hash_file, read, read_generated_bytes};
+@@ -317,15 +317,4 @@ impl Source {
+-            if fs::metadata(directory.join("input.json"))
+-                .map_err(|e| error("read", directory.display(), e))?
+-                .len()
+-                > 16 * 1024 * 1024
+-            {
+-                return Err(error(
+-                    "input-size",
+-                    directory.display(),
+-                    "actual input exceeds 16 MiB",
+-                ));
+-            }
+-            let bytes = fs::read(directory.join("input.json"))
+-                .map_err(|e| error("read", directory.display(), e))?;
+-            if bytes.len() > 16 * 1024 * 1024
+-                || manifest["schema"] != "aic-generated-slot-v2"
++            let input = directory.join("input.json");
++            let bytes =
++                read_generated_bytes(&input).map_err(|e| error("input", input.display(), e))?;
++            if manifest["schema"] != "aic-generated-slot-v2"
+@@ -429 +418,2 @@ impl Source {
+-                attempts.push(json!({"seed":seed,"stage":"instance-bound"}));
++                attempts.push(json!({"seed":seed,"stage":"instance-bound",
++                    "instances":request.instances.len(),"limit":self.config.max_facilities}));
+@@ -536,12 +526 @@ impl Source {
+-            if fs::metadata(&input)
+-                .map_err(|e| error("read", input.display(), e))?
+-                .len()
+-                > 16 * 1024 * 1024
+-            {
+-                return Err(error(
+-                    "input-size",
+-                    input.display(),
+-                    "generated input exceeds 16 MiB",
+-                ));
+-            }
+-            let bytes = fs::read(&input).map_err(|e| error("read", input.display(), e))?;
++            let input_sha256 = hash_file(&input).map_err(|e| error("input", input.display(), e))?;
+@@ -551 +530 @@ impl Source {
+-                &json!({"schema":"aic-generated-slot-v2","slot":slot,"source":self.identity,"input_sha256":hash(&bytes)}),
++                &json!({"schema":"aic-generated-slot-v2","slot":slot,"source":self.identity,"input_sha256":input_sha256}),
+diff --git a/crates/aic-pilot-native/src/full_factory/generation/tests.rs b/crates/aic-pilot-native/src/full_factory/generation/tests.rs
+index 8798c79e..bf82efb9 100644
+--- a/crates/aic-pilot-native/src/full_factory/generation/tests.rs
++++ b/crates/aic-pilot-native/src/full_factory/generation/tests.rs
+@@ -5,0 +6,96 @@ use indexmap::{IndexMap, IndexSet};
++#[test]
++#[ignore = "set AIC_PLAN24_OUTPUT, AIC_PLAN24_PRODUCT and AIC_PLAN24_DURATION_MS"]
++fn measure_source_generated_input_band() {
++    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
++    let output = std::path::PathBuf::from(std::env::var("AIC_PLAN24_OUTPUT").unwrap());
++    let product = std::env::var("AIC_PLAN24_PRODUCT").unwrap();
++    let duration: u64 = std::env::var("AIC_PLAN24_DURATION_MS")
++        .unwrap()
++        .parse()
++        .unwrap();
++    let config: Value = crate::input::read(
++        &root,
++        std::path::Path::new("tools/native-training/training.json"),
++    )
++    .unwrap();
++    let paths = serde_json::from_value(config["catalogs"].clone()).unwrap();
++    let catalogs = crate::input::load_catalogs(&root, &paths).unwrap();
++    let mut generation: source::Config =
++        serde_json::from_value(config["generation"].clone()).unwrap();
++    generation
++        .products
++        .retain(|candidate| candidate.id == product);
++    assert_eq!(generation.products.len(), 1);
++    generation.products[0].duration_ms = [duration, duration];
++    generation.duration_step_ms = 100;
++    generation.max_facilities = 256;
++    generation.max_attempts = 1;
++    generation.construction.elapsed_ms = std::env::var("AIC_PLAN24_CONSTRUCTION_MS")
++        .map(|value| value.parse().unwrap())
++        .unwrap_or(120_000);
++    generation.episode_setup_ms = generation.construction.elapsed_ms + generation.setup_elapsed_ms;
++    generation.construction.max_steps = 1024;
++    generation.construction.max_placement_attempts = 1024;
++    generation.construction.max_route_searches = 16_384;
++    let mut plan: Value = crate::input::read(&root, &generation.products[0].source).unwrap();
++    plan["target"]["quantity"] = json!(1);
++    plan["target"]["duration_ms"] = json!(duration);
++    let typed: aic_data::recipes::RecipeSourcePlanRequest = serde_json::from_value(plan).unwrap();
++    let throughput = catalogs
++        .data
++        .recipes
++        .calculate_contextual_throughput(&typed);
++    let facilities = aic_data::recipes::calculate_contextual_facility_requirements(&throughput);
++    let wiring =
++        aic_data::recipes::build_contextual_facility_instance_wiring(&throughput, &facilities);
++    let wiring_value = serde_json::to_value(&wiring).unwrap();
++    let instances = wiring_value["nodes"]
++        .as_array()
++        .unwrap()
++        .iter()
++        .filter(|node| node["kind"] == "facility")
++        .count();
++    println!(
++        "plan24_wiring={}",
++        json!({"product":product,"duration_ms":duration,
++        "instances":instances,"success":wiring.success})
++    );
++    if std::env::var_os("AIC_PLAN24_WIRING_ONLY").is_some() {
++        return;
++    }
++    let source = source::Source::load(&root, catalogs, generation, Default::default()).unwrap();
++    let started = std::time::Instant::now();
++    let actual = source.generate(0, &output).unwrap_or_else(|failure| {
++        panic!(
++            "source generation failed after {:.3}s: {failure}",
++            started.elapsed().as_secs_f64()
++        )
++    });
++    let cached = source.generate(0, &output).unwrap();
++    assert_eq!(
++        serde_json::to_value(&cached).unwrap(),
++        serde_json::to_value(&actual).unwrap()
++    );
++    let input = output.join("input.json");
++    let native: source::Generated =
++        crate::input::read(&output, std::path::Path::new("input.json")).unwrap();
++    assert_eq!(
++        serde_json::to_value(&native).unwrap(),
++        serde_json::to_value(&actual).unwrap()
++    );
++    let networks = actual.original.transport_networks.len();
++    let cells = actual
++        .original
++        .transport_networks
++        .iter()
++        .map(|n| n.cells.len())
++        .sum::<usize>();
++    println!(
++        "plan24_source={}",
++        json!({"product":product,"duration_ms":duration,
++        "facilities":actual.original.placements.len(),"networks":networks,"cells":cells,
++        "input_bytes":std::fs::metadata(input).unwrap().len(),
++        "elapsed_s":started.elapsed().as_secs_f64()})
++    );
++}
++
+diff --git a/crates/aic-pilot-native/src/input.rs b/crates/aic-pilot-native/src/input.rs
+index 3162475a..e85224b6 100644
+--- a/crates/aic-pilot-native/src/input.rs
++++ b/crates/aic-pilot-native/src/input.rs
+@@ -14 +14,2 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
+-const MAX_JSON_BYTES: usize = 16 * 1024 * 1024;
++pub const MAX_GENERATED_INPUT_BYTES: usize = 16 * 1024 * 1024;
++pub const MAX_CHECKPOINT_BYTES: usize = 16 * 1024 * 1024;
+@@ -20,3 +21,21 @@ fn error(message: impl std::fmt::Display) -> String {
+-pub fn decode<T: DeserializeOwned>(value: &str) -> std::result::Result<T, String> {
+-    if value.len() > MAX_JSON_BYTES {
+-        return Err("JSON exceeds the 16 MiB input work guard".into());
++#[derive(Debug)]
++pub enum CheckpointDecodeError {
++    TooLarge { bytes: usize, limit: usize },
++    Invalid(String),
++}
++
++pub fn decode_checkpoint<T: DeserializeOwned>(
++    value: &str,
++) -> std::result::Result<T, CheckpointDecodeError> {
++    decode_with_limit(value, MAX_CHECKPOINT_BYTES)
++}
++
++fn decode_with_limit<T: DeserializeOwned>(
++    value: &str,
++    limit: usize,
++) -> Result<T, CheckpointDecodeError> {
++    if value.len() > limit {
++        return Err(CheckpointDecodeError::TooLarge {
++            bytes: value.len(),
++            limit,
++        });
+@@ -24 +43 @@ pub fn decode<T: DeserializeOwned>(value: &str) -> std::result::Result<T, String
+-    serde_json::from_str(value).map_err(|e| e.to_string())
++    serde_json::from_str(value).map_err(|e| CheckpointDecodeError::Invalid(e.to_string()))
+@@ -27,2 +46,5 @@ pub fn decode<T: DeserializeOwned>(value: &str) -> std::result::Result<T, String
+-pub fn read<T: DeserializeOwned>(root: &Path, path: &Path) -> Result<T, String> {
+-    let path = root.join(path);
++pub fn read_generated_bytes(path: &Path) -> Result<Vec<u8>, String> {
++    read_bytes_with_limit(path, MAX_GENERATED_INPUT_BYTES)
++}
++
++fn read_bytes_with_limit(path: &Path, limit: usize) -> Result<Vec<u8>, String> {
+@@ -29,0 +52,12 @@ pub fn read<T: DeserializeOwned>(root: &Path, path: &Path) -> Result<T, String>
++    let declared = file
++        .metadata()
++        .map_err(|e| error(format!("{}: {e}", path.display())))?
++        .len();
++    if declared > limit as u64 {
++        return Err(error(format!(
++            "{}: {} bytes exceeds {}-byte input limit",
++            path.display(),
++            declared,
++            limit
++        )));
++    }
+@@ -32 +66 @@ pub fn read<T: DeserializeOwned>(root: &Path, path: &Path) -> Result<T, String>
+-    file.take(MAX_JSON_BYTES as u64 + 1)
++    file.take(limit as u64 + 1)
+@@ -35,2 +69,10 @@ pub fn read<T: DeserializeOwned>(root: &Path, path: &Path) -> Result<T, String>
+-    if bytes.len() > MAX_JSON_BYTES {
+-        return Err(error(format!("{}: input exceeds 16 MiB", path.display())));
++    if bytes.len() > limit {
++        let actual = std::fs::metadata(path)
++            .map(|metadata| metadata.len().max(bytes.len() as u64))
++            .unwrap_or(bytes.len() as u64);
++        return Err(error(format!(
++            "{}: {} bytes exceeds {}-byte input limit",
++            path.display(),
++            actual,
++            limit
++        )));
+@@ -37,0 +80,6 @@ pub fn read<T: DeserializeOwned>(root: &Path, path: &Path) -> Result<T, String>
++    Ok(bytes)
++}
++
++pub fn read<T: DeserializeOwned>(root: &Path, path: &Path) -> Result<T, String> {
++    let path = root.join(path);
++    let bytes = read_generated_bytes(&path)?;
+@@ -42,0 +91,61 @@ pub fn read<T: DeserializeOwned>(root: &Path, path: &Path) -> Result<T, String>
++pub fn hash_file(path: &Path) -> Result<String, String> {
++    hash_file_with_limit(path, MAX_GENERATED_INPUT_BYTES)
++}
++
++fn hash_file_with_limit(path: &Path, limit: usize) -> Result<String, String> {
++    use sha2::{Digest, Sha256};
++    use std::io::Read;
++
++    let file = std::fs::File::open(path).map_err(|e| error(format!("{}: {e}", path.display())))?;
++    let declared = file
++        .metadata()
++        .map_err(|e| error(format!("{}: {e}", path.display())))?
++        .len();
++    if declared > limit as u64 {
++        return Err(error(format!(
++            "{}: {} bytes exceeds {}-byte input limit",
++            path.display(),
++            declared,
++            limit
++        )));
++    }
++    let mut reader = std::io::BufReader::new(file).take(limit as u64 + 1);
++    let mut digest = Sha256::new();
++    let mut bytes = [0u8; 64 * 1024];
++    let mut total = 0u64;
++    loop {
++        let count = reader
++            .read(&mut bytes)
++            .map_err(|e| error(format!("{}: {e}", path.display())))?;
++        if count == 0 {
++            break;
++        }
++        total += count as u64;
++        if total > limit as u64 {
++            let actual = std::fs::metadata(path)
++                .map(|metadata| metadata.len().max(total))
++                .unwrap_or(total);
++            return Err(error(format!(
++                "{}: {} bytes exceeds {}-byte input limit",
++                path.display(),
++                actual,
++                limit
++            )));
++        }
++        digest.update(&bytes[..count]);
++    }
++    if total != declared {
++        return Err(error(format!(
++            "{}: input changed length while hashing ({} to {} bytes)",
++            path.display(),
++            declared,
++            total
++        )));
++    }
++    Ok(digest
++        .finalize()
++        .iter()
++        .map(|byte| format!("{byte:02x}"))
++        .collect())
++}
++
+@@ -100,0 +210,46 @@ impl Catalogs {
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn bounded_file_identity_and_checkpoint_decode_use_independent_byte_limits() {
++        let path = std::env::temp_dir().join(format!(
++            "aic-input-boundary-{}-{:?}.json",
++            std::process::id(),
++            std::thread::current().id()
++        ));
++        let original = br#"{"a":1}"#;
++        std::fs::write(&path, original).unwrap();
++        let bytes = read_bytes_with_limit(&path, original.len()).unwrap();
++        assert_eq!(
++            hash_file_with_limit(&path, original.len()).unwrap(),
++            hash(&bytes)
++        );
++        let decoded: serde_json::Value =
++            decode_with_limit(std::str::from_utf8(&bytes).unwrap(), original.len()).unwrap();
++        std::fs::write(&path, br#"{"a":2}"#).unwrap();
++        assert_eq!(decoded["a"], 1);
++        assert_eq!(
++            serde_json::from_slice::<serde_json::Value>(&bytes).unwrap()["a"],
++            1
++        );
++        std::fs::write(&path, b"{\"a\":1} ").unwrap();
++        let actual = original.len() + 1;
++        for result in [
++            read_bytes_with_limit(&path, original.len()).map(|_| ()),
++            hash_file_with_limit(&path, original.len()).map(|_| ()),
++        ] {
++            let diagnostic = result.unwrap_err();
++            assert!(diagnostic.contains(&path.display().to_string()));
++            assert!(diagnostic.contains(&format!("{actual} bytes")));
++            assert!(diagnostic.contains(&format!("{}-byte", original.len())));
++        }
++        assert!(matches!(
++            decode_with_limit::<serde_json::Value>("{\"a\":1} ", original.len()),
++            Err(CheckpointDecodeError::TooLarge { bytes, limit })
++                if bytes == actual && limit == original.len()
++        ));
++        std::fs::remove_file(path).unwrap();
++    }
++}
