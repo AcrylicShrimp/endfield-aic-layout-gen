@@ -11,17 +11,17 @@ use aic_data::facilities::{
 use aic_data::layouts::{
     ConstructiveAssemblyReport, ConstructiveAssemblyRequest, ConstructiveCompositionReport,
     ConstructiveFrontierGrowthReport, ConstructiveFrontierReport, ConstructiveProcessModuleReport,
-    ConstructiveProductionRequest, ConstructiveProfileOperation as ProfileOp,
-    FacilityPlacementDiagnostic, FacilityPlacementReport, FacilityPlacementRequest,
-    IntegratedLayoutDiagnostic, IntegratedLayoutReport, assemble_constructive_modules,
-    collect_constructive_profile, compose_process_module_with_facility,
-    construct_first_pipe_frontier, construct_frontier_growth, construct_process_module,
-    construct_production, measure_constructive_operation as measure_operation,
-    render_constructive_assembly_html, render_constructive_composition_html,
-    render_constructive_frontier_growth_html, render_constructive_frontier_html,
-    render_constructive_process_module_html, render_constructive_production_html,
-    render_integrated_layout_html_with_localization, solve_facility_placement,
-    solve_integrated_layout_with_time_limit,
+    ConstructiveProductionCompactResult, ConstructiveProductionRequest,
+    ConstructiveProfileOperation as ProfileOp, FacilityPlacementDiagnostic,
+    FacilityPlacementReport, FacilityPlacementRequest, IntegratedLayoutDiagnostic,
+    IntegratedLayoutReport, assemble_constructive_modules, collect_constructive_profile,
+    compose_process_module_with_facility, construct_first_pipe_frontier, construct_frontier_growth,
+    construct_process_module, construct_production, construct_production_compact,
+    measure_constructive_operation as measure_operation, render_constructive_assembly_html,
+    render_constructive_composition_html, render_constructive_frontier_growth_html,
+    render_constructive_frontier_html, render_constructive_process_module_html,
+    render_constructive_production_html, render_integrated_layout_html_with_localization,
+    solve_facility_placement, solve_integrated_layout_with_time_limit,
 };
 use aic_data::localization::{
     LocalizationCatalogValidationReport, ValidatedLocalizationCatalog, load_localization_catalog,
@@ -390,6 +390,10 @@ enum LayoutsCommand {
         /// Maximum A* calls in one growth transaction.
         #[arg(long, default_value_t = 4096)]
         max_route_searches: u64,
+
+        /// Maximum A* calls for one connection within a growth transaction.
+        #[arg(long, default_value_t = 64)]
+        per_connection_route_searches: u64,
 
         /// Maximum boundary-analysis workers (1..=16), capped by host/jobs/memory; 1 is serial.
         #[arg(long, default_value_t = 4)]
@@ -853,6 +857,7 @@ fn run() -> Result<CommandStatus> {
                 max_steps,
                 max_placement_attempts,
                 max_route_searches,
+                per_connection_route_searches,
                 analysis_workers,
                 nearby_candidates,
                 downstream_closed_growth,
@@ -875,6 +880,7 @@ fn run() -> Result<CommandStatus> {
                     max_steps,
                     max_placement_attempts,
                     max_route_searches,
+                    per_connection_route_searches,
                     analysis_workers,
                     nearby_candidates,
                     downstream_closed_growth,
@@ -1884,6 +1890,7 @@ fn construct_production_command(
     max_steps: usize,
     max_placement_attempts: usize,
     max_route_searches: u64,
+    per_connection_route_searches: u64,
     analysis_workers: usize,
     nearby_candidates: usize,
     downstream_closed_growth: bool,
@@ -1947,6 +1954,7 @@ fn construct_production_command(
         max_steps,
         max_placement_attempts,
         max_route_searches,
+        per_connection_route_searches,
         analysis_workers,
         nearby_candidates,
         downstream_closed_growth,
@@ -1959,6 +1967,23 @@ fn construct_production_command(
             _ => unreachable!("clap validates flow directions"),
         }),
     };
+    if final_json {
+        let result = construct_production_compact(
+            &wiring,
+            &facilities,
+            &items,
+            &transports,
+            &components,
+            &request,
+        );
+        let success = result.success;
+        write_production_final_json(&production_final_json(&result))?;
+        return Ok(if success {
+            CommandStatus::Success
+        } else {
+            CommandStatus::Failure
+        });
+    }
     let report = construct_production(
         &wiring,
         &facilities,
@@ -1968,14 +1993,6 @@ fn construct_production_command(
         &request,
     );
     let success = report.success;
-    if final_json {
-        write_production_final_json(&production_final_json(&report))?;
-        return Ok(if success {
-            CommandStatus::Success
-        } else {
-            CommandStatus::Failure
-        });
-    }
     let report_output = report_output.expect("clap requires a report unless --final-json");
     let visualization_output =
         visualization_output.expect("clap requires a visualization unless --final-json");
@@ -2010,9 +2027,7 @@ fn construct_production_command(
     }
 }
 
-fn production_final_json(
-    report: &aic_data::layouts::ConstructiveProductionReport,
-) -> serde_json::Value {
+fn production_final_json(report: &ConstructiveProductionCompactResult) -> serde_json::Value {
     serde_json::json!({
         "schema_version": 1,
         "kind": "constructive-production-final",
@@ -3128,61 +3143,117 @@ mod tests {
 
     #[test]
     fn parses_completion_first_production_command() {
-        let cli = Cli::try_parse_from([
-            "aic-cli",
-            "layouts",
-            "construct-production",
-            "--recipes",
-            "recipes.json",
-            "--source-plan",
-            "source-plan.json",
-            "--facility-catalog",
-            "facilities.json",
-            "--item-catalog",
-            "items.json",
-            "--transport-catalog",
-            "transports.json",
-            "--logistics-component-catalog",
-            "components.json",
-            "--target-instance",
-            "target",
-            "--max-steps",
-            "2",
-            "--visualization-output",
-            "production.html",
-            "--report-output",
-            "production.json",
-            "--profile",
-        ])
-        .expect("completion-first production CLI should parse");
+        // The derived top-level CLI tree exceeds the default test-thread stack on some runs.
+        std::thread::Builder::new()
+            .stack_size(8 * 1024 * 1024)
+            .spawn(|| {
+                let args = [
+                    "aic-cli",
+                    "layouts",
+                    "construct-production",
+                    "--recipes",
+                    "recipes.json",
+                    "--source-plan",
+                    "source-plan.json",
+                    "--facility-catalog",
+                    "facilities.json",
+                    "--item-catalog",
+                    "items.json",
+                    "--transport-catalog",
+                    "transports.json",
+                    "--logistics-component-catalog",
+                    "components.json",
+                    "--target-instance",
+                    "target",
+                    "--max-steps",
+                    "2",
+                    "--visualization-output",
+                    "production.html",
+                    "--report-output",
+                    "production.json",
+                    "--profile",
+                ];
+                let cli = Cli::try_parse_from(args)
+                    .expect("completion-first production CLI should parse");
 
-        let Command::Layouts {
-            command:
-                LayoutsCommand::ConstructProduction {
-                    target_instance,
-                    max_steps,
-                    max_placement_attempts,
-                    max_route_searches,
-                    profile,
-                    analysis_workers,
-                    transport_catalog,
-                    visualization_output,
-                    report_output,
-                    ..
-                },
-        } = cli.command
-        else {
-            panic!("expected completion-first production command")
-        };
-        assert_eq!(target_instance, "target");
-        assert_eq!(max_steps, 2);
-        assert_eq!(max_placement_attempts, 256);
-        assert_eq!(max_route_searches, 4096);
-        assert_eq!(analysis_workers, 4);
-        assert!(profile);
-        assert_eq!(transport_catalog, PathBuf::from("transports.json"));
-        assert_eq!(visualization_output, Some(PathBuf::from("production.html")));
-        assert_eq!(report_output, Some(PathBuf::from("production.json")));
+                let Command::Layouts {
+                    command:
+                        LayoutsCommand::ConstructProduction {
+                            target_instance,
+                            max_steps,
+                            max_placement_attempts,
+                            max_route_searches,
+                            per_connection_route_searches,
+                            profile,
+                            analysis_workers,
+                            transport_catalog,
+                            visualization_output,
+                            report_output,
+                            ..
+                        },
+                } = cli.command
+                else {
+                    panic!("expected completion-first production command")
+                };
+                assert_eq!(target_instance, "target");
+                assert_eq!(max_steps, 2);
+                assert_eq!(max_placement_attempts, 256);
+                assert_eq!(max_route_searches, 4096);
+                assert_eq!(per_connection_route_searches, 64);
+                assert_eq!(analysis_workers, 4);
+                assert!(profile);
+                assert_eq!(transport_catalog, PathBuf::from("transports.json"));
+                assert_eq!(visualization_output, Some(PathBuf::from("production.html")));
+                assert_eq!(report_output, Some(PathBuf::from("production.json")));
+            })
+            .unwrap()
+            .join()
+            .unwrap();
+    }
+
+    #[test]
+    fn parses_explicit_production_connection_allowance() {
+        std::thread::Builder::new()
+            .stack_size(8 * 1024 * 1024)
+            .spawn(|| {
+                let explicit = Cli::try_parse_from([
+                    "aic-cli",
+                    "layouts",
+                    "construct-production",
+                    "--recipes",
+                    "recipes.json",
+                    "--source-plan",
+                    "source-plan.json",
+                    "--facility-catalog",
+                    "facilities.json",
+                    "--item-catalog",
+                    "items.json",
+                    "--transport-catalog",
+                    "transports.json",
+                    "--logistics-component-catalog",
+                    "components.json",
+                    "--target-instance",
+                    "target",
+                    "--per-connection-route-searches",
+                    "128",
+                    "--final-json",
+                ])
+                .unwrap();
+                let Command::Layouts {
+                    command:
+                        LayoutsCommand::ConstructProduction {
+                            per_connection_route_searches,
+                            ..
+                        },
+                } = explicit.command
+                else {
+                    panic!("expected constructive production command")
+                };
+                assert_eq!(per_connection_route_searches, 128);
+            })
+            .unwrap()
+            .join()
+            .unwrap();
     }
 
     #[test]

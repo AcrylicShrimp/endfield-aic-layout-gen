@@ -26,7 +26,7 @@ use crate::constructive::{
 };
 
 pub const REPAIR_REQUEST_SCHEMA: &str = "aic-constructive-repair-request-v1";
-pub const REPAIR_CANDIDATE_SCHEMA: &str = "aic-constructive-repair-candidate-v1";
+pub const REPAIR_CANDIDATE_SCHEMA: &str = "aic-constructive-repair-candidate-v2";
 
 /// Authorization is made from a live state and caller policy, independently
 /// of any proposed replacement witness.
@@ -50,6 +50,8 @@ pub struct RepairCandidate {
     pub removed: Vec<String>,
     pub replacements: Vec<Candidate>,
     pub expanded: usize,
+    pub physical_cost: super::PhysicalCost,
+    pub charged_work: super::AllowanceUsage,
 }
 
 /// One screened repair owns exactly one cloned native draft. Its allowance is
@@ -69,11 +71,75 @@ pub struct RepairDraft<'a> {
     progress_total: usize,
 }
 
+/// Owned progress at a scheduled candidate-page boundary. A native draft can
+/// yield without keeping references to the source, request or allowance in a
+/// tree node; resumption borrows the same trusted scope and allowance again.
+pub struct RepairDraftState {
+    request_sha256: String,
+    removed: Vec<String>,
+    draft: Session,
+    reserved_bytes: usize,
+    retained_bytes: usize,
+    replacements: Vec<Candidate>,
+    steps: Vec<Step>,
+    progress_placed: usize,
+    progress_committed: usize,
+    progress_total: usize,
+}
+
 /// Binds one trusted request to an immutable live state. Repeated local
 /// neighborhoods use this authorization without rehashing that same state.
 pub struct RepairScope<'a> {
     source: &'a Session,
     request: RepairRequest,
+}
+
+/// One trusted immutable repair source shared by an outer node and its pager.
+/// Cloning this handle never copies factory geometry or repeats authorization.
+pub struct PreparedRepair {
+    source: Arc<Session>,
+    request: RepairRequest,
+    scope_bytes: usize,
+}
+
+/// One charged read-only sizing pass for a trusted immutable repair source.
+/// A lower task retains this small value while shared memory is unavailable;
+/// it does not hold a partial scope or conflict-order allocation.
+pub struct RepairPreparationSizes {
+    source_instance: u64,
+    source_revision: u64,
+    selected_sha256: [u8; 32],
+    scope_bytes: usize,
+    conflict_bytes: usize,
+    conflict_retained_bytes: usize,
+    peak_bytes: usize,
+}
+
+impl RepairPreparationSizes {
+    pub fn peak_bytes(&self) -> usize {
+        self.peak_bytes
+    }
+
+    pub fn retained_bytes(&self) -> usize {
+        self.scope_bytes + self.conflict_retained_bytes
+    }
+
+    pub fn conflict_bytes(&self) -> usize {
+        self.conflict_bytes
+    }
+
+    pub fn conflict_retained_bytes(&self) -> usize {
+        self.conflict_retained_bytes
+    }
+}
+
+fn selected_identity(selected: &[String]) -> [u8; 32] {
+    let mut digest = Sha256::new();
+    for id in selected {
+        digest.update((id.len() as u64).to_le_bytes());
+        digest.update(id.as_bytes());
+    }
+    digest.finalize().into()
 }
 
 #[derive(Serialize)]
@@ -129,6 +195,10 @@ impl RepairScope<'_> {
         &self.request
     }
 
+    fn into_request(self) -> RepairRequest {
+        self.request
+    }
+
     pub fn conflict_order(
         &self,
         allowance: &mut RequestAllowance,
@@ -141,7 +211,7 @@ impl RepairScope<'_> {
         Diagnostic,
     > {
         self.source
-            .repair_conflict_order_checked(&self.request, allowance)
+            .repair_conflict_order_checked(&self.request, allowance, false)
     }
 
     pub fn start_draft<'a>(
@@ -151,6 +221,288 @@ impl RepairScope<'_> {
     ) -> Result<RepairDraft<'a>, Diagnostic> {
         self.source
             .start_repair_draft_validated(&self.request, removed, allowance)
+    }
+
+    pub fn resume_draft<'a>(
+        &'a self,
+        state: RepairDraftState,
+        allowance: &'a mut RequestAllowance,
+    ) -> Result<RepairDraft<'a>, Diagnostic> {
+        if state.request_sha256 != self.request.state_sha256
+            || allowance.caps() != &self.request.allowance_caps
+        {
+            state.release(allowance);
+            return Err(error(
+                "repair-resume-identity",
+                "repair",
+                "retained draft request or allowance differs from its trusted scope",
+            ));
+        }
+        Ok(RepairDraft {
+            source: self.source,
+            request: &self.request,
+            removed: state.removed,
+            draft: Some(state.draft),
+            allowance,
+            reserved_bytes: state.reserved_bytes,
+            retained_bytes: state.retained_bytes,
+            replacements: state.replacements,
+            steps: state.steps,
+            progress_placed: state.progress_placed,
+            progress_committed: state.progress_committed,
+            progress_total: state.progress_total,
+        })
+    }
+}
+
+impl PreparedRepair {
+    /// Pre-size the simultaneous native preparation peak without allocating
+    /// the scope or conflict collections. The lower task retains this result
+    /// when aggregate memory is temporarily held by other tasks.
+    pub fn measure_preparation(
+        source: &Session,
+        selected: &[String],
+        config: &Config,
+        allowance: &mut RequestAllowance,
+    ) -> Result<RepairPreparationSizes, Diagnostic> {
+        config.validate()?;
+        if source.has_active_route() || source.done() {
+            return Err(error(
+                "repair-state",
+                "repair",
+                "repair requires an unfinished stable native state",
+            ));
+        }
+        let size_error = || {
+            error(
+                "repair-resource-size",
+                "repair",
+                "repair preparation byte requirement is not representable",
+            )
+        };
+        let scope_bytes = source
+            .problem
+            .connections
+            .len()
+            .checked_mul(256)
+            .and_then(|bytes| bytes.checked_add(4096))
+            .ok_or_else(size_error)?;
+        let hash_workspace_bytes = source
+            .junctions
+            .len()
+            .checked_add(source.bridges.len())
+            .and_then(|count| count.checked_mul(32))
+            .and_then(|bytes| bytes.checked_add(4096))
+            .ok_or_else(size_error)?;
+        let mut endpoint_capacity = 0usize;
+        for id in selected {
+            allowance
+                .charge(WorkKind::ValidationRecords, 1)
+                .map_err(stopped)?;
+            let Some(&index) = source.connections.get(id) else {
+                return Err(error("repair-selected", id, "unknown selected obligation"));
+            };
+            if source.routes[index].is_some() {
+                return Err(error("repair-selected", id, "selected route is complete"));
+            }
+            let connection = &source.problem.connections[index];
+            for endpoint in [&connection.source, &connection.target] {
+                allowance
+                    .charge(WorkKind::EndpointVisits, 1)
+                    .map_err(stopped)?;
+                let ports = source.blocks.get(endpoint).map_or(1, |&block| {
+                    source
+                        .catalogs
+                        .facilities
+                        .facility(&source.problem.blocks[block].facility)
+                        .map_or(1, |facility| facility.ports.len())
+                });
+                endpoint_capacity = endpoint_capacity
+                    .checked_add(ports)
+                    .ok_or_else(size_error)?;
+            }
+        }
+        let mut allowed_count = 0usize;
+        let mut route_cells = 0usize;
+        for route in &source.routes {
+            allowance
+                .charge(WorkKind::ValidationRecords, 1)
+                .map_err(stopped)?;
+            if let Some(route) = route {
+                allowed_count = allowed_count.checked_add(1).ok_or_else(size_error)?;
+                route_cells = route_cells
+                    .checked_add(route.cells.len())
+                    .ok_or_else(size_error)?;
+            }
+        }
+        let endpoint_scratch_bytes = endpoint_capacity.checked_mul(128).ok_or_else(size_error)?;
+        let conflict_retained_bytes = allowed_count
+            .checked_mul(256)
+            .and_then(|bytes| route_cells.checked_mul(96)?.checked_add(bytes))
+            .and_then(|bytes| bytes.checked_add(4096))
+            .ok_or_else(size_error)?;
+        let conflict_bytes = endpoint_scratch_bytes
+            .checked_add(conflict_retained_bytes)
+            .ok_or_else(size_error)?;
+        let peak_bytes = scope_bytes
+            .checked_add(hash_workspace_bytes.max(conflict_bytes))
+            .ok_or_else(size_error)?;
+        Ok(RepairPreparationSizes {
+            source_instance: source.instance_id.0,
+            source_revision: source.revision,
+            selected_sha256: selected_identity(selected),
+            scope_bytes,
+            conflict_bytes,
+            conflict_retained_bytes,
+            peak_bytes,
+        })
+    }
+
+    pub fn new(
+        source: Arc<Session>,
+        selected: &[String],
+        max_removed: usize,
+        config: &Config,
+        allowance: &mut RequestAllowance,
+    ) -> Result<Self, Diagnostic> {
+        let (scope, scope_bytes) =
+            source.repair_scope_for_policy(selected, max_removed, config, allowance)?;
+        let request = scope.into_request();
+        Ok(Self {
+            source,
+            request,
+            scope_bytes,
+        })
+    }
+
+    /// The caller already holds `sizes.peak_bytes()` on this allowance. On
+    /// failure the caller releases that entire envelope; on success it keeps
+    /// the envelope through conflict pricing and then shrinks it to the two
+    /// retained outputs.
+    pub fn new_preheld(
+        source: Arc<Session>,
+        selected: &[String],
+        max_removed: usize,
+        config: &Config,
+        allowance: &mut RequestAllowance,
+        sizes: &RepairPreparationSizes,
+    ) -> Result<Self, Diagnostic> {
+        if source.instance_id.0 != sizes.source_instance
+            || source.revision != sizes.source_revision
+            || selected_identity(selected) != sizes.selected_sha256
+        {
+            return Err(error(
+                "repair-preparation-identity",
+                "repair",
+                "preparation sizes belong to another native source or selected task",
+            ));
+        }
+        let (scope, scope_bytes) = source.repair_scope_for_policy_inner(
+            selected,
+            max_removed,
+            config,
+            allowance,
+            Some(sizes),
+        )?;
+        let request = scope.into_request();
+        Ok(Self {
+            source,
+            request,
+            scope_bytes,
+        })
+    }
+
+    pub fn request(&self) -> &RepairRequest {
+        &self.request
+    }
+
+    pub fn source(&self) -> &Session {
+        &self.source
+    }
+
+    pub fn conflict_order(
+        &self,
+        allowance: &mut RequestAllowance,
+    ) -> Result<
+        (
+            Vec<(String, u64)>,
+            BTreeMap<String, Vec<(TransportKind, Point)>>,
+            usize,
+        ),
+        Diagnostic,
+    > {
+        self.source
+            .repair_conflict_order_checked(&self.request, allowance, false)
+    }
+
+    /// The conflict workspace is part of the caller's preheld envelope.
+    pub fn conflict_order_preheld(
+        &self,
+        allowance: &mut RequestAllowance,
+    ) -> Result<
+        (
+            Vec<(String, u64)>,
+            BTreeMap<String, Vec<(TransportKind, Point)>>,
+            usize,
+        ),
+        Diagnostic,
+    > {
+        self.source
+            .repair_conflict_order_checked(&self.request, allowance, true)
+    }
+
+    pub fn start_draft<'a>(
+        &'a self,
+        removed: &[String],
+        allowance: &'a mut RequestAllowance,
+    ) -> Result<RepairDraft<'a>, Diagnostic> {
+        self.source
+            .start_repair_draft_validated(&self.request, removed, allowance)
+    }
+
+    pub fn resume_draft<'a>(
+        &'a self,
+        state: RepairDraftState,
+        allowance: &'a mut RequestAllowance,
+    ) -> Result<RepairDraft<'a>, Diagnostic> {
+        if state.request_sha256 != self.request.state_sha256
+            || allowance.caps() != &self.request.allowance_caps
+        {
+            state.release(allowance);
+            return Err(error(
+                "repair-resume-identity",
+                "repair",
+                "retained draft request or allowance differs from its trusted source",
+            ));
+        }
+        Ok(RepairDraft {
+            source: &self.source,
+            request: &self.request,
+            removed: state.removed,
+            draft: Some(state.draft),
+            allowance,
+            reserved_bytes: state.reserved_bytes,
+            retained_bytes: state.retained_bytes,
+            replacements: state.replacements,
+            steps: state.steps,
+            progress_placed: state.progress_placed,
+            progress_committed: state.progress_committed,
+            progress_total: state.progress_total,
+        })
+    }
+
+    pub fn release(self, allowance: &mut RequestAllowance) {
+        allowance.release_peak(self.scope_bytes);
+    }
+}
+
+impl RepairDraftState {
+    pub fn release(self, allowance: &mut RequestAllowance) {
+        allowance.release_peak(self.reserved_bytes);
+    }
+
+    pub fn session(&self) -> &Session {
+        &self.draft
     }
 }
 
@@ -194,6 +546,24 @@ impl Drop for RepairDraft<'_> {
 }
 
 impl RepairDraft<'_> {
+    pub fn suspend(mut self) -> RepairDraftState {
+        let state = RepairDraftState {
+            request_sha256: self.request.state_sha256.clone(),
+            removed: std::mem::take(&mut self.removed),
+            draft: self.draft.take().expect("repair draft is live"),
+            reserved_bytes: self.reserved_bytes,
+            retained_bytes: self.retained_bytes,
+            replacements: std::mem::take(&mut self.replacements),
+            steps: std::mem::take(&mut self.steps),
+            progress_placed: self.progress_placed,
+            progress_committed: self.progress_committed,
+            progress_total: self.progress_total,
+        };
+        self.reserved_bytes = 0;
+        self.retained_bytes = 0;
+        state
+    }
+
     pub fn session(&self) -> &Session {
         self.draft.as_ref().expect("repair draft is live")
     }
@@ -225,7 +595,7 @@ impl RepairDraft<'_> {
         )
     }
 
-    pub fn apply_member(&mut self, candidate: Candidate) -> Result<(), Diagnostic> {
+    pub fn apply_member(&mut self, mut candidate: Candidate) -> Result<(), Diagnostic> {
         let candidate_bytes = candidate_reservation_bytes(&candidate);
         let step_bytes = candidate
             .commands
@@ -252,6 +622,11 @@ impl RepairDraft<'_> {
                 )
                 .map_err(stopped)?;
             let draft = self.draft.as_mut().expect("repair draft is live");
+            let cost_before = super::physical_cost::PhysicalCostSnapshot::capture(
+                draft,
+                &candidate.connection,
+                &candidate.cells,
+            )?;
             draft.install_repair_meter(self.allowance);
             let replay = draft.replay_repair_member_in_place(
                 &candidate,
@@ -262,6 +637,7 @@ impl RepairDraft<'_> {
             );
             let metered = draft.finish_repair_meter(self.allowance);
             let steps = metered.and(replay)?;
+            candidate.physical_cost = cost_before.finish(draft)?;
             self.allowance
                 .charge(
                     WorkKind::CopiedBytes,
@@ -302,7 +678,19 @@ impl RepairDraft<'_> {
             self.allowance
                 .charge(WorkKind::CopiedBytes, bytes)
                 .map_err(stopped)?;
-            self.apply_member(candidate.clone())
+            self.apply_member(candidate.clone())?;
+            if self
+                .replacements
+                .last()
+                .is_none_or(|stored| stored.physical_cost != candidate.physical_cost)
+            {
+                return Err(error(
+                    "repair-member-physical-cost",
+                    &candidate.connection,
+                    "replacement physical cost differs from exact native replay",
+                ));
+            }
+            Ok(())
         })();
         self.retained_bytes -= bytes;
         self.reserved_bytes -= bytes;
@@ -365,11 +753,16 @@ impl RepairDraft<'_> {
                 )
             })
         })?;
+        let changed = expected.iter().cloned().collect::<Vec<_>>();
+        let physical_cost =
+            super::physical_cost::physical_cost_between(self.source, draft, &changed)?;
         let candidate = RepairCandidate {
             schema: REPAIR_CANDIDATE_SCHEMA.into(),
             state_revision: self.request.state_revision,
             removed: self.removed.clone(),
             expanded,
+            physical_cost,
+            charged_work: self.allowance.usage(),
             replacements: std::mem::take(&mut self.replacements),
         };
         let publication_bytes = candidate
@@ -443,13 +836,14 @@ impl Session {
         Diagnostic,
     > {
         self.validate_repair_request_inner(request, Some(allowance))?;
-        self.repair_conflict_order_checked(request, allowance)
+        self.repair_conflict_order_checked(request, allowance, false)
     }
 
     fn repair_conflict_order_checked(
         &self,
         request: &RepairRequest,
         allowance: &mut RequestAllowance,
+        reservation_preheld: bool,
     ) -> Result<
         (
             Vec<(String, u64)>,
@@ -494,12 +888,17 @@ impl Session {
             })
             .map(|route| route.cells.len())
             .sum::<usize>();
-        let reservation = endpoint_capacity
-            .saturating_mul(128)
-            .saturating_add(request.allowed_removals.len().saturating_mul(256))
+        let endpoint_scratch_bytes = endpoint_capacity.saturating_mul(128);
+        let retained_bytes = request
+            .allowed_removals
+            .len()
+            .saturating_mul(256)
             .saturating_add(route_cells.saturating_mul(96))
             .saturating_add(4096);
-        allowance.reserve_peak(reservation).map_err(stopped)?;
+        let reservation = endpoint_scratch_bytes.saturating_add(retained_bytes);
+        if !reservation_preheld {
+            allowance.reserve_peak(reservation).map_err(stopped)?;
+        }
         let result = (|| {
             let mut endpoints = HashSet::<(TransportKind, Point)>::new();
             let mut selected = Vec::new();
@@ -663,9 +1062,16 @@ impl Session {
             ))
         })();
         match result {
-            Ok((order, conflict_cells)) => Ok((order, conflict_cells, reservation)),
+            Ok((order, conflict_cells)) => {
+                if !reservation_preheld {
+                    allowance.release_peak(endpoint_scratch_bytes);
+                }
+                Ok((order, conflict_cells, retained_bytes))
+            }
             Err(failure) => {
-                allowance.release_peak(reservation);
+                if !reservation_preheld {
+                    allowance.release_peak(reservation);
+                }
                 Err(failure)
             }
         }
@@ -802,19 +1208,81 @@ impl Session {
         })
     }
 
+    /// Maximum temporary pointer table used while hashing the public
+    /// observation without copying its routes or serializing into a Vec.
+    pub fn hierarchical_state_hash_workspace_bytes(&self) -> usize {
+        self.junctions
+            .len()
+            .saturating_add(self.bridges.len())
+            .saturating_mul(32)
+            .saturating_add(4096)
+    }
+
+    /// Preserve the historical `(problem, observation)` JSON identity while
+    /// streaming borrowed geometry into the digest.
+    pub fn hierarchical_state_sha256(&self) -> Result<String, Diagnostic> {
+        let mut writer = RepairHashWriter {
+            digest: Sha256::new(),
+            allowance: None,
+            pending_bytes: 0,
+            stop: None,
+        };
+        serde_json::to_writer(
+            &mut writer,
+            &(&self.problem, self.borrowed_hash_observation()),
+        )
+        .map_err(|failure| {
+            error(
+                "hierarchical-state-identity",
+                "hierarchical",
+                format!("cannot encode exact native state: {failure}"),
+            )
+        })?;
+        Ok(writer
+            .digest
+            .finalize()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect())
+    }
+
+    fn borrowed_hash_observation(&self) -> BorrowedRepairObservation<'_> {
+        let mut junctions = self.junctions.values().collect::<Vec<_>>();
+        junctions.sort_by(|a, b| a.id.cmp(&b.id));
+        let mut bridges = self.bridges.values().collect::<Vec<_>>();
+        bridges.sort_by(|a, b| a.id.cmp(&b.id));
+        BorrowedRepairObservation {
+            revision: self.revision,
+            turns: self.turns,
+            max_turns: self.limits.max_turns,
+            poses: &self.poses,
+            terminal_poses: &self.terminal_poses,
+            routes: &self.routes,
+            junctions,
+            bridges,
+            active: &self.active,
+            focus: &self.focus,
+            completed: self.completed(),
+            total: self.routes.len(),
+            completion_ratio: self.progress(),
+            fully_validated: self.metrics.is_some(),
+        }
+    }
+
     /// Hash the complete stable state, including immutable problem, catalog and
     /// command limits. This is deliberately computed only at a repair boundary.
     pub fn repair_state_sha256(&self) -> Result<String, Diagnostic> {
-        self.repair_state_sha256_inner(None)
+        self.repair_state_sha256_inner(None, false)
     }
 
     fn repair_state_sha256_inner(
         &self,
         mut allowance: Option<&mut RequestAllowance>,
+        workspace_preheld: bool,
     ) -> Result<String, Diagnostic> {
         let component_count = self.junctions.len().saturating_add(self.bridges.len());
         let workspace_bytes = component_count.saturating_mul(32).saturating_add(4096);
-        if let Some(allowance) = allowance.as_deref_mut() {
+        if let Some(allowance) = allowance.as_deref_mut().filter(|_| !workspace_preheld) {
             allowance.reserve_peak(workspace_bytes).map_err(stopped)?;
         }
         let result = (|| {
@@ -831,26 +1299,7 @@ impl Session {
                     )
                     .map_err(stopped)?;
             }
-            let mut junctions = self.junctions.values().collect::<Vec<_>>();
-            junctions.sort_by(|a, b| a.id.cmp(&b.id));
-            let mut bridges = self.bridges.values().collect::<Vec<_>>();
-            bridges.sort_by(|a, b| a.id.cmp(&b.id));
-            let observation = BorrowedRepairObservation {
-                revision: self.revision,
-                turns: self.turns,
-                max_turns: self.limits.max_turns,
-                poses: &self.poses,
-                terminal_poses: &self.terminal_poses,
-                routes: &self.routes,
-                junctions,
-                bridges,
-                active: &self.active,
-                focus: &self.focus,
-                completed: self.completed(),
-                total: self.routes.len(),
-                completion_ratio: self.progress(),
-                fully_validated: self.metrics.is_some(),
-            };
+            let observation = self.borrowed_hash_observation();
             let mut writer = RepairHashWriter {
                 digest: Sha256::new(),
                 allowance: allowance.as_deref_mut(),
@@ -888,7 +1337,7 @@ impl Session {
                 .map(|byte| format!("{byte:02x}"))
                 .collect())
         })();
-        if let Some(allowance) = allowance.as_deref_mut() {
+        if let Some(allowance) = allowance.as_deref_mut().filter(|_| !workspace_preheld) {
             allowance.release_peak(workspace_bytes);
         }
         result
@@ -909,6 +1358,8 @@ impl Session {
             max_removed,
             config,
             None,
+            false,
+            false,
         )
     }
 
@@ -919,6 +1370,8 @@ impl Session {
         max_removed: usize,
         config: &Config,
         allowance: Option<&mut RequestAllowance>,
+        hash_workspace_preheld: bool,
+        policy_scope: bool,
     ) -> Result<RepairRequest, Diagnostic> {
         config.validate()?;
         if self.has_active_route() || self.done() {
@@ -934,11 +1387,11 @@ impl Session {
             .collect::<BTreeSet<_>>();
         let allowed = allowed_removals.iter().cloned().collect::<BTreeSet<_>>();
         if selected.is_empty()
-            || allowed.is_empty()
             || selected.len() != selected_connections.len()
             || allowed.len() != allowed_removals.len()
             || max_removed == 0
-            || max_removed > allowed.len()
+            || (!allowed.is_empty() && max_removed > allowed.len())
+            || (allowed.is_empty() && !policy_scope)
         {
             return Err(error(
                 "repair-scope",
@@ -958,6 +1411,13 @@ impl Session {
                 ));
             }
         }
+        if allowed.is_empty() {
+            return Err(error(
+                "repair-empty-scope",
+                "repair",
+                "policy permits no committed route removal",
+            ));
+        }
         for id in &allowed {
             let Some(&index) = self.connections.get(id) else {
                 return Err(error("repair-scope", id, "unknown permitted removal"));
@@ -973,7 +1433,7 @@ impl Session {
         Ok(RepairRequest {
             schema: REPAIR_REQUEST_SCHEMA.into(),
             state_revision: self.revision,
-            state_sha256: self.repair_state_sha256_inner(allowance)?,
+            state_sha256: self.repair_state_sha256_inner(allowance, hash_workspace_preheld)?,
             selected_connections: selected.into_iter().collect(),
             allowed_removals: allowed.into_iter().collect(),
             max_removed,
@@ -1013,13 +1473,33 @@ impl Session {
         config: &Config,
         allowance: &mut RequestAllowance,
     ) -> Result<(RepairScope<'_>, usize), Diagnostic> {
+        self.repair_scope_for_policy_inner(
+            selected_connections,
+            max_removed,
+            config,
+            allowance,
+            None,
+        )
+    }
+
+    fn repair_scope_for_policy_inner(
+        &self,
+        selected_connections: &[String],
+        max_removed: usize,
+        config: &Config,
+        allowance: &mut RequestAllowance,
+        preheld: Option<&RepairPreparationSizes>,
+    ) -> Result<(RepairScope<'_>, usize), Diagnostic> {
         let scope_bytes = self
             .problem
             .connections
             .len()
             .saturating_mul(256)
             .saturating_add(4096);
-        allowance.reserve_peak(scope_bytes).map_err(stopped)?;
+        debug_assert!(preheld.is_none_or(|sizes| sizes.scope_bytes == scope_bytes));
+        if preheld.is_none() {
+            allowance.reserve_peak(scope_bytes).map_err(stopped)?;
+        }
         let result = (|| {
             allowance
                 .charge(WorkKind::ValidationRecords, self.problem.connections.len())
@@ -1034,9 +1514,15 @@ impl Session {
             let request = self.repair_request_inner(
                 selected_connections,
                 &allowed,
-                max_removed.min(allowed.len()),
+                if allowed.is_empty() {
+                    max_removed
+                } else {
+                    max_removed.min(allowed.len())
+                },
                 config,
                 Some(allowance),
+                preheld.is_some(),
+                true,
             )?;
             Ok((
                 RepairScope {
@@ -1046,7 +1532,7 @@ impl Session {
                 scope_bytes,
             ))
         })();
-        if result.is_err() {
+        if result.is_err() && preheld.is_none() {
             allowance.release_peak(scope_bytes);
         }
         result
@@ -1059,7 +1545,7 @@ impl Session {
     ) -> Result<(), Diagnostic> {
         if request.schema != REPAIR_REQUEST_SCHEMA
             || request.state_revision != self.revision
-            || request.state_sha256 != self.repair_state_sha256_inner(allowance)?
+            || request.state_sha256 != self.repair_state_sha256_inner(allowance, false)?
             || self.has_active_route()
             || self.done()
         {
@@ -2270,7 +2756,10 @@ impl Session {
         for replacement in &candidate.replacements {
             prepared.apply_member_borrowed(replacement)?;
         }
-        let (draft, replayed, steps) = prepared.finish()?;
+        let (draft, mut replayed, steps) = prepared.finish()?;
+        // Replay charges its own validation work. That observation is not a
+        // physical witness field and cannot equal the discovery-time counters.
+        replayed.charged_work = candidate.charged_work.clone();
         if replayed != *candidate {
             return Err(error(
                 "repair-witness",

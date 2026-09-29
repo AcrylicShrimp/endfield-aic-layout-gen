@@ -8,7 +8,7 @@ use std::{
     collections::{BTreeMap, HashMap, HashSet},
     sync::{
         Arc,
-        atomic::{AtomicU8, AtomicUsize, Ordering},
+        atomic::{AtomicU8, AtomicU64, AtomicUsize, Ordering},
     },
     time::Instant,
 };
@@ -19,19 +19,40 @@ use aic_layout::{
     geometry::{Point, direction as point_direction, layer},
     logistics::LogisticsComponentKind,
     physical::{
-        Bridge, BridgeAxis, BridgeChannel, Junction, Layout, Metrics, Pose, Problem, Route, SCHEMA,
-        Solution, TerminalDirection, TerminalPose,
+        Bridge, BridgeAxis, BridgeChannel, Junction, Layout, Metrics, Pose, Problem, Route,
+        TerminalDirection, TerminalPose,
     },
-    projection::{Port, cardinal_index, project_port, rotate},
+    projection::{Port, project_port_position, project_port_with_id, rotate},
     stable_id::is_stable_id,
     validation::{Catalogs, SiteArmUse, junction_options_with_visit, validate, within_capacity},
 };
 use serde::{Deserialize, Serialize};
 
+mod completed_layout_cursor;
 pub mod learning;
+mod native_replay;
 pub mod routing_candidates;
 
+use completed_layout_cursor::{
+    CompletedLayoutCursor, MaterializationAdvance, MaterializationReservation,
+};
+
 const COORDINATE_MAX: i64 = 1_000_000;
+static NEXT_SESSION_INSTANCE_ID: AtomicU64 = AtomicU64::new(1);
+
+struct SessionInstanceId(u64);
+
+impl SessionInstanceId {
+    fn new() -> Self {
+        Self(NEXT_SESSION_INSTANCE_ID.fetch_add(1, Ordering::Relaxed))
+    }
+}
+
+impl Clone for SessionInstanceId {
+    fn clone(&self) -> Self {
+        Self::new()
+    }
+}
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -110,6 +131,87 @@ pub struct BridgeReservation {
     pub rotation: i64,
     pub crossed_axis: BridgeAxis,
     pub direction: usize,
+}
+
+#[derive(Clone, Copy)]
+struct RouteView<'a> {
+    cells: &'a [Point],
+    source_port: Option<&'a str>,
+    target_port: Option<&'a str>,
+}
+
+impl<'a> From<&'a Route> for RouteView<'a> {
+    fn from(route: &'a Route) -> Self {
+        Self {
+            cells: &route.cells,
+            source_port: route.source_port.as_deref(),
+            target_port: route.target_port.as_deref(),
+        }
+    }
+}
+
+impl<'a> From<&'a ActiveRoute> for RouteView<'a> {
+    fn from(active: &'a ActiveRoute) -> Self {
+        Self {
+            cells: &active.cells,
+            source_port: active.source_port.as_deref(),
+            target_port: active.target_port.as_deref(),
+        }
+    }
+}
+
+struct BridgeRouteCheck<'a> {
+    cells: &'a [Point],
+    reserved: &'a BridgeReservation,
+    next_cell: usize,
+    found: Option<usize>,
+}
+
+impl<'a> BridgeRouteCheck<'a> {
+    fn new(cells: &'a [Point], reserved: &'a BridgeReservation) -> Self {
+        Self {
+            cells,
+            reserved,
+            next_cell: 0,
+            found: None,
+        }
+    }
+
+    fn has_next_cell(&self) -> bool {
+        self.found.is_none() && self.next_cell < self.cells.len()
+    }
+
+    fn advance_cell(&mut self) {
+        let index = self.next_cell;
+        self.next_cell += 1;
+        if self.cells[index] == self.reserved.position {
+            self.found = Some(index);
+        }
+    }
+
+    fn finish(&self, connection: &str) -> Result<(), Diagnostic> {
+        let Some(index) = self.found else {
+            return Err(error(
+                "bridge-reservation",
+                connection,
+                "reserved bridge was not traversed",
+            ));
+        };
+        if index == 0
+            || index + 1 == self.cells.len()
+            || point_direction(self.cells[index - 1], self.reserved.position)
+                != Some(self.reserved.direction)
+            || point_direction(self.reserved.position, self.cells[index + 1])
+                != Some(self.reserved.direction)
+        {
+            return Err(error(
+                "bridge-turn",
+                connection,
+                "route must enter and leave each bridge straight",
+            ));
+        }
+        Ok(())
+    }
 }
 
 /// Explicit Markov focus for the policy decoder. It survives route completion
@@ -195,6 +297,19 @@ fn error(code: &str, entity: impl Into<String>, message: impl Into<String>) -> D
     }
 }
 
+fn copied_port_id(id: &str) -> Result<String, Diagnostic> {
+    let mut copied = String::new();
+    copied.try_reserve_exact(id.len()).map_err(|_| {
+        error(
+            "port-resource",
+            id,
+            "port identifier allocation exceeds available memory",
+        )
+    })?;
+    copied.push_str(id);
+    Ok(copied)
+}
+
 /// Router-free construction state. All indices are stable problem order.
 ///
 /// Search forks this state at a decision boundary and then advances the fork
@@ -203,12 +318,13 @@ fn error(code: &str, entity: impl Into<String>, message: impl Into<String>) -> D
 /// committed session.
 #[derive(Clone)]
 pub struct Session {
-    problem: Problem,
+    instance_id: SessionInstanceId,
+    problem: Arc<Problem>,
     catalogs: Arc<Catalogs>,
     limits: Limits,
-    blocks: BTreeMap<String, usize>,
-    terminals: BTreeMap<String, usize>,
-    connections: BTreeMap<String, usize>,
+    blocks: Arc<BTreeMap<String, usize>>,
+    terminals: Arc<BTreeMap<String, usize>>,
+    connections: Arc<BTreeMap<String, usize>>,
     poses: Vec<Option<Pose>>,
     terminal_poses: Vec<Option<TerminalPose>>,
     terminal_at: HashMap<Point, usize>,
@@ -267,12 +383,77 @@ impl ReplayMeter {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct UsedPort {
     commodity: String,
     transport: aic_layout::logistics::TransportKind,
     direction: FacilityPortDirection,
     rate: Rate,
+}
+
+/// One source-bound cell-capacity scan. Both ordinary native commands and
+/// retained replay advance the same user/rate rule in the same order.
+struct SharedCellCheck<'a> {
+    session: &'a Session,
+    connection: usize,
+    users: &'a [usize],
+    next_user: usize,
+    load: Rate,
+    decision: Option<bool>,
+}
+
+impl<'a> SharedCellCheck<'a> {
+    fn new(session: &'a Session, point: Point, connection: usize) -> Self {
+        let obligation = &session.problem.connections[connection];
+        let terminal_blocked = session.terminal_at.get(&point).is_some_and(|&terminal| {
+            session.problem.terminals[terminal].id != obligation.source
+                && session.problem.terminals[terminal].id != obligation.target
+        });
+        let (users, no_occupied_site) = session.occupied[layer(obligation.transport)]
+            .get(&point)
+            .map_or((&[][..], true), |users| (users.as_slice(), false));
+        Self {
+            session,
+            connection,
+            users,
+            next_user: 0,
+            load: obligation.rate,
+            decision: if terminal_blocked {
+                Some(false)
+            } else if no_occupied_site {
+                Some(true)
+            } else {
+                None
+            },
+        }
+    }
+
+    fn has_next_user(&self) -> bool {
+        self.decision.is_none() && self.next_user < self.users.len()
+    }
+
+    fn advance_user(&mut self) {
+        let obligation = &self.session.problem.connections[self.connection];
+        let existing = &self.session.problem.connections[self.users[self.next_user]];
+        self.next_user += 1;
+        if existing.commodity != obligation.commodity {
+            self.decision = Some(false);
+            return;
+        }
+        match self.load.checked_add(existing.rate) {
+            Ok(total) => self.load = total,
+            Err(_) => self.decision = Some(false),
+        }
+    }
+
+    fn finish(&self) -> bool {
+        if let Some(decision) = self.decision {
+            return decision;
+        }
+        let transport = self.session.problem.connections[self.connection].transport;
+        let capacity = self.session.catalogs.transports.capacity(transport);
+        within_capacity(self.load, capacity.quantity, capacity.duration_ms)
+    }
 }
 
 impl Session {
@@ -462,12 +643,13 @@ impl Session {
         let terminal_count = problem.terminals.len();
         let connection_count = problem.connections.len();
         Ok(Self {
-            problem,
+            instance_id: SessionInstanceId::new(),
+            problem: Arc::new(problem),
             catalogs,
             limits,
-            blocks,
-            terminals,
-            connections,
+            blocks: Arc::new(blocks),
+            terminals: Arc::new(terminals),
+            connections: Arc::new(connections),
             poses: vec![None; block_count],
             terminal_poses: vec![None; terminal_count],
             terminal_at: HashMap::new(),
@@ -562,6 +744,11 @@ impl Session {
         self.revision
     }
 
+    /// Process-local identity for prepared owners; never serialize it for replay.
+    pub fn in_memory_instance_id(&self) -> u64 {
+        self.instance_id.0
+    }
+
     /// Cheap macro-state checks used before preparing route requests.
     pub fn has_active_route(&self) -> bool {
         self.active.is_some()
@@ -573,6 +760,29 @@ impl Session {
 
     pub fn has_unplaced_entities(&self) -> bool {
         self.poses.iter().any(Option::is_none) || self.terminal_poses.iter().any(Option::is_none)
+    }
+
+    pub fn connection_progress_counts(&self) -> (usize, usize) {
+        (self.completed(), self.routes.len())
+    }
+
+    pub fn placed_entity_position(&self, id: &str) -> Option<Point> {
+        self.problem
+            .blocks
+            .iter()
+            .position(|block| block.id == id)
+            .and_then(|index| self.poses[index].as_ref().map(|pose| pose.position))
+            .or_else(|| {
+                self.problem
+                    .terminals
+                    .iter()
+                    .position(|terminal| terminal.id == id)
+                    .and_then(|index| {
+                        self.terminal_poses[index]
+                            .as_ref()
+                            .map(|pose| pose.position)
+                    })
+            })
     }
 
     pub fn metrics(&self) -> Option<&Metrics> {
@@ -781,7 +991,7 @@ impl Session {
         self.completed() as f64 / self.routes.len() as f64
     }
 
-    fn construction_progress(&self) -> f64 {
+    pub fn construction_progress(&self) -> f64 {
         let completed = self.poses.iter().filter(|pose| pose.is_some()).count()
             + self
                 .terminal_poses
@@ -790,7 +1000,7 @@ impl Session {
                 .count()
             + self.routes.iter().filter(|route| route.is_some()).count();
         let total = self.poses.len() + self.terminal_poses.len() + self.routes.len();
-        completed as f64 / total as f64
+        completed as f64 / total.max(1) as f64
     }
 
     fn completed(&self) -> usize {
@@ -805,107 +1015,41 @@ impl Session {
     }
 
     fn complete_layout(&self) -> Layout {
-        Layout {
-            schema: SCHEMA.into(),
-            catalog_sha256: self.catalogs.identity.clone(),
-            problem: self.problem.clone(),
-            solution: Solution {
-                poses: self.poses.iter().flatten().cloned().collect(),
-                terminal_poses: self.terminal_poses.iter().flatten().cloned().collect(),
-                routes: self.routes.iter().flatten().cloned().collect(),
-                bridges: {
-                    let mut bridges = self.bridges.values().cloned().collect::<Vec<_>>();
-                    bridges.sort_by(|a, b| a.id.cmp(&b.id));
-                    bridges
-                },
-                junctions: {
-                    let mut junctions = self.junctions.values().cloned().collect::<Vec<_>>();
-                    junctions.sort_by(|a, b| a.id.cmp(&b.id));
-                    junctions
-                },
-            },
+        let mut cursor = CompletedLayoutCursor::new(self);
+        match cursor
+            .advance(
+                |count| count,
+                |_| MaterializationReservation::Granted,
+                |_| {},
+            )
+            .expect("unbounded completed-layout construction admits every copy")
+        {
+            MaterializationAdvance::Complete { layout, .. } => layout,
+            MaterializationAdvance::Pending => {
+                unreachable!("unbounded completed-layout construction cannot yield")
+            }
         }
     }
 
     fn complete_layout_bounded(&self) -> Result<Layout, Diagnostic> {
-        let mut blocks = Vec::with_capacity(self.problem.blocks.len());
-        for block in &self.problem.blocks {
-            self.charge_replay(ReplayWork::Validation, 1)?;
-            blocks.push(block.clone());
-        }
-        let mut terminals = Vec::with_capacity(self.problem.terminals.len());
-        for terminal in &self.problem.terminals {
-            self.charge_replay(ReplayWork::Validation, 1)?;
-            terminals.push(terminal.clone());
-        }
-        let mut connections = Vec::with_capacity(self.problem.connections.len());
-        for connection in &self.problem.connections {
-            self.charge_replay(ReplayWork::Validation, 1)?;
-            connections.push(connection.clone());
-        }
-        let mut poses = Vec::with_capacity(self.poses.len());
-        for pose in self.poses.iter().flatten() {
-            self.charge_replay(ReplayWork::Validation, 1)?;
-            poses.push(pose.clone());
-        }
-        let mut terminal_poses = Vec::with_capacity(self.terminal_poses.len());
-        for pose in self.terminal_poses.iter().flatten() {
-            self.charge_replay(ReplayWork::Validation, 1)?;
-            terminal_poses.push(pose.clone());
-        }
-        let mut routes = Vec::with_capacity(self.routes.len());
-        for route in self.routes.iter().flatten() {
-            self.charge_replay(ReplayWork::Validation, 1)?;
-            let mut cells = Vec::with_capacity(route.cells.len());
-            for chunk in route.cells.chunks(256) {
-                self.charge_replay(ReplayWork::Validation, chunk.len())?;
-                cells.extend_from_slice(chunk);
-            }
-            routes.push(Route {
-                connection: route.connection.clone(),
-                source_port: route.source_port.clone(),
-                target_port: route.target_port.clone(),
-                cells,
-            });
-        }
-        let mut bridges = Vec::with_capacity(self.bridges.len());
-        for bridge in self.bridges.values() {
-            self.charge_replay(
-                ReplayWork::Validation,
-                1 + bridge
-                    .channels
-                    .iter()
-                    .map(|channel| channel.connections.len())
-                    .sum::<usize>(),
-            )?;
-            bridges.push(bridge.clone());
-        }
-        self.check_replay_deadline()?;
-        bridges.sort_by(|a, b| a.id.cmp(&b.id));
-        let mut junctions = Vec::with_capacity(self.junctions.len());
-        for junction in self.junctions.values() {
-            self.charge_replay(ReplayWork::Validation, 1 + junction.connections.len())?;
-            junctions.push(junction.clone());
-        }
-        self.check_replay_deadline()?;
-        junctions.sort_by(|a, b| a.id.cmp(&b.id));
-        self.check_replay_deadline()?;
-        Ok(Layout {
-            schema: SCHEMA.into(),
-            catalog_sha256: self.catalogs.identity.clone(),
-            problem: Problem {
-                blocks,
-                terminals,
-                connections,
+        let mut cursor = CompletedLayoutCursor::new(self);
+        let mut failure = None;
+        let result = cursor.advance(
+            |count| match self.charge_replay(ReplayWork::Validation, count) {
+                Ok(()) => count,
+                Err(stop) => {
+                    failure = Some(stop);
+                    0
+                }
             },
-            solution: Solution {
-                poses,
-                terminal_poses,
-                routes,
-                bridges,
-                junctions,
-            },
-        })
+            |_| MaterializationReservation::Granted,
+            |_| {},
+        )?;
+        self.check_replay_deadline()?;
+        match result {
+            MaterializationAdvance::Complete { layout, .. } => Ok(layout),
+            MaterializationAdvance::Pending => Err(failure.expect("replay stop recorded")),
+        }
     }
 
     fn place(&mut self, block: &str, position: Point, rotation: i64) -> Result<(), Diagnostic> {
@@ -1060,10 +1204,25 @@ impl Session {
             .facilities
             .facility(&self.problem.blocks[block].facility)
             .expect("problem admission checked facilities");
-        let mut ports = Vec::with_capacity(definition.ports.len());
+        let mut ports = Vec::new();
+        ports
+            .try_reserve_exact(definition.ports.len())
+            .map_err(|_| {
+                error(
+                    "port-resource",
+                    &self.problem.blocks[block].id,
+                    "projected port allocation exceeds available memory",
+                )
+            })?;
         for port in &definition.ports {
             self.charge_replay(ReplayWork::Catalog, 1)?;
-            ports.push(project_port(definition, port, pose.rotation, pose.position));
+            ports.push(project_port_with_id(
+                definition,
+                port,
+                pose.rotation,
+                pose.position,
+                copied_port_id(&port.id)?,
+            ));
         }
         Ok(ports)
     }
@@ -1094,20 +1253,50 @@ impl Session {
         for port in &definition.ports {
             self.charge_replay(ReplayWork::Catalog, 1)?;
             if port.id == id {
-                selected = Some(project_port(definition, port, pose.rotation, pose.position));
+                selected = Some(project_port_with_id(
+                    definition,
+                    port,
+                    pose.rotation,
+                    pose.position,
+                    copied_port_id(&port.id)?,
+                ));
                 break;
             }
         }
         let port = selected
             .ok_or_else(|| error("unknown-port", connection, "selected port does not exist"))?;
-        if port.direction != expected || port.transport != transport {
+        self.validate_selected_port(
+            &(block, copied_port_id(id)?),
+            expected,
+            transport,
+            commodity,
+            rate,
+            connection,
+            port.direction,
+            port.transport,
+        )?;
+        Ok(port)
+    }
+
+    fn validate_selected_port(
+        &self,
+        key: &(usize, String),
+        expected: FacilityPortDirection,
+        transport: aic_layout::logistics::TransportKind,
+        commodity: &str,
+        rate: Rate,
+        connection: &str,
+        actual_direction: FacilityPortDirection,
+        actual_transport: aic_layout::logistics::TransportKind,
+    ) -> Result<(), Diagnostic> {
+        if actual_direction != expected || actual_transport != transport {
             return Err(error(
                 "incompatible-port",
                 connection,
                 "selected port has the wrong direction or transport kind",
             ));
         }
-        if let Some(used) = self.used_ports.get(&(block, id.to_owned())) {
+        if let Some(used) = self.used_ports.get(key) {
             let total = used.rate.checked_add(rate).map_err(|_| {
                 error(
                     "port-capacity",
@@ -1128,7 +1317,7 @@ impl Session {
                 ));
             }
         }
-        Ok(port)
+        Ok(())
     }
 
     fn route_endpoint(
@@ -1199,34 +1388,12 @@ impl Session {
         connection: usize,
         mut visit: impl FnMut() -> Result<(), Diagnostic>,
     ) -> Result<bool, Diagnostic> {
-        let obligation = &self.problem.connections[connection];
-        if let Some(&terminal) = self.terminal_at.get(&point) {
-            if self.problem.terminals[terminal].id != obligation.source
-                && self.problem.terminals[terminal].id != obligation.target
-            {
-                return Ok(false);
-            }
-        }
-        let users = self.occupied[layer(obligation.transport)].get(&point);
-        let Some(users) = users else { return Ok(true) };
-        let mut load = obligation.rate;
-        for &other in users {
+        let mut check = SharedCellCheck::new(self, point, connection);
+        while check.has_next_user() {
             visit()?;
-            let existing = &self.problem.connections[other];
-            if existing.commodity != obligation.commodity {
-                return Ok(false);
-            }
-            let Some(total) = load.checked_add(existing.rate).ok() else {
-                return Ok(false);
-            };
-            load = total;
+            check.advance_user();
         }
-        let capacity = self.catalogs.transports.capacity(obligation.transport);
-        Ok(within_capacity(
-            load,
-            capacity.quantity,
-            capacity.duration_ms,
-        ))
+        Ok(check.finish())
     }
 
     fn begin_route(
@@ -1311,224 +1478,7 @@ impl Session {
         rotation: i64,
         crossed_axis: BridgeAxis,
     ) -> Result<(), Diagnostic> {
-        let active = self.active.as_ref().ok_or_else(|| {
-            error(
-                "missing-active-route",
-                "active-route",
-                "bridge reservation requires an active route",
-            )
-        })?;
-        let obligation = &self.problem.connections[active.connection];
-        let previous = *active.cells.last().expect("active route has a source");
-        let Some(direction) = point_direction(previous, position) else {
-            return Err(error(
-                "bridge-reservation",
-                &obligation.id,
-                "bridge must be reserved immediately before entering its adjacent cell",
-            ));
-        };
-        let expected_axis = if direction % 2 == 0 {
-            BridgeAxis::Vertical
-        } else {
-            BridgeAxis::Horizontal
-        };
-        if crossed_axis != expected_axis
-            || self.bodies.contains(&position)
-            || self.terminal_at.contains_key(&position)
-            || self.active_cells.contains(&position)
-            || self
-                .junctions
-                .contains_key(&(obligation.transport, position))
-            || active
-                .bridge_reservations
-                .iter()
-                .any(|reserved| reserved.position == position)
-        {
-            return Err(error(
-                "bridge-reservation",
-                &obligation.id,
-                "bridge axis, site or reservation conflicts with occupied geometry",
-            ));
-        }
-        let users = self.occupied[layer(obligation.transport)]
-            .get(&position)
-            .ok_or_else(|| {
-                error(
-                    "bridge-reservation",
-                    &obligation.id,
-                    "bridge site has no committed carrier axis",
-                )
-            })?;
-        if let Some(installed) = self.bridges.get(&(obligation.transport, position)) {
-            let axis = direction % 2;
-            let channel = &installed.channels[axis];
-            let definition = self
-                .catalogs
-                .components
-                .component(&installed.component)
-                .expect("installed bridge has a catalog component");
-            let mut load = obligation.rate;
-            let mut matches_axis = channel.commodity == obligation.commodity
-                && installed.component == component
-                && installed.rotation == rotation;
-            for owner in &channel.connections {
-                self.charge_replay(ReplayWork::Users, 1)?;
-                let ci = self.connections[owner];
-                let route = self.routes[ci]
-                    .as_ref()
-                    .expect("bridge owner route is committed");
-                let mut pi = None;
-                for (index, &cell) in route.cells.iter().enumerate() {
-                    self.charge_replay(ReplayWork::RouteCells, 1)?;
-                    if cell == position {
-                        pi = Some(index);
-                        break;
-                    }
-                }
-                let pi = pi.expect("bridge owner visits its component");
-                matches_axis &= pi > 0
-                    && pi + 1 < route.cells.len()
-                    && point_direction(route.cells[pi - 1], position) == Some(direction)
-                    && point_direction(position, route.cells[pi + 1]) == Some(direction);
-                load = load
-                    .checked_add(self.problem.connections[ci].rate)
-                    .map_err(|_| {
-                        error(
-                            "bridge-reservation",
-                            &obligation.id,
-                            "bridge axis rate overflows",
-                        )
-                    })?;
-            }
-            let line = self.catalogs.transports.capacity(obligation.transport);
-            if !matches_axis
-                || !within_capacity(
-                    load,
-                    definition.capacity.quantity,
-                    definition.capacity.duration_ms,
-                )
-                || !within_capacity(load, line.quantity, line.duration_ms)
-            {
-                return Err(error(
-                    "bridge-reservation",
-                    &obligation.id,
-                    "installed bridge axis has incompatible flow or insufficient residual capacity",
-                ));
-            }
-            self.active
-                .as_mut()
-                .expect("active route checked above")
-                .bridge_reservations
-                .push(BridgeReservation {
-                    position,
-                    component: component.to_owned(),
-                    rotation,
-                    crossed_axis,
-                    direction,
-                });
-            return Ok(());
-        }
-        let mut carrier_direction = None;
-        let mut carrier_rate = Rate::zero();
-        let carrier_commodity = &self.problem.connections[users[0]].commodity;
-        for &ci in users {
-            self.charge_replay(ReplayWork::Users, 1)?;
-            let existing = &self.problem.connections[ci];
-            let route = self.routes[ci]
-                .as_ref()
-                .expect("occupied route is committed");
-            let mut pi = None;
-            for (index, &cell) in route.cells.iter().enumerate() {
-                self.charge_replay(ReplayWork::RouteCells, 1)?;
-                if cell == position {
-                    pi = Some(index);
-                    break;
-                }
-            }
-            let Some(pi) = pi else {
-                return Err(error(
-                    "bridge-reservation",
-                    &obligation.id,
-                    "carrier route does not visit the bridge site",
-                ));
-            };
-            let heading = if pi > 0 && pi + 1 < route.cells.len() {
-                point_direction(route.cells[pi - 1], position)
-            } else {
-                None
-            };
-            if existing.commodity != *carrier_commodity
-                || heading.is_none()
-                || point_direction(position, route.cells[pi + 1]) != heading
-                || carrier_direction.is_some_and(|old| heading != Some(old))
-            {
-                return Err(error(
-                    "bridge-reservation",
-                    &obligation.id,
-                    "carrier routes must form one same-commodity straight directed axis",
-                ));
-            }
-            carrier_direction = heading;
-            carrier_rate = carrier_rate.checked_add(existing.rate).map_err(|_| {
-                error(
-                    "bridge-reservation",
-                    &obligation.id,
-                    "carrier axis rate overflows",
-                )
-            })?;
-        }
-        let definition = self.catalogs.components.component(component);
-        let legal = definition.is_some_and(|definition| {
-            let Some(carrier_direction) = carrier_direction else {
-                return false;
-            };
-            let rotated = |arm| (cardinal_index(arm) + rotation as usize / 90) % 4;
-            definition.kind == LogisticsComponentKind::Bridge
-                && definition.transport == obligation.transport
-                && carrier_direction % 2 != direction % 2
-                && definition.footprint.width == 1
-                && definition.footprint.height == 1
-                && definition.allowed_rotations.contains(&rotation)
-                && within_capacity(
-                    carrier_rate,
-                    definition.capacity.quantity,
-                    definition.capacity.duration_ms,
-                )
-                && within_capacity(
-                    obligation.rate,
-                    definition.capacity.quantity,
-                    definition.capacity.duration_ms,
-                )
-                && [carrier_direction, direction].iter().all(|&heading| {
-                    definition
-                        .input_directions
-                        .iter()
-                        .any(|&arm| rotated(arm) == (heading + 2) % 4)
-                        && definition
-                            .output_directions
-                            .iter()
-                            .any(|&arm| rotated(arm) == heading)
-                })
-        });
-        if !legal {
-            return Err(error(
-                "bridge-reservation",
-                &obligation.id,
-                "catalog bridge does not fit the carrier, new route, rotation or capacity",
-            ));
-        }
-        self.active
-            .as_mut()
-            .expect("active route checked above")
-            .bridge_reservations
-            .push(BridgeReservation {
-                position,
-                component: component.to_owned(),
-                rotation,
-                crossed_axis,
-                direction,
-            });
-        Ok(())
+        native_replay::reserve_bridge_native(self, position, component, rotation, crossed_axis)
     }
 
     fn extend(&mut self, direction: Direction, length: i64) -> Result<(), Diagnostic> {
@@ -1566,84 +1516,13 @@ impl Session {
             if step_index % 256 == 0 {
                 self.check_replay_deadline()?;
             }
-            if active
-                .bridge_reservations
-                .iter()
-                .any(|reserved| reserved.position == point && reserved.direction != heading)
-            {
-                return Err(error(
-                    "bridge-turn",
-                    "active-route",
-                    "route must leave a reserved bridge in its entry direction",
-                ));
+            let (next, needs_shared_check) =
+                self.extension_step_geometry(point, &new_cells, focus_connection, dx, dy, heading)?;
+            if needs_shared_check && !self.shared_cell_available_replay(next, focus_connection)? {
+                return Err(Self::extension_intersection_error());
             }
-            point = Point {
-                x: point.x.checked_add(dx).ok_or_else(|| {
-                    error(
-                        "coordinate",
-                        "active-route",
-                        "extension coordinate overflows",
-                    )
-                })?,
-                y: point.y.checked_add(dy).ok_or_else(|| {
-                    error(
-                        "coordinate",
-                        "active-route",
-                        "extension coordinate overflows",
-                    )
-                })?,
-            };
-            if !(0..=COORDINATE_MAX).contains(&point.x) || !(0..=COORDINATE_MAX).contains(&point.y)
-            {
-                return Err(error(
-                    "coordinate",
-                    "active-route",
-                    "extension leaves the supported coordinate domain",
-                ));
-            }
-            if self.bodies.contains(&point) {
-                return Err(error(
-                    "path-body",
-                    "active-route",
-                    "extension intersects a facility body",
-                ));
-            }
-            if self.active_cells.contains(&point) || !new_cells.insert(point) {
-                return Err(error(
-                    "path-repeat",
-                    "active-route",
-                    "extension revisits its active route",
-                ));
-            }
-            let pending = active.bridge_reservations.iter().find(|reserved| {
-                !self.active_cells.contains(&reserved.position)
-                    && !new_cells.contains(&reserved.position)
-                    && reserved.position != point
-            });
-            if pending.is_some() {
-                return Err(error(
-                    "bridge-reservation",
-                    "active-route",
-                    "the next extension must enter the reserved bridge cell",
-                ));
-            }
-            let reserved = active
-                .bridge_reservations
-                .iter()
-                .find(|reserved| reserved.position == point);
-            if reserved.is_some_and(|reserved| reserved.direction != heading)
-                || reserved.is_none()
-                    && (self.bridges.contains_key(&(
-                        self.problem.connections[focus_connection].transport,
-                        point,
-                    )) || !self.shared_cell_available_replay(point, focus_connection)?)
-            {
-                return Err(error(
-                    "same-layer-intersection",
-                    "active-route",
-                    "same-layer cell is incompatible, reserved in another direction or lacks capacity",
-                ));
-            }
+            point = next;
+            new_cells.insert(point);
             added.push(point);
         }
         self.active
@@ -1661,11 +1540,196 @@ impl Session {
         Ok(())
     }
 
+    fn extension_intersection_error() -> Diagnostic {
+        error(
+            "same-layer-intersection",
+            "active-route",
+            "same-layer cell is incompatible, reserved in another direction or lacks capacity",
+        )
+    }
+
+    fn extension_step_geometry(
+        &self,
+        current: Point,
+        new_cells: &HashSet<Point>,
+        connection: usize,
+        dx: i64,
+        dy: i64,
+        heading: usize,
+    ) -> Result<(Point, bool), Diagnostic> {
+        let active = self.active.as_ref().expect("extension has an active route");
+        if active
+            .bridge_reservations
+            .iter()
+            .any(|reserved| reserved.position == current && reserved.direction != heading)
+        {
+            return Err(error(
+                "bridge-turn",
+                "active-route",
+                "route must leave a reserved bridge in its entry direction",
+            ));
+        }
+        let point = Point {
+            x: current.x.checked_add(dx).ok_or_else(|| {
+                error(
+                    "coordinate",
+                    "active-route",
+                    "extension coordinate overflows",
+                )
+            })?,
+            y: current.y.checked_add(dy).ok_or_else(|| {
+                error(
+                    "coordinate",
+                    "active-route",
+                    "extension coordinate overflows",
+                )
+            })?,
+        };
+        if !(0..=COORDINATE_MAX).contains(&point.x) || !(0..=COORDINATE_MAX).contains(&point.y) {
+            return Err(error(
+                "coordinate",
+                "active-route",
+                "extension leaves the supported coordinate domain",
+            ));
+        }
+        if self.bodies.contains(&point) {
+            return Err(error(
+                "path-body",
+                "active-route",
+                "extension intersects a facility body",
+            ));
+        }
+        if self.active_cells.contains(&point) || new_cells.contains(&point) {
+            return Err(error(
+                "path-repeat",
+                "active-route",
+                "extension revisits its active route",
+            ));
+        }
+        let pending = active.bridge_reservations.iter().any(|reserved| {
+            !self.active_cells.contains(&reserved.position)
+                && !new_cells.contains(&reserved.position)
+                && reserved.position != point
+        });
+        if pending {
+            return Err(error(
+                "bridge-reservation",
+                "active-route",
+                "the next extension must enter the reserved bridge cell",
+            ));
+        }
+        let reserved = active
+            .bridge_reservations
+            .iter()
+            .find(|reserved| reserved.position == point);
+        if reserved.is_some_and(|reserved| reserved.direction != heading)
+            || reserved.is_none()
+                && self
+                    .bridges
+                    .contains_key(&(self.problem.connections[connection].transport, point))
+        {
+            return Err(Self::extension_intersection_error());
+        }
+        Ok((point, reserved.is_none()))
+    }
+
     fn site_arm_use<'a>(
         &'a self,
         connection_index: usize,
         route: &'a Route,
         path_index: usize,
+    ) -> Result<SiteArmUse<'a>, Diagnostic> {
+        self.site_arm_use_view(connection_index, route.into(), path_index)
+    }
+
+    fn site_arm_port_position(
+        &self,
+        block: usize,
+        port_id: &str,
+        connection: &str,
+        source: bool,
+    ) -> Result<Point, Diagnostic> {
+        let pose = self.poses[block].as_ref().ok_or_else(|| {
+            error(
+                "unplaced-endpoint",
+                &self.problem.blocks[block].id,
+                "route endpoint facility is not placed",
+            )
+        })?;
+        let definition = self
+            .catalogs
+            .facilities
+            .facility(&self.problem.blocks[block].facility)
+            .expect("problem admission checked facilities");
+        for port in &definition.ports {
+            self.charge_replay(ReplayWork::Catalog, 1)?;
+            if port.id == port_id {
+                return Ok(project_port_position(
+                    definition,
+                    port,
+                    pose.rotation,
+                    pose.position,
+                ));
+            }
+        }
+        Err(error(
+            "topology",
+            connection,
+            if source {
+                "source route port is unknown"
+            } else {
+                "target route port is unknown"
+            },
+        ))
+    }
+
+    fn site_arm_use_view<'a>(
+        &'a self,
+        connection_index: usize,
+        route: RouteView<'_>,
+        path_index: usize,
+    ) -> Result<SiteArmUse<'a>, Diagnostic> {
+        let connection = &self.problem.connections[connection_index];
+        let source_position = if path_index == 0 {
+            if let Some(&block) = self.blocks.get(&connection.source) {
+                let port_id = route.source_port.ok_or_else(|| {
+                    error("topology", &connection.id, "source route port is missing")
+                })?;
+                Some(self.site_arm_port_position(block, port_id, &connection.id, true)?)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        let target_position = if path_index + 1 == route.cells.len() {
+            if let Some(&block) = self.blocks.get(&connection.target) {
+                let port_id = route.target_port.ok_or_else(|| {
+                    error("topology", &connection.id, "target route port is missing")
+                })?;
+                Some(self.site_arm_port_position(block, port_id, &connection.id, false)?)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        self.site_arm_use_with_positions(
+            connection_index,
+            route,
+            path_index,
+            source_position,
+            target_position,
+        )
+    }
+
+    fn site_arm_use_with_positions<'a>(
+        &'a self,
+        connection_index: usize,
+        route: RouteView<'_>,
+        path_index: usize,
+        source_position: Option<Point>,
+        target_position: Option<Point>,
     ) -> Result<SiteArmUse<'a>, Diagnostic> {
         let connection = &self.problem.connections[connection_index];
         let point = route.cells[path_index];
@@ -1673,34 +1737,16 @@ impl Session {
         let mut external_outgoing = false;
         let incoming = if path_index > 0 {
             aic_layout::geometry::direction(point, route.cells[path_index - 1])
-        } else if let Some(&block) = self.blocks.get(&connection.source) {
-            let port_id = route
-                .source_port
-                .as_deref()
-                .ok_or_else(|| error("topology", &connection.id, "source route port is missing"))?;
-            let port = self
-                .projected_ports(block)?
-                .into_iter()
-                .find(|p| p.id == port_id)
-                .ok_or_else(|| error("topology", &connection.id, "source route port is unknown"))?;
-            aic_layout::geometry::direction(point, port.position)
+        } else if let Some(position) = source_position {
+            aic_layout::geometry::direction(point, position)
         } else {
             external_incoming = true;
             None
         };
         let outgoing = if path_index + 1 < route.cells.len() {
             aic_layout::geometry::direction(point, route.cells[path_index + 1])
-        } else if let Some(&block) = self.blocks.get(&connection.target) {
-            let port_id = route
-                .target_port
-                .as_deref()
-                .ok_or_else(|| error("topology", &connection.id, "target route port is missing"))?;
-            let port = self
-                .projected_ports(block)?
-                .into_iter()
-                .find(|p| p.id == port_id)
-                .ok_or_else(|| error("topology", &connection.id, "target route port is unknown"))?;
-            aic_layout::geometry::direction(point, port.position)
+        } else if let Some(position) = target_position {
+            aic_layout::geometry::direction(point, position)
         } else {
             external_outgoing = true;
             None
@@ -1726,7 +1772,7 @@ impl Session {
     fn junction_updates(
         &self,
         pending_index: usize,
-        pending: &Route,
+        pending: RouteView<'_>,
     ) -> Result<
         Vec<(
             (aic_layout::logistics::TransportKind, Point),
@@ -1736,7 +1782,7 @@ impl Session {
     > {
         let transport = self.problem.connections[pending_index].transport;
         let mut touched = HashSet::new();
-        for &point in &pending.cells {
+        for &point in pending.cells {
             self.charge_replay(ReplayWork::RouteCells, 1)?;
             touched.insert(point);
         }
@@ -1794,7 +1840,7 @@ impl Session {
                     uses.push(self.site_arm_use(ci, route, old_pi)?);
                 }
             }
-            uses.push(self.site_arm_use(pending_index, pending, pi)?);
+            uses.push(self.site_arm_use_view(pending_index, pending, pi)?);
             let options =
                 junction_options_with_visit(transport, point, &uses, &self.catalogs, || {
                     self.charge_replay(ReplayWork::Catalog, 1).is_ok()
@@ -1845,7 +1891,7 @@ impl Session {
     fn bridge_updates(
         &self,
         pending_index: usize,
-        pending: &Route,
+        pending: RouteView<'_>,
     ) -> Result<Vec<Bridge>, Diagnostic> {
         let active = self
             .active
@@ -1855,37 +1901,15 @@ impl Session {
         let mut bridges = Vec::with_capacity(active.bridge_reservations.len());
         for reserved in &active.bridge_reservations {
             self.check_replay_deadline()?;
-            let mut found = None;
-            for (pi, &point) in pending.cells.iter().enumerate() {
+            let mut check = BridgeRouteCheck::new(pending.cells, reserved);
+            while check.has_next_cell() {
                 self.charge_replay(ReplayWork::RouteCells, 1)?;
-                if pi % 256 == 0 {
+                if check.next_cell % 256 == 0 {
                     self.check_replay_deadline()?;
                 }
-                if point == reserved.position {
-                    found = Some(pi);
-                    break;
-                }
+                check.advance_cell();
             }
-            let Some(pi) = found else {
-                return Err(error(
-                    "bridge-reservation",
-                    &pending.connection,
-                    "reserved bridge was not traversed",
-                ));
-            };
-            if pi == 0
-                || pi + 1 == pending.cells.len()
-                || point_direction(pending.cells[pi - 1], reserved.position)
-                    != Some(reserved.direction)
-                || point_direction(reserved.position, pending.cells[pi + 1])
-                    != Some(reserved.direction)
-            {
-                return Err(error(
-                    "bridge-turn",
-                    &pending.connection,
-                    "route must enter and leave each bridge straight",
-                ));
-            }
+            check.finish(&self.problem.connections[pending_index].id)?;
             if let Some(installed) = self.bridges.get(&(transport, reserved.position)) {
                 self.charge_replay(
                     ReplayWork::Users,
@@ -1893,7 +1917,7 @@ impl Session {
                 )?;
                 let mut bridge = installed.clone();
                 let owners = &mut bridge.channels[reserved.direction % 2].connections;
-                owners.push(pending.connection.clone());
+                owners.push(self.problem.connections[pending_index].id.clone());
                 owners.sort();
                 owners.dedup();
                 bridges.push(bridge);
@@ -1921,7 +1945,7 @@ impl Session {
                     BridgeChannel {
                         axis: BridgeAxis::Vertical,
                         commodity: new_commodity,
-                        connections: vec![pending.connection.clone()],
+                        connections: vec![self.problem.connections[pending_index].id.clone()],
                     },
                 )
             } else {
@@ -1929,7 +1953,7 @@ impl Session {
                     BridgeChannel {
                         axis: BridgeAxis::Horizontal,
                         commodity: new_commodity,
-                        connections: vec![pending.connection.clone()],
+                        connections: vec![self.problem.connections[pending_index].id.clone()],
                     },
                     BridgeChannel {
                         axis: BridgeAxis::Vertical,
@@ -1971,18 +1995,18 @@ impl Session {
                 "active path does not end at its selected target port",
             ));
         }
-        let obligation = &self.problem.connections[active.connection];
-        let route = Route {
-            connection: obligation.id.clone(),
-            source_port: active.source_port.clone(),
-            target_port: active.target_port.clone(),
-            cells: active.cells.clone(),
-        };
-        let updates = self.junction_updates(active.connection, &route)?;
-        let bridges = self.bridge_updates(active.connection, &route)?;
+        let pending = RouteView::from(active);
+        let updates = self.junction_updates(active.connection, pending)?;
+        let bridges = self.bridge_updates(active.connection, pending)?;
         let active = self.active.take().expect("active route checked above");
         self.active_cells.clear();
         let obligation = &self.problem.connections[active.connection];
+        let route = Route {
+            connection: obligation.id.clone(),
+            source_port: active.source_port,
+            target_port: active.target_port,
+            cells: active.cells,
+        };
         for &cell in &route.cells {
             self.charge_replay(ReplayWork::RouteCells, 1)?;
             self.occupied[layer(obligation.transport)]
@@ -1993,12 +2017,12 @@ impl Session {
         for (endpoint, port, direction) in [
             (
                 &obligation.source,
-                active.source_port.as_ref(),
+                route.source_port.as_ref(),
                 FacilityPortDirection::Output,
             ),
             (
                 &obligation.target,
-                active.target_port.as_ref(),
+                route.target_port.as_ref(),
                 FacilityPortDirection::Input,
             ),
         ] {
@@ -2068,7 +2092,7 @@ mod tests {
             LogisticsComponentCatalog, TransportKind, ValidatedLogisticsComponentCatalog,
             ValidatedTransportCatalog,
         },
-        physical::{Block, Connection, Terminal, TerminalDirection},
+        physical::{Block, Connection, Solution, Terminal, TerminalDirection},
         rate::Rate,
     };
     use serde::de::DeserializeOwned;
@@ -2079,7 +2103,7 @@ mod tests {
         serde_json::from_reader(File::open(root.join(name)).unwrap()).unwrap()
     }
 
-    fn catalogs() -> Arc<Catalogs> {
+    pub(super) fn catalogs() -> Arc<Catalogs> {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/game/normalized");
         Arc::new(Catalogs {
             identity: "1".repeat(64),
@@ -2124,7 +2148,7 @@ mod tests {
         }
     }
 
-    fn session() -> Session {
+    pub(super) fn session() -> Session {
         Session::new(
             problem(),
             catalogs(),
@@ -2136,7 +2160,23 @@ mod tests {
         .unwrap()
     }
 
-    fn place_pair(session: &mut Session) {
+    #[test]
+    fn clone_shares_immutable_problem_but_not_mutable_geometry() {
+        let original = session();
+        let mut fork = original.clone();
+        assert!(Arc::ptr_eq(&original.problem, &fork.problem));
+        assert!(Arc::ptr_eq(&original.blocks, &fork.blocks));
+        assert!(Arc::ptr_eq(&original.connections, &fork.connections));
+        fork.routes[0] = Some(Route {
+            connection: "connection-0".into(),
+            source_port: None,
+            target_port: None,
+            cells: vec![Point { x: 0, y: 0 }],
+        });
+        assert!(original.routes[0].is_none());
+    }
+
+    pub(super) fn place_pair(session: &mut Session) {
         assert!(
             session
                 .step(Command::Place {
@@ -2154,6 +2194,264 @@ mod tests {
                     rotation: 0,
                 })
                 .accepted
+        );
+    }
+
+    #[test]
+    fn completed_layout_builder_retains_route_cells_across_pages_and_reservation_retry() {
+        let mut source = session();
+        place_pair(&mut source);
+        let cells = (0..400).map(|x| Point { x, y: 0 }).collect::<Vec<_>>();
+        source.routes[0] = Some(Route {
+            connection: "connection-0".into(),
+            source_port: Some("output-belt-1".into()),
+            target_port: Some("input-belt-1".into()),
+            cells: cells.clone(),
+        });
+        let expected = Layout {
+            schema: aic_layout::physical::SCHEMA.into(),
+            catalog_sha256: source.catalogs.identity.clone(),
+            problem: source.problem.as_ref().clone(),
+            solution: Solution {
+                poses: source.poses.iter().flatten().cloned().collect(),
+                terminal_poses: vec![],
+                routes: source.routes.iter().flatten().cloned().collect(),
+                bridges: vec![],
+                junctions: vec![],
+            },
+        };
+        let mut builder = CompletedLayoutCursor::new(&source);
+        let mut charged = 0;
+        let mut reservation_attempts = 0;
+        let mut pending_pages = 0;
+        let builder_live = std::cell::Cell::new(0usize);
+        let actual = loop {
+            let mut page_visits = 0;
+            match builder
+                .advance(
+                    |count| {
+                        if page_visits == 1 {
+                            return 0;
+                        }
+                        page_visits += 1;
+                        charged += 1;
+                        count.min(1)
+                    },
+                    |bytes| {
+                        reservation_attempts += 1;
+                        if reservation_attempts % 3 == 0 {
+                            MaterializationReservation::Retry
+                        } else {
+                            builder_live.set(builder_live.get() + bytes);
+                            MaterializationReservation::Granted
+                        }
+                    },
+                    |bytes| builder_live.set(builder_live.get() - bytes),
+                )
+                .unwrap()
+            {
+                MaterializationAdvance::Pending => pending_pages += 1,
+                MaterializationAdvance::Complete {
+                    layout,
+                    reserved_bytes,
+                } => break (layout, reserved_bytes),
+            }
+        };
+        let (actual, retained_bytes) = actual;
+        assert_eq!(builder_live.get(), retained_bytes);
+        assert_eq!(actual, expected);
+        assert_eq!(charged, 1 + 2 + 1 + 2 + 1 + cells.len());
+        assert!(pending_pages > cells.len());
+        let layout_heap = std::mem::size_of::<Layout>()
+            + actual.schema.len()
+            + actual.catalog_sha256.len()
+            + actual.problem.blocks.capacity() * std::mem::size_of::<Block>()
+            + actual
+                .problem
+                .blocks
+                .iter()
+                .map(|block| block.id.len() + block.facility.len())
+                .sum::<usize>()
+            + actual.problem.connections.capacity() * std::mem::size_of::<Connection>()
+            + actual
+                .problem
+                .connections
+                .iter()
+                .map(|connection| {
+                    connection.id.len()
+                        + connection.source.len()
+                        + connection.target.len()
+                        + connection.commodity.len()
+                })
+                .sum::<usize>()
+            + actual.solution.poses.capacity() * std::mem::size_of::<Pose>()
+            + actual
+                .solution
+                .poses
+                .iter()
+                .map(|pose| pose.block.len())
+                .sum::<usize>()
+            + actual.solution.routes.capacity() * std::mem::size_of::<Route>()
+            + actual
+                .solution
+                .routes
+                .iter()
+                .map(|route| {
+                    route.connection.len()
+                        + route.source_port.as_ref().map_or(0, String::len)
+                        + route.target_port.as_ref().map_or(0, String::len)
+                        + route.cells.capacity() * std::mem::size_of::<Point>()
+                })
+                .sum::<usize>();
+        assert!(retained_bytes >= layout_heap);
+        assert_eq!(builder.reserved_bytes(), 0);
+        let mut uninterrupted = CompletedLayoutCursor::new(&source);
+        let mut visit_calls = 0;
+        let mut uninterrupted_charges = 0;
+        let direct = uninterrupted
+            .advance(
+                |count| {
+                    visit_calls += 1;
+                    uninterrupted_charges += count;
+                    count
+                },
+                |_| MaterializationReservation::Granted,
+                |_| {},
+            )
+            .unwrap();
+        let MaterializationAdvance::Complete { layout: direct, .. } = direct else {
+            panic!("uninterrupted builder yielded");
+        };
+        assert_eq!(direct, actual);
+        assert_eq!(uninterrupted_charges, charged);
+        assert!(
+            visit_calls < 20,
+            "route cells should copy in bounded batches"
+        );
+        let live_bytes = std::cell::Cell::new(0);
+        let mut cancelled = CompletedLayoutCursor::new(&source);
+        assert!(matches!(
+            cancelled
+                .advance(
+                    |_| 0,
+                    |bytes| {
+                        live_bytes.set(live_bytes.get() + bytes);
+                        MaterializationReservation::Granted
+                    },
+                    |bytes| live_bytes.set(live_bytes.get() - bytes),
+                )
+                .unwrap(),
+            MaterializationAdvance::Pending
+        ));
+        assert!(live_bytes.get() > 0);
+        cancelled.cancel(|bytes| live_bytes.set(live_bytes.get() - bytes));
+        assert_eq!(live_bytes.get(), 0);
+
+        let denied_live = std::cell::Cell::new(0usize);
+        let mut attempts = 0;
+        let mut denied = CompletedLayoutCursor::new(&source);
+        let failure = denied
+            .advance(
+                |count| count,
+                |bytes| {
+                    attempts += 1;
+                    if attempts == 1 {
+                        denied_live.set(denied_live.get() + bytes);
+                        MaterializationReservation::Granted
+                    } else {
+                        MaterializationReservation::Denied
+                    }
+                },
+                |bytes| denied_live.set(denied_live.get() - bytes),
+            )
+            .err()
+            .expect("second builder reservation should be denied");
+        assert_eq!(failure.code, "constructive.layout-materialization-memory");
+        assert_eq!(denied_live.get(), 0);
+    }
+
+    #[test]
+    fn completed_layout_builder_orders_components_across_pages() {
+        let mut source = session();
+        for (index, id) in ["component-b", "component-a"].into_iter().enumerate() {
+            let point = Point {
+                x: index as i64,
+                y: 0,
+            };
+            source.bridges.insert(
+                (TransportKind::Belt, point),
+                Bridge {
+                    id: format!("bridge-{id}"),
+                    component: id.into(),
+                    position: point,
+                    rotation: 0,
+                    channels: [BridgeAxis::Horizontal, BridgeAxis::Vertical].map(|axis| {
+                        BridgeChannel {
+                            axis,
+                            commodity: "test-item".into(),
+                            connections: vec!["connection-0".into()],
+                        }
+                    }),
+                },
+            );
+            source.junctions.insert(
+                (TransportKind::Belt, point),
+                Junction {
+                    id: format!("junction-{id}"),
+                    component: id.into(),
+                    position: point,
+                    rotation: 0,
+                    connections: vec!["connection-0".into()],
+                },
+            );
+        }
+        let live = std::cell::Cell::new(0usize);
+        let mut cursor = CompletedLayoutCursor::new(&source);
+        let (layout, reserved_bytes) = loop {
+            let mut page_visits = 0;
+            match cursor
+                .advance(
+                    |count| {
+                        if page_visits == 1 {
+                            0
+                        } else {
+                            page_visits += 1;
+                            count.min(1)
+                        }
+                    },
+                    |bytes| {
+                        live.set(live.get() + bytes);
+                        MaterializationReservation::Granted
+                    },
+                    |bytes| live.set(live.get() - bytes),
+                )
+                .unwrap()
+            {
+                MaterializationAdvance::Pending => {}
+                MaterializationAdvance::Complete {
+                    layout,
+                    reserved_bytes,
+                } => break (layout, reserved_bytes),
+            }
+        };
+        assert_eq!(live.get(), reserved_bytes);
+        assert_eq!(
+            layout
+                .solution
+                .bridges
+                .iter()
+                .map(|bridge| bridge.id.as_str())
+                .collect::<Vec<_>>(),
+            ["bridge-component-a", "bridge-component-b"]
+        );
+        assert_eq!(
+            layout
+                .solution
+                .junctions
+                .iter()
+                .map(|junction| junction.id.as_str())
+                .collect::<Vec<_>>(),
+            ["junction-component-a", "junction-component-b"]
         );
     }
 
@@ -2177,7 +2475,7 @@ mod tests {
         })
     }
 
-    fn route_candidate_config() -> routing_candidates::Config {
+    pub(super) fn route_candidate_config() -> routing_candidates::Config {
         routing_candidates::Config {
             bounds: aic_layout::geometry::Bounds {
                 min_x: 0,
@@ -2245,7 +2543,7 @@ mod tests {
             .unwrap();
         allowance.release_peak(reserved_bytes);
         assert!(!draft.route_is_complete(draft.connections["output-a"]));
-        let next = draft
+        let mut next = draft
             .route_candidates(
                 &routing_candidates::Request {
                     state_revision: draft.revision(),
@@ -2256,8 +2554,12 @@ mod tests {
             .unwrap()
             .candidates[0]
             .clone();
+        let before_next = draft.clone();
         draft.apply_route_candidate(&next).unwrap();
-        let restored = draft
+        next.physical_cost = before_next
+            .physical_cost_between(&draft, std::slice::from_ref(&next.connection))
+            .unwrap();
+        let mut restored = draft
             .route_candidates(
                 &routing_candidates::Request {
                     state_revision: draft.revision(),
@@ -2268,6 +2570,11 @@ mod tests {
             .unwrap()
             .candidates[0]
             .clone();
+        let before_restored = draft.clone();
+        draft.apply_route_candidate(&restored).unwrap();
+        restored.physical_cost = before_restored
+            .physical_cost_between(&draft, std::slice::from_ref(&restored.connection))
+            .unwrap();
         let expanded = next.expanded + restored.expanded;
         let candidate = routing_candidates::RepairCandidate {
             schema: routing_candidates::REPAIR_CANDIDATE_SCHEMA.into(),
@@ -2275,6 +2582,10 @@ mod tests {
             removed: vec!["output-a".into()],
             replacements: vec![next, restored],
             expanded,
+            physical_cost: session
+                .physical_cost_between(&draft, &["output-a".into(), "output-b".into()])
+                .unwrap(),
+            charged_work: Default::default(),
         };
         let original_bytes = serde_json::to_vec(&original).unwrap();
         let mut invalid = candidate.clone();
@@ -2324,6 +2635,15 @@ mod tests {
                 .code,
             "constructive.repair-revision"
         );
+        let mut wrong_cost = candidate.clone();
+        wrong_cost.physical_cost.route_steps_delta += 1;
+        assert_eq!(
+            session
+                .apply_repair_candidate(&request, &wrong_cost)
+                .unwrap_err()
+                .code,
+            "constructive.repair-witness"
+        );
         assert_eq!(
             serde_json::to_vec(&session.observe()).unwrap(),
             original_bytes
@@ -2368,6 +2688,16 @@ mod tests {
             .map(|byte| format!("{byte:02x}"))
             .collect::<String>();
         assert_eq!(session.repair_state_sha256().unwrap(), legacy_digest);
+        let legacy_hierarchical_identity =
+            serde_json::to_vec(&(&session.problem, session.observe())).unwrap();
+        let legacy_hierarchical_digest = sha2::Sha256::digest(legacy_hierarchical_identity)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        assert_eq!(
+            session.hierarchical_state_sha256().unwrap(),
+            legacy_hierarchical_digest
+        );
         let first_route = session.observe().routes[0].clone().unwrap();
         let blocked = session
             .route_candidates(
@@ -2394,7 +2724,7 @@ mod tests {
             .prepare_repair_draft_with_allowance(&request, &["first".into()], &mut allowance)
             .unwrap();
         allowance.release_peak(reserved_bytes);
-        let second = draft
+        let mut second = draft
             .route_candidates(
                 &routing_candidates::Request {
                     state_revision: draft.revision(),
@@ -2405,8 +2735,12 @@ mod tests {
             .unwrap()
             .candidates[0]
             .clone();
+        let before_second = draft.clone();
         draft.apply_route_candidate(&second).unwrap();
-        let replacement = draft
+        second.physical_cost = before_second
+            .physical_cost_between(&draft, std::slice::from_ref(&second.connection))
+            .unwrap();
+        let mut replacement = draft
             .route_candidates(
                 &routing_candidates::Request {
                     state_revision: draft.revision(),
@@ -2417,12 +2751,21 @@ mod tests {
             .unwrap()
             .candidates[0]
             .clone();
+        let before_replacement = draft.clone();
+        draft.apply_route_candidate(&replacement).unwrap();
+        replacement.physical_cost = before_replacement
+            .physical_cost_between(&draft, std::slice::from_ref(&replacement.connection))
+            .unwrap();
         let candidate = routing_candidates::RepairCandidate {
             schema: routing_candidates::REPAIR_CANDIDATE_SCHEMA.into(),
             state_revision: request.state_revision,
             removed: vec!["first".into()],
             expanded: second.expanded + replacement.expanded,
             replacements: vec![second, replacement],
+            physical_cost: session
+                .physical_cost_between(&draft, &["first".into(), "second".into()])
+                .unwrap(),
+            charged_work: Default::default(),
         };
         session
             .apply_repair_candidate(&request, &candidate)
@@ -2465,7 +2808,7 @@ mod tests {
             )
             .unwrap();
         let _ = reserved;
-        let second = partial_draft
+        let mut second = partial_draft
             .route_candidates(
                 &routing_candidates::Request {
                     state_revision: partial_draft.revision(),
@@ -2476,8 +2819,12 @@ mod tests {
             .unwrap()
             .candidates[0]
             .clone();
+        let before_second = partial_draft.clone();
         partial_draft.apply_route_candidate(&second).unwrap();
-        let first = partial_draft
+        second.physical_cost = before_second
+            .physical_cost_between(&partial_draft, std::slice::from_ref(&second.connection))
+            .unwrap();
+        let mut first = partial_draft
             .route_candidates(
                 &routing_candidates::Request {
                     state_revision: partial_draft.revision(),
@@ -2488,6 +2835,11 @@ mod tests {
             .unwrap()
             .candidates[0]
             .clone();
+        let before_first = partial_draft.clone();
+        partial_draft.apply_route_candidate(&first).unwrap();
+        first.physical_cost = before_first
+            .physical_cost_between(&partial_draft, std::slice::from_ref(&first.connection))
+            .unwrap();
         let partial_source = partial.clone();
         partial
             .apply_repair_candidate(
@@ -2498,6 +2850,10 @@ mod tests {
                     removed: vec!["first".into()],
                     expanded: second.expanded + first.expanded,
                     replacements: vec![second, first],
+                    physical_cost: partial
+                        .physical_cost_between(&partial_draft, &["first".into(), "second".into()])
+                        .unwrap(),
+                    charged_work: Default::default(),
                 },
             )
             .unwrap();
@@ -2552,6 +2908,297 @@ mod tests {
                 .code,
             "constructive.repair-stable-state"
         );
+    }
+
+    #[test]
+    fn repair_draft_suspension_retains_and_releases_its_exact_reservation() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../docs/benchmarks/hierarchical-repair/fixture.json"
+        )))
+        .unwrap();
+        let mut source = Session::new(
+            serde_json::from_value(fixture["problem"].clone()).unwrap(),
+            catalogs(),
+            serde_json::from_value(fixture["limits"].clone()).unwrap(),
+        )
+        .unwrap();
+        let config: routing_candidates::Config =
+            serde_json::from_value(fixture["candidate"].clone()).unwrap();
+        for command in fixture["prefix"].as_array().unwrap() {
+            assert!(
+                source
+                    .step(serde_json::from_value(command.clone()).unwrap())
+                    .accepted
+            );
+        }
+        let tree = routing_candidates::SearchMemoryBudget::new(64 * 1024 * 1024);
+        let mut allowance = routing_candidates::RequestAllowance::with_memory_budget(
+            config.request_allowance.clone(),
+            Some(tree.clone()),
+        );
+        let (scope, scope_bytes) = source
+            .repair_scope_for_policy(&["second".into()], 1, &config, &mut allowance)
+            .unwrap();
+        let draft = scope
+            .start_draft(&["first".into()], &mut allowance)
+            .unwrap();
+        let state = draft.suspend();
+        let held = tree.live_bytes();
+        assert!(held > scope_bytes);
+        let draft = scope.resume_draft(state, &mut allowance).unwrap();
+        assert_eq!(
+            tree.live_bytes(),
+            held,
+            "resume must not repeat reservation"
+        );
+        draft.suspend().release(&mut allowance);
+        assert_eq!(tree.live_bytes(), scope_bytes);
+        drop(scope);
+        allowance.release_peak(scope_bytes);
+        assert_eq!(tree.live_bytes(), 0);
+    }
+
+    #[test]
+    fn preheld_repair_preparation_matches_one_shot_scope_and_order() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../docs/benchmarks/hierarchical-repair/fixture.json"
+        )))
+        .unwrap();
+        let mut source = Session::new(
+            serde_json::from_value(fixture["problem"].clone()).unwrap(),
+            catalogs(),
+            serde_json::from_value(fixture["limits"].clone()).unwrap(),
+        )
+        .unwrap();
+        let config: routing_candidates::Config =
+            serde_json::from_value(fixture["candidate"].clone()).unwrap();
+        let mut scope_allowance =
+            routing_candidates::RequestAllowance::new(config.request_allowance.clone());
+        assert_eq!(
+            source
+                .repair_scope_for_policy(&["second".into()], 1, &config, &mut scope_allowance)
+                .err()
+                .expect("no committed route has an empty policy scope")
+                .code,
+            "constructive.repair-empty-scope"
+        );
+        assert_eq!(
+            source
+                .repair_scope_for_policy(&[], 1, &config, &mut scope_allowance)
+                .err()
+                .expect("empty selected task is malformed before any route is committed")
+                .code,
+            "constructive.repair-scope"
+        );
+        assert_eq!(
+            source
+                .repair_scope_for_policy(&["second".into()], 0, &config, &mut scope_allowance)
+                .err()
+                .expect("zero removal limit is malformed before any route is committed")
+                .code,
+            "constructive.repair-scope"
+        );
+        for command in fixture["prefix"].as_array().unwrap() {
+            assert!(
+                source
+                    .step(serde_json::from_value(command.clone()).unwrap())
+                    .accepted
+            );
+        }
+        let selected = vec!["second".to_owned()];
+        assert_eq!(
+            source
+                .repair_scope_for_policy(&[], 1, &config, &mut scope_allowance)
+                .err()
+                .expect("missing selected task is malformed")
+                .code,
+            "constructive.repair-scope"
+        );
+        let mut old_allowance =
+            routing_candidates::RequestAllowance::new(config.request_allowance.clone());
+        let old = routing_candidates::PreparedRepair::new(
+            Arc::new(source.clone()),
+            &selected,
+            1,
+            &config,
+            &mut old_allowance,
+        )
+        .unwrap();
+        let (old_order, old_conflicts, old_bytes) = old.conflict_order(&mut old_allowance).unwrap();
+        let old_request = old.request().clone();
+
+        let mut allowance =
+            routing_candidates::RequestAllowance::new(config.request_allowance.clone());
+        let sizes = routing_candidates::PreparedRepair::measure_preparation(
+            &source,
+            &selected,
+            &config,
+            &mut allowance,
+        )
+        .unwrap();
+        allowance.reserve_peak(sizes.peak_bytes()).unwrap();
+        let prepared = routing_candidates::PreparedRepair::new_preheld(
+            Arc::new(source),
+            &selected,
+            1,
+            &config,
+            &mut allowance,
+            &sizes,
+        )
+        .unwrap();
+        let (order, conflicts, order_bytes) =
+            prepared.conflict_order_preheld(&mut allowance).unwrap();
+        assert_eq!(prepared.request(), &old_request);
+        assert_eq!(order, old_order);
+        assert_eq!(conflicts, old_conflicts);
+        assert_eq!(order_bytes, old_bytes);
+        assert_eq!(order_bytes, sizes.conflict_retained_bytes());
+        assert!(sizes.conflict_bytes() > order_bytes);
+        allowance.release_peak(sizes.peak_bytes() - sizes.retained_bytes());
+        assert_eq!(allowance.reserved_bytes(), sizes.retained_bytes());
+        drop(order);
+        drop(conflicts);
+        allowance.release_peak(order_bytes);
+        prepared.release(&mut allowance);
+        assert_eq!(allowance.reserved_bytes(), 0);
+        drop(old_order);
+        drop(old_conflicts);
+        old_allowance.release_peak(old_bytes);
+        old.release(&mut old_allowance);
+        assert_eq!(old_allowance.reserved_bytes(), 0);
+    }
+
+    #[test]
+    fn aggregate_search_memory_stop_reports_attempt_and_releases() {
+        let tree = routing_candidates::SearchMemoryBudget::new(10);
+        tree.reserve(8).unwrap();
+        let stop = tree.reserve(3).unwrap_err();
+        assert_eq!(stop.reason, "aggregate-memory-limit");
+        assert_eq!(stop.used, 8);
+        assert_eq!(stop.limit, 10);
+        assert_eq!(stop.attempted_bytes, Some(3));
+        assert_eq!(stop.aggregate_peak_bytes, Some(8));
+        tree.release(8);
+        assert_eq!(tree.live_bytes(), 0);
+    }
+
+    #[test]
+    fn temporary_page_windows_are_independent_and_do_not_shrink_hard_caps() {
+        use routing_candidates::{CUMULATIVE_WORK_KINDS, WorkKind};
+
+        let mut allowance = routing_candidates::RequestAllowance::new(Default::default());
+        let snapshot = CUMULATIVE_WORK_KINDS.map(|kind| allowance.remaining(kind) / 2);
+        let quota = snapshot[0];
+        allowance.begin_page_window(snapshot, std::time::Duration::from_secs(1));
+        allowance.charge(WorkKind::EndpointVisits, quota).unwrap();
+        let yield_stop = allowance.charge(WorkKind::EndpointVisits, 1).unwrap_err();
+        assert_eq!(yield_stop.reason, "page-quantum");
+        assert!(allowance.last_stop().is_none());
+        allowance.end_page_window();
+
+        // Repair starts with its own half of the post-scope snapshot while
+        // both stages still consume the one request's full hard allowance.
+        allowance.begin_page_window(snapshot, std::time::Duration::from_secs(1));
+        allowance.charge(WorkKind::EndpointVisits, quota).unwrap();
+        allowance.end_page_window();
+        assert_eq!(allowance.remaining(WorkKind::EndpointVisits), 0);
+        let hard = allowance.charge(WorkKind::EndpointVisits, 1).unwrap_err();
+        assert_eq!(hard.reason, "work-limit");
+    }
+
+    #[test]
+    fn suspended_page_window_keeps_absolute_work_and_active_time_credit() {
+        use routing_candidates::{CUMULATIVE_WORK_KINDS, WorkKind};
+
+        let mut allowance = routing_candidates::RequestAllowance::new(Default::default());
+        let mut quota = CUMULATIVE_WORK_KINDS.map(|kind| allowance.remaining(kind) / 2);
+        let endpoint = CUMULATIVE_WORK_KINDS
+            .iter()
+            .position(|kind| *kind == WorkKind::EndpointVisits)
+            .unwrap();
+        let hard_remaining = allowance.remaining(WorkKind::EndpointVisits);
+        quota[endpoint] = 3;
+        allowance.begin_page_window(quota, std::time::Duration::from_millis(100));
+        allowance.charge(WorkKind::EndpointVisits, 2).unwrap();
+        allowance.suspend_page_window();
+        allowance.pause().unwrap();
+        let remaining = allowance.page_window_remaining().unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        assert_eq!(allowance.page_window_remaining(), Some(remaining));
+        assert!(
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                allowance.charge(WorkKind::EndpointVisits, 1)
+            }))
+            .is_err()
+        );
+        assert!(
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                allowance.preflight(WorkKind::EndpointVisits, 1)
+            }))
+            .is_err()
+        );
+        allowance.resume();
+        assert!(
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                allowance.record_completed(WorkKind::EndpointVisits, 1)
+            }))
+            .is_err()
+        );
+        allowance.resume_page_window();
+        allowance.charge(WorkKind::EndpointVisits, 1).unwrap();
+        let stop = allowance.charge(WorkKind::EndpointVisits, 1).unwrap_err();
+        assert_eq!(stop.reason, "page-quantum");
+        assert_eq!(stop.limit, 3);
+        assert_eq!(
+            allowance.remaining(WorkKind::EndpointVisits),
+            hard_remaining - 3
+        );
+        allowance.end_page_window();
+    }
+
+    #[test]
+    fn page_window_and_hard_deadline_count_only_active_time_across_pause() {
+        use routing_candidates::CUMULATIVE_WORK_KINDS;
+
+        let caps = routing_candidates::AllowanceCaps {
+            deadline_ms: 5_000,
+            ..Default::default()
+        };
+        let mut allowance = routing_candidates::RequestAllowance::new(caps);
+        allowance.begin_page_window(
+            [usize::MAX; CUMULATIVE_WORK_KINDS.len()],
+            std::time::Duration::from_millis(250),
+        );
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        allowance.suspend_page_window();
+        allowance.pause().unwrap();
+        let page_remaining = allowance.page_window_remaining();
+        std::thread::sleep(std::time::Duration::from_millis(110));
+        assert_eq!(allowance.page_window_remaining(), page_remaining);
+        allowance.resume();
+        allowance.resume_page_window();
+        allowance.check_deadline().unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(255));
+        let stop = allowance.check_deadline().unwrap_err();
+        assert_eq!(stop.reason, "page-quantum");
+        allowance.end_page_window();
+
+        let hard_caps = routing_candidates::AllowanceCaps {
+            deadline_ms: 500,
+            ..Default::default()
+        };
+        let mut hard_allowance = routing_candidates::RequestAllowance::new(hard_caps);
+        let original_deadline = hard_allowance.deadline();
+        hard_allowance.pause().unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(30));
+        hard_allowance.resume();
+        assert!(hard_allowance.deadline() > original_deadline);
+        hard_allowance.check_deadline().unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(510));
+        let hard = hard_allowance.check_deadline().unwrap_err();
+        assert_eq!(hard.reason, "deadline");
     }
 
     #[test]
@@ -2681,6 +3328,20 @@ mod tests {
         assert!(report.native_rejections.is_empty());
         assert!(report.minimum_pairwise_dissimilarity.unwrap() > 0.0);
         assert_ne!(report.candidates[0].cells, report.candidates[1].cells);
+        assert_eq!(
+            report.candidates[0].physical_cost.route_steps_delta,
+            report.candidates[0].steps
+        );
+        assert_eq!(
+            report.candidates[0].physical_cost.route_turns_delta,
+            report.candidates[0].turns
+        );
+        assert!(
+            report.candidates[0]
+                .physical_cost
+                .occupied_transport_cells_delta
+                > 0
+        );
         assert!(matches!(
             report.candidates[0].commands.first(),
             Some(Command::BeginRoute { .. })
@@ -2729,6 +3390,18 @@ mod tests {
         assert_eq!(capped.observe().revision, revision);
         assert!(capped.observe().active.is_none());
 
+        let mut wrong_cost = report.candidates[0].clone();
+        wrong_cost.physical_cost.route_steps_delta += 1;
+        let mut unchanged = session.clone();
+        assert_eq!(
+            unchanged
+                .apply_route_candidate(&wrong_cost)
+                .unwrap_err()
+                .code,
+            "constructive.route-candidate-physical-cost"
+        );
+        assert_eq!(unchanged.observe().revision, revision);
+
         let mut committed = session.clone();
         let steps = committed
             .apply_route_candidate(&report.candidates[0])
@@ -2739,6 +3412,150 @@ mod tests {
             .apply_route_candidate(&report.candidates[1])
             .unwrap_err();
         assert_eq!(stale.code, "constructive.stale-route-candidate");
+    }
+
+    #[test]
+    fn route_pager_resumes_to_a_distinct_later_native_candidate() {
+        let mut source = session();
+        for command in [
+            Command::Place {
+                block: "source".into(),
+                position: Point { x: 5, y: 12 },
+                rotation: 0,
+            },
+            Command::Place {
+                block: "target".into(),
+                position: Point { x: 5, y: 2 },
+                rotation: 0,
+            },
+        ] {
+            assert!(source.step(command).accepted);
+        }
+        let config = route_candidate_config();
+        let request = routing_candidates::Request {
+            state_revision: source.revision(),
+            connection: "connection-0".into(),
+        };
+        let mut allowance =
+            routing_candidates::RequestAllowance::new(config.request_allowance.clone());
+        let mut pager = routing_candidates::RouteCandidatePager::new(
+            &source,
+            request,
+            config.clone(),
+            None,
+            vec![1],
+            &mut allowance,
+        )
+        .unwrap();
+        let mut found = Vec::new();
+        allowance.begin_page_window(
+            [usize::MAX; routing_candidates::CUMULATIVE_WORK_KINDS.len()],
+            std::time::Duration::ZERO,
+        );
+        let expired_window = pager
+            .next_page(
+                &source,
+                &[1],
+                &mut allowance,
+                1,
+                10_000,
+                1_000_000,
+                std::time::Instant::now() + std::time::Duration::from_secs(10),
+            )
+            .unwrap();
+        allowance.end_page_window();
+        assert!(matches!(
+            expired_window.status,
+            routing_candidates::RoutePageStatus::Pending
+        ));
+        assert_eq!(pager.work_counts(), (0, 0));
+        let paused = pager
+            .next_page(
+                &source,
+                &[1],
+                &mut allowance,
+                1,
+                1,
+                1_000_000,
+                std::time::Instant::now() + std::time::Duration::from_secs(10),
+            )
+            .unwrap();
+        assert!(paused.candidate_ids.is_empty());
+        assert!(matches!(
+            paused.status,
+            routing_candidates::RoutePageStatus::Pending
+        ));
+        assert_eq!(pager.work_counts().0, 0, "in-flight search was retained");
+        let mut pages = 0;
+        while found.len() < 2 && pages < 20 {
+            pages += 1;
+            let page = pager
+                .next_page(
+                    &source,
+                    &[1],
+                    &mut allowance,
+                    1,
+                    10_000,
+                    1_000_000,
+                    std::time::Instant::now() + std::time::Duration::from_secs(10),
+                )
+                .unwrap();
+            found.extend(page.candidate_ids);
+            if matches!(
+                page.status,
+                routing_candidates::RoutePageStatus::Complete(_)
+            ) {
+                break;
+            }
+        }
+        assert!(
+            found.len() >= 2,
+            "later page did not expose a second candidate"
+        );
+        assert_ne!(
+            pager.candidates()[found[0]].cells,
+            pager.candidates()[found[1]].cells
+        );
+        for &id in &found {
+            source
+                .clone()
+                .apply_route_candidate(&pager.candidates()[id])
+                .unwrap();
+        }
+        pager.release(&mut allowance);
+
+        let mut expired_caps = config.request_allowance.clone();
+        expired_caps.deadline_ms = 200;
+        let mut expired_allowance = routing_candidates::RequestAllowance::new(expired_caps);
+        let mut expired_pager = routing_candidates::RouteCandidatePager::new(
+            &source,
+            routing_candidates::Request {
+                state_revision: source.revision(),
+                connection: "connection-0".into(),
+            },
+            config,
+            None,
+            vec![2],
+            &mut expired_allowance,
+        )
+        .unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(220));
+        let expired = expired_pager
+            .next_page(
+                &source,
+                &[2],
+                &mut expired_allowance,
+                1,
+                10_000,
+                1_000_000,
+                std::time::Instant::now() - std::time::Duration::from_millis(1),
+            )
+            .unwrap();
+        assert!(matches!(
+            expired.status,
+            routing_candidates::RoutePageStatus::Unknown(stop) if stop.reason == "deadline"
+        ));
+        expired_pager.release(&mut expired_allowance);
     }
 
     #[test]
@@ -2955,7 +3772,10 @@ mod tests {
         let observation = session
             .route_learning_observation(&learning_config(), 0)
             .unwrap();
-        let command_choices = observation.domain.choices(&learning::Cursor::Command);
+        let command_choices = observation
+            .domain
+            .choices(&learning::Cursor::Command)
+            .unwrap();
         assert_eq!(command_choices.len(), 1);
         assert_eq!(
             command_choices[0].features[learning::CommandKind::BeginRoute as usize],
@@ -2971,7 +3791,8 @@ mod tests {
         };
         let connections = observation
             .domain
-            .choices(&learning::Cursor::RouteConnection);
+            .choices(&learning::Cursor::RouteConnection)
+            .unwrap();
         assert_eq!(connections.len(), 1);
         assert_eq!(connections[0].references[0], 2);
 
@@ -2979,7 +3800,7 @@ mod tests {
         let active = session
             .route_learning_observation_with_abort(&learning_config(), 0, false)
             .unwrap();
-        let active_choices = active.domain.choices(&learning::Cursor::Command);
+        let active_choices = active.domain.choices(&learning::Cursor::Command).unwrap();
         assert!(
             active_choices
                 .iter()
@@ -2993,6 +3814,134 @@ mod tests {
     }
 
     #[test]
+    fn route_learning_domain_propagates_port_replay_stop() {
+        let mut session = session();
+        place_pair(&mut session);
+        session.replay_meter = Some(Arc::new(ReplayMeter::new([
+            usize::MAX,
+            usize::MAX,
+            0,
+            usize::MAX,
+        ])));
+        let failure = session
+            .route_learning_observation(&learning_config(), 0)
+            .unwrap_err();
+        assert_eq!(failure.code, "constructive.route-request-work-limit");
+    }
+
+    #[test]
+    fn learning_domain_admits_sparse_canvas_above_old_cell_limit() {
+        let mut config = learning_config();
+        config.placement.max_x = 319;
+        config.placement.max_y = 319;
+        let mut session = session();
+        let observation = session.learning_observation(&config).unwrap();
+        let page = observation
+            .domain
+            .command_page(learning::CommandKind::Place, 0, 4)
+            .unwrap();
+        assert_eq!(page.commands.len(), 4);
+        assert_eq!(page.next_offset, 4);
+        assert!(!page.exhausted);
+        place_pair(&mut session);
+        let route = session.route_learning_observation(&config, 0).unwrap();
+        assert_eq!(
+            route.domain.available_command_kinds(),
+            vec![learning::CommandKind::BeginRoute]
+        );
+    }
+
+    #[test]
+    fn route_guidance_preparation_admits_sparse_canvas_above_old_cell_limit() {
+        let mut session = session();
+        place_pair(&mut session);
+        let mut candidate = route_candidate_config();
+        candidate.bounds.max_x = 319;
+        candidate.bounds.max_y = 319;
+        let learning = learning::Config {
+            placement: candidate.bounds,
+            extension_lengths: vec![1, 2, 4],
+        };
+        let request = routing_candidates::Request {
+            state_revision: session.revision(),
+            connection: "connection-0".into(),
+        };
+        let mut allowance =
+            routing_candidates::RequestAllowance::new(candidate.request_allowance.clone());
+        let guidance = session
+            .route_guidance_input_with_allowance(&request, &candidate, &learning, &mut allowance)
+            .unwrap();
+        assert_eq!(guidance.bounds, candidate.bounds);
+        assert_eq!(
+            guidance.grid.len(),
+            320 * 320 * routing_candidates::GUIDANCE_GRID_CHANNELS
+        );
+    }
+
+    #[test]
+    fn placement_domain_peak_covers_retained_index_and_preserves_pages() {
+        let mut config = learning_config();
+        config.placement.max_x = 319;
+        config.placement.max_y = 319;
+        let source = session();
+        let peak = source
+            .learning_placement_domain_peak_bytes(&config)
+            .unwrap();
+        let placement = source.learning_placement_domain(&config).unwrap();
+        let full = source.learning_domain(&config).unwrap();
+        assert!(peak >= placement.retained_bytes());
+        assert_eq!(
+            placement
+                .command_page(learning::CommandKind::Place, 1024, 16)
+                .unwrap(),
+            full.command_page(learning::CommandKind::Place, 1024, 16)
+                .unwrap()
+        );
+        assert_eq!(
+            placement
+                .command_page(learning::CommandKind::PlaceTerminal, 3, 16)
+                .unwrap(),
+            full.command_page(learning::CommandKind::PlaceTerminal, 3, 16)
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn bounded_learning_input_holds_and_refunds_graph_memory() {
+        use routing_candidates::{AllowanceCaps, RequestAllowance, RequestFailure};
+
+        let mut session = session();
+        place_pair(&mut session);
+        let config = learning_config();
+        let mut allowance = RequestAllowance::new(AllowanceCaps::default());
+        let (input, bytes) = session
+            .route_guidance_learning_input_with_allowance(&config, 0, &mut allowance)
+            .unwrap();
+        assert!(bytes > 0);
+        assert!(!input.entity_features.is_empty());
+        assert!(matches!(
+            allowance.reserve_peak(AllowanceCaps::default().peak_live_bytes),
+            Err(stop) if stop.reason == "peak-memory-limit"
+        ));
+        drop(input);
+        allowance.release_peak(bytes);
+        allowance
+            .reserve_peak(AllowanceCaps::default().peak_live_bytes)
+            .unwrap();
+        allowance.release_peak(AllowanceCaps::default().peak_live_bytes);
+
+        let mut caps = AllowanceCaps::default();
+        caps.peak_live_bytes = 1;
+        let mut too_small = RequestAllowance::new(caps);
+        assert!(matches!(
+            session.route_guidance_learning_input_with_allowance(&config, 0, &mut too_small),
+            Err(RequestFailure::Stopped(stop)) if stop.reason == "peak-memory-limit"
+        ));
+        too_small.reserve_peak(1).unwrap();
+        too_small.release_peak(1);
+    }
+
+    #[test]
     fn learning_command_pages_preserve_native_factor_traces() {
         let session = session();
         let observation = session.learning_observation(&learning_config()).unwrap();
@@ -3002,11 +3951,12 @@ mod tests {
         );
         let first = observation
             .domain
-            .command_page(learning::CommandKind::Place, 0, 3);
-        let second =
-            observation
-                .domain
-                .command_page(learning::CommandKind::Place, first.next_offset, 3);
+            .command_page(learning::CommandKind::Place, 0, 3)
+            .unwrap();
+        let second = observation
+            .domain
+            .command_page(learning::CommandKind::Place, first.next_offset, 3)
+            .unwrap();
         assert_eq!(first.commands.len(), 3);
         assert_eq!(second.commands.len(), 3);
         assert_eq!(first.next_offset, 3);
@@ -3085,6 +4035,712 @@ mod tests {
         );
         assert!(session.metrics().is_some());
         assert!(session.layout().is_some());
+    }
+
+    #[test]
+    fn independent_validator_resumes_without_changing_metrics_or_diagnostics() {
+        use aic_layout::validation::{
+            ValidationAdvance, ValidationCursor, ValidationReservation, ValidationVisit,
+        };
+
+        let mut source = session();
+        place_pair(&mut source);
+        assert!(begin(&mut source).accepted);
+        assert!(
+            source
+                .step(Command::Extend {
+                    direction: Direction::North,
+                    length: 2,
+                })
+                .accepted
+        );
+        assert!(source.step(Command::Connect).fully_validated);
+
+        let mut layout = source.layout().unwrap();
+        for invalid in [false, true] {
+            if invalid {
+                layout.solution.routes[0].cells[1] = layout.solution.routes[0].cells[0];
+            }
+            let mut expected_visits = 0;
+            let expected =
+                aic_layout::validation::validate_with_visit(&layout, &source.catalogs, || {
+                    expected_visits += 1;
+                    Ok(())
+                });
+            let mut cursor = ValidationCursor::new(&layout, &*source.catalogs);
+            let mut pending = 0;
+            let mut charged_visits = 0;
+            let reservation_attempts = std::cell::Cell::new(0);
+            let reservation_retries = std::cell::Cell::new(0);
+            let live_bytes = std::cell::Cell::new(0);
+            let actual = loop {
+                let mut visits = 0;
+                match cursor.advance(
+                    || {
+                        if visits == 1 {
+                            ValidationVisit::Retry
+                        } else {
+                            visits += 1;
+                            charged_visits += 1;
+                            ValidationVisit::Granted
+                        }
+                    },
+                    |bytes| {
+                        let attempts = reservation_attempts.get() + 1;
+                        reservation_attempts.set(attempts);
+                        if attempts % 2 == 0 {
+                            reservation_retries.set(reservation_retries.get() + 1);
+                            ValidationReservation::Retry
+                        } else {
+                            live_bytes.set(live_bytes.get() + bytes);
+                            ValidationReservation::Granted
+                        }
+                    },
+                    |bytes| live_bytes.set(live_bytes.get() - bytes),
+                ) {
+                    ValidationAdvance::Pending => pending += 1,
+                    ValidationAdvance::Complete(result) => break result,
+                }
+            };
+            assert!(pending > 0);
+            assert_eq!(live_bytes.get(), 0);
+            assert!(reservation_attempts.get() > 0);
+            assert!(reservation_retries.get() > 0);
+            assert_eq!(charged_visits, expected_visits);
+            match (expected, actual) {
+                (Ok(expected), Ok(actual)) => assert_eq!(actual, expected),
+                (Err(expected), Err(actual)) => {
+                    assert_eq!(actual.code, expected.code);
+                    assert_eq!(actual.entity, expected.entity);
+                    assert_eq!(actual.message, expected.message);
+                }
+                _ => panic!("resumed validation changed the outcome"),
+            }
+        }
+        let live_bytes = std::cell::Cell::new(0);
+        let mut cancelled = ValidationCursor::new(&layout, &*source.catalogs);
+        let mut visits = 0;
+        assert!(matches!(
+            cancelled.advance(
+                || {
+                    if visits == 1 {
+                        ValidationVisit::Retry
+                    } else {
+                        visits += 1;
+                        ValidationVisit::Granted
+                    }
+                },
+                |bytes| {
+                    live_bytes.set(live_bytes.get() + bytes);
+                    ValidationReservation::Granted
+                },
+                |bytes| live_bytes.set(live_bytes.get() - bytes),
+            ),
+            ValidationAdvance::Pending
+        ));
+        assert!(live_bytes.get() > 0);
+        cancelled.cancel(|bytes| live_bytes.set(live_bytes.get() - bytes));
+        assert_eq!(live_bytes.get(), 0);
+    }
+
+    #[test]
+    #[ignore = "bounded local calibration for completed-layout materialization and validation"]
+    fn completed_layout_upper_scale_calibration() {
+        use aic_layout::validation::{
+            ValidationAdvance, ValidationCursor, ValidationReservation, ValidationVisit,
+        };
+        use std::cell::Cell;
+        use std::time::Instant;
+
+        let pairs = std::env::var("AIC_CALIBRATION_PAIRS")
+            .ok()
+            .map(|value| value.parse::<usize>().unwrap())
+            .unwrap_or(110);
+        let route_cells = std::env::var("AIC_CALIBRATION_ROUTE_CELLS")
+            .ok()
+            .map(|value| value.parse::<usize>().unwrap())
+            .unwrap_or(1_000);
+        let shared = std::env::var_os("AIC_CALIBRATION_SHARED").is_some();
+        let grid = std::env::var_os("AIC_CALIBRATION_GRID").is_some();
+        let mut columns = 1usize;
+        if grid {
+            while columns.saturating_mul(columns) < pairs {
+                columns += 1;
+            }
+        } else {
+            columns = pairs;
+        }
+        let lanes = if shared { 2 } else { 1 };
+        let mut problem = Problem {
+            blocks: Vec::with_capacity(pairs * 2),
+            terminals: Vec::new(),
+            connections: Vec::with_capacity(pairs * lanes),
+        };
+        for i in 0..pairs {
+            let source = format!("source-{i}");
+            let target = format!("target-{i}");
+            problem.blocks.push(Block {
+                id: source.clone(),
+                facility: "grinder-1-mode-normal".into(),
+            });
+            problem.blocks.push(Block {
+                id: target.clone(),
+                facility: "grinder-1-mode-normal".into(),
+            });
+            problem.connections.push(Connection {
+                id: format!("connection-{i}"),
+                source: source.clone(),
+                target: target.clone(),
+                commodity: "test-item".into(),
+                transport: TransportKind::Belt,
+                rate: Rate {
+                    numerator: 1,
+                    denominator: if shared { 8 } else { 2 },
+                },
+            });
+            if shared {
+                problem.connections.push(Connection {
+                    id: format!("connection-{i}-shared"),
+                    source,
+                    target,
+                    commodity: "test-item".into(),
+                    transport: TransportKind::Belt,
+                    rate: Rate {
+                        numerator: 1,
+                        denominator: 8,
+                    },
+                });
+            }
+        }
+        let mut source = Session::new(
+            problem,
+            catalogs(),
+            Limits {
+                max_turns: 10_000,
+                max_extension: 32,
+            },
+        )
+        .unwrap();
+        for i in 0..pairs {
+            let x = 5 + (i % columns) as i64 * 16;
+            let y = (i / columns) as i64 * (route_cells as i64 + 10);
+            source.poses[2 * i] = Some(Pose {
+                block: format!("source-{i}"),
+                position: Point {
+                    x,
+                    y: y + route_cells as i64 + 5,
+                },
+                rotation: 0,
+            });
+            source.poses[2 * i + 1] = Some(Pose {
+                block: format!("target-{i}"),
+                position: Point { x, y: y + 2 },
+                rotation: 0,
+            });
+            let cells = (0..route_cells)
+                .map(|offset| Point {
+                    x: x + 1,
+                    y: y + route_cells as i64 + 4 - offset as i64,
+                })
+                .collect::<Vec<_>>();
+            for lane in 0..lanes {
+                source.routes[i * lanes + lane] = Some(Route {
+                    connection: if lane == 0 {
+                        format!("connection-{i}")
+                    } else {
+                        format!("connection-{i}-shared")
+                    },
+                    source_port: Some("output-belt-1".into()),
+                    target_port: Some("input-belt-1".into()),
+                    cells: cells.clone(),
+                });
+            }
+            for point in cells {
+                source.occupied[layer(TransportKind::Belt)]
+                    .insert(point, (i * lanes..(i + 1) * lanes).collect());
+            }
+        }
+
+        let clone_started = Instant::now();
+        let cloned = source.clone();
+        std::hint::black_box(&cloned);
+        let clone_time = clone_started.elapsed();
+        assert!(Arc::ptr_eq(&source.problem, &cloned.problem));
+        drop(cloned);
+
+        let fork_started = Instant::now();
+        let mut fork_allowance = routing_candidates::RequestAllowance::new(Default::default());
+        let mut fork_cursor = native_replay::SessionForkCursor::new(&source);
+        let native_replay::ForkAdvance::Complete(_, Ok((fork, fork_bytes))) =
+            fork_cursor.advance(&mut fork_allowance, 0)
+        else {
+            panic!("unpaged fork calibration must complete");
+        };
+        let fork_time = fork_started.elapsed();
+        assert_eq!(fork.routes, source.routes);
+        assert_eq!(fork.occupied, source.occupied);
+        drop(fork);
+        fork_allowance.release_peak(fork_bytes);
+
+        let started = Instant::now();
+        let mut builder = CompletedLayoutCursor::new(&source);
+        let mut copied_visits = 0;
+        let MaterializationAdvance::Complete {
+            layout,
+            reserved_bytes: layout_bytes,
+        } = builder
+            .advance(
+                |count| {
+                    copied_visits += count;
+                    count
+                },
+                |_| MaterializationReservation::Granted,
+                |_| {},
+            )
+            .unwrap()
+        else {
+            panic!("unlimited materialization yielded");
+        };
+        let materialization_time = started.elapsed();
+        let mut expected_visits = 0;
+        let validation_started = Instant::now();
+        let expected =
+            aic_layout::validation::validate_with_visit(&layout, &source.catalogs, || {
+                expected_visits += 1;
+                Ok(())
+            })
+            .unwrap();
+        let one_shot_time = validation_started.elapsed();
+
+        let direct_metered_ms = if std::env::var_os("AIC_CALIBRATION_EXPECT_STOP").is_none() {
+            let mut direct_allowance =
+                routing_candidates::RequestAllowance::new(Default::default());
+            let direct_metered_started = Instant::now();
+            let direct_metered =
+                aic_layout::validation::validate_with_visit(&layout, &source.catalogs, || {
+                    direct_allowance
+                        .charge(routing_candidates::WorkKind::ValidationRecords, 1)
+                        .unwrap();
+                    Ok(())
+                })
+                .unwrap();
+            assert_eq!(direct_metered, expected);
+            assert_eq!(
+                direct_allowance
+                    .usage()
+                    .categories
+                    .get(&routing_candidates::WorkKind::ValidationRecords)
+                    .copied(),
+                Some(expected_visits)
+            );
+            Some(direct_metered_started.elapsed().as_millis())
+        } else {
+            None
+        };
+
+        let live_bytes = Cell::new(layout_bytes);
+        let peak_bytes = Cell::new(layout_bytes);
+        let mut cursor = ValidationCursor::new(&layout, &*source.catalogs);
+        let paged_started = Instant::now();
+        let mut actual_visits = 0;
+        let mut pages = 0;
+        let actual = loop {
+            let mut page_visits = 0;
+            match cursor.advance(
+                || {
+                    if page_visits == 4_096 {
+                        ValidationVisit::Retry
+                    } else {
+                        page_visits += 1;
+                        actual_visits += 1;
+                        ValidationVisit::Granted
+                    }
+                },
+                |bytes| {
+                    let next = live_bytes.get() + bytes;
+                    live_bytes.set(next);
+                    peak_bytes.set(peak_bytes.get().max(next));
+                    ValidationReservation::Granted
+                },
+                |bytes| live_bytes.set(live_bytes.get() - bytes),
+            ) {
+                ValidationAdvance::Pending => pages += 1,
+                ValidationAdvance::Complete(result) => break result.unwrap(),
+            }
+        };
+        assert_eq!(actual, expected);
+        assert_eq!(actual_visits, expected_visits);
+        assert_eq!(live_bytes.get(), layout_bytes);
+        let replay_started = Instant::now();
+        let mut replay = native_replay::NativeReplayProgress::new_borrowed(&source, &[]);
+        let mut replay_allowance = routing_candidates::RequestAllowance::new(Default::default());
+        let replay_result = replay.advance(&mut replay_allowance, 0);
+        if std::env::var_os("AIC_CALIBRATION_EXPECT_STOP").is_some() {
+            let native_replay::ReplayAdvance::Complete(
+                native_replay::SourceOwner::Borrowed(returned),
+                Err((routing_candidates::RequestFailure::Stopped(stop), outcomes, bytes)),
+                work,
+            ) = replay_result
+            else {
+                panic!("calibration expected a typed hard replay stop");
+            };
+            assert!(std::ptr::eq(returned, &source));
+            assert!(outcomes.is_empty());
+            assert_eq!(stop.reason, "work-limit");
+            assert_eq!(
+                stop.category,
+                Some(routing_candidates::WorkKind::ValidationRecords)
+            );
+            assert_eq!(stop.used, 10_000_000);
+            assert_eq!(stop.limit, 10_000_000);
+            drop(outcomes);
+            replay_allowance.release_peak(bytes);
+            assert_eq!(replay_allowance.reserved_bytes(), 0);
+            eprintln!(
+                "upper scale typed stop: pairs={pairs} shared={shared} route_cells={} reason={} category={:?} used={} limit={} peak_bytes={} elapsed_ms={} replay_work={work:?}",
+                pairs * lanes * route_cells,
+                stop.reason,
+                stop.category,
+                stop.used,
+                stop.limit,
+                replay_allowance.usage().peak_live_bytes,
+                replay_started.elapsed().as_millis(),
+            );
+            return;
+        }
+        let native_replay::ReplayAdvance::Complete(
+            native_replay::SourceOwner::Borrowed(returned),
+            Ok((replayed, outcomes, replay_bytes)),
+            work,
+        ) = replay_result
+        else {
+            panic!("upper-scale complete-state replay must finish without a page window");
+        };
+        assert!(std::ptr::eq(returned, &source));
+        assert!(outcomes.is_empty());
+        assert_eq!(replayed.metrics, Some(actual.clone()));
+        let replay_ms = replay_started.elapsed().as_millis();
+        let replay_peak_bytes = replay_allowance.usage().peak_live_bytes;
+        drop(replayed);
+        drop(outcomes);
+        replay_allowance.release_peak(replay_bytes);
+        assert_eq!(replay_allowance.reserved_bytes(), 0);
+        let mut paged_replay = native_replay::NativeReplayProgress::new_borrowed(&source, &[]);
+        let mut paged_allowance = routing_candidates::RequestAllowance::new(Default::default());
+        let mut quotas = [usize::MAX; routing_candidates::CUMULATIVE_WORK_KINDS.len()];
+        for (kind, quota) in [
+            (routing_candidates::WorkKind::CopiedBytes, 1024 * 1024),
+            (routing_candidates::WorkKind::ValidationRecords, 4096),
+        ] {
+            quotas[routing_candidates::CUMULATIVE_WORK_KINDS
+                .iter()
+                .position(|item| *item == kind)
+                .unwrap()] = quota;
+        }
+        let paged_replay_started = Instant::now();
+        let mut replay_pages = 0;
+        let mut max_replay_page_us = 0;
+        let mut max_page_work = String::new();
+        let (paged_child, paged_outcomes, paged_bytes, paged_work) = loop {
+            paged_allowance.begin_page_window(quotas, std::time::Duration::from_millis(50));
+            let before = paged_allowance.usage();
+            let reserved_before = paged_replay.reserved_bytes();
+            let page_started = Instant::now();
+            let result = paged_replay.advance(&mut paged_allowance, 0);
+            let elapsed_us = page_started.elapsed().as_micros();
+            if elapsed_us > max_replay_page_us {
+                max_replay_page_us = elapsed_us;
+                let after = paged_allowance.usage();
+                let copied = routing_candidates::WorkKind::CopiedBytes;
+                let validated = routing_candidates::WorkKind::ValidationRecords;
+                let stop = match &result {
+                    native_replay::ReplayAdvance::Pending(stop) => stop.reason,
+                    native_replay::ReplayAdvance::Complete(..) => "complete",
+                };
+                max_page_work = format!(
+                    "stop={stop} copied={}..{} validation={}..{} reserved={}..{}",
+                    before.categories.get(&copied).copied().unwrap_or(0),
+                    after.categories.get(&copied).copied().unwrap_or(0),
+                    before.categories.get(&validated).copied().unwrap_or(0),
+                    after.categories.get(&validated).copied().unwrap_or(0),
+                    reserved_before,
+                    paged_replay.reserved_bytes(),
+                );
+            }
+            paged_allowance.end_page_window();
+            match result {
+                native_replay::ReplayAdvance::Pending(_) => replay_pages += 1,
+                native_replay::ReplayAdvance::Complete(
+                    native_replay::SourceOwner::Borrowed(returned),
+                    Ok((child, outcomes, bytes)),
+                    work,
+                ) => {
+                    assert!(std::ptr::eq(returned, &source));
+                    break (child, outcomes, bytes, work);
+                }
+                _ => panic!("paged upper-scale complete-state replay must succeed"),
+            }
+        };
+        assert_eq!(paged_child.metrics, Some(actual));
+        assert!(paged_outcomes.is_empty());
+        assert_eq!(paged_work, work);
+        assert_eq!(paged_bytes, replay_bytes);
+        let paged_replay_ms = paged_replay_started.elapsed().as_millis();
+        drop(paged_child);
+        drop(paged_outcomes);
+        paged_allowance.release_peak(paged_bytes);
+        assert_eq!(paged_allowance.reserved_bytes(), 0);
+        eprintln!(
+            "upper scale: pairs={pairs} shared={shared} grid={grid} columns={columns} route_cells={} copy_visits={copied_visits} validation_visits={actual_visits} pages={pages} layout_bytes={layout_bytes} peak_bytes={} clone_ms={} fork_ms={} fork_bytes={} materialization_ms={} one_shot_validation_ms={} direct_metered_validation_ms={direct_metered_ms:?} paged_validation_ms={} replay_ms={replay_ms} replay_peak_bytes={replay_peak_bytes} replay_work={work:?} replay_pages={replay_pages} paged_replay_ms={paged_replay_ms} max_replay_page_us={max_replay_page_us} max_page_work={max_page_work}",
+            pairs * lanes * route_cells,
+            peak_bytes.get(),
+            clone_time.as_millis(),
+            fork_time.as_millis(),
+            fork_bytes,
+            materialization_time.as_millis(),
+            one_shot_time.as_millis(),
+            paged_started.elapsed().as_millis(),
+        );
+        if std::env::var_os("AIC_CALIBRATION_COMMAND").is_some() {
+            let mut partial = source.clone();
+            let last = partial.routes.len() - 1;
+            let old_route = partial.routes[last].take().unwrap();
+            for point in old_route.cells {
+                let users = partial.occupied[layer(TransportKind::Belt)]
+                    .get_mut(&point)
+                    .unwrap();
+                users.retain(|&user| user != last);
+                if users.is_empty() {
+                    partial.occupied[layer(TransportKind::Belt)].remove(&point);
+                }
+            }
+            partial.metrics = None;
+            let begin = Command::BeginRoute {
+                connection: old_route.connection,
+                source_port: Some("output-belt-1".into()),
+                target_port: Some("input-belt-1".into()),
+            };
+            let mut probe = partial.clone();
+            let began = probe.step(begin.clone());
+            assert!(began.accepted, "{began:?}");
+            let mut remaining =
+                probe.active.as_ref().unwrap().cells[0].y - probe.active.as_ref().unwrap().target.y;
+            let mut commands = vec![begin];
+            while remaining > 0 {
+                let length = remaining.min(probe.limits.max_extension);
+                commands.push(Command::Extend {
+                    direction: Direction::North,
+                    length,
+                });
+                remaining -= length;
+            }
+            commands.push(Command::Connect);
+            let ordinary_started = Instant::now();
+            let mut ordinary = partial.clone();
+            for command in &commands {
+                let step = ordinary.step(command.clone());
+                assert!(step.accepted && step.diagnostic.is_none(), "{step:?}");
+            }
+            let ordinary_ms = ordinary_started.elapsed().as_millis();
+            let command_started = Instant::now();
+            let mut replay = native_replay::NativeReplayProgress::new_borrowed(&partial, &commands);
+            let mut allowance = routing_candidates::RequestAllowance::new(Default::default());
+            let native_replay::ReplayAdvance::Complete(
+                native_replay::SourceOwner::Borrowed(_),
+                Ok((child, outcomes, bytes)),
+                work,
+            ) = replay.advance(&mut allowance, 0)
+            else {
+                panic!("upper-scale route command replay must complete");
+            };
+            let command_ms = command_started.elapsed().as_millis();
+            assert_eq!(outcomes.len(), commands.len());
+            assert_eq!(child.observe(), ordinary.observe());
+            assert_eq!(child.metrics, ordinary.metrics);
+            let peak = allowance.usage().peak_live_bytes;
+            drop(child);
+            drop(outcomes);
+            allowance.release_peak(bytes);
+            assert_eq!(allowance.reserved_bytes(), 0);
+            eprintln!(
+                "upper route command: pairs={pairs} shared={shared} grid={grid} source_cells={} commands={} ordinary_clone_step_ms={ordinary_ms} replay_ms={command_ms} peak_bytes={peak} replay_work={work:?}",
+                pairs * lanes * route_cells - route_cells,
+                commands.len(),
+            );
+        }
+    }
+
+    #[test]
+    #[ignore = "bounded local terminal and branching replay calibration"]
+    fn terminal_branch_replay_calibration() {
+        use std::time::Instant;
+
+        let modules = std::env::var("AIC_CALIBRATION_MODULES")
+            .ok()
+            .map(|value| value.parse::<usize>().unwrap())
+            .unwrap_or(60);
+        let mut problem = Problem {
+            blocks: Vec::with_capacity(modules),
+            terminals: Vec::with_capacity(modules * 3),
+            connections: Vec::with_capacity(modules * 3),
+        };
+        for i in 0..modules {
+            let machine = format!("machine-{i}");
+            let supply = format!("supply-{i}");
+            let sink_a = format!("sink-a-{i}");
+            let sink_b = format!("sink-b-{i}");
+            problem.blocks.push(Block {
+                id: machine.clone(),
+                facility: "grinder-1-mode-normal".into(),
+            });
+            for (id, direction) in [
+                (supply.clone(), TerminalDirection::Input),
+                (sink_a.clone(), TerminalDirection::Output),
+                (sink_b.clone(), TerminalDirection::Output),
+            ] {
+                problem.terminals.push(Terminal {
+                    id,
+                    direction,
+                    commodity: "test-item".into(),
+                    transport: TransportKind::Belt,
+                });
+            }
+            for (id, source, target, denominator) in [
+                (format!("supply-flow-{i}"), supply, machine.clone(), 2),
+                (format!("output-a-{i}"), machine.clone(), sink_a, 4),
+                (format!("output-b-{i}"), machine, sink_b, 4),
+            ] {
+                problem.connections.push(Connection {
+                    id,
+                    source,
+                    target,
+                    commodity: "test-item".into(),
+                    transport: TransportKind::Belt,
+                    rate: Rate {
+                        numerator: 1,
+                        denominator,
+                    },
+                });
+            }
+        }
+        let mut source = Session::new(
+            problem,
+            catalogs(),
+            Limits {
+                max_turns: 10_000,
+                max_extension: 32,
+            },
+        )
+        .unwrap();
+        let mut last_commands = Vec::new();
+        for i in 0..modules {
+            let x = 20 * i as i64;
+            for command in [
+                Command::Place {
+                    block: format!("machine-{i}"),
+                    position: Point { x: x + 5, y: 8 },
+                    rotation: 0,
+                },
+                Command::PlaceTerminal {
+                    terminal: format!("supply-{i}"),
+                    position: Point { x: x + 6, y: 15 },
+                },
+                Command::PlaceTerminal {
+                    terminal: format!("sink-a-{i}"),
+                    position: Point { x: x + 4, y: 0 },
+                },
+                Command::PlaceTerminal {
+                    terminal: format!("sink-b-{i}"),
+                    position: Point { x: x + 8, y: 0 },
+                },
+            ] {
+                let step = source.step(command);
+                assert!(step.accepted, "{step:?}");
+            }
+            for (connection, source_port, target_port, turns) in [
+                (
+                    format!("supply-flow-{i}"),
+                    None,
+                    Some("input-belt-1".into()),
+                    vec![(Direction::North, 4)],
+                ),
+                (
+                    format!("output-a-{i}"),
+                    Some("output-belt-1".into()),
+                    None,
+                    vec![
+                        (Direction::North, 3),
+                        (Direction::West, 2),
+                        (Direction::North, 4),
+                    ],
+                ),
+                (
+                    format!("output-b-{i}"),
+                    Some("output-belt-1".into()),
+                    None,
+                    vec![
+                        (Direction::North, 3),
+                        (Direction::East, 2),
+                        (Direction::North, 4),
+                    ],
+                ),
+            ] {
+                let last_output = i + 1 == modules && connection == format!("output-b-{i}");
+                let mut commands = vec![Command::BeginRoute {
+                    connection,
+                    source_port,
+                    target_port,
+                }];
+                commands.extend(
+                    turns
+                        .into_iter()
+                        .map(|(direction, length)| Command::Extend { direction, length }),
+                );
+                commands.push(Command::Connect);
+                if last_output {
+                    last_commands = commands;
+                } else {
+                    for command in commands {
+                        let step = source.step(command);
+                        assert!(step.accepted && step.diagnostic.is_none(), "{step:?}");
+                    }
+                }
+            }
+        }
+        assert_eq!(last_commands.len(), 5);
+        let mut ordinary = source.clone();
+        for command in &last_commands {
+            let step = ordinary.step(command.clone());
+            assert!(step.accepted && step.diagnostic.is_none(), "{step:?}");
+        }
+        assert!(ordinary.metrics.is_some());
+        let started = Instant::now();
+        let mut replay = native_replay::NativeReplayProgress::new_borrowed(&source, &last_commands);
+        let mut allowance = routing_candidates::RequestAllowance::new(Default::default());
+        let native_replay::ReplayAdvance::Complete(
+            native_replay::SourceOwner::Borrowed(returned),
+            Ok((child, outcomes, bytes)),
+            work,
+        ) = replay.advance(&mut allowance, 0)
+        else {
+            panic!("terminal and branching replay must complete");
+        };
+        assert!(std::ptr::eq(returned, &source));
+        assert_eq!(outcomes.len(), last_commands.len());
+        assert_eq!(child.observe(), ordinary.observe());
+        assert_eq!(child.metrics, ordinary.metrics);
+        let elapsed_ms = started.elapsed().as_millis();
+        let peak = allowance.usage().peak_live_bytes;
+        drop(child);
+        drop(outcomes);
+        allowance.release_peak(bytes);
+        assert_eq!(allowance.reserved_bytes(), 0);
+        eprintln!(
+            "terminal branch replay: facilities={modules} terminals={} connections={} commands={} replay_ms={elapsed_ms} peak_bytes={peak} work={work:?}",
+            modules * 3,
+            modules * 3,
+            last_commands.len(),
+        );
     }
 
     #[test]
@@ -3205,6 +4861,7 @@ mod tests {
             [("output-a", Direction::West), ("output-b", Direction::East)]
         {
             let state_revision = staged.observe().revision;
+            let before_route = staged.clone();
             let commands = vec![
                 Command::BeginRoute {
                     connection: connection.into(),
@@ -3252,6 +4909,11 @@ mod tests {
                 predicted_success: None,
                 guidance_uncertainty: None,
                 provenance: routing_candidates::Provenance::Anchor,
+                additional_provenance: Vec::new(),
+                physical_cost: before_route
+                    .physical_cost_between(&staged, &[connection.into()])
+                    .unwrap(),
+                charged_work: Default::default(),
             });
         }
         let network = routing_candidates::NetworkCandidate {
@@ -3264,11 +4926,25 @@ mod tests {
             expanded: 0,
             shared_cells: routing_candidates::network_shared_cells(&routes),
             routes,
+            physical_cost: session
+                .physical_cost_between(&staged, &["output-a".into(), "output-b".into()])
+                .unwrap(),
+            charged_work: Default::default(),
         };
         assert_eq!(network.shared_cells, 4);
         let mut tampered = network.clone();
         tampered.shared_cells += 1;
         assert!(session.apply_network_candidate(&tampered).is_err());
+        assert_eq!(session.observe().revision, network_revision);
+        let mut wrong_cost = network.clone();
+        wrong_cost.physical_cost.occupied_transport_cells_delta += 1;
+        assert_eq!(
+            session
+                .apply_network_candidate(&wrong_cost)
+                .unwrap_err()
+                .code,
+            "constructive.network-candidate-physical-cost"
+        );
         assert_eq!(session.observe().revision, network_revision);
         session.apply_network_candidate(&network).unwrap();
         assert!(session.done());
@@ -3500,7 +5176,10 @@ mod tests {
     fn learning_domain_factorizes_commands_and_rejects_stale_selections() {
         let mut session = session();
         let observation = session.learning_observation(&learning_config()).unwrap();
-        let command_choices = observation.domain.choices(&learning::Cursor::Command);
+        let command_choices = observation
+            .domain
+            .choices(&learning::Cursor::Command)
+            .unwrap();
         assert_eq!(command_choices.len(), 1);
         assert_eq!(command_choices[0].features[0], 1.0);
         assert_eq!(command_choices[0].features[6], 0.0);
@@ -3511,7 +5190,7 @@ mod tests {
         else {
             panic!("place command should continue to its block factor")
         };
-        let block_choices = observation.domain.choices(&blocks);
+        let block_choices = observation.domain.choices(&blocks).unwrap();
         assert_eq!(block_choices.len(), 2);
         assert_eq!(block_choices[0].features[6], 1.0);
         assert_eq!(block_choices[0].features[5], 0.0);
@@ -3558,7 +5237,11 @@ mod tests {
         );
         // Extend and abort are the only locally legal command families here.
         assert_eq!(
-            observation.domain.choices(&learning::Cursor::Command).len(),
+            observation
+                .domain
+                .choices(&learning::Cursor::Command)
+                .unwrap()
+                .len(),
             2
         );
         let learning::Advance::Command(abort) = observation
@@ -3868,18 +5551,20 @@ mod tests {
         );
         assert_eq!(session.observe().bridges, layout.solution.bridges);
         let mut repair_base = session.clone();
-        repair_base.problem.connections.push(Connection {
-            id: "extra".into(),
-            source: "south".into(),
-            target: "north".into(),
-            commodity: "vertical-item".into(),
-            transport: TransportKind::Belt,
-            rate: Rate {
-                numerator: 1,
-                denominator: 4,
-            },
-        });
-        repair_base.connections.insert("extra".into(), 2);
+        Arc::make_mut(&mut repair_base.problem)
+            .connections
+            .push(Connection {
+                id: "extra".into(),
+                source: "south".into(),
+                target: "north".into(),
+                commodity: "vertical-item".into(),
+                transport: TransportKind::Belt,
+                rate: Rate {
+                    numerator: 1,
+                    denominator: 4,
+                },
+            });
+        Arc::make_mut(&mut repair_base.connections).insert("extra".into(), 2);
         repair_base.routes.push(None);
         repair_base.metrics = None;
         let mut repair_config = route_candidate_config();
@@ -3934,12 +5619,17 @@ mod tests {
             .unwrap()
             .candidates
             .remove(0);
+        repair_draft.apply_route_candidate(&extra).unwrap();
         let repair_candidate = routing_candidates::RepairCandidate {
             schema: routing_candidates::REPAIR_CANDIDATE_SCHEMA.into(),
             state_revision: repair_request.state_revision,
             removed: vec!["vertical".into()],
             expanded: restored_vertical.expanded + extra.expanded,
             replacements: vec![restored_vertical, extra],
+            physical_cost: repair_base
+                .physical_cost_between(&repair_draft, &["vertical".into(), "extra".into()])
+                .unwrap(),
+            charged_work: Default::default(),
         };
         repair_base
             .apply_repair_candidate(&repair_request, &repair_candidate)
@@ -4202,9 +5892,52 @@ mod tests {
         let report = session.route_candidates(&request, &config).unwrap();
         assert_eq!(report.candidates.len(), 1, "{report:?}");
         assert_eq!(report.candidates[0].crossings.len(), 1);
+        let mut replay = native_replay::NativeReplayProgress::new_borrowed(
+            &session,
+            &report.candidates[0].commands,
+        );
+        let mut replay_allowance = routing_candidates::RequestAllowance::new(Default::default());
+        let mut replay_quotas = [usize::MAX; routing_candidates::CUMULATIVE_WORK_KINDS.len()];
+        for kind in [
+            routing_candidates::WorkKind::ReplayRouteCells,
+            routing_candidates::WorkKind::ValidationRecords,
+        ] {
+            replay_quotas[routing_candidates::CUMULATIVE_WORK_KINDS
+                .iter()
+                .position(|candidate| *candidate == kind)
+                .unwrap()] = 1;
+        }
+        let (replayed, replay_bytes, replay_work) = loop {
+            replay_allowance.begin_page_window(replay_quotas, std::time::Duration::from_secs(10));
+            let result = replay.advance(&mut replay_allowance, 0);
+            replay_allowance.end_page_window();
+            match result {
+                native_replay::ReplayAdvance::Pending(stop) => {
+                    assert_eq!(stop.reason, "page-quantum");
+                }
+                native_replay::ReplayAdvance::Complete(
+                    native_replay::SourceOwner::Borrowed(returned),
+                    Ok((child, outcomes, bytes)),
+                    work,
+                ) => {
+                    assert!(std::ptr::eq(returned, &session));
+                    assert_eq!(outcomes.len(), report.candidates[0].commands.len());
+                    break (child, bytes, work);
+                }
+                _ => panic!("native pipe crossing replay must complete"),
+            }
+        };
+        assert!(replay_work.route_cells > 0);
+        assert!(replay_work.validation > 0);
+        drop(replay);
         session
             .apply_route_candidate(&report.candidates[0])
             .unwrap();
+        assert_eq!(replayed.observe(), session.observe());
+        assert_eq!(replayed.metrics, session.metrics);
+        drop(replayed);
+        replay_allowance.release_peak(replay_bytes);
+        assert_eq!(replay_allowance.reserved_bytes(), 0);
         assert_eq!(session.layout().unwrap().solution.bridges.len(), 1);
         let mut same_item = problem.clone();
         same_item.connections[1].commodity = "pipe-a".into();
@@ -4444,5 +6177,733 @@ mod tests {
             "constructive.bridge-reservation"
         );
         assert!(no_bridge.observe().bridges.is_empty());
+    }
+
+    #[test]
+    #[ignore = "bounded local mixed-transport upper-facility replay calibration"]
+    fn mixed_transport_grid_crossing_replay_calibration() {
+        use std::time::Instant;
+
+        let pairs = 126usize;
+        let mut problem = Problem {
+            blocks: ["west", "east", "south", "north"]
+                .into_iter()
+                .map(|id| Block {
+                    id: id.into(),
+                    facility: "furnance-1-mode-liquid".into(),
+                })
+                .collect(),
+            terminals: Vec::new(),
+            connections: vec![
+                Connection {
+                    id: "horizontal".into(),
+                    source: "west".into(),
+                    target: "east".into(),
+                    commodity: "pipe-a".into(),
+                    transport: TransportKind::Pipe,
+                    rate: Rate {
+                        numerator: 1,
+                        denominator: 2,
+                    },
+                },
+                Connection {
+                    id: "vertical".into(),
+                    source: "south".into(),
+                    target: "north".into(),
+                    commodity: "pipe-b".into(),
+                    transport: TransportKind::Pipe,
+                    rate: Rate {
+                        numerator: 1,
+                        denominator: 2,
+                    },
+                },
+            ],
+        };
+        for i in 0..pairs {
+            let source = format!("source-{i}");
+            let target = format!("target-{i}");
+            for id in [&source, &target] {
+                problem.blocks.push(Block {
+                    id: id.clone(),
+                    facility: "grinder-1-mode-normal".into(),
+                });
+            }
+            for lane in 0..2 {
+                problem.connections.push(Connection {
+                    id: format!("belt-{i}-{lane}"),
+                    source: source.clone(),
+                    target: target.clone(),
+                    commodity: "test-item".into(),
+                    transport: TransportKind::Belt,
+                    rate: Rate {
+                        numerator: 1,
+                        denominator: 8,
+                    },
+                });
+            }
+        }
+        let mut source = Session::new(
+            problem,
+            catalogs(),
+            Limits {
+                max_turns: 10_000,
+                max_extension: 32,
+            },
+        )
+        .unwrap();
+        for i in 0..pairs {
+            let x = 50 + 16 * (i % 12) as i64;
+            let y = 20 + 42 * (i / 12) as i64;
+            for (block, position) in [
+                (format!("source-{i}"), Point { x, y: y + 37 }),
+                (format!("target-{i}"), Point { x, y: y + 2 }),
+            ] {
+                let step = source.step(Command::Place {
+                    block,
+                    position,
+                    rotation: 0,
+                });
+                assert!(step.accepted && step.diagnostic.is_none(), "{step:?}");
+            }
+            for lane in 0..2 {
+                for command in [
+                    Command::BeginRoute {
+                        connection: format!("belt-{i}-{lane}"),
+                        source_port: Some("output-belt-1".into()),
+                        target_port: Some("input-belt-1".into()),
+                    },
+                    Command::Extend {
+                        direction: Direction::North,
+                        length: 31,
+                    },
+                    Command::Connect,
+                ] {
+                    let step = source.step(command);
+                    assert!(step.accepted && step.diagnostic.is_none(), "{step:?}");
+                }
+            }
+        }
+        for (block, position, rotation) in [
+            ("west", Point { x: 2, y: 5 }, 0),
+            ("east", Point { x: 8, y: 5 }, 0),
+            ("south", Point { x: 5, y: 9 }, 270),
+            ("north", Point { x: 5, y: 1 }, 270),
+        ] {
+            assert!(
+                source
+                    .step(Command::Place {
+                        block: block.into(),
+                        position,
+                        rotation,
+                    })
+                    .accepted
+            );
+        }
+        for command in [
+            Command::BeginRoute {
+                connection: "horizontal".into(),
+                source_port: Some("output-pipe-3".into()),
+                target_port: Some("input-pipe-3".into()),
+            },
+            Command::Extend {
+                direction: Direction::East,
+                length: 2,
+            },
+            Command::Connect,
+        ] {
+            let step = source.step(command);
+            assert!(step.accepted && step.diagnostic.is_none(), "{step:?}");
+        }
+        let mut config = route_candidate_config();
+        config.bounds = aic_layout::geometry::Bounds {
+            min_x: 6,
+            max_x: 6,
+            min_y: 4,
+            max_y: 8,
+        };
+        config.max_candidates = 1;
+        config.max_crossings_per_route = 1;
+        if std::env::var_os("AIC_CALIBRATION_REPAIR_SCOPE_ONLY").is_some() {
+            let mut allowance =
+                routing_candidates::RequestAllowance::new(config.request_allowance.clone());
+            let started = Instant::now();
+            let scope = routing_candidates::PreparedRepair::new(
+                Arc::new(source),
+                &["vertical".into()],
+                1,
+                &config,
+                &mut allowance,
+            )
+            .unwrap();
+            let scope_us = started.elapsed().as_micros();
+            let started = Instant::now();
+            let (order, conflict_cells, bytes) = scope.conflict_order(&mut allowance).unwrap();
+            eprintln!(
+                "mixed upper grid repair scope_us={scope_us} order_us={} order={} conflict_cells={} usage={:?}",
+                started.elapsed().as_micros(),
+                order.len(),
+                conflict_cells.values().map(Vec::len).sum::<usize>(),
+                allowance.usage(),
+            );
+            drop(order);
+            drop(conflict_cells);
+            allowance.release_peak(bytes);
+            scope.release(&mut allowance);
+            assert_eq!(allowance.reserved_bytes(), 0);
+            return;
+        }
+        let caller_started = Instant::now();
+        let report = source
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: source.revision,
+                    connection: "vertical".into(),
+                },
+                &config,
+            )
+            .unwrap();
+        let caller_ms = caller_started.elapsed().as_millis();
+        assert_eq!(report.candidates.len(), 1, "{report:?}");
+        assert_eq!(report.candidates[0].crossings.len(), 1);
+        eprintln!(
+            "mixed upper-grid one-shot caller_ms={caller_ms} peak_bytes={} cells={:?} commands={:?} crossings={:?}",
+            report.allowance.as_ref().unwrap().peak_live_bytes,
+            report.candidates[0].cells,
+            report.candidates[0].commands,
+            report.candidates[0].crossings,
+        );
+        if std::env::var_os("AIC_CALIBRATION_CALLER_ONLY").is_some() {
+            return;
+        }
+        if let Ok(repeats) = std::env::var("AIC_CALIBRATION_PROFILE_REPLAY") {
+            let repeats = repeats.parse::<usize>().unwrap();
+            assert!(repeats > 0);
+            let started = Instant::now();
+            for _ in 0..repeats {
+                let mut progress = native_replay::NativeReplayProgress::new_borrowed(
+                    &source,
+                    &report.candidates[0].commands,
+                );
+                let mut allowance = routing_candidates::RequestAllowance::new(Default::default());
+                let native_replay::ReplayAdvance::Complete(
+                    native_replay::SourceOwner::Borrowed(_),
+                    Ok((child, outcomes, bytes)),
+                    _,
+                ) = progress.advance(&mut allowance, 0)
+                else {
+                    panic!("profile replay must complete");
+                };
+                assert!(child.metrics.is_some());
+                drop(child);
+                drop(outcomes);
+                allowance.release_peak(bytes);
+            }
+            eprintln!(
+                "profile replay: repeats={repeats} total_ms={}",
+                started.elapsed().as_millis()
+            );
+            return;
+        }
+        let ordinary_started = Instant::now();
+        let mut ordinary_child = source.clone();
+        for command in &report.candidates[0].commands {
+            let step = ordinary_child.step(command.clone());
+            assert!(step.accepted && step.diagnostic.is_none(), "{step:?}");
+        }
+        let ordinary_replay_ms = ordinary_started.elapsed().as_millis();
+        let started = Instant::now();
+        let mut replay = native_replay::NativeReplayProgress::new_borrowed(
+            &source,
+            &report.candidates[0].commands,
+        );
+        let mut allowance = routing_candidates::RequestAllowance::new(Default::default());
+        let native_replay::ReplayAdvance::Complete(
+            native_replay::SourceOwner::Borrowed(returned),
+            Ok((child, outcomes, bytes)),
+            work,
+        ) = replay.advance(&mut allowance, 0)
+        else {
+            panic!("mixed upper-grid replay must complete");
+        };
+        let replay_ms = started.elapsed().as_millis();
+        let layout = child.complete_layout();
+        let direct_started = Instant::now();
+        let mut direct_allowance = routing_candidates::RequestAllowance::new(Default::default());
+        let mut direct_visits = 0usize;
+        let direct_metrics =
+            aic_layout::validation::validate_with_visit(&layout, &source.catalogs, || {
+                direct_allowance
+                    .charge(routing_candidates::WorkKind::ValidationRecords, 1)
+                    .unwrap();
+                direct_visits += 1;
+                Ok(())
+            })
+            .unwrap();
+        eprintln!(
+            "mixed upper grid direct_metered_validation_us={} visits={direct_visits}",
+            direct_started.elapsed().as_micros()
+        );
+        assert_eq!(Some(&direct_metrics), child.metrics.as_ref());
+        assert_eq!(ordinary_child.observe(), child.observe());
+        assert!(std::ptr::eq(returned, &source));
+        let mut ordinary = source.clone();
+        let ordinary_steps = ordinary
+            .apply_route_candidate(&report.candidates[0])
+            .unwrap();
+        assert_eq!(child.observe(), ordinary.observe());
+        assert_eq!(child.metrics, ordinary.metrics);
+        assert_eq!(child.limits, ordinary.limits);
+        assert!(Arc::ptr_eq(&child.problem, &ordinary.problem));
+        assert!(Arc::ptr_eq(&child.catalogs, &ordinary.catalogs));
+        assert!(Arc::ptr_eq(&child.blocks, &ordinary.blocks));
+        assert!(Arc::ptr_eq(&child.terminals, &ordinary.terminals));
+        assert!(Arc::ptr_eq(&child.connections, &ordinary.connections));
+        assert_eq!(child.terminal_at, ordinary.terminal_at);
+        assert_eq!(child.active_cells, ordinary.active_cells);
+        assert_eq!(child.bodies, ordinary.bodies);
+        assert_eq!(child.occupied, ordinary.occupied);
+        assert_eq!(child.used_ports, ordinary.used_ports);
+        assert_eq!(child.final_failure, ordinary.final_failure);
+        assert_eq!(child.replay_deadline, ordinary.replay_deadline);
+        assert!(child.replay_meter.is_none() && ordinary.replay_meter.is_none());
+        assert_eq!(outcomes.len(), ordinary_steps.len());
+        for (outcome, step) in outcomes.iter().zip(&ordinary_steps) {
+            assert!(step.accepted && step.diagnostic.is_none());
+            assert_eq!(outcome.turn, step.turn);
+            assert_eq!(outcome.revision, step.revision);
+            assert_eq!(outcome.progress_before, step.progress_before);
+            assert_eq!(outcome.progress_after, step.progress_after);
+            assert_eq!(outcome.terminal, step.terminal);
+        }
+        let completed = ordinary.layout().unwrap();
+        assert_eq!(completed.solution.bridges.len(), 1);
+        assert_eq!(
+            completed.solution.bridges[0].component,
+            report.candidates[0].crossings[0].component
+        );
+        let mut paged = native_replay::NativeReplayProgress::new_borrowed(
+            &source,
+            &report.candidates[0].commands,
+        );
+        let mut paged_allowance = routing_candidates::RequestAllowance::new(Default::default());
+        let mut quotas = [usize::MAX; routing_candidates::CUMULATIVE_WORK_KINDS.len()];
+        for (kind, quota) in [
+            (routing_candidates::WorkKind::ReplayRouteCells, 1),
+            (routing_candidates::WorkKind::CatalogVisits, 1),
+            (routing_candidates::WorkKind::ValidationRecords, 4_096),
+        ] {
+            quotas[routing_candidates::CUMULATIVE_WORK_KINDS
+                .iter()
+                .position(|candidate| *candidate == kind)
+                .unwrap()] = quota;
+        }
+        let mut pages = 0usize;
+        let (paged_child, paged_outcomes, paged_bytes, paged_work) = loop {
+            paged_allowance.begin_page_window(quotas, std::time::Duration::from_secs(10));
+            let advance = paged.advance(&mut paged_allowance, 0);
+            paged_allowance.end_page_window();
+            match advance {
+                native_replay::ReplayAdvance::Pending(stop) => {
+                    assert_eq!(stop.reason, "page-quantum");
+                    pages += 1;
+                }
+                native_replay::ReplayAdvance::Complete(
+                    native_replay::SourceOwner::Borrowed(returned),
+                    Ok((child, outcomes, bytes)),
+                    work,
+                ) => {
+                    assert!(std::ptr::eq(returned, &source));
+                    break (child, outcomes, bytes, work);
+                }
+                _ => panic!("paged mixed upper-grid replay must complete"),
+            }
+        };
+        assert!(pages > 0);
+        assert_eq!(paged_child.observe(), ordinary.observe());
+        assert_eq!(paged_child.metrics, ordinary.metrics);
+        assert_eq!(paged_child.limits, ordinary.limits);
+        assert!(Arc::ptr_eq(&paged_child.problem, &ordinary.problem));
+        assert!(Arc::ptr_eq(&paged_child.catalogs, &ordinary.catalogs));
+        assert!(Arc::ptr_eq(&paged_child.blocks, &ordinary.blocks));
+        assert!(Arc::ptr_eq(&paged_child.terminals, &ordinary.terminals));
+        assert!(Arc::ptr_eq(&paged_child.connections, &ordinary.connections));
+        assert_eq!(paged_child.terminal_at, ordinary.terminal_at);
+        assert_eq!(paged_child.active_cells, ordinary.active_cells);
+        assert_eq!(paged_child.bodies, ordinary.bodies);
+        assert_eq!(paged_child.occupied, ordinary.occupied);
+        assert_eq!(paged_child.used_ports, ordinary.used_ports);
+        assert_eq!(paged_child.final_failure, ordinary.final_failure);
+        assert_eq!(paged_child.replay_deadline, ordinary.replay_deadline);
+        assert!(paged_child.replay_meter.is_none());
+        assert_eq!(paged_outcomes, outcomes);
+        assert_eq!(paged_work, work);
+        assert_eq!(paged_bytes, bytes);
+        assert_eq!(
+            paged_allowance.usage().peak_live_bytes,
+            allowance.usage().peak_live_bytes
+        );
+        drop(paged_child);
+        drop(paged_outcomes);
+        paged_allowance.release_peak(paged_bytes);
+        assert_eq!(paged_allowance.reserved_bytes(), 0);
+        let peak = allowance.usage().peak_live_bytes;
+        drop(child);
+        drop(outcomes);
+        allowance.release_peak(bytes);
+        assert_eq!(allowance.reserved_bytes(), 0);
+        eprintln!(
+            "mixed upper grid: facilities={} connections={} crossing={} ordinary_replay_ms={ordinary_replay_ms} admitted_replay_ms={replay_ms} pages={pages} peak_bytes={peak} work={work:?}",
+            source.problem.blocks.len(),
+            source.problem.connections.len(),
+            report.candidates[0].crossings.len(),
+        );
+    }
+
+    #[test]
+    #[ignore = "set AIC_PLAN01_EXACT_PANEL to one retained placed candidate panel"]
+    fn plan01_exact_placed_candidate_path() {
+        let path = std::env::var("AIC_PLAN01_EXACT_PANEL").unwrap();
+        let panel: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        let case = &panel["cases"][0];
+        let mut source = Session::new(
+            serde_json::from_value(case["problem"].clone()).unwrap(),
+            catalogs(),
+            serde_json::from_value(panel["limits"].clone()).unwrap(),
+        )
+        .unwrap();
+        for command in case["prefix"].as_array().unwrap() {
+            let step = source.step(serde_json::from_value(command.clone()).unwrap());
+            assert!(step.accepted && step.diagnostic.is_none(), "{step:?}");
+        }
+        let config: routing_candidates::Config =
+            serde_json::from_value(panel["candidate"].clone()).unwrap();
+        let report = source
+            .route_candidates(
+                &routing_candidates::Request {
+                    state_revision: source.revision(),
+                    connection: case["request"].as_str().unwrap().to_owned(),
+                },
+                &config,
+            )
+            .unwrap();
+        println!(
+            "plan01_exact={}",
+            serde_json::json!({
+                "case": case["id"],
+                "termination": report.termination,
+                "candidates": report.candidates.iter().map(|candidate| serde_json::json!({
+                    "cells": candidate.cells,
+                    "commands": candidate.commands,
+                    "crossings": candidate.crossings,
+                })).collect::<Vec<_>>(),
+            })
+        );
+    }
+
+    #[test]
+    #[ignore = "set AIC_PLAN01_VALIDATION_LAYOUT to a retained placed physical layout"]
+    fn plan01_placed_validation_atomic_tail() {
+        use aic_layout::validation::{
+            ValidationAdvance, ValidationCursor, ValidationReservation, ValidationVisit,
+        };
+        use std::cell::Cell;
+        use std::time::{Duration, Instant};
+
+        let path = std::env::var("AIC_PLAN01_VALIDATION_LAYOUT").unwrap();
+        let catalogs = catalogs();
+        let mut value: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        // These retained layouts predate physical terminals and junctions.
+        value["problem"]["terminals"] = serde_json::json!([]);
+        value["solution"]["terminal_poses"] = serde_json::json!([]);
+        value["solution"]["junctions"] = serde_json::json!([]);
+        value["schema"] = serde_json::json!(aic_layout::physical::SCHEMA);
+        value["catalog_sha256"] = serde_json::json!(catalogs.identity);
+        let route_cells = value["solution"]["routes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|route| {
+                (
+                    route["connection"].as_str().unwrap().to_owned(),
+                    route["cells"].clone(),
+                )
+            })
+            .collect::<std::collections::HashMap<_, _>>();
+        let commodities = value["problem"]["connections"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|connection| {
+                (
+                    connection["id"].as_str().unwrap().to_owned(),
+                    connection["commodity"].as_str().unwrap().to_owned(),
+                )
+            })
+            .collect::<std::collections::HashMap<_, _>>();
+        for bridge in value["solution"]["bridges"].as_array_mut().unwrap() {
+            let position = bridge["position"].clone();
+            let old_connections = bridge["connections"].as_array().unwrap().clone();
+            let mut channels = [None, None];
+            for connection in old_connections {
+                let id = connection.as_str().unwrap();
+                let cells = route_cells[id].as_array().unwrap();
+                let index = cells.iter().position(|cell| *cell == position).unwrap();
+                assert!(index > 0 && index + 1 < cells.len());
+                let axis = usize::from(cells[index - 1]["x"] == position["x"]);
+                assert!(channels[axis].is_none());
+                channels[axis] = Some(serde_json::json!({
+                    "axis": if axis == 0 { "horizontal" } else { "vertical" },
+                    "commodity": commodities[id],
+                    "connections": [id],
+                }));
+            }
+            bridge.as_object_mut().unwrap().remove("connections");
+            bridge["channels"] =
+                serde_json::json!([channels[0].take().unwrap(), channels[1].take().unwrap(),]);
+        }
+        let layout: aic_layout::physical::Layout = serde_json::from_value(value).unwrap();
+        let mut cursor = ValidationCursor::new(&layout, &*catalogs);
+        let mut visits = 0usize;
+        let mut pages = 0usize;
+        let mut longest = Duration::ZERO;
+        let live_bytes = Cell::new(0usize);
+        let started = Instant::now();
+        let (result, final_call) = loop {
+            let mut page_visits = 0;
+            let call_started = Instant::now();
+            let advance = cursor.advance(
+                || {
+                    if page_visits == 4096 {
+                        ValidationVisit::Retry
+                    } else {
+                        page_visits += 1;
+                        visits += 1;
+                        ValidationVisit::Granted
+                    }
+                },
+                |bytes| {
+                    live_bytes.set(live_bytes.get() + bytes);
+                    ValidationReservation::Granted
+                },
+                |bytes| live_bytes.set(live_bytes.get() - bytes),
+            );
+            let elapsed = call_started.elapsed();
+            longest = longest.max(elapsed);
+            match advance {
+                ValidationAdvance::Pending => pages += 1,
+                ValidationAdvance::Complete(result) => {
+                    break (result, elapsed);
+                }
+            }
+        };
+        assert_eq!(live_bytes.get(), 0);
+        let metrics = result.unwrap();
+        println!(
+            "plan01_validation path={path} blocks={} routes={} cells={} area={} visits={visits} pages={pages} total_us={} longest_us={} final_us={}",
+            layout.problem.blocks.len(),
+            layout.solution.routes.len(),
+            layout
+                .solution
+                .routes
+                .iter()
+                .map(|route| route.cells.len())
+                .sum::<usize>(),
+            metrics.area,
+            started.elapsed().as_micros(),
+            longest.as_micros(),
+            final_call.as_micros(),
+        );
+    }
+
+    #[test]
+    #[ignore = "set AIC_PLAN11_SCOPE_PANEL to one retained placed candidate panel"]
+    fn plan11_placed_repair_scope_calibration() {
+        use std::time::Instant;
+
+        let path = std::env::var("AIC_PLAN11_SCOPE_PANEL").unwrap();
+        let panel: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        let case = &panel["cases"][0];
+        let mut source = Session::new(
+            serde_json::from_value(case["problem"].clone()).unwrap(),
+            catalogs(),
+            serde_json::from_value(panel["limits"].clone()).unwrap(),
+        )
+        .unwrap();
+        for command in case["prefix"].as_array().unwrap() {
+            let step = source.step(serde_json::from_value(command.clone()).unwrap());
+            assert!(step.accepted && step.diagnostic.is_none(), "{step:?}");
+        }
+        let config: routing_candidates::Config =
+            serde_json::from_value(panel["candidate"].clone()).unwrap();
+        let selected = vec![case["request"].as_str().unwrap().to_owned()];
+        let mut allowance =
+            routing_candidates::RequestAllowance::new(config.request_allowance.clone());
+        let started = Instant::now();
+        let scope = routing_candidates::PreparedRepair::new(
+            Arc::new(source),
+            &selected,
+            1,
+            &config,
+            &mut allowance,
+        )
+        .unwrap();
+        let scope_us = started.elapsed().as_micros();
+        let started = Instant::now();
+        let (order, conflict_cells, bytes) = scope.conflict_order(&mut allowance).unwrap();
+        let order_us = started.elapsed().as_micros();
+        let digest = scope.request().state_sha256.clone();
+        println!(
+            "plan11_scope path={path} completed={} order={} conflict_cells={} scope_us={scope_us} order_us={order_us} digest={digest} usage={:?}",
+            scope.source().observe().completed,
+            order.len(),
+            conflict_cells.values().map(Vec::len).sum::<usize>(),
+            allowance.usage(),
+        );
+        drop(order);
+        drop(conflict_cells);
+        allowance.release_peak(bytes);
+        scope.release(&mut allowance);
+        assert_eq!(allowance.reserved_bytes(), 0);
+    }
+
+    #[test]
+    #[ignore = "set AIC_ROOT_SCALE_PANEL for a retained legal partial placement panel"]
+    fn plan00_root_action_scale_probe() {
+        use std::time::Instant;
+
+        let (source, config, panel_path, placed) =
+            if std::env::var_os("AIC_ROOT_SCALE_SPARSE").is_some() {
+                let mut config = learning_config();
+                config.placement.max_x = 319;
+                config.placement.max_y = 319;
+                (session(), config, "native-sparse-320".to_owned(), 0)
+            } else {
+                let panel_path = std::env::var("AIC_ROOT_SCALE_PANEL").unwrap();
+                let panel: serde_json::Value =
+                    serde_json::from_slice(&std::fs::read(&panel_path).unwrap()).unwrap();
+                let case = &panel["cases"][0];
+                let mut source = Session::new(
+                    serde_json::from_value(case["problem"].clone()).unwrap(),
+                    catalogs(),
+                    serde_json::from_value(panel["limits"].clone()).unwrap(),
+                )
+                .unwrap();
+                let prefix = case["prefix"].as_array().unwrap();
+                let placed = std::env::var("AIC_ROOT_SCALE_PREFIX")
+                    .ok()
+                    .and_then(|value| value.parse::<usize>().ok())
+                    .unwrap_or(10);
+                for command in prefix.iter().take(placed) {
+                    let step = source.step(serde_json::from_value(command.clone()).unwrap());
+                    assert!(step.accepted && step.diagnostic.is_none(), "{step:?}");
+                }
+                let mut config = learning_config();
+                if !panel["candidate"].is_null() {
+                    let candidate: routing_candidates::Config =
+                        serde_json::from_value(panel["candidate"].clone()).unwrap();
+                    config.placement = candidate.bounds;
+                } else {
+                    let maximum = std::env::var("AIC_ROOT_SCALE_HYPOTHETICAL_MAX")
+                        .unwrap()
+                        .parse::<i64>()
+                        .unwrap();
+                    config.placement.max_x = maximum;
+                    config.placement.max_y = maximum;
+                }
+                (source, config, panel_path, placed)
+            };
+        let started = Instant::now();
+        let domain = source.learning_domain(&config).unwrap();
+        let domain_us = started.elapsed().as_micros();
+        let placement_peak = source
+            .learning_placement_domain_peak_bytes(&config)
+            .unwrap();
+        let placement_retained = source
+            .learning_placement_domain(&config)
+            .unwrap()
+            .retained_bytes();
+        let mut offset = 0usize;
+        let mut pages = 0usize;
+        let mut child_us = 0u128;
+        let mut child_count = 0usize;
+        let child_limit = std::env::var("AIC_ROOT_SCALE_CHILDREN")
+            .ok()
+            .and_then(|value| value.parse::<usize>().ok())
+            .unwrap_or(32);
+        let page_limit = std::env::var("AIC_ROOT_SCALE_MAX_PAGES")
+            .ok()
+            .and_then(|value| value.parse::<usize>().ok())
+            .unwrap_or(usize::MAX);
+        let page_size = 256;
+        let started = Instant::now();
+        let exhausted = loop {
+            let page = domain
+                .command_page(learning::CommandKind::Place, offset, page_size)
+                .unwrap();
+            for factored in page
+                .commands
+                .iter()
+                .take(child_limit.saturating_sub(child_count))
+            {
+                let now = Instant::now();
+                let mut child = source.clone();
+                let step = child.step(factored.command.command.clone());
+                assert!(step.accepted && step.diagnostic.is_none(), "{step:?}");
+                child_us += now.elapsed().as_micros();
+                child_count += 1;
+            }
+            offset = page.next_offset;
+            pages += 1;
+            if page.exhausted || pages >= page_limit {
+                break page.exhausted;
+            }
+        };
+        let terminal_started = Instant::now();
+        let mut terminal_offset = 0usize;
+        let mut terminal_pages = 0usize;
+        let terminal_page_limit = std::env::var("AIC_ROOT_SCALE_TERMINAL_MAX_PAGES")
+            .ok()
+            .and_then(|value| value.parse::<usize>().ok())
+            .unwrap_or(usize::MAX);
+        let terminal_exact = loop {
+            let page = domain
+                .command_page(
+                    learning::CommandKind::PlaceTerminal,
+                    terminal_offset,
+                    page_size,
+                )
+                .unwrap();
+            terminal_offset = page.next_offset;
+            terminal_pages += 1;
+            if page.exhausted || terminal_pages >= terminal_page_limit {
+                break page.exhausted;
+            }
+        };
+        println!(
+            "root_scale path={panel_path} replayed={placed} blocks={} terminals={} bounds={}x{} commands={} exact={} pages={} terminal_commands={} terminal_exact={} terminal_pages={} terminal_us={} domain_us={} page_total_us={} child_count={} child_total_us={} retained_domain_bytes={} placement_peak_bytes={} placement_retained_bytes={} command_slot_bytes={} factored_slot_bytes={}",
+            source.problem.blocks.len(),
+            source.problem.terminals.len(),
+            config.placement.width(),
+            config.placement.height(),
+            offset,
+            exhausted,
+            pages,
+            terminal_offset,
+            terminal_exact,
+            terminal_pages,
+            terminal_started.elapsed().as_micros(),
+            domain_us,
+            started.elapsed().as_micros(),
+            child_count,
+            child_us,
+            domain.retained_bytes(),
+            placement_peak,
+            placement_retained,
+            std::mem::size_of::<Command>(),
+            std::mem::size_of::<learning::FactoredCommand>(),
+        );
     }
 }

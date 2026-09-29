@@ -31,6 +31,14 @@ pub const CONSTRUCTIVE_PRODUCTION_REPORT_SCHEMA_VERSION: u32 = 2;
 const CONNECTION_ROUTE_LIMIT: u64 = 64;
 const ROUTING_WORKSPACE_CELL_LIMIT: usize = 1_000_000;
 
+fn connection_route_limit() -> u64 {
+    CONNECTION_ROUTE_LIMIT
+}
+
+fn is_default_connection_route_limit(value: &u64) -> bool {
+    *value == CONNECTION_ROUTE_LIMIT
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ConstructiveProductionRequest {
@@ -39,6 +47,11 @@ pub struct ConstructiveProductionRequest {
     pub max_steps: usize,
     pub max_placement_attempts: usize,
     pub max_route_searches: u64,
+    #[serde(
+        default = "connection_route_limit",
+        skip_serializing_if = "is_default_connection_route_limit"
+    )]
+    pub per_connection_route_searches: u64,
     #[serde(default = "default_analysis_workers")]
     pub analysis_workers: usize,
     /// Number of valid nearby alternatives to compare; zero retains coarse first-feasible growth.
@@ -107,7 +120,29 @@ pub struct ConstructiveProductionReport {
     pub diagnostics: Vec<ConstructiveFrontierDiagnostic>,
 }
 
+/// Final geometry and construction outcome for callers that do not consume step history.
+/// The same search engine and validation gates produce this and the full CLI report.
+#[derive(Debug)]
+pub struct ConstructiveProductionCompactResult {
+    pub success: bool,
+    pub complete: bool,
+    pub status: String,
+    pub required_facilities: usize,
+    pub accepted_growth_steps: usize,
+    pub accepted_steps: usize,
+    pub final_node: Option<ConstructiveNode>,
+    pub failed_placement_attempts: usize,
+    pub failed_statistics: ConstructiveCompositionStatistics,
+    pub rejected_reasons: BTreeMap<String, u64>,
+    pub diagnostics: Vec<ConstructiveFrontierDiagnostic>,
+    pub elapsed_ms: u64,
+    pub request: ConstructiveProductionRequest,
+    pub per_connection_route_limit: u64,
+    pub routing_workspace_cell_limit: usize,
+}
+
 struct Constructor<'a> {
+    retain_history: bool,
     fixed_rotations: BTreeMap<String, i64>,
     wiring: &'a FacilityInstanceWiringReport,
     facilities: &'a ValidatedFacilityCatalog,
@@ -132,6 +167,51 @@ pub fn construct_production(
     components: &ValidatedLogisticsComponentCatalog,
     request: &ConstructiveProductionRequest,
 ) -> ConstructiveProductionReport {
+    construct_production_inner(
+        wiring, facilities, items, transports, components, request, true,
+    )
+    .0
+}
+
+pub fn construct_production_compact(
+    wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    components: &ValidatedLogisticsComponentCatalog,
+    request: &ConstructiveProductionRequest,
+) -> ConstructiveProductionCompactResult {
+    let (report, accepted_steps, accepted_growth_steps) = construct_production_inner(
+        wiring, facilities, items, transports, components, request, false,
+    );
+    ConstructiveProductionCompactResult {
+        success: report.success,
+        complete: report.complete,
+        status: report.status,
+        required_facilities: report.required_facilities,
+        accepted_growth_steps,
+        accepted_steps,
+        final_node: report.final_node,
+        failed_placement_attempts: report.failed_placement_attempts,
+        failed_statistics: report.failed_statistics,
+        rejected_reasons: report.rejected_reasons,
+        diagnostics: report.diagnostics,
+        elapsed_ms: report.elapsed_ms,
+        request: report.request,
+        per_connection_route_limit: report.per_connection_route_limit,
+        routing_workspace_cell_limit: report.routing_workspace_cell_limit,
+    }
+}
+
+fn construct_production_inner(
+    wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    components: &ValidatedLogisticsComponentCatalog,
+    request: &ConstructiveProductionRequest,
+    retain_history: bool,
+) -> (ConstructiveProductionReport, usize, usize) {
     let _span = profile_span(ProfileOp::Construction);
     let started = Instant::now();
     let ids = wiring
@@ -156,7 +236,7 @@ pub fn construct_production(
     let mut report = ConstructiveProductionReport {
         schema_version: CONSTRUCTIVE_PRODUCTION_REPORT_SCHEMA_VERSION,
         request: request.clone(),
-        per_connection_route_limit: CONNECTION_ROUTE_LIMIT,
+        per_connection_route_limit: request.per_connection_route_searches,
         routing_workspace_cell_limit: ROUTING_WORKSPACE_CELL_LIMIT,
         success: false,
         complete: false,
@@ -180,7 +260,10 @@ pub fn construct_production(
         elapsed_ms: 0,
         diagnostics: Vec::new(),
     };
+    let mut accepted_steps = 0;
+    let mut accepted_growth_steps = 0;
     let mut c = Constructor {
+        retain_history,
         fixed_rotations: BTreeMap::new(),
         wiring,
         facilities,
@@ -201,13 +284,14 @@ pub fn construct_production(
         || request.max_steps == 0
         || request.max_placement_attempts == 0
         || request.max_route_searches == 0
+        || request.per_connection_route_searches == 0
         || request.analysis_workers == 0
         || request.analysis_workers > 16
         || request.nearby_candidates > 8
         || !ids.contains(&request.target_instance)
     {
         report.diagnostics.push(failure("production-input-invalid",&request.target_instance,"expected valid wiring, supported schema, an existing seed, positive operation budgets, 1..=16 analysis workers and 0..=8 nearby candidates"));
-        return report;
+        return (report, accepted_steps, accepted_growth_steps);
     }
     if request.connection_first_placement
         && (request.flow_direction.is_none() || request.nearby_candidates != 0)
@@ -217,7 +301,7 @@ pub fn construct_production(
             &request.target_instance,
             "connection-first placement requires flow_direction and nearby_candidates = 0",
         ));
-        return report;
+        return (report, accepted_steps, accepted_growth_steps);
     }
     let all_ids = wiring
         .nodes
@@ -246,7 +330,7 @@ pub fn construct_production(
             &request.target_instance,
             "wiring requires unique node/edge identities, existing endpoints and positive rates",
         ));
-        return report;
+        return (report, accepted_steps, accepted_growth_steps);
     }
     for e in &wiring.edges {
         let source = wiring
@@ -287,7 +371,7 @@ pub fn construct_production(
                 &e.id,
                 "external endpoint role/item mismatch or external-to-external edge",
             ));
-            return report;
+            return (report, accepted_steps, accepted_growth_steps);
         }
     }
     if let Some(direction) = request.flow_direction {
@@ -297,25 +381,27 @@ pub fn construct_production(
             match decision {
                 Ok(decision) => {
                     c.fixed_rotations.insert(id.clone(), decision.rotation);
-                    report.orientation_decisions.push(decision);
+                    if retain_history {
+                        report.orientation_decisions.push(decision);
+                    }
                 }
                 Err(d) => {
                     report.diagnostics.push(d);
-                    return report;
+                    return (report, accepted_steps, accepted_growth_steps);
                 }
             }
         }
     }
-    let mut current = match c.fresh(&request.target_instance, 0) {
+    let mut current = match c.fresh(&request.target_instance) {
         Ok(node) => node,
         Err(d) => {
             report.diagnostics.push(d);
-            return report;
+            return (report, accepted_steps, accepted_growth_steps);
         }
     };
     if let Err(d) = network::validate(&current, facilities, transports, components) {
         report.diagnostics.push(d);
-        return report;
+        return (report, accepted_steps, accepted_growth_steps);
     }
     report.status = "step-limit".into();
     // A seed with downstream obligations is private until its full dependency group closes.
@@ -393,7 +479,7 @@ pub fn construct_production(
             }
             for variant in 0..4 {
                 let candidate = c.grow_group(&current, &group, variant);
-                if request.downstream_closed_growth {
+                if retain_history && request.downstream_closed_growth {
                     report.growth_decisions.push(ConstructiveGrowthDecision {
                         step: index,
                         root: root.clone(),
@@ -435,9 +521,11 @@ pub fn construct_production(
                 }));
             report.failed_placement_attempts = c.attempts;
             report.failed_statistics = c.statistics.clone();
-            report.attempted_groups_at_failure =
-                tried.into_iter().map(|g| g.into_iter().collect()).collect();
-            report.last_obstruction = c.last_obstruction.take();
+            if retain_history {
+                report.attempted_groups_at_failure =
+                    tried.into_iter().map(|g| g.into_iter().collect()).collect();
+                report.last_obstruction = c.last_obstruction.take();
+            }
             if let Some(diagnostic) = c.screen_failure.take() {
                 report.diagnostics.push(diagnostic);
             }
@@ -459,21 +547,25 @@ pub fn construct_production(
             break;
         }
         has_closed_incumbent = true;
-        let added = next
-            .member_instances
-            .iter()
-            .filter(|id| !current.member_instances.contains(id))
-            .cloned()
-            .collect();
-        report.steps.push(ConstructiveProductionStep {
-            index,
-            stage: "internal-growth",
-            added_instances: added,
-            elapsed_ms: millis(step_started),
-            placement_attempts: c.attempts,
-            statistics: c.statistics.clone(),
-            node: next.clone(),
-        });
+        accepted_steps += 1;
+        accepted_growth_steps += 1;
+        if retain_history {
+            let added = next
+                .member_instances
+                .iter()
+                .filter(|id| !current.member_instances.contains(id))
+                .cloned()
+                .collect();
+            report.steps.push(ConstructiveProductionStep {
+                index,
+                stage: "internal-growth",
+                added_instances: added,
+                elapsed_ms: millis(step_started),
+                placement_attempts: c.attempts,
+                statistics: c.statistics.clone(),
+                node: next.clone(),
+            });
+        }
         current = next;
     }
     report.unresolved_internal_requirements = internal
@@ -518,6 +610,10 @@ pub fn construct_production(
                 ));
                 break;
             }
+            let external_limit = request
+                .max_route_searches
+                .min(request.per_connection_route_searches);
+            let mut stop = network::ConnectionSearchStop::default();
             let Some(next) = network::connect_external(
                 &working,
                 edge,
@@ -526,7 +622,8 @@ pub fn construct_production(
                 transports,
                 components,
                 &mut c.statistics,
-                request.max_route_searches.min(CONNECTION_ROUTE_LIMIT),
+                external_limit,
+                &mut stop,
                 &mut |n| {
                     network::validate(n, facilities, transports, components).is_ok()
                         && audit::validate_coverage(n, wiring, items).is_ok()
@@ -538,10 +635,30 @@ pub fn construct_production(
                         .success
                 },
             ) else {
+                let code = match stop {
+                    network::ConnectionSearchStop::RouteCallBudget
+                        if request.per_connection_route_searches < request.max_route_searches =>
+                    {
+                        "production-external-connection-route-budget-exhausted"
+                    }
+                    network::ConnectionSearchStop::RouteCallBudget => {
+                        "production-external-step-route-budget-exhausted"
+                    }
+                    network::ConnectionSearchStop::WorkInterrupted => {
+                        "production-external-work-interrupted"
+                    }
+                    network::ConnectionSearchStop::ResourceExhausted => {
+                        "production-external-search-resource-exhausted"
+                    }
+                    network::ConnectionSearchStop::CandidateExhaustion => {
+                        "production-external-routing-exhausted"
+                    }
+                };
+                c.reject(code);
                 report.diagnostics.push(failure(
-                    "production-external-routing-exhausted",
+                    code,
                     &edge.id,
-                    "external connection candidates exhausted; last validated state retained",
+                    "external connection search stopped; last validated state retained",
                 ));
                 report.failed_statistics = c.statistics.clone();
                 break;
@@ -549,15 +666,19 @@ pub fn construct_production(
             working = next;
             current = canonicalize_node(&working);
             network::report_capacity(&mut current, transports).expect("validated network capacity");
-            report.steps.push(ConstructiveProductionStep {
-                index: report.steps.len(),
-                stage: "external-connection",
-                added_instances: vec![],
-                elapsed_ms: millis(step_started),
-                placement_attempts: 0,
-                statistics: c.statistics.clone(),
-                node: current.clone(),
-            });
+            let step_index = accepted_steps;
+            accepted_steps += 1;
+            if retain_history {
+                report.steps.push(ConstructiveProductionStep {
+                    index: step_index,
+                    stage: "external-connection",
+                    added_instances: vec![],
+                    elapsed_ms: millis(step_started),
+                    placement_attempts: 0,
+                    statistics: c.statistics.clone(),
+                    node: current.clone(),
+                });
+            }
         }
         report
             .unresolved_external_requirements
@@ -593,7 +714,7 @@ pub fn construct_production(
     report.placement_decisions = c.placement_decisions;
     report.direct_placement_decisions = c.direct_placement_decisions;
     report.elapsed_ms = millis(started);
-    report
+    (report, accepted_steps, accepted_growth_steps)
 }
 
 fn millis(start: Instant) -> u64 {
@@ -634,80 +755,19 @@ impl Constructor<'_> {
             || self.statistics.astar_searches >= self.request.max_route_searches
     }
 
-    fn fresh(
-        &self,
-        id: &str,
-        variant: usize,
-    ) -> Result<ConstructiveNode, ConstructiveFrontierDiagnostic> {
+    fn fresh(&self, id: &str) -> Result<ConstructiveNode, ConstructiveFrontierDiagnostic> {
         let mut node = construct_facility_node(self.wiring, self.facilities, self.items, id)?;
         if let Some(rotation) = self.fixed_rotations.get(id) {
             let delta = (rotation - node.placements[0].rotation).rem_euclid(360);
             node = rotate_node(&node, delta);
         }
-        let mut groups =
-            BTreeMap::<(u8, TransportKind, String), (Rate, Vec<PlacedFacilityPort>)>::new();
-        for b in &node.boundary_requirements {
-            let key = (
-                u8::from(b.direction == FacilityPortDirection::Output),
-                b.transport,
-                b.item.clone(),
-            );
-            let group = groups.entry(key).or_insert((
-                Rate::zero(),
-                b.attachments.iter().map(|a| a.port().clone()).collect(),
-            ));
-            group.0 = group.0.checked_add(b.rate).map_err(|_| {
-                failure(
-                    "production-port-allocation-failed",
-                    id,
-                    "incident rate overflow",
-                )
-            })?;
-        }
-        let mut used = BTreeSet::new();
-        let mut assignments = BTreeMap::new();
-        for (key, (rate, mut ports)) in groups {
-            ports.sort_by(|a, b| a.port.cmp(&b.port));
-            if !ports.is_empty() {
-                let offset = variant % ports.len();
-                ports.rotate_left(offset);
-            }
-            if let Some(direction) = self.request.flow_direction {
-                let side = if key.0 == 1 {
-                    direction
-                } else {
-                    direction.rotated_clockwise(180)
-                };
-                // Stable: variants reorder ports within aligned/nonaligned faces, not across them.
-                ports.sort_by_key(|p| p.edge != side);
-            }
-            let lanes =
-                super::capacity::split_rate_into_lanes(rate, key.1, self.transports, id)?.len();
-            let selected = ports
-                .into_iter()
-                .filter(|p| !used.contains(&p.port))
-                .take(lanes)
-                .collect::<Vec<_>>();
-            if selected.len() != lanes {
-                return Err(failure(
-                    "production-port-allocation-failed",
-                    id,
-                    "capacity-grouped incident demand exceeds distinct compatible ports",
-                ));
-            }
-            used.extend(selected.iter().map(|p| p.port.clone()));
-            assignments.insert(key, selected);
-        }
-        for b in &mut node.boundary_requirements {
-            b.attachments = assignments[&(
-                u8::from(b.direction == FacilityPortDirection::Output),
-                b.transport,
-                b.item.clone(),
-            )]
-                .iter()
-                .cloned()
-                .map(|port| ConstructiveBoundaryAttachment::NewPort { port })
-                .collect();
+        let demand = analyze_constructive_port_demands(
+            &node.boundary_requirements,
+            &node.transport_networks,
+            self.transports,
+        );
+        if let Some(diagnostic) = demand.diagnostics.into_iter().next() {
+            return Err(diagnostic);
         }
         Ok(node)
     }
@@ -771,7 +831,7 @@ impl Constructor<'_> {
         variant: usize,
     ) -> Option<ConstructiveNode> {
         let _span = profile_span(ProfileOp::FacilityAddition);
-        let fresh = match self.fresh(id, variant) {
+        let fresh = match self.fresh(id) {
             Ok(n) => n,
             Err(d) => {
                 self.reject(&format!("{}: {}", d.code, id));
@@ -892,6 +952,7 @@ impl Constructor<'_> {
             let components = self.components;
             let reasons = &mut self.reasons;
             let last_obstruction = &mut self.last_obstruction;
+            let retain_history = self.retain_history;
             let screen_failure = &mut self.screen_failure;
             let analysis_workers = self.request.analysis_workers;
             let mut accept = |n: &ConstructiveNode| {
@@ -930,20 +991,23 @@ impl Constructor<'_> {
                     *reasons
                         .entry("remaining boundary escape".into())
                         .or_default() += 1;
-                    *last_obstruction = Some(ConstructiveProductionObstruction {
-                        connection: edge.id.clone(),
-                        blocked_requirements,
-                        candidate: canonicalize_node(n),
-                    });
+                    if retain_history {
+                        *last_obstruction = Some(ConstructiveProductionObstruction {
+                            connection: edge.id.clone(),
+                            blocked_requirements,
+                            candidate: canonicalize_node(n),
+                        });
+                    }
                     return false;
                 }
                 true
             };
-            let connection_limit = self.request.max_route_searches.min(
-                self.statistics
-                    .astar_searches
-                    .saturating_add(CONNECTION_ROUTE_LIMIT),
-            );
+            let per_connection_end = self
+                .statistics
+                .astar_searches
+                .saturating_add(self.request.per_connection_route_searches);
+            let connection_limit = self.request.max_route_searches.min(per_connection_end);
+            let mut stop = network::ConnectionSearchStop::default();
             let Some(next) = network::connect_first(
                 &shifted,
                 edge,
@@ -952,8 +1016,29 @@ impl Constructor<'_> {
                 &mut workspace,
                 &mut self.statistics,
                 connection_limit,
+                &mut stop,
                 &mut accept,
             ) else {
+                let reason = match stop {
+                    network::ConnectionSearchStop::RouteCallBudget
+                        if per_connection_end < self.request.max_route_searches =>
+                    {
+                        "production-connection-route-budget-exhausted"
+                    }
+                    network::ConnectionSearchStop::RouteCallBudget => {
+                        "production-step-route-budget-exhausted"
+                    }
+                    network::ConnectionSearchStop::WorkInterrupted => {
+                        "production-connection-work-interrupted"
+                    }
+                    network::ConnectionSearchStop::ResourceExhausted => {
+                        "production-connection-search-resource-exhausted"
+                    }
+                    network::ConnectionSearchStop::CandidateExhaustion => {
+                        "production-connection-candidates-exhausted"
+                    }
+                };
+                self.reject(reason);
                 self.reject(&format!("connection failed: {}", edge.id));
                 return None;
             };

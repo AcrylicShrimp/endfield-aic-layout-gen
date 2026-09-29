@@ -44,6 +44,7 @@ pub(in crate::layouts::constructive) fn connect_nearest(
     nearest: &mut NearestPortSearch,
     accept: &mut impl FnMut(&ConstructiveNode) -> bool,
 ) -> Option<ConstructiveNode> {
+    let mut stop = ConnectionSearchStop::default();
     search(
         node,
         edge,
@@ -56,6 +57,7 @@ pub(in crate::layouts::constructive) fn connect_nearest(
         limit,
         Some(nearest),
         None,
+        &mut stop,
         accept,
     )
 }
@@ -68,11 +70,12 @@ pub(in crate::layouts::constructive) fn connect_first(
     workspace: &mut RouteWorkspace,
     stats: &mut ConstructiveCompositionStatistics,
     limit: u64,
+    stop: &mut ConnectionSearchStop,
     accept: &mut impl FnMut(&ConstructiveNode) -> bool,
 ) -> Option<ConstructiveNode> {
     search(
         node, edge, edge.rate, 0, transports, components, workspace, stats, limit, None, None,
-        accept,
+        stop, accept,
     )
 }
 
@@ -88,8 +91,13 @@ fn search(
     limit: u64,
     mut nearest: Option<&mut NearestPortSearch>,
     parent_trial: Option<usize>,
+    stop: &mut ConnectionSearchStop,
     accept: &mut impl FnMut(&ConstructiveNode) -> bool,
 ) -> Option<ConstructiveNode> {
+    if crate::work_control::stopped() {
+        stop.interrupted();
+        return None;
+    }
     if remaining.is_zero() {
         stats.completed_lane_bundles += 1;
         let mut candidate = node.clone();
@@ -106,7 +114,8 @@ fn search(
         return Some(candidate);
     }
     // Each recursive level spends an A* call; the connection budget also bounds stack depth.
-    if stats.astar_searches >= limit {
+    if limit == 0 {
+        stop.budget();
         return None;
     }
     let source_boundary = node
@@ -146,11 +155,14 @@ fn search(
     };
     if nearest.is_some() {
         pairs.sort_by_key(|(a, b)| (distance(a, b), a.port().port.clone(), b.port().port.clone()));
+    } else {
+        // Reuse residual network capacity before claiming another physical port.
+        pairs.sort_by_key(|(a, b)| {
+            usize::from(matches!(a, Attachment::NewPort { .. }))
+                + usize::from(matches!(b, Attachment::NewPort { .. }))
+        });
     }
     for (source, target) in pairs {
-        if stats.astar_searches >= limit {
-            return None;
-        }
         let available = |a: &Attachment| match a {
             Attachment::NewPort { .. } => capacity,
             Attachment::ExistingNetwork {
@@ -161,13 +173,17 @@ fn search(
         if rate.is_zero() {
             continue;
         }
+        if stats.astar_searches >= limit {
+            stop.budget();
+            return None;
+        }
         let mut blocked = occupancy.facilities.clone();
         blocked.extend(&occupancy.layers[&transport]);
-        // Concrete assigned future port domains, including short outward escape corridors.
+        // Only a singleton future port is committed; other attachments are alternatives.
         for b in node
             .boundary_requirements
             .iter()
-            .filter(|b| nearest.is_none() && b.transport == transport)
+            .filter(|b| nearest.is_none() && b.transport == transport && b.attachments.len() == 1)
         {
             for a in &b.attachments {
                 let Attachment::NewPort { port } = a else {
@@ -200,6 +216,7 @@ fn search(
                 break;
             };
             if stats.astar_searches >= limit {
+                stop.budget();
                 break;
             }
             stats.port_pairs_considered += 1;
@@ -366,6 +383,7 @@ fn search(
             limit,
             nearest.as_deref_mut(),
             trial_index,
+            stop,
             accept,
         ) {
             if let (Some(trace), Some(index)) = (nearest.as_deref_mut(), trial_index) {
@@ -376,6 +394,9 @@ fn search(
             }
             return Some(result);
         }
+    }
+    if crate::work_control::stopped() {
+        stop.interrupted();
     }
     None
 }

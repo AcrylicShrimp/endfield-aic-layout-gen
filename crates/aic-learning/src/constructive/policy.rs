@@ -160,7 +160,7 @@ pub fn score_factored_commands(
         let banks = cursors
             .par_iter()
             .map(|cursor| observation.domain.choices(cursor))
-            .collect::<Vec<_>>();
+            .collect::<std::result::Result<Vec<_>, _>>()?;
         ensure!(
             banks.iter().all(|bank| !bank.is_empty()),
             "aic-learning.constructive-score: empty conditional factor"
@@ -370,7 +370,7 @@ fn sample_with(
             let banks = owners
                 .iter()
                 .map(|&owner| rows[owner].domain.choices(&cursors[owner]))
-                .collect::<Vec<_>>();
+                .collect::<std::result::Result<Vec<_>, _>>()?;
             ensure!(
                 banks.iter().all(|bank| !bank.is_empty()),
                 "aic-learning.constructive-sample: empty conditional factor"
@@ -502,7 +502,7 @@ pub(crate) fn selected_likelihood(
                 factor.cursor == expected && final_command.is_none(),
                 "aic-learning.constructive-likelihood: discontinuous factor prefix"
             );
-            let choices = row.observation.domain.choices(&factor.cursor);
+            let choices = row.observation.domain.choices(&factor.cursor)?;
             ensure!(
                 factor.selected < choices.len(),
                 "aic-learning.constructive-likelihood: selected factor is stale"

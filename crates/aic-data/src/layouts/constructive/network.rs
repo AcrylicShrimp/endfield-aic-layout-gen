@@ -7,6 +7,8 @@ mod first;
 mod paths;
 pub(super) use external::connect_external;
 #[cfg(test)]
+pub(super) use external::fail_next_child_admission_for_test;
+#[cfg(test)]
 mod tests;
 mod validation;
 pub(super) use first::FUTURE_PORT_ESCAPE_CELLS;
@@ -16,6 +18,33 @@ pub(super) use first::{
 };
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 pub(super) use validation::validate;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(super) enum ConnectionSearchStop {
+    #[default]
+    CandidateExhaustion,
+    RouteCallBudget,
+    WorkInterrupted,
+    ResourceExhausted,
+}
+
+impl ConnectionSearchStop {
+    fn budget(&mut self) {
+        if *self != Self::WorkInterrupted {
+            *self = Self::RouteCallBudget;
+        }
+    }
+
+    fn interrupted(&mut self) {
+        *self = Self::WorkInterrupted;
+    }
+
+    fn resource(&mut self) {
+        if *self != Self::WorkInterrupted {
+            *self = Self::ResourceExhausted;
+        }
+    }
+}
 
 use super::first_pipe_frontier::occupied_cells;
 use super::routing::RouteWorkspace;

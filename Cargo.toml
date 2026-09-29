@@ -21,6 +21,7 @@ anyhow = "1"
 cc = "1"
 clap = { version = "4", features = ["derive"] }
 crossbeam-channel = "0.5"
+fs4 = "1"
 good_lp = { version = "1", default-features = false, features = ["microlp"] }
 microlp = "0.6"
 indexmap = "2"

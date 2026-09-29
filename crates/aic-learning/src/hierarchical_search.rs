@@ -11,17 +11,21 @@ use std::{
 
 use aic_layout::{
     geometry::{Bounds, Point},
+    logistics::LogisticsComponentKind,
     physical::{BridgeAxis, Problem},
     validation::Catalogs,
 };
 use aic_pilot_native::constructive::{
     Command, Limits, Session,
-    learning::{CommandKind, Config as DomainConfig},
+    learning::{
+        CommandKind, CommandPage, Config as DomainConfig, Domain as LearningDomain,
+        FactoredCommand, SelectedFactor,
+    },
     routing_candidates::{
         AllowanceStop, AllowanceUsage, Candidate, Config as CandidateConfig, NetworkCandidate,
-        Provenance, RepairCandidate, RepairRequest, Report as RouteReport, Request,
-        RequestAllowance, RequestFailure, RouteReadiness, Termination as RouteTermination,
-        WorkKind, network_shared_cells_with_allowance,
+        PhysicalCost, Provenance, RepairCandidate, RepairRequest, Report as RouteReport, Request,
+        RequestAllowance, RequestFailure, RouteReadiness, SearchMemoryBudget,
+        Termination as RouteTermination, WorkKind, network_shared_cells_with_allowance,
     },
 };
 use aic_torch::tch::{self, Device, Tensor};
@@ -48,11 +52,21 @@ use crate::{
 
 const CONFIG_SCHEMA: &str = "aic-hierarchical-search-config-v2";
 pub(crate) const PANEL_SCHEMA: &str = "aic-hierarchical-search-panel-v1";
-pub const REPORT_SCHEMA: &str = "aic-hierarchical-search-report-v9";
+pub const REPORT_SCHEMA: &str = "aic-hierarchical-search-report-v12";
 const MAX_INPUT_BYTES: u64 = 16 * 1024 * 1024;
+const MAX_PANEL_BYTES: u64 = 256 * 1024 * 1024;
 const ROUTE_ATTEMPT_SAMPLE_LIMIT: usize = 32;
 
+mod lower_pager;
 mod negotiated;
+mod network_pager;
+mod placement_scoring;
+mod repair_pager;
+pub(crate) mod root_catalog;
+mod root_scoring;
+
+use lower_pager::{LowerPager, RouteUpdate, TreeReservation, action_bytes, provenance_bytes};
+use placement_scoring::{PlacementActionScorer, PreparedPlacement, ScoredPlacement};
 
 fn default_anchor_prior_mass() -> f64 {
     0.25
@@ -60,6 +74,10 @@ fn default_anchor_prior_mass() -> f64 {
 
 fn default_compiled_inference() -> bool {
     true
+}
+
+fn default_max_live_search_bytes() -> usize {
+    4 * 1024 * 1024 * 1024
 }
 
 fn default_run_beam() -> bool {
@@ -107,6 +125,9 @@ pub struct Config {
     pub bounds: Bounds,
     pub extension_lengths: Vec<i64>,
     pub candidate: CandidateConfig,
+    /// Aggregate retained and temporary memory across one search tree.
+    #[serde(default = "default_max_live_search_bytes")]
+    pub max_live_search_bytes: usize,
     /// Zero disables repair. A positive value authorizes removal of at most
     /// this many currently committed routes in one atomic transaction.
     #[serde(default, skip_serializing_if = "is_zero")]
@@ -249,6 +270,8 @@ pub(crate) struct RootActionRecord {
     pub visits: u32,
     pub q: f64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub gumbel_eligible: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub policy_target: Option<f64>,
 }
 
@@ -257,8 +280,9 @@ pub(crate) struct RootActionRecord {
 pub(crate) struct RootRecord {
     pub state_sha256: String,
     pub state_revision: u64,
-    pub actions: Vec<RootActionRecord>,
-    pub selected_action: usize,
+    pub target: RootRecordTarget,
+    pub pending_lower_tasks: usize,
+    pub loaded_lower_pages: usize,
     pub later_completed_connections: usize,
     pub later_total_connections: usize,
     pub later_footprint_area: u64,
@@ -268,11 +292,66 @@ pub(crate) struct RootRecord {
     pub later_termination: SearchTermination,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "kind", content = "data", rename_all = "kebab-case")]
+pub(crate) enum RootRecordTarget {
+    PuctDense(DenseRootRecord),
+    GumbelCatalog {
+        descriptor: Arc<root_catalog::publication::RootCatalogDescriptor>,
+    },
+    #[cfg(test)]
+    GumbelDenseOracle(DenseRootRecord),
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct DenseRootRecord {
+    pub actions: Vec<RootActionRecord>,
+    pub selected_action: usize,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub selected_physical_id: Option<Vec<u8>>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub gumbel_shortlist: Vec<RootShortlistEvidence>,
+    pub gumbel_shortlist_cap: Option<usize>,
+    pub initial_eligible_actions: Option<usize>,
+}
+
+impl RootRecord {
+    #[cfg(test)]
+    pub(crate) fn dense(&self) -> Option<&DenseRootRecord> {
+        match &self.target {
+            RootRecordTarget::PuctDense(dense) => Some(dense),
+            RootRecordTarget::GumbelCatalog { .. } => None,
+            #[cfg(test)]
+            RootRecordTarget::GumbelDenseOracle(dense) => Some(dense),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn dense_mut(&mut self) -> Option<&mut DenseRootRecord> {
+        match &mut self.target {
+            RootRecordTarget::PuctDense(dense) | RootRecordTarget::GumbelDenseOracle(dense) => {
+                Some(dense)
+            }
+            RootRecordTarget::GumbelCatalog { .. } => None,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct RootShortlistEvidence {
+    pub physical_id: Vec<u8>,
+    pub initial_rank: usize,
+    pub gumbel_bits: u64,
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) enum SearchTermination {
     FullyValidated,
     NoMacroActions,
+    ResourceStopped,
     MoveBudgetExhausted,
 }
 
@@ -359,7 +438,7 @@ pub(crate) struct SearchResult {
     algorithm: String,
     status: String,
     pub(crate) fully_validated: bool,
-    termination: SearchTermination,
+    pub(crate) termination: SearchTermination,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     no_macro_diagnostic: Option<MacroDiagnostic>,
     completed_connections: usize,
@@ -436,15 +515,48 @@ enum OuterRunner<'a> {
 }
 
 impl OuterRunner<'_> {
+    fn config(&self) -> &crate::schema::OuterModelConfig {
+        match self {
+            Self::Eager(model) => &model.config,
+            Self::Compiled(model) => model.config(),
+        }
+    }
+
     fn forward(&self, batch: &OuterBatch) -> Result<crate::outer_model::Prediction> {
         match self {
             Self::Eager(model) => model.forward(batch),
             Self::Compiled(model) => model.forward(batch),
         }
     }
+
+    fn encode_one_root(
+        &self,
+        graph: &crate::constructive::InputBatch,
+    ) -> Result<crate::outer_model::EncodedOuterState> {
+        match self {
+            Self::Eager(model) => Ok(tch::no_grad(|| model.encode_unchecked(graph))),
+            Self::Compiled(model) => model.encode_one_root(graph),
+        }
+    }
+
+    fn score_one_root_page(
+        &self,
+        encoded: &crate::outer_model::EncodedOuterState,
+        rows: &[[f32; ACTION_FEATURES]],
+        entities: &[i64],
+        device: Device,
+    ) -> Result<Tensor> {
+        match self {
+            Self::Eager(model) => {
+                tch::no_grad(|| model.score_one_root_page(encoded, rows, entities, device))
+            }
+            Self::Compiled(model) => model.score_one_root_page(encoded, rows, entities, device),
+        }
+    }
 }
 
 pub(crate) struct Factory<'a> {
+    identity: Arc<()>,
     guidance: GuidanceRunner<'a>,
     guidance_heads: usize,
     guidance_version: &'a str,
@@ -458,11 +570,154 @@ pub(crate) struct Factory<'a> {
     outer: Option<OuterRunner<'a>>,
 }
 
-#[derive(Clone, Copy)]
 struct PlacementPages {
     offsets: [usize; 2],
     exhausted: [bool; 2],
     loaded_pages: usize,
+    revision: u64,
+    bounds: Bounds,
+    domain: Option<Arc<LearningDomain>>,
+    domain_memory: Option<TreeReservation>,
+    page_memory: Option<TreeReservation>,
+    memory_stop: Option<AllowanceStop>,
+    retry_after_live: Option<usize>,
+}
+
+impl PlacementPages {
+    fn ensure_domain(
+        &mut self,
+        session: &Session,
+        config: &DomainConfig,
+        budget: Option<&SearchMemoryBudget>,
+    ) -> Result<Option<AllowanceStop>> {
+        if let (Some(budget), Some(at_stop), Some(stop)) =
+            (budget, self.retry_after_live, &self.memory_stop)
+        {
+            if budget.live_bytes() >= at_stop {
+                return Ok(Some(stop.clone()));
+            }
+        }
+        if self.domain.is_some() {
+            return Ok(None);
+        }
+        let mut reservation = if let Some(budget) = budget {
+            let peak = session
+                .learning_placement_domain_peak_bytes(config)
+                .map_err(anyhow::Error::new)?;
+            match TreeReservation::new(budget, peak) {
+                Ok(reservation) => Some(reservation),
+                Err(stop) => {
+                    self.memory_stop = Some(stop.clone());
+                    self.retry_after_live = Some(budget.live_bytes());
+                    return Ok(Some(stop));
+                }
+            }
+        } else {
+            None
+        };
+        let domain = session
+            .learning_placement_domain(config)
+            .map_err(anyhow::Error::new)?;
+        if let Some(reservation) = &mut reservation {
+            if let Err(stop) = reservation.resize(domain.retained_bytes()) {
+                self.memory_stop = Some(stop.clone());
+                self.retry_after_live =
+                    budget.map(|budget| budget.live_bytes().saturating_sub(reservation.bytes()));
+                return Ok(Some(stop));
+            }
+        }
+        self.domain = Some(domain);
+        self.domain_memory = reservation;
+        self.memory_stop = None;
+        self.retry_after_live = None;
+        Ok(None)
+    }
+}
+
+fn placement_page_peak_bytes(session: &Session, page_size: usize) -> usize {
+    let longest_id = session
+        .problem()
+        .blocks
+        .iter()
+        .map(|block| block.id.len())
+        .chain(
+            session
+                .problem()
+                .terminals
+                .iter()
+                .map(|terminal| terminal.id.len()),
+        )
+        .max()
+        .unwrap_or(0);
+    let per_command = std::mem::size_of::<FactoredCommand>()
+        .saturating_add(3 * std::mem::size_of::<SelectedFactor>())
+        .saturating_add(std::mem::size_of::<MacroAction>())
+        .saturating_add(longest_id)
+        .saturating_add(64);
+    page_size
+        .saturating_mul(2)
+        .saturating_mul(per_command)
+        .saturating_add(
+            session
+                .problem()
+                .blocks
+                .len()
+                .saturating_mul(std::mem::size_of::<usize>()),
+        )
+        .saturating_add(page_size.saturating_mul(std::mem::size_of::<(usize, usize)>()))
+        .saturating_add(4096)
+}
+
+fn placement_page_allocation_failed(failure: &anyhow::Error) -> bool {
+    failure
+        .downcast_ref::<aic_pilot_native::constructive::Diagnostic>()
+        .is_some_and(|diagnostic| diagnostic.code == "learning-resource")
+        || failure
+            .downcast_ref::<std::collections::TryReserveError>()
+            .is_some()
+}
+
+fn placement_host_stop(budget: &SearchMemoryBudget, attempted: usize) -> AllowanceStop {
+    AllowanceStop {
+        reason: "host-allocation",
+        category: None,
+        limit: budget.limit_bytes(),
+        used: budget.live_bytes(),
+        deadline_overshoot_ms: 0,
+        attempted_bytes: Some(attempted),
+        aggregate_peak_bytes: Some(budget.peak_bytes()),
+    }
+}
+
+fn load_placement_pair(
+    pages: &mut PlacementPages,
+    mut load: impl FnMut(CommandKind, usize) -> Result<CommandPage>,
+) -> Result<Vec<MacroAction>> {
+    let place = (!pages.exhausted[0])
+        .then(|| load(CommandKind::Place, pages.offsets[0]))
+        .transpose()?;
+    let terminal = (!pages.exhausted[1])
+        .then(|| load(CommandKind::PlaceTerminal, pages.offsets[1]))
+        .transpose()?;
+    let command_count = place
+        .as_ref()
+        .map_or(0, |page| page.commands.len())
+        .checked_add(terminal.as_ref().map_or(0, |page| page.commands.len()))
+        .ok_or_else(|| anyhow::anyhow!("placement page command count overflow"))?;
+    let mut actions = Vec::new();
+    actions.try_reserve_exact(command_count)?;
+    for (index, page) in [place, terminal].into_iter().enumerate() {
+        if let Some(page) = page {
+            pages.offsets[index] = page.next_offset;
+            pages.exhausted[index] = page.exhausted;
+            actions.extend(
+                page.commands
+                    .into_iter()
+                    .map(|factored| MacroAction::Command(factored.command.command)),
+            );
+        }
+    }
+    Ok(actions)
 }
 
 struct ActionBatch {
@@ -505,6 +760,7 @@ impl Factory<'_> {
         outer: Option<&'a OuterModel>,
     ) -> Result<Factory<'a>> {
         Ok(Factory {
+            identity: Arc::new(()),
             guidance_heads: guidance.config.heads,
             guidance: if compiled_inference {
                 GuidanceRunner::Compiled(CompiledGuidanceModel::new(guidance))
@@ -532,6 +788,133 @@ impl Factory<'_> {
         })
     }
 
+    fn placement_actions(
+        &self,
+        session: &Session,
+        exhaust_placements: bool,
+        tree_memory: Option<&SearchMemoryBudget>,
+        previous: Option<PlacementPages>,
+    ) -> Result<(Vec<MacroAction>, PlacementPages, Option<AllowanceStop>)> {
+        let mut actions = Vec::new();
+        let fresh = || PlacementPages {
+            offsets: [0; 2],
+            exhausted: [true; 2],
+            loaded_pages: 1,
+            revision: session.revision(),
+            bounds: self.domain.placement,
+            domain: None,
+            domain_memory: None,
+            page_memory: None,
+            memory_stop: None,
+            retry_after_live: None,
+        };
+        let mut placement_pages = previous
+            .filter(|pages| {
+                pages.revision == session.revision() && pages.bounds == self.domain.placement
+            })
+            .unwrap_or_else(fresh);
+        if session.has_unplaced_entities() {
+            if let Some(stop) = placement_pages.ensure_domain(session, &self.domain, tree_memory)? {
+                placement_pages.exhausted = [false; 2];
+                placement_pages.loaded_pages = 0;
+                return Ok((actions, placement_pages, Some(stop)));
+            }
+            placement_pages.loaded_pages = 1;
+            if !exhaust_placements {
+                placement_pages.exhausted = [false; 2];
+                let page_memory = if let Some(budget) = tree_memory {
+                    match TreeReservation::new(
+                        budget,
+                        placement_page_peak_bytes(session, self.placement_page),
+                    ) {
+                        Ok(reservation) => Some(reservation),
+                        Err(stop) => {
+                            placement_pages.loaded_pages = 0;
+                            placement_pages.memory_stop = Some(stop.clone());
+                            placement_pages.retry_after_live = Some(budget.live_bytes());
+                            return Ok((actions, placement_pages, Some(stop)));
+                        }
+                    }
+                } else {
+                    None
+                };
+                let domain = Arc::clone(
+                    placement_pages
+                        .domain
+                        .as_ref()
+                        .expect("placement domain admitted"),
+                );
+                let loaded = load_placement_pair(&mut placement_pages, |kind, offset| {
+                    domain
+                        .command_page(kind, offset, self.placement_page)
+                        .map_err(anyhow::Error::new)
+                });
+                actions = match loaded {
+                    Ok(actions) => actions,
+                    Err(failure)
+                        if tree_memory.is_some() && placement_page_allocation_failed(&failure) =>
+                    {
+                        let budget = tree_memory.expect("guarded by is_some");
+                        let stop = placement_host_stop(
+                            budget,
+                            page_memory.as_ref().map_or(0, TreeReservation::bytes),
+                        );
+                        placement_pages.loaded_pages = 0;
+                        placement_pages.memory_stop = Some(stop.clone());
+                        placement_pages.retry_after_live =
+                            Some(budget.live_bytes().saturating_sub(
+                                page_memory.as_ref().map_or(0, TreeReservation::bytes),
+                            ));
+                        return Ok((Vec::new(), placement_pages, Some(stop)));
+                    }
+                    Err(failure) => return Err(failure),
+                };
+                if !actions.is_empty() {
+                    placement_pages.page_memory = page_memory;
+                }
+                placement_pages.memory_stop = None;
+                placement_pages.retry_after_live = None;
+                if placement_pages.exhausted.iter().all(|&exhausted| exhausted) {
+                    placement_pages.domain = None;
+                    placement_pages.domain_memory = None;
+                }
+                return Ok((actions, placement_pages, None));
+            }
+            let domain = placement_pages
+                .domain
+                .as_ref()
+                .expect("placement domain admitted");
+            for (index, kind) in [CommandKind::Place, CommandKind::PlaceTerminal]
+                .into_iter()
+                .enumerate()
+            {
+                loop {
+                    let page = domain.command_page(
+                        kind,
+                        placement_pages.offsets[index],
+                        self.placement_page,
+                    )?;
+                    placement_pages.offsets[index] = page.next_offset;
+                    placement_pages.exhausted[index] = page.exhausted;
+                    actions.extend(
+                        page.commands
+                            .into_iter()
+                            .map(|factored| MacroAction::Command(factored.command.command)),
+                    );
+                    if !exhaust_placements || page.exhausted {
+                        break;
+                    }
+                    placement_pages.loaded_pages += 1;
+                }
+            }
+            if placement_pages.exhausted.iter().all(|&exhausted| exhausted) {
+                placement_pages.domain = None;
+                placement_pages.domain_memory = None;
+            }
+        }
+        Ok((actions, placement_pages, None))
+    }
+
     fn action_batch(
         &self,
         session: &Session,
@@ -556,38 +939,8 @@ impl Factory<'_> {
             counters.route_candidate_limit,
             counters.repair_unknown,
         );
-        let mut actions = Vec::new();
-        let mut placement_pages = PlacementPages {
-            offsets: [0; 2],
-            exhausted: [true; 2],
-            loaded_pages: 1,
-        };
-        if session.has_unplaced_entities() {
-            let placement_observation = session.learning_observation(&self.domain)?;
-            for (index, kind) in [CommandKind::Place, CommandKind::PlaceTerminal]
-                .into_iter()
-                .enumerate()
-            {
-                loop {
-                    let page = placement_observation.domain.command_page(
-                        kind,
-                        placement_pages.offsets[index],
-                        self.placement_page,
-                    );
-                    placement_pages.offsets[index] = page.next_offset;
-                    placement_pages.exhausted[index] = page.exhausted;
-                    actions.extend(
-                        page.commands
-                            .into_iter()
-                            .map(|factored| MacroAction::Command(factored.command.command)),
-                    );
-                    if !exhaust_placements || page.exhausted {
-                        break;
-                    }
-                    placement_pages.loaded_pages += 1;
-                }
-            }
-        }
+        let (mut actions, placement_pages, _) =
+            self.placement_actions(session, exhaust_placements, None, None)?;
 
         let mut unfinished = BTreeMap::new();
         for (index, connection) in session.problem().connections.iter().enumerate() {
@@ -923,29 +1276,67 @@ impl Factory<'_> {
         session: &Session,
         pages: &mut PlacementPages,
         counters: &mut Counters,
+        tree_memory: &SearchMemoryBudget,
     ) -> Result<Vec<MacroAction>> {
-        let observation = session.learning_observation(&self.domain)?;
-        let mut actions = Vec::new();
-        for (index, kind) in [CommandKind::Place, CommandKind::PlaceTerminal]
-            .into_iter()
-            .enumerate()
-        {
-            if pages.exhausted[index] {
-                continue;
+        if pages.revision != session.revision() || pages.bounds != self.domain.placement {
+            pages.domain = None;
+            pages.domain_memory = None;
+            pages.page_memory = None;
+            pages.offsets = [0; 2];
+            pages.exhausted = [false; 2];
+            pages.loaded_pages = 0;
+            pages.revision = session.revision();
+            pages.bounds = self.domain.placement;
+            pages.memory_stop = None;
+            pages.retry_after_live = None;
+        }
+        if let Some(stop) = pages.ensure_domain(session, &self.domain, Some(tree_memory))? {
+            capture_tree_memory_stop(counters, session.revision(), tree_memory, stop);
+            return Ok(Vec::new());
+        }
+        let domain = Arc::clone(pages.domain.as_ref().expect("placement domain admitted"));
+        let page_memory = match TreeReservation::new(
+            tree_memory,
+            placement_page_peak_bytes(session, self.placement_page),
+        ) {
+            Ok(reservation) => reservation,
+            Err(stop) => {
+                pages.memory_stop = Some(stop.clone());
+                pages.retry_after_live = Some(tree_memory.live_bytes());
+                capture_tree_memory_stop(counters, session.revision(), tree_memory, stop);
+                return Ok(Vec::new());
             }
-            let page =
-                observation
-                    .domain
-                    .command_page(kind, pages.offsets[index], self.placement_page);
-            pages.offsets[index] = page.next_offset;
-            pages.exhausted[index] = page.exhausted;
-            actions.extend(
-                page.commands
-                    .into_iter()
-                    .map(|factored| MacroAction::Command(factored.command.command)),
-            );
+        };
+        // The pair commits only after both native page calls and output
+        // admission succeed.
+        let actions = load_placement_pair(pages, |kind, offset| {
+            domain
+                .command_page(kind, offset, self.placement_page)
+                .map_err(anyhow::Error::new)
+        });
+        let actions = match actions {
+            Ok(actions) => actions,
+            Err(failure) if placement_page_allocation_failed(&failure) => {
+                let stop = placement_host_stop(tree_memory, page_memory.bytes());
+                pages.memory_stop = Some(stop.clone());
+                pages.retry_after_live =
+                    Some(tree_memory.live_bytes().saturating_sub(page_memory.bytes()));
+                capture_tree_memory_stop(counters, session.revision(), tree_memory, stop);
+                return Ok(Vec::new());
+            }
+            Err(failure) => return Err(failure),
+        };
+        pages.memory_stop = None;
+        pages.retry_after_live = None;
+        if !actions.is_empty() {
+            pages.page_memory = Some(page_memory);
         }
         pages.loaded_pages += 1;
+        if pages.exhausted.iter().all(|&exhausted| exhausted) {
+            pages.domain = None;
+            drop(domain);
+            pages.domain_memory = None;
+        }
         counters.generated_macro_samples += actions.len();
         counters.placement_samples += actions.len();
         Ok(actions)
@@ -1396,12 +1787,13 @@ impl Factory<'_> {
                         break;
                     }
                     reserved = reserved.saturating_add(growth_bytes);
-                    let candidate = selected.clone();
+                    let mut candidate = selected.clone();
                     match partial
                         .session
-                        .apply_route_candidate_with_allowance(&candidate, allowance)
-                    {
-                        Ok(_) => {}
+                        .apply_unpublished_route_candidate_with_cost_allowance(
+                            &candidate, allowance,
+                        ) {
+                        Ok((_, cost)) => candidate.physical_cost = cost,
                         Err(RequestFailure::Invalid(diagnostic)) => {
                             return Err(anyhow::Error::new(diagnostic));
                         }
@@ -1555,6 +1947,9 @@ impl Factory<'_> {
                 let discarded_session_bytes = clone_bytes
                     .saturating_add(partial.retained_bytes)
                     .saturating_sub(retained_witness_bytes);
+                let physical_cost = root
+                    .physical_cost_between(&partial.session, connections)
+                    .map_err(anyhow::Error::new)?;
                 let candidate = NetworkCandidate {
                     id: candidates.len() + page_candidates.len(),
                     state_revision: root.revision(),
@@ -1565,6 +1960,8 @@ impl Factory<'_> {
                     expanded: partial.routes.iter().map(|route| route.expanded).sum(),
                     shared_cells,
                     routes: partial.routes,
+                    physical_cost,
+                    charged_work: allowance.usage(),
                 };
                 drop(partial.session);
                 allowance.release_peak(discarded_session_bytes);
@@ -1678,62 +2075,17 @@ impl Factory<'_> {
         Ok(candidates)
     }
 
-    fn score_actions(
+    fn score_action_rows(
         &self,
         session: &Session,
-        actions: &[MacroAction],
-        children: &[Session],
+        features: &[[f32; ACTION_FEATURES]],
+        entity_references: &[i64],
+        anchor_scores: &[f64],
     ) -> Result<ActionScores> {
-        let Some(model) = self.outer.as_ref() else {
-            let scores = actions
-                .iter()
-                .zip(children)
-                .map(|(action, child)| action.prior_score(session, child, self.domain.placement))
-                .collect::<Vec<_>>();
-            let maximum = scores.iter().copied().fold(f64::NEG_INFINITY, f64::max);
-            let weights = scores
-                .iter()
-                .map(|score| (score - maximum).exp())
-                .collect::<Vec<_>>();
-            let denominator = weights.iter().sum::<f64>();
-            let anchor_priors = weights
-                .into_iter()
-                .map(|weight| weight / denominator.max(f64::MIN_POSITIVE))
-                .collect::<Vec<_>>();
-            return Ok(ActionScores {
-                priors: anchor_priors.clone(),
-                anchor_priors,
-                model_value: state_value(session, self.domain.placement),
-            });
-        };
-        let input = session
-            .macro_learning_input(&self.domain)
-            .map_err(anyhow::Error::new)?;
-        let features = actions
-            .iter()
-            .zip(children)
-            .map(|(action, child)| action.features(session, child, self.domain.placement))
-            .collect::<Vec<_>>();
-        let entity_references = actions
-            .iter()
-            .map(|action| action.entity_index(session.problem()))
-            .collect::<Result<Vec<_>>>()?;
-        let batch = OuterBatch::from_rows(
-            &[input.as_ref()],
-            &[features.as_slice()],
-            &[entity_references.as_slice()],
-            self.device,
-        )?;
-        let prediction = tch::no_grad(|| model.forward(&batch))?;
-        let learned = Vec::<f32>::try_from(prediction.logp.exp().to_device(Device::Cpu))?
-            .into_iter()
-            .map(f64::from)
-            .collect::<Vec<_>>();
-        let anchor_scores = actions
-            .iter()
-            .zip(children)
-            .map(|(action, child)| action.prior_score(session, child, self.domain.placement))
-            .collect::<Vec<_>>();
+        ensure!(
+            features.len() == entity_references.len() && features.len() == anchor_scores.len(),
+            "action score rows have mismatched lengths"
+        );
         let maximum = anchor_scores
             .iter()
             .copied()
@@ -1746,6 +2098,27 @@ impl Factory<'_> {
         let anchor_priors = anchor_weights
             .into_iter()
             .map(|anchor| anchor / denominator.max(f64::MIN_POSITIVE))
+            .collect::<Vec<_>>();
+        let Some(model) = self.outer.as_ref() else {
+            return Ok(ActionScores {
+                priors: anchor_priors.clone(),
+                anchor_priors,
+                model_value: state_value(session, self.domain.placement),
+            });
+        };
+        let input = session
+            .macro_learning_input(&self.domain)
+            .map_err(anyhow::Error::new)?;
+        let batch = OuterBatch::from_rows(
+            &[input.as_ref()],
+            &[features],
+            &[entity_references],
+            self.device,
+        )?;
+        let prediction = tch::no_grad(|| model.forward(&batch))?;
+        let learned = Vec::<f32>::try_from(prediction.logp.exp().to_device(Device::Cpu))?
+            .into_iter()
+            .map(f64::from)
             .collect::<Vec<_>>();
         let priors = learned
             .into_iter()
@@ -1817,6 +2190,12 @@ fn inference_reservation_bytes(
                 .saturating_mul(4)
                 .saturating_mul(48),
         )
+        // The sparse native output remains live after the tensor scratch is
+        // released. Include its strings and head headers in the reservation
+        // before inference so ownership can transfer without a second peak.
+        .saturating_add(input.connection.len())
+        .saturating_add(heads.saturating_mul(128))
+        .saturating_add(1024)
 }
 
 fn json_encoded_len_with_allowance(
@@ -1963,6 +2342,51 @@ fn capture_request_stop(counters: &mut Counters, record: RequestStopRecord) {
     }
 }
 
+fn capture_tree_memory_stop(
+    counters: &mut Counters,
+    revision: u64,
+    budget: &SearchMemoryBudget,
+    stop: AllowanceStop,
+) {
+    capture_request_stop(
+        counters,
+        RequestStopRecord {
+            state_revision: revision,
+            connection: "tree-memory".into(),
+            stop,
+            usage: AllowanceUsage {
+                peak_live_bytes: budget.peak_bytes(),
+                ..AllowanceUsage::default()
+            },
+        },
+    );
+}
+
+fn tree_memory_diagnostic(stop: &AllowanceStop, revision: u64) -> MacroDiagnostic {
+    if stop.reason == "host-allocation" {
+        return MacroDiagnostic {
+            code: "hierarchical.resource-limit".into(),
+            severity: "warning".into(),
+            stage: "hierarchical-search".into(),
+            message: format!("placement page host allocation failed at revision {revision}"),
+            entity: "placement-page".into(),
+        };
+    }
+    MacroDiagnostic {
+        code: "hierarchical.aggregate-memory-limit".into(),
+        severity: "warning".into(),
+        stage: "hierarchical-search".into(),
+        message: format!(
+            "aggregate search memory reached {} of {} bytes; attempted {} more bytes, charged peak {} bytes at revision {revision}",
+            stop.used,
+            stop.limit,
+            stop.attempted_bytes.unwrap_or(0),
+            stop.aggregate_peak_bytes.unwrap_or(stop.used),
+        ),
+        entity: "tree-memory".into(),
+    }
+}
+
 fn no_macro_reason(
     counters: &Counters,
     before: (
@@ -1981,7 +2405,43 @@ fn no_macro_reason(
     ),
     revision: u64,
 ) -> MacroDiagnostic {
-    let (code, entity, message) = if counters.route_no_compatible_endpoints > before.4 {
+    let (code, entity, message) = if counters.request_stops_total > before.0 {
+        let (connection, stop) = counters
+            .last_request_stop
+            .as_ref()
+            .expect("new stop record");
+        (
+            if stop.reason == "aggregate-memory-limit" {
+                "hierarchical.aggregate-memory-limit"
+            } else if stop.reason == "deadline" {
+                "hierarchical.request-deadline"
+            } else if stop.reason == "peak-memory-limit" || stop.reason == "repair-resource-size" {
+                "hierarchical.resource-limit"
+            } else {
+                "hierarchical.request-work-limit"
+            },
+            connection.clone(),
+            if stop.reason == "aggregate-memory-limit" {
+                format!(
+                    "aggregate search memory reached {} of {} bytes; attempted {} more bytes, charged peak {} bytes",
+                    stop.used,
+                    stop.limit,
+                    stop.attempted_bytes.unwrap_or(0),
+                    stop.aggregate_peak_bytes.unwrap_or(stop.used),
+                )
+            } else if stop.reason == "peak-memory-limit" || stop.reason == "repair-resource-size" {
+                format!(
+                    "request exceeded the representable or configured memory limit: {}",
+                    stop.reason
+                )
+            } else {
+                format!(
+                    "request stopped at {:?}: used {}, limit {}",
+                    stop.category, stop.used, stop.limit
+                )
+            },
+        )
+    } else if counters.route_no_compatible_endpoints > before.4 {
         (
             "hierarchical.no-compatible-endpoints",
             counters
@@ -1989,23 +2449,6 @@ fn no_macro_reason(
                 .clone()
                 .unwrap_or_else(|| "macro-state".into()),
             "placed endpoints have no compatible port pair".into(),
-        )
-    } else if counters.request_stops_total > before.0 {
-        let (connection, stop) = counters
-            .last_request_stop
-            .as_ref()
-            .expect("new stop record");
-        (
-            if stop.reason == "deadline" {
-                "hierarchical.request-deadline"
-            } else {
-                "hierarchical.request-work-limit"
-            },
-            connection.clone(),
-            format!(
-                "request stopped at {:?}: used {}, limit {}",
-                stop.category, stop.used, stop.limit
-            ),
         )
     } else if counters.route_deadline > before.1 {
         (
@@ -2166,7 +2609,7 @@ impl MacroAction {
             Self::Repair { .. } => unreachable!("repair was applied transactionally above"),
         }
         ensure!(
-            fork.observe().active.is_none(),
+            !fork.has_active_route(),
             "aic-learning.hierarchical-action: macro action left a partial route"
         );
         Ok(fork)
@@ -2262,11 +2705,23 @@ impl MacroAction {
         bounds: Bounds,
     ) -> [f32; ACTION_FEATURES] {
         let mut row = [0.0; ACTION_FEATURES];
+        let physical_cost = match self {
+            Self::Route(candidate) => Some(&candidate.physical_cost),
+            Self::Network(candidate) => Some(&candidate.physical_cost),
+            Self::Repair { candidate, .. } => Some(&candidate.physical_cost),
+            Self::Command(_) => None,
+        };
+        let charged_work = match self {
+            Self::Route(candidate) => Some(&candidate.charged_work),
+            Self::Network(candidate) => Some(&candidate.charged_work),
+            Self::Repair { candidate, .. } => Some(&candidate.charged_work),
+            Self::Command(_) => None,
+        };
         let scale = bounds.width().max(bounds.height()).max(1) as f32;
         row[3] = construction_progress(before) as f32;
         row[4] = construction_progress(after) as f32;
         row[5] = row[4] - row[3];
-        row[23] = after.layout().is_some() as u8 as f32;
+        row[23] = after.metrics().is_some() as u8 as f32;
         match self {
             Self::Command(Command::Place {
                 position, rotation, ..
@@ -2299,11 +2754,7 @@ impl MacroAction {
                 row[10] = (candidate.learned_cost as f32).ln_1p() / 16.0;
                 row[11] = candidate.predicted_success.unwrap_or(0.5);
                 row[12] = candidate.guidance_uncertainty.unwrap_or(1.0);
-                match &candidate.provenance {
-                    Provenance::Anchor => row[13] = 1.0,
-                    Provenance::Guided { .. } => row[14] = 1.0,
-                    Provenance::Diversified { .. } => row[15] = 1.0,
-                }
+                mark_route_provenance(&mut row, candidate);
                 row[16] = candidate.source_port.is_some() as u8 as f32;
                 row[17] = candidate.target_port.is_some() as u8 as f32;
                 if let Some(min_x) = candidate.cells.iter().map(|point| point.x).min() {
@@ -2357,11 +2808,7 @@ impl MacroAction {
                     .sum::<f32>()
                     / candidate.routes.len() as f32;
                 for route in &candidate.routes {
-                    match route.provenance {
-                        Provenance::Anchor => row[13] = 1.0,
-                        Provenance::Guided { .. } => row[14] = 1.0,
-                        Provenance::Diversified { .. } => row[15] = 1.0,
-                    }
+                    mark_route_provenance(&mut row, route);
                 }
                 row[16] = candidate
                     .routes
@@ -2433,11 +2880,7 @@ impl MacroAction {
                     .sum::<f32>()
                     / candidate.replacements.len().max(1) as f32;
                 for route in &candidate.replacements {
-                    match route.provenance {
-                        Provenance::Anchor => row[13] = 1.0,
-                        Provenance::Guided { .. } => row[14] = 1.0,
-                        Provenance::Diversified { .. } => row[15] = 1.0,
-                    }
+                    mark_route_provenance(&mut row, route);
                 }
                 row[16] = candidate
                     .replacements
@@ -2462,8 +2905,87 @@ impl MacroAction {
                 ));
             }
         }
+        if let Some(cost) = physical_cost {
+            row[30..45].copy_from_slice(&physical_cost_features(cost, bounds));
+        }
+        if let Some(work) = charged_work {
+            row[45..49].copy_from_slice(&charged_work_features(work));
+        }
         row
     }
+}
+
+fn mark_route_provenance(row: &mut [f32; ACTION_FEATURES], candidate: &Candidate) {
+    mark_route_provenance_values(row, &candidate.provenance, &candidate.additional_provenance);
+}
+
+fn mark_route_provenance_values(
+    row: &mut [f32; ACTION_FEATURES],
+    primary: &Provenance,
+    additional: &[Provenance],
+) {
+    for provenance in std::iter::once(primary).chain(additional.iter()) {
+        match provenance {
+            Provenance::Anchor => row[13] = 1.0,
+            Provenance::Guided { .. } => row[14] = 1.0,
+            Provenance::Diversified { .. } => row[15] = 1.0,
+        }
+    }
+}
+
+/// Version 5 outer action slots 30..45. Counts and rational utilization are
+/// derived from the exact native replay delta; no catalog currency is assumed.
+fn physical_cost_features(cost: &PhysicalCost, bounds: Bounds) -> [f32; 15] {
+    let scale = bounds.width().max(bounds.height()).max(1) as f32;
+    let area = (bounds.width() * bounds.height()).max(1) as f32;
+    let mut installed = 0f32;
+    let mut reused = 0f32;
+    let mut removed = 0f32;
+    let mut component_delta = [0f32; 3];
+    for item in &cost.component_uses {
+        match item.delta {
+            1 => installed += 1.0,
+            -1 => removed += 1.0,
+            _ => reused += 1.0,
+        }
+        let kind = match item.kind {
+            LogisticsComponentKind::Splitter => 0,
+            LogisticsComponentKind::Converger => 1,
+            LogisticsComponentKind::Bridge => 2,
+        };
+        component_delta[kind] += f32::from(item.delta);
+    }
+    let utilization =
+        |rate: aic_layout::rate::Rate| rate.numerator as f32 / rate.denominator.max(1) as f32;
+    [
+        cost.route_steps_delta as f32 / scale,
+        cost.route_turns_delta as f32 / scale,
+        cost.occupied_transport_cells_delta as f32 / area,
+        cost.component_count_delta as f32,
+        cost.component_footprint_cells_delta as f32 / area,
+        installed,
+        reused,
+        removed,
+        component_delta[0],
+        component_delta[1],
+        component_delta[2],
+        utilization(cost.max_touched_utilization_before),
+        utilization(cost.max_touched_utilization_after),
+        cost.touched_resource_count as f32 / area,
+        cost.component_uses.len() as f32,
+    ]
+}
+
+/// Version 5 slots 45..49 expose the native work already charged when the
+/// witness was published. The logarithm keeps upper-scale counts finite.
+fn charged_work_features(work: &AllowanceUsage) -> [f32; 4] {
+    let amount = |kind| work.categories.get(&kind).copied().unwrap_or(0) as f32;
+    [
+        amount(WorkKind::Expansions).ln_1p() / 16.0,
+        amount(WorkKind::RoutingScans).ln_1p() / 20.0,
+        amount(WorkKind::CopiedBytes).ln_1p() / 30.0,
+        (work.peak_live_bytes as f32).ln_1p() / 30.0,
+    ]
 }
 
 fn placement_anchor_score(command: &Command, session: &Session, bounds: Bounds) -> f64 {
@@ -2476,27 +2998,7 @@ fn placement_anchor_score(command: &Command, session: &Session, bounds: Bounds) 
     let center_y = (bounds.min_y + bounds.max_y) as f64 * 0.5;
     let center_distance =
         ((position.x as f64 - center_x).abs() + (position.y as f64 - center_y).abs()) / span;
-    let observation = session.observe();
-    let endpoint = |id: &str| {
-        session
-            .problem()
-            .blocks
-            .iter()
-            .position(|block| block.id == id)
-            .and_then(|index| observation.poses[index].as_ref().map(|pose| pose.position))
-            .or_else(|| {
-                session
-                    .problem()
-                    .terminals
-                    .iter()
-                    .position(|terminal| terminal.id == id)
-                    .and_then(|index| {
-                        observation.terminal_poses[index]
-                            .as_ref()
-                            .map(|pose| pose.position)
-                    })
-            })
-    };
+    let endpoint = |id: &str| session.placed_entity_position(id);
     let connected_distance = session
         .problem()
         .connections
@@ -2831,6 +3333,43 @@ fn collect_and_publish(
         config.compiled_inference,
         Some(&outer),
     )?;
+    let catalog_binding = root_catalog::case::CatalogRunBinding {
+        limits_sha256: catalog_limits_sha256(&panel.value.limits)?,
+        effective_config_sha256: catalog_effective_config_sha256(
+            &config,
+            &bytes_sha256(&lower_config_bytes),
+            &bytes_sha256(&lower_order_bytes),
+            &checkpoint_sha256,
+            &bytes_sha256(&outer_config_bytes),
+            &bytes_sha256(&outer_order_bytes),
+            &outer_checkpoint_sha256,
+        )?,
+        catalog_sha256: catalogs.identity.clone(),
+        outer_checkpoint_sha256: outer_checkpoint_sha256.clone(),
+    };
+    let mut staged_catalogs = Vec::new();
+    let catalog_memory = SearchMemoryBudget::new(config.max_live_search_bytes);
+    if matches!(
+        config.root_selection,
+        RootSelection::GumbelSequentialHalving { .. }
+    ) {
+        let parent = output
+            .parent()
+            .filter(|path| !path.as_os_str().is_empty())
+            .unwrap_or_else(|| Path::new("."));
+        fs::create_dir_all(parent)?;
+        let prefixes = panel
+            .value
+            .cases
+            .iter()
+            .flat_map(|case| {
+                (0..config.max_moves).map(move |move_index| {
+                    root_catalog::case::root_prefix(output, &case.id, move_index)
+                })
+            })
+            .collect::<Vec<_>>();
+        root_catalog::publication::recover_unpublished(output, &prefixes)?;
+    }
     let mut cases = Vec::with_capacity(panel.value.cases.len());
     for case in &panel.value.cases {
         let root = prefix_session(case, &panel.value, catalogs.clone())?;
@@ -2838,8 +3377,47 @@ fn collect_and_publish(
             .run_beam
             .then(|| beam_search(root.clone(), &factory, &config))
             .transpose()?;
-        let mut mcts = mcts_search(root, &factory, &config, &case.id)?;
-        if !retain_root_records {
+        let mut mcts = match config.root_selection {
+            RootSelection::Puct => mcts_search(root, &factory, &config, &case.id)?,
+            RootSelection::GumbelSequentialHalving { .. } => {
+                let collected = root_catalog::case::search_case(
+                    root,
+                    &factory,
+                    &config,
+                    &case.id,
+                    output,
+                    retain_root_records,
+                    &catalog_binding,
+                    &catalog_memory,
+                )?;
+                let mut mcts = collected.result;
+                if retain_root_records && mcts.termination != SearchTermination::ResourceStopped {
+                    mcts.root_records = collected
+                        .roots
+                        .into_iter()
+                        .map(|root| RootRecord {
+                            state_sha256: root.state_sha256,
+                            state_revision: root.state_revision,
+                            target: RootRecordTarget::GumbelCatalog {
+                                descriptor: root.descriptor,
+                            },
+                            pending_lower_tasks: root.pending_lower_tasks,
+                            loaded_lower_pages: root.loaded_lower_pages,
+                            later_completed_connections: mcts.completed_connections,
+                            later_total_connections: mcts.total_connections,
+                            later_footprint_area: mcts.footprint_area.unwrap_or(0),
+                            later_transport_cells: mcts.transport_cells.unwrap_or(0),
+                            later_turns: mcts.turns.unwrap_or(0),
+                            later_fully_validated: mcts.fully_validated,
+                            later_termination: mcts.termination,
+                        })
+                        .collect();
+                    staged_catalogs.extend(collected.stages);
+                }
+                mcts
+            }
+        };
+        if !retain_root_records || mcts.termination == SearchTermination::ResourceStopped {
             mcts.root_records.clear();
         }
         cases.push(CaseReport {
@@ -2866,7 +3444,68 @@ fn collect_and_publish(
         root_records_retained: retain_root_records,
         cases,
     };
-    publish_json(output, report)
+    if staged_catalogs.is_empty() {
+        publish_json(output, report)
+    } else {
+        let (sha256, encoded_bytes) = root_catalog::publication::publish_embedded_report(
+            output,
+            &report,
+            &mut staged_catalogs,
+        )?
+        .map_err(|stop| anyhow::anyhow!("aic-learning.hierarchical-catalog-publication: {stop}"))?;
+        Ok(Published {
+            value: report,
+            sha256,
+            encoded_bytes,
+        })
+    }
+}
+
+#[derive(Serialize)]
+struct VersionedCatalogLimits<'a> {
+    schema: &'static str,
+    limits: &'a Limits,
+}
+
+pub(crate) fn catalog_limits_sha256(limits: &Limits) -> Result<String> {
+    semantic_sha256(&VersionedCatalogLimits {
+        schema: "aic-hierarchical-catalog-limits-v1",
+        limits,
+    })
+}
+
+#[derive(Serialize)]
+struct CatalogEffectiveConfig<'a> {
+    schema: &'static str,
+    search: &'a Config,
+    lower_config_sha256: &'a str,
+    lower_order_sha256: &'a str,
+    lower_checkpoint_sha256: &'a str,
+    outer_config_sha256: &'a str,
+    outer_order_sha256: &'a str,
+    outer_checkpoint_sha256: &'a str,
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn catalog_effective_config_sha256(
+    search: &Config,
+    lower_config_sha256: &str,
+    lower_order_sha256: &str,
+    lower_checkpoint_sha256: &str,
+    outer_config_sha256: &str,
+    outer_order_sha256: &str,
+    outer_checkpoint_sha256: &str,
+) -> Result<String> {
+    semantic_sha256(&CatalogEffectiveConfig {
+        schema: "aic-hierarchical-catalog-effective-config-v1",
+        search,
+        lower_config_sha256,
+        lower_order_sha256,
+        lower_checkpoint_sha256,
+        outer_config_sha256,
+        outer_order_sha256,
+        outer_checkpoint_sha256,
+    })
 }
 
 fn report_summary(output: &Path, report: &Report) -> Value {
@@ -3014,7 +3653,7 @@ pub(crate) fn prepare_panel_published(
             .collect(),
     };
     validate_panel(&panel)?;
-    publish_json(output, panel)
+    publish_panel_json(output, panel)
 }
 
 fn beam_search(root: Session, factory: &Factory<'_>, config: &Config) -> Result<SearchResult> {
@@ -3028,7 +3667,7 @@ fn beam_search(root: Session, factory: &Factory<'_>, config: &Config) -> Result<
         let mut next = Vec::new();
         let mut exhausted_diagnostic = None;
         for (session, trace) in &beam {
-            if session.layout().is_some() {
+            if session.metrics().is_some() {
                 termination = SearchTermination::FullyValidated;
                 best = (session.clone(), trace.clone());
                 beam = vec![best.clone()];
@@ -3064,7 +3703,7 @@ fn beam_search(root: Session, factory: &Factory<'_>, config: &Config) -> Result<
         }
         if beam
             .first()
-            .is_some_and(|(session, _)| session.layout().is_some())
+            .is_some_and(|(session, _)| session.metrics().is_some())
         {
             break;
         }
@@ -3082,13 +3721,13 @@ fn beam_search(root: Session, factory: &Factory<'_>, config: &Config) -> Result<
         });
         next.truncate(config.beam_width);
         beam = next;
-        if let Some(completed) = beam.iter().find(|(session, _)| session.layout().is_some()) {
+        if let Some(completed) = beam.iter().find(|(session, _)| session.metrics().is_some()) {
             best = completed.clone();
             termination = SearchTermination::FullyValidated;
             break;
         }
     }
-    if let Some(completed) = beam.iter().find(|(session, _)| session.layout().is_some()) {
+    if let Some(completed) = beam.iter().find(|(session, _)| session.metrics().is_some()) {
         best = completed.clone();
         termination = SearchTermination::FullyValidated;
     }
@@ -3107,19 +3746,30 @@ fn beam_search(root: Session, factory: &Factory<'_>, config: &Config) -> Result<
 
 struct Edge {
     action: MacroAction,
+    identity: Vec<u8>,
+    features: [f32; ACTION_FEATURES],
+    entity_index: i64,
+    anchor_score: f64,
     prior: f64,
     anchor_prior: f64,
     visits: u32,
     value_sum: f64,
     child: Option<usize>,
+    blocked_value: Option<f64>,
 }
 
 struct Node {
-    session: Session,
+    session: Arc<Session>,
+    memory: TreeReservation,
     visits: u32,
     value: Option<f64>,
     actions: Option<Vec<Edge>>,
     placement_pages: Option<PlacementPages>,
+    lower: Option<LowerPager>,
+    lower_loaded_pages: usize,
+    pending_actions: Vec<MacroAction>,
+    pending_updates: Vec<RouteUpdate>,
+    pending_retry_live: Option<usize>,
     no_macro_diagnostic: Option<MacroDiagnostic>,
 }
 
@@ -3136,33 +3786,91 @@ fn mcts_search(
     let mut simulations = 0usize;
     let mut termination = SearchTermination::MoveBudgetExhausted;
     let mut no_macro_diagnostic = None;
+    let tree_memory = SearchMemoryBudget::new(config.max_live_search_bytes);
+    let mut root_record_reservations = Vec::new();
     for _ in 0..config.max_moves {
-        if working.layout().is_some() {
+        if working.metrics().is_some() {
             termination = SearchTermination::FullyValidated;
             break;
         }
+        let root_stops_before = counters.request_stops_total;
+        let root_bytes = working
+            .clone_reservation_bytes()
+            .saturating_add(std::mem::size_of::<Node>());
+        let root_memory = match TreeReservation::new(&tree_memory, root_bytes) {
+            Ok(reservation) => reservation,
+            Err(stop) => {
+                capture_tree_memory_stop(
+                    &mut counters,
+                    working.revision(),
+                    &tree_memory,
+                    stop.clone(),
+                );
+                no_macro_diagnostic = Some(tree_memory_diagnostic(&stop, working.revision()));
+                termination = SearchTermination::ResourceStopped;
+                break;
+            }
+        };
         let mut nodes = vec![Node {
-            session: working.clone(),
+            session: Arc::new(working.clone()),
+            memory: root_memory,
             visits: 0,
             value: None,
             actions: None,
             placement_pages: None,
+            lower: None,
+            lower_loaded_pages: 0,
+            pending_actions: Vec::new(),
+            pending_updates: Vec::new(),
+            pending_retry_live: None,
             no_macro_diagnostic: None,
         }];
+        let hash_memory = match TreeReservation::new(
+            &tree_memory,
+            working.hierarchical_state_hash_workspace_bytes(),
+        ) {
+            Ok(reservation) => reservation,
+            Err(stop) => {
+                capture_tree_memory_stop(
+                    &mut counters,
+                    working.revision(),
+                    &tree_memory,
+                    stop.clone(),
+                );
+                no_macro_diagnostic = Some(tree_memory_diagnostic(&stop, working.revision()));
+                termination = SearchTermination::ResourceStopped;
+                break;
+            }
+        };
         let state_identity = state_sha256(&working)?;
-        let (selected, policy_targets) = match &config.root_selection {
+        drop(hash_memory);
+        let (selected, policy_targets, gumbel_eligible, gumbel_shortlist): (
+            Option<usize>,
+            Option<Vec<f64>>,
+            Option<HashSet<Vec<u8>>>,
+            Vec<RootShortlistEvidence>,
+        ) = match &config.root_selection {
             RootSelection::Puct => {
                 for _ in 0..config.simulations_per_move {
-                    simulate(&mut nodes, 0, None, factory, config, &mut counters)?;
+                    simulate(
+                        &mut nodes,
+                        0,
+                        None,
+                        factory,
+                        config,
+                        &mut counters,
+                        &tree_memory,
+                    )?;
                     simulations += 1;
                 }
-                ensure_node_expanded(&mut nodes, 0, factory, &mut counters, false)?;
+                ensure_node_expanded(&mut nodes, 0, factory, &mut counters, false, &tree_memory)?;
                 let selected = nodes[0]
                     .actions
                     .as_ref()
                     .expect("expanded root")
                     .iter()
                     .enumerate()
+                    .filter(|(_, edge)| edge.blocked_value.is_none())
                     .max_by(|left, right| {
                         left.1
                             .visits
@@ -3170,8 +3878,9 @@ fn mcts_search(
                             .then_with(|| left.1.prior.total_cmp(&right.1.prior))
                     })
                     .map(|(index, _)| index);
-                (selected, None)
+                (selected, None, None, Vec::new())
             }
+            #[cfg(test)]
             RootSelection::GumbelSequentialHalving {
                 candidates,
                 anchor_candidates,
@@ -3181,13 +3890,14 @@ fn mcts_search(
                 max_visit_init,
                 gumbel_assignment,
             } => {
-                ensure_node_expanded(&mut nodes, 0, factory, &mut counters, true)?;
+                ensure_node_expanded(&mut nodes, 0, factory, &mut counters, true, &tree_memory)?;
                 let decision = gumbel_sequential_halving(
                     &mut nodes,
                     0,
                     factory,
                     config,
                     &mut counters,
+                    &tree_memory,
                     GumbelControls {
                         candidates: *candidates,
                         anchor_candidates: *anchor_candidates,
@@ -3201,61 +3911,89 @@ fn mcts_search(
                     &state_identity,
                 )?;
                 simulations += decision.simulations;
-                (decision.selected, decision.policy_targets)
+                (
+                    decision.selected,
+                    decision.policy_targets,
+                    decision.eligible_ids,
+                    decision.shortlist,
+                )
+            }
+            #[cfg(not(test))]
+            RootSelection::GumbelSequentialHalving { .. } => {
+                unreachable!("production Gumbel roots use the catalog case runner")
             }
         };
         let Some(selected) = selected else {
-            termination = SearchTermination::NoMacroActions;
+            termination = if counters.request_stops_total > root_stops_before {
+                SearchTermination::ResourceStopped
+            } else {
+                SearchTermination::NoMacroActions
+            };
             no_macro_diagnostic = nodes[0].no_macro_diagnostic.clone();
+            if let Some(diagnostic) = &mut no_macro_diagnostic {
+                if termination == SearchTermination::ResourceStopped {
+                    diagnostic.message.push_str(&format!(
+                        "; pending lower tasks {}, retained unscored witnesses {}",
+                        nodes[0].lower.as_ref().map_or(0, LowerPager::pending),
+                        nodes[0].pending_actions.len(),
+                    ));
+                }
+            }
             break;
         };
         let actions = nodes[0].actions.as_ref().expect("expanded root");
+        let record_bytes = actions.iter().fold(4096usize, |bytes, edge| {
+            bytes
+                .saturating_add(action_bytes(&edge.action))
+                .saturating_add(std::mem::size_of::<RootActionRecord>())
+        });
+        let record_reservation = match TreeReservation::new(&tree_memory, record_bytes) {
+            Ok(reservation) => reservation,
+            Err(stop) => {
+                capture_tree_memory_stop(
+                    &mut counters,
+                    working.revision(),
+                    &tree_memory,
+                    stop.clone(),
+                );
+                no_macro_diagnostic = Some(tree_memory_diagnostic(&stop, working.revision()));
+                termination = SearchTermination::ResourceStopped;
+                break;
+            }
+        };
+        root_record_reservations.push(record_reservation);
         let action = actions[selected].action.clone();
         let revision = working.revision();
-        root_records.push(RootRecord {
-            state_sha256: state_identity,
-            state_revision: revision,
-            actions: actions
-                .iter()
-                .enumerate()
-                .map(|(index, edge)| RootActionRecord {
-                    action: edge.action.clone(),
-                    prior: edge.prior,
-                    anchor_prior: edge.anchor_prior,
-                    visits: edge.visits,
-                    q: if edge.visits == 0 {
-                        0.0
-                    } else {
-                        edge.value_sum / f64::from(edge.visits)
-                    },
-                    policy_target: policy_targets.as_ref().map(|targets| targets[index]),
-                })
-                .collect(),
-            selected_action: selected,
-            later_completed_connections: 0,
-            later_total_connections: 0,
-            later_footprint_area: 0,
-            later_transport_cells: 0,
-            later_turns: 0,
-            later_fully_validated: false,
-            later_termination: SearchTermination::MoveBudgetExhausted,
-        });
+        root_records.push(root_record_from_decision(
+            &nodes[0],
+            state_identity,
+            revision,
+            selected,
+            policy_targets.as_deref(),
+            gumbel_eligible.as_ref(),
+            gumbel_shortlist,
+            match &config.root_selection {
+                RootSelection::Puct => None,
+                RootSelection::GumbelSequentialHalving { candidates, .. } => Some(*candidates),
+            },
+        ));
         working = action.apply(&working, &config.candidate, config.repair_max_removed)?;
         trace.push(action.summary(revision));
     }
-    let final_observation = working.observe();
-    if final_observation.fully_validated {
+    let (final_completed, final_total) = working.connection_progress_counts();
+    let final_validated = working.metrics().is_some();
+    if final_validated {
         termination = SearchTermination::FullyValidated;
     }
     for record in &mut root_records {
-        record.later_completed_connections = final_observation.completed;
-        record.later_total_connections = final_observation.total;
+        record.later_completed_connections = final_completed;
+        record.later_total_connections = final_total;
         record.later_footprint_area = working.metrics().map_or(0, |metrics| metrics.area);
         record.later_transport_cells = working
             .metrics()
             .map_or(0, |metrics| metrics.transport_cells);
         record.later_turns = working.metrics().map_or(0, |metrics| metrics.turns);
-        record.later_fully_validated = final_observation.fully_validated;
+        record.later_fully_validated = final_validated;
         record.later_termination = termination;
     }
     Ok(finish_result(
@@ -3274,6 +4012,294 @@ fn mcts_search(
     ))
 }
 
+#[allow(clippy::too_many_arguments)]
+fn root_record_from_decision(
+    node: &Node,
+    state_sha256: String,
+    state_revision: u64,
+    selected_action: usize,
+    policy_targets: Option<&[f64]>,
+    eligible_ids: Option<&HashSet<Vec<u8>>>,
+    gumbel_shortlist: Vec<RootShortlistEvidence>,
+    gumbel_shortlist_cap: Option<usize>,
+) -> RootRecord {
+    let actions = node.actions.as_ref().expect("expanded root");
+    RootRecord {
+        state_sha256,
+        state_revision,
+        target: {
+            let dense_actions = actions
+                .iter()
+                .enumerate()
+                .map(|(index, edge)| RootActionRecord {
+                    action: edge.action.clone(),
+                    prior: edge.prior,
+                    anchor_prior: edge.anchor_prior,
+                    visits: edge.visits,
+                    q: if edge.visits == 0 {
+                        0.0
+                    } else {
+                        edge.value_sum / f64::from(edge.visits)
+                    },
+                    gumbel_eligible: eligible_ids.map(|eligible| eligible.contains(&edge.identity)),
+                    policy_target: policy_targets.map(|targets| targets[index]),
+                })
+                .collect();
+            let dense = DenseRootRecord {
+                actions: dense_actions,
+                selected_action,
+                selected_physical_id: Some(actions[selected_action].identity.clone()),
+                gumbel_shortlist,
+                gumbel_shortlist_cap,
+                initial_eligible_actions: eligible_ids.map(HashSet::len),
+            };
+            #[cfg(test)]
+            if gumbel_shortlist_cap.is_some() {
+                RootRecordTarget::GumbelDenseOracle(dense)
+            } else {
+                RootRecordTarget::PuctDense(dense)
+            }
+            #[cfg(not(test))]
+            {
+                assert!(
+                    gumbel_shortlist_cap.is_none(),
+                    "production Gumbel must use catalog roots"
+                );
+                RootRecordTarget::PuctDense(dense)
+            }
+        },
+        pending_lower_tasks: node.lower.as_ref().map_or(0, LowerPager::pending),
+        loaded_lower_pages: node.lower_loaded_pages,
+        later_completed_connections: 0,
+        later_total_connections: 0,
+        later_footprint_area: 0,
+        later_transport_cells: 0,
+        later_turns: 0,
+        later_fully_validated: false,
+        later_termination: SearchTermination::MoveBudgetExhausted,
+    }
+}
+
+#[cfg(test)]
+pub(crate) fn controlled_network_pair(
+    session: &Session,
+    candidate: &CandidateConfig,
+) -> Result<(MacroAction, MacroAction)> {
+    let model_config = crate::schema::RouteGuidanceModelConfig {
+        schema: crate::schema::RouteGuidanceModelConfig::SCHEMA.into(),
+        encoder: crate::schema::ConstructiveModelConfig {
+            schema: crate::schema::ConstructiveModelConfig::SCHEMA.into(),
+            width: 16,
+            message_rounds: 1,
+        },
+        raster_width: 8,
+        heads: 2,
+        maximum_edge_cost: 32,
+    };
+    let (order, state) = GuidanceModel::initial_state(&model_config, 17)?;
+    let model = GuidanceModel::load(&model_config, &order, &state, Device::Cpu)?;
+    let factory = Factory::new(
+        &model,
+        "checkpoint",
+        Device::Cpu,
+        DomainConfig {
+            placement: candidate.bounds,
+            extension_lengths: vec![1, 2, 4],
+        },
+        candidate,
+        0,
+        4,
+        1,
+        0.0,
+        false,
+        None,
+    )?;
+    let mut counters = Counters::default();
+    let mut allowance = RequestAllowance::new(candidate.request_allowance.clone());
+    let networks = factory.network_actions(
+        session,
+        &["output-a".into(), "output-b".into()],
+        &mut counters,
+        &mut allowance,
+    )?;
+    ensure!(networks.len() >= 2, "controlled fixture needs two networks");
+    Ok((
+        MacroAction::Network(networks[0].clone()),
+        MacroAction::Network(networks[1].clone()),
+    ))
+}
+
+#[cfg(test)]
+pub(crate) fn controlled_gumbel_record(
+    source: Session,
+    candidate: CandidateConfig,
+    initial: Vec<MacroAction>,
+    later: Vec<MacroAction>,
+    updates: Vec<(String, usize, Vec<Provenance>)>,
+) -> Result<RootRecord> {
+    let lower_config: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../docs/benchmarks/hierarchical-route-guidance/config.json"
+    ))?;
+    let model_config = serde_json::from_value(lower_config["model"].clone())?;
+    let domain = serde_json::from_value(lower_config["learning_domain"].clone())?;
+    let (order, state) = GuidanceModel::initial_state(&model_config, 17)?;
+    let model = GuidanceModel::load(&model_config, &order, &state, Device::Cpu)?;
+    let factory = Factory::new(
+        &model,
+        "checkpoint",
+        Device::Cpu,
+        domain,
+        &candidate,
+        1,
+        4,
+        1,
+        0.0,
+        false,
+        None,
+    )?;
+    let mut config: Config = serde_json::from_str(include_str!(
+        "../../../docs/benchmarks/hierarchical-curriculum/search.json"
+    ))?;
+    config.candidate = candidate.clone();
+    config.simulations_per_move = 2;
+    config.horizon = 1;
+    config.repair_max_removed = 1;
+    let budget = SearchMemoryBudget::new(1024 * 1024 * 1024);
+    let state_identity = state_sha256(&source)?;
+    let revision = source.revision();
+    let mut nodes = vec![Node {
+        session: Arc::new(source),
+        memory: TreeReservation::new(&budget, 0)
+            .map_err(|stop| anyhow::anyhow!("controlled root reservation: {stop:?}"))?,
+        visits: 0,
+        value: None,
+        actions: Some(Vec::new()),
+        placement_pages: None,
+        lower: None,
+        lower_loaded_pages: 0,
+        pending_actions: Vec::new(),
+        pending_updates: Vec::new(),
+        pending_retry_live: None,
+        no_macro_diagnostic: None,
+    }];
+    let mut counters = Counters::default();
+    append_node_actions(
+        &mut nodes,
+        0,
+        &factory,
+        &mut counters,
+        &budget,
+        initial,
+        Vec::new(),
+    )?;
+    let controls = GumbelControls {
+        candidates: 2,
+        anchor_candidates: 0,
+        anchor_policy_mass: 0.0,
+        seed: 7,
+        value_scale: 0.1,
+        max_visit_init: 50.0,
+        gumbel_assignment: GumbelAssignment::ActionIdentity,
+    };
+    let frozen = freeze_gumbel_root(&nodes[0], controls, "controlled", &state_identity)?
+        .ok_or_else(|| anyhow::anyhow!("controlled root has no initial action"))?;
+    let updates = updates
+        .into_iter()
+        .map(|(connection, id, additional_provenance)| {
+            Ok(RouteUpdate {
+                connection,
+                id,
+                additional_provenance,
+                _memory: TreeReservation::new(&budget, 0)
+                    .map_err(|stop| anyhow::anyhow!("controlled update reservation: {stop:?}"))?,
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
+    append_node_actions(
+        &mut nodes,
+        0,
+        &factory,
+        &mut counters,
+        &budget,
+        later,
+        updates,
+    )?;
+    let decision = finish_gumbel_root(
+        &mut nodes,
+        0,
+        &factory,
+        &config,
+        &mut counters,
+        &budget,
+        controls,
+        frozen,
+    )?;
+    let selected = decision
+        .selected
+        .ok_or_else(|| anyhow::anyhow!("controlled root has no selected action"))?;
+    let record = root_record_from_decision(
+        &nodes[0],
+        state_identity,
+        revision,
+        selected,
+        decision.policy_targets.as_deref(),
+        decision.eligible_ids.as_ref(),
+        decision.shortlist,
+        Some(2),
+    );
+    let report = Report {
+        schema: REPORT_SCHEMA.into(),
+        status: "complete".into(),
+        partition: "test".into(),
+        device: "cpu".into(),
+        search_config_sha256: String::new(),
+        panel_sha256: String::new(),
+        catalog_sha256: String::new(),
+        lower_config_sha256: String::new(),
+        lower_parameter_order_sha256: String::new(),
+        lower_checkpoint_sha256: String::new(),
+        outer_config_sha256: String::new(),
+        outer_parameter_order_sha256: String::new(),
+        outer_checkpoint_sha256: String::new(),
+        root_records_retained: true,
+        cases: vec![CaseReport {
+            id: "controlled".into(),
+            prefix_commands: 0,
+            beam: None,
+            mcts: SearchResult {
+                algorithm: "mcts".into(),
+                status: "complete".into(),
+                fully_validated: false,
+                termination: SearchTermination::MoveBudgetExhausted,
+                no_macro_diagnostic: None,
+                completed_connections: 0,
+                total_connections: 1,
+                footprint_area: None,
+                transport_cells: None,
+                turns: None,
+                moves: 1,
+                simulations: decision.simulations,
+                elapsed_seconds: 0.0,
+                samples_per_minute: 0.0,
+                counters,
+                trace: Vec::new(),
+                root_records: vec![record],
+            },
+        }],
+    };
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    static SERIAL: AtomicUsize = AtomicUsize::new(0);
+    let path = std::env::temp_dir().join(format!(
+        "aic-controlled-gumbel-{}-{}.json",
+        std::process::id(),
+        SERIAL.fetch_add(1, Ordering::Relaxed)
+    ));
+    publish_json(&path, report)?;
+    let loaded = load_published_report(&path);
+    fs::remove_file(&path)?;
+    Ok(loaded?.value.cases.remove(0).mcts.root_records.remove(0))
+}
+
 #[derive(Clone, Copy)]
 struct GumbelControls {
     candidates: usize,
@@ -3285,31 +4311,105 @@ struct GumbelControls {
     gumbel_assignment: GumbelAssignment,
 }
 
+#[cfg(test)]
 struct RootDecision {
     selected: Option<usize>,
     policy_targets: Option<Vec<f64>>,
+    eligible_ids: Option<HashSet<Vec<u8>>>,
+    shortlist: Vec<RootShortlistEvidence>,
     simulations: usize,
 }
 
+#[cfg(test)]
+struct RootChoice {
+    identity: Vec<u8>,
+    gumbel: f64,
+    initial_rank: usize,
+}
+
+#[cfg(test)]
+struct FrozenGumbelRoot {
+    eligible_ids: HashSet<Vec<u8>>,
+    initial_priors: BTreeMap<Vec<u8>, f64>,
+    initial_root_value: f64,
+    remaining: Vec<RootChoice>,
+    shortlist: Vec<RootShortlistEvidence>,
+}
+
+#[cfg(test)]
+fn resolve_root_choice(actions: &[Edge], choice: &RootChoice) -> usize {
+    actions
+        .iter()
+        .position(|edge| edge.identity == choice.identity)
+        .expect("frozen Gumbel witness remains exposed during the root budget")
+}
+
 #[allow(clippy::too_many_arguments)]
+#[cfg(test)]
 fn gumbel_sequential_halving(
     nodes: &mut Vec<Node>,
     root: usize,
     factory: &Factory<'_>,
     config: &Config,
     counters: &mut Counters,
+    tree_memory: &SearchMemoryBudget,
     controls: GumbelControls,
     case_id: &str,
     state_identity: &str,
 ) -> Result<RootDecision> {
-    let actions = nodes[root].actions.as_ref().expect("expanded root");
-    if actions.is_empty() {
+    let frozen = freeze_gumbel_root(&nodes[root], controls, case_id, state_identity)?;
+    let Some(frozen) = frozen else {
         return Ok(RootDecision {
             selected: None,
             policy_targets: None,
+            eligible_ids: None,
+            shortlist: Vec::new(),
             simulations: 0,
         });
+    };
+    finish_gumbel_root(
+        nodes,
+        root,
+        factory,
+        config,
+        counters,
+        tree_memory,
+        controls,
+        frozen,
+    )
+}
+
+#[cfg(test)]
+fn freeze_gumbel_root(
+    node: &Node,
+    controls: GumbelControls,
+    case_id: &str,
+    state_identity: &str,
+) -> Result<Option<FrozenGumbelRoot>> {
+    let actions = node.actions.as_ref().expect("expanded root");
+    if actions.is_empty() {
+        return Ok(None);
     }
+    let eligible_ids = actions
+        .iter()
+        .map(|edge| edge.identity.clone())
+        .collect::<HashSet<_>>();
+    ensure!(
+        eligible_ids.len() == actions.len(),
+        "aic-learning.hierarchical-root-identity: initial root has duplicate physical action IDs"
+    );
+    // Widening renormalizes the live edge priors. Keep the mixture used to
+    // select this root budget fixed for its ranking and training target.
+    let initial_priors = actions
+        .iter()
+        .map(|edge| {
+            (
+                edge.identity.clone(),
+                root_policy_prior(edge, controls.anchor_policy_mass),
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    let initial_root_value = node.value.unwrap_or_default();
     let gumbels = match controls.gumbel_assignment {
         GumbelAssignment::Rank => {
             deterministic_gumbels(controls.seed, case_id, state_identity, actions.len())
@@ -3318,63 +4418,143 @@ fn gumbel_sequential_halving(
             deterministic_action_gumbels(controls.seed, state_identity, actions)?
         }
     };
-    let mut remaining = considered_root_actions(
+    let selected_indices = considered_root_actions(
         actions,
         &gumbels,
         controls.candidates,
         controls.anchor_candidates,
         controls.anchor_policy_mass,
     );
+    let remaining = selected_indices
+        .into_iter()
+        .map(|index| RootChoice {
+            identity: actions[index].identity.clone(),
+            gumbel: gumbels[index],
+            initial_rank: index,
+        })
+        .collect::<Vec<_>>();
+    let shortlist = remaining
+        .iter()
+        .map(|choice| RootShortlistEvidence {
+            physical_id: choice.identity.clone(),
+            initial_rank: choice.initial_rank,
+            gumbel_bits: choice.gumbel.to_bits(),
+        })
+        .collect();
+    Ok(Some(FrozenGumbelRoot {
+        eligible_ids,
+        initial_priors,
+        initial_root_value,
+        remaining,
+        shortlist,
+    }))
+}
+
+#[allow(clippy::too_many_arguments)]
+#[cfg(test)]
+fn finish_gumbel_root(
+    nodes: &mut Vec<Node>,
+    root: usize,
+    factory: &Factory<'_>,
+    config: &Config,
+    counters: &mut Counters,
+    tree_memory: &SearchMemoryBudget,
+    controls: GumbelControls,
+    frozen: FrozenGumbelRoot,
+) -> Result<RootDecision> {
+    let FrozenGumbelRoot {
+        eligible_ids,
+        initial_priors,
+        initial_root_value,
+        mut remaining,
+        shortlist,
+    } = frozen;
     let mut simulations = 0usize;
     while remaining.len() > 1 {
         let rounds_left =
             remaining.len().ilog2() as usize + usize::from(!remaining.len().is_power_of_two());
         let available = config.simulations_per_move - simulations;
         let visits_each = (available / (remaining.len() * rounds_left)).max(1);
-        for edge in remaining.iter().copied() {
+        for choice in &remaining {
             for _ in 0..visits_each {
-                simulate(nodes, root, Some(edge), factory, config, counters)?;
+                simulate(
+                    nodes,
+                    root,
+                    Some(&choice.identity),
+                    factory,
+                    config,
+                    counters,
+                    tree_memory,
+                )?;
                 simulations += 1;
             }
         }
-        let transformed =
-            completed_q_transform(nodes, root, controls.value_scale, controls.max_visit_init);
+        let transformed = completed_q_transform(
+            nodes[root].actions.as_ref().expect("expanded root"),
+            initial_root_value,
+            controls.value_scale,
+            controls.max_visit_init,
+            Some(&eligible_ids),
+        );
         remaining.sort_by(|left, right| {
-            root_rank_score(
-                &nodes[root].actions.as_ref().unwrap()[*right],
-                gumbels[*right],
-                transformed[*right],
-                controls.anchor_policy_mass,
-            )
-            .total_cmp(&root_rank_score(
-                &nodes[root].actions.as_ref().unwrap()[*left],
-                gumbels[*left],
-                transformed[*left],
-                controls.anchor_policy_mass,
-            ))
-            .then_with(|| left.cmp(right))
+            let actions = nodes[root].actions.as_ref().unwrap();
+            let right_index = resolve_root_choice(actions, right);
+            let left_index = resolve_root_choice(actions, left);
+            let right_prior = initial_priors[&right.identity];
+            let left_prior = initial_priors[&left.identity];
+            (right.gumbel + right_prior.max(f64::MIN_POSITIVE).ln() + transformed[right_index])
+                .total_cmp(
+                    &(left.gumbel
+                        + left_prior.max(f64::MIN_POSITIVE).ln()
+                        + transformed[left_index]),
+                )
+                .then_with(|| left.initial_rank.cmp(&right.initial_rank))
         });
         remaining.truncate(remaining.len().div_ceil(2));
     }
-    let selected = remaining[0];
+    let selected = &remaining[0];
     while simulations < config.simulations_per_move {
-        simulate(nodes, root, Some(selected), factory, config, counters)?;
+        simulate(
+            nodes,
+            root,
+            Some(&selected.identity),
+            factory,
+            config,
+            counters,
+            tree_memory,
+        )?;
         simulations += 1;
     }
-    let transformed =
-        completed_q_transform(nodes, root, controls.value_scale, controls.max_visit_init);
-    let policy_targets = improved_policy(
+    let transformed = completed_q_transform(
+        nodes[root].actions.as_ref().expect("expanded root"),
+        initial_root_value,
+        controls.value_scale,
+        controls.max_visit_init,
+        Some(&eligible_ids),
+    );
+    let policy_targets = improved_policy_with_priors(
         nodes[root].actions.as_ref().unwrap(),
         &transformed,
         controls.anchor_policy_mass,
+        Some(&eligible_ids),
+        Some(&initial_priors),
     );
     Ok(RootDecision {
-        selected: Some(selected),
+        selected: {
+            let index = resolve_root_choice(nodes[root].actions.as_ref().unwrap(), selected);
+            nodes[root].actions.as_ref().unwrap()[index]
+                .blocked_value
+                .is_none()
+                .then_some(index)
+        },
         policy_targets: Some(policy_targets),
+        eligible_ids: Some(eligible_ids),
+        shortlist,
         simulations,
     })
 }
 
+#[cfg(test)]
 fn considered_root_actions(
     actions: &[Edge],
     gumbels: &[f64],
@@ -3410,10 +4590,12 @@ fn considered_root_actions(
     selected
 }
 
+#[cfg(test)]
 fn root_policy_prior(edge: &Edge, anchor_policy_mass: f64) -> f64 {
     edge.prior * (1.0 - anchor_policy_mass) + edge.anchor_prior * anchor_policy_mass
 }
 
+#[cfg(test)]
 fn root_prior_score(edge: &Edge, gumbel: f64, anchor_policy_mass: f64) -> f64 {
     gumbel
         + root_policy_prior(edge, anchor_policy_mass)
@@ -3421,23 +4603,25 @@ fn root_prior_score(edge: &Edge, gumbel: f64, anchor_policy_mass: f64) -> f64 {
             .ln()
 }
 
-fn root_rank_score(edge: &Edge, gumbel: f64, transformed_q: f64, anchor_policy_mass: f64) -> f64 {
-    root_prior_score(edge, gumbel, anchor_policy_mass) + transformed_q
-}
-
+#[cfg(test)]
 fn completed_q_transform(
-    nodes: &[Node],
-    root: usize,
+    actions: &[Edge],
+    root_value: f64,
     value_scale: f64,
     max_visit_init: f64,
+    eligible_ids: Option<&HashSet<Vec<u8>>>,
 ) -> Vec<f64> {
-    let actions = nodes[root].actions.as_ref().expect("expanded root");
-    let root_value = nodes[root].value.unwrap_or_default();
+    let eligible = |edge: &Edge| eligible_ids.is_none_or(|ids| ids.contains(&edge.identity));
     let total_visits = actions
         .iter()
+        .filter(|edge| eligible(edge))
         .map(|edge| u64::from(edge.visits))
         .sum::<u64>();
-    let total_value = actions.iter().map(|edge| edge.value_sum).sum::<f64>();
+    let total_value = actions
+        .iter()
+        .filter(|edge| eligible(edge))
+        .map(|edge| edge.value_sum)
+        .sum::<f64>();
     let mixed_value = (root_value + total_value) / (1.0 + total_visits as f64);
     let completed = actions
         .iter()
@@ -3449,11 +4633,26 @@ fn completed_q_transform(
             }
         })
         .collect::<Vec<_>>();
-    let minimum = completed.iter().copied().fold(root_value, f64::min);
-    let maximum = completed.iter().copied().fold(root_value, f64::max);
+    let minimum = completed
+        .iter()
+        .zip(actions)
+        .filter(|(_, edge)| eligible(edge))
+        .map(|(q, _)| *q)
+        .fold(root_value, f64::min);
+    let maximum = completed
+        .iter()
+        .zip(actions)
+        .filter(|(_, edge)| eligible(edge))
+        .map(|(q, _)| *q)
+        .fold(root_value, f64::max);
     let denominator = maximum - minimum;
-    let max_visits = actions.iter().map(|edge| edge.visits).max().unwrap_or(0);
-    let scale = (max_visit_init + f64::from(max_visits)) * value_scale;
+    let max_visits = actions
+        .iter()
+        .filter(|edge| eligible(edge))
+        .map(|edge| edge.visits)
+        .max()
+        .unwrap_or(0);
+    let scale = finite_root_q_scale(max_visit_init, max_visits, value_scale);
     completed
         .into_iter()
         .map(|q| {
@@ -3466,18 +4665,53 @@ fn completed_q_transform(
         .collect()
 }
 
-fn improved_policy(actions: &[Edge], transformed_q: &[f64], anchor_policy_mass: f64) -> Vec<f64> {
+fn finite_root_q_scale(max_visit_init: f64, max_visits: u32, value_scale: f64) -> f64 {
+    ((max_visit_init + f64::from(max_visits)) * value_scale).min(f64::MAX)
+}
+
+#[cfg(test)]
+fn improved_policy(
+    actions: &[Edge],
+    transformed_q: &[f64],
+    anchor_policy_mass: f64,
+    eligible_ids: Option<&HashSet<Vec<u8>>>,
+) -> Vec<f64> {
+    improved_policy_with_priors(
+        actions,
+        transformed_q,
+        anchor_policy_mass,
+        eligible_ids,
+        None,
+    )
+}
+
+#[cfg(test)]
+fn improved_policy_with_priors(
+    actions: &[Edge],
+    transformed_q: &[f64],
+    anchor_policy_mass: f64,
+    eligible_ids: Option<&HashSet<Vec<u8>>>,
+    initial_priors: Option<&BTreeMap<Vec<u8>, f64>>,
+) -> Vec<f64> {
     let logits = actions
         .iter()
         .zip(transformed_q)
         .map(|(edge, q)| {
-            root_policy_prior(edge, anchor_policy_mass)
+            if eligible_ids.is_some_and(|eligible| !eligible.contains(&edge.identity)) {
+                return f64::NEG_INFINITY;
+            }
+            initial_priors
+                .and_then(|priors| priors.get(&edge.identity).copied())
+                .unwrap_or_else(|| root_policy_prior(edge, anchor_policy_mass))
                 .max(f64::MIN_POSITIVE)
                 .ln()
                 + q
         })
         .collect::<Vec<_>>();
     let maximum = logits.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    if maximum == f64::NEG_INFINITY {
+        return vec![0.0; actions.len()];
+    }
     let weights = logits
         .into_iter()
         .map(|logit| (logit - maximum).exp())
@@ -3489,7 +4723,15 @@ fn improved_policy(actions: &[Edge], transformed_q: &[f64], anchor_policy_mass: 
         .collect()
 }
 
+#[cfg(test)]
 fn deterministic_gumbels(seed: u64, case_id: &str, state_identity: &str, count: usize) -> Vec<f64> {
+    let mut state = rank_gumbel_state(seed, case_id, state_identity);
+    (0..count)
+        .map(|_| gumbel_from_bits(splitmix64(&mut state)))
+        .collect()
+}
+
+fn rank_gumbel_state(seed: u64, case_id: &str, state_identity: &str) -> u64 {
     let mut digest = Sha256::new();
     digest.update(seed.to_le_bytes());
     digest.update([0]);
@@ -3497,17 +4739,22 @@ fn deterministic_gumbels(seed: u64, case_id: &str, state_identity: &str, count: 
     digest.update([0]);
     digest.update(state_identity.as_bytes());
     let bytes = digest.finalize();
-    let mut state = u64::from_le_bytes(bytes[..8].try_into().expect("SHA-256 prefix"));
-    (0..count)
-        .map(|_| gumbel_from_bits(splitmix64(&mut state)))
-        .collect()
+    u64::from_le_bytes(bytes[..8].try_into().expect("SHA-256 prefix"))
 }
 
+#[cfg(test)]
 fn deterministic_action_gumbels(
     seed: u64,
     state_identity: &str,
     actions: &[Edge],
 ) -> Result<Vec<f64>> {
+    actions
+        .iter()
+        .map(|edge| deterministic_action_gumbel(seed, state_identity, &edge.identity))
+        .collect()
+}
+
+fn deterministic_action_gumbel(seed: u64, state_identity: &str, physical_id: &[u8]) -> Result<f64> {
     let mut prefix = Sha256::new();
     prefix.update(seed.to_le_bytes());
     prefix.update([0]);
@@ -3515,19 +4762,13 @@ fn deterministic_action_gumbels(
     // sampling metadata, so an identical physical state keeps the same noise.
     prefix.update(state_identity.as_bytes());
     prefix.update([0]);
-    actions
-        .iter()
-        .map(|edge| {
-            let mut digest = prefix.clone();
-            digest.update(physical_action_identity(&edge.action)?);
-            let bytes = digest.finalize();
-            let bits = u64::from_le_bytes(bytes[..8].try_into().expect("SHA-256 prefix"));
-            Ok(gumbel_from_bits(bits))
-        })
-        .collect()
+    prefix.update(physical_id);
+    let bytes = prefix.finalize();
+    let bits = u64::from_le_bytes(bytes[..8].try_into().expect("SHA-256 prefix"));
+    Ok(gumbel_from_bits(bits))
 }
 
-fn physical_action_identity(action: &MacroAction) -> Result<Vec<u8>> {
+pub(crate) fn physical_action_identity(action: &MacroAction) -> Result<Vec<u8>> {
     match action {
         MacroAction::Command(command) => Ok(serde_json::to_vec(&("command", command))?),
         // A route's command witness determines its physical effect in this
@@ -3583,10 +4824,11 @@ fn minimum_sequential_halving_simulations(mut candidates: usize) -> usize {
 fn simulate(
     nodes: &mut Vec<Node>,
     root: usize,
-    forced_root_edge: Option<usize>,
+    forced_root_edge: Option<&[u8]>,
     factory: &Factory<'_>,
     config: &Config,
     counters: &mut Counters,
+    tree_memory: &SearchMemoryBudget,
 ) -> Result<()> {
     let mut current = root;
     let mut path = Vec::<(usize, usize)>::new();
@@ -3595,9 +4837,22 @@ fn simulate(
             break value;
         }
         if nodes[current].actions.is_none() {
-            break ensure_node_expanded(nodes, current, factory, counters, false)?;
+            break ensure_node_expanded(nodes, current, factory, counters, false, tree_memory)?;
         }
-        maybe_widen_placements(nodes, current, factory, counters)?;
+        if !nodes[current].pending_actions.is_empty() || !nodes[current].pending_updates.is_empty()
+        {
+            append_node_actions(
+                nodes,
+                current,
+                factory,
+                counters,
+                tree_memory,
+                Vec::new(),
+                Vec::new(),
+            )?;
+        }
+        maybe_widen_placements(nodes, current, factory, counters, tree_memory)?;
+        maybe_widen_lower(nodes, current, factory, counters, tree_memory)?;
         let Some(actions) = nodes[current]
             .actions
             .as_ref()
@@ -3605,16 +4860,56 @@ fn simulate(
         else {
             break state_value(&nodes[current].session, config.bounds);
         };
+        if actions.iter().all(|edge| edge.blocked_value.is_some()) {
+            break state_value(&nodes[current].session, config.bounds);
+        }
         let edge = if current == root && path.is_empty() {
-            forced_root_edge.unwrap_or_else(|| select_puct_edge(nodes, current, actions, config))
+            forced_root_edge
+                .map(|identity| {
+                    actions
+                        .iter()
+                        .position(|edge| edge.identity == identity)
+                        .expect("frozen Gumbel witness remains exposed")
+                })
+                .unwrap_or_else(|| select_puct_edge(nodes, current, actions, config))
         } else {
             select_puct_edge(nodes, current, actions, config)
         };
+        if let Some(blocked_value) = nodes[current].actions.as_ref().unwrap()[edge].blocked_value {
+            break blocked_value;
+        }
         path.push((current, edge));
         if let Some(child) = nodes[current].actions.as_ref().unwrap()[edge].child {
             current = child;
             continue;
         }
+        let estimate = nodes[current]
+            .session
+            .clone_reservation_bytes()
+            .saturating_mul(2)
+            .saturating_add(std::mem::size_of::<Node>())
+            .saturating_add(action_bytes(
+                &nodes[current].actions.as_ref().unwrap()[edge].action,
+            ));
+        let mut child_memory = match TreeReservation::new(tree_memory, estimate) {
+            Ok(reservation) => reservation,
+            Err(stop) => {
+                capture_tree_memory_stop(
+                    counters,
+                    nodes[current].session.revision(),
+                    tree_memory,
+                    stop.clone(),
+                );
+                nodes[current].no_macro_diagnostic = Some(tree_memory_diagnostic(
+                    &stop,
+                    nodes[current].session.revision(),
+                ));
+                let blocked_value = state_value(&nodes[current].session, config.bounds);
+                nodes[current].actions.as_mut().unwrap()[edge].blocked_value = Some(blocked_value);
+                path.pop();
+                break blocked_value;
+            }
+        };
         let child_session = nodes[current].actions.as_ref().unwrap()[edge]
             .action
             .apply(
@@ -3622,18 +4917,44 @@ fn simulate(
                 &config.candidate,
                 config.repair_max_removed,
             )?;
+        if let Err(stop) = child_memory.resize(
+            child_session
+                .clone_reservation_bytes()
+                .saturating_add(std::mem::size_of::<Node>()),
+        ) {
+            capture_tree_memory_stop(
+                counters,
+                nodes[current].session.revision(),
+                tree_memory,
+                stop.clone(),
+            );
+            nodes[current].no_macro_diagnostic = Some(tree_memory_diagnostic(
+                &stop,
+                nodes[current].session.revision(),
+            ));
+            let blocked_value = state_value(&nodes[current].session, config.bounds);
+            nodes[current].actions.as_mut().unwrap()[edge].blocked_value = Some(blocked_value);
+            path.pop();
+            break blocked_value;
+        }
         let child = nodes.len();
         nodes.push(Node {
-            session: child_session,
+            session: Arc::new(child_session),
+            memory: child_memory,
             visits: 0,
             value: None,
             actions: None,
             placement_pages: None,
+            lower: None,
+            lower_loaded_pages: 0,
+            pending_actions: Vec::new(),
+            pending_updates: Vec::new(),
+            pending_retry_live: None,
             no_macro_diagnostic: None,
         });
         nodes[current].actions.as_mut().unwrap()[edge].child = Some(child);
         current = child;
-        break ensure_node_expanded(nodes, current, factory, counters, false)?;
+        break ensure_node_expanded(nodes, current, factory, counters, false, tree_memory)?;
     };
     nodes[current].visits += 1;
     for (node, edge) in path.into_iter().rev() {
@@ -3653,6 +4974,7 @@ fn select_puct_edge(nodes: &[Node], node: usize, actions: &[Edge], config: &Conf
     actions[..widened]
         .iter()
         .enumerate()
+        .filter(|(_, edge)| edge.blocked_value.is_none())
         .max_by(|left, right| {
             let score = |edge: &Edge| {
                 let q = if edge.visits == 0 {
@@ -3666,12 +4988,107 @@ fn select_puct_edge(nodes: &[Node], node: usize, actions: &[Edge], config: &Conf
             score(left.1).total_cmp(&score(right.1))
         })
         .map(|(index, _)| index)
-        .expect("nonempty actions")
+        .or_else(|| actions.iter().position(|edge| edge.blocked_value.is_none()))
+        .expect("unblocked action")
 }
 
 fn simulation_leaf_value(session: &Session, depth: usize, config: &Config) -> Option<f64> {
-    (session.layout().is_some() || depth == config.horizon)
+    (session.metrics().is_some() || depth == config.horizon)
         .then(|| state_value(session, config.bounds))
+}
+
+enum ScoredChildren {
+    Ready(ScoredActionRows),
+    MemoryStop(AllowanceStop),
+}
+
+struct ScoredActionRows {
+    features: Vec<[f32; ACTION_FEATURES]>,
+    entity_indices: Vec<i64>,
+    anchor_scores: Vec<f64>,
+    exact_value: f64,
+    _memory: TreeReservation,
+}
+
+fn apply_scoring_children(
+    session: &Session,
+    actions: &[MacroAction],
+    factory: &Factory<'_>,
+    tree_memory: &SearchMemoryBudget,
+) -> Result<ScoredChildren> {
+    let row_bytes = actions
+        .len()
+        .saturating_mul(
+            std::mem::size_of::<[f32; ACTION_FEATURES]>()
+                + std::mem::size_of::<i64>()
+                + std::mem::size_of::<f64>(),
+        )
+        .saturating_add(3 * std::mem::size_of::<Vec<u8>>());
+    let row_memory = match TreeReservation::new(tree_memory, row_bytes) {
+        Ok(reservation) => reservation,
+        Err(stop) => return Ok(ScoredChildren::MemoryStop(stop)),
+    };
+    let mut features = Vec::with_capacity(actions.len());
+    let mut entity_indices = Vec::with_capacity(actions.len());
+    let mut anchor_scores = Vec::with_capacity(actions.len());
+    let mut exact_value = state_value(session, factory.domain.placement);
+    let placement_scorer = if actions
+        .iter()
+        .any(|action| matches!(action, MacroAction::Command(_)))
+    {
+        match PlacementActionScorer::prepare(session, factory.domain.placement, tree_memory)? {
+            PreparedPlacement::Ready(scorer) => Some(scorer),
+            PreparedPlacement::MemoryStop(stop) => return Ok(ScoredChildren::MemoryStop(stop)),
+        }
+    } else {
+        None
+    };
+    let placement_page = placement_scorer
+        .as_ref()
+        .map(|scorer| scorer.begin_page(session))
+        .transpose()?;
+    for action in actions {
+        if let MacroAction::Command(command) = action {
+            let page = placement_page.as_ref().expect("placement scorer prepared");
+            match page.score(command, tree_memory)? {
+                ScoredPlacement::Ready(scored) => {
+                    features.push(scored.features);
+                    entity_indices.push(scored.entity_index);
+                    anchor_scores.push(scored.anchor_score);
+                    exact_value = exact_value.max(scored.child_value);
+                }
+                ScoredPlacement::MemoryStop(stop) => {
+                    return Ok(ScoredChildren::MemoryStop(stop));
+                }
+            }
+            continue;
+        }
+        let estimate = session
+            .clone_reservation_bytes()
+            .saturating_add(action_bytes(action))
+            .saturating_add(8192);
+        let mut reservation = match TreeReservation::new(tree_memory, estimate) {
+            Ok(reservation) => reservation,
+            Err(stop) => return Ok(ScoredChildren::MemoryStop(stop)),
+        };
+        let child = factory.apply_action(action, session)?;
+        if let Err(stop) = reservation.resize(child.clone_reservation_bytes()) {
+            return Ok(ScoredChildren::MemoryStop(stop));
+        }
+        features.push(action.features(session, &child, factory.domain.placement));
+        entity_indices.push(action.entity_index(session.problem())?);
+        anchor_scores.push(action.prior_score(session, &child, factory.domain.placement));
+        exact_value = exact_value.max(state_value(&child, factory.domain.placement));
+        drop(child);
+        drop(reservation);
+    }
+    Ok(ScoredChildren::Ready(ScoredActionRows {
+        features,
+        entity_indices,
+        anchor_scores,
+        exact_value,
+        _memory: row_memory,
+    }))
 }
 
 fn ensure_node_expanded(
@@ -3680,67 +5097,217 @@ fn ensure_node_expanded(
     factory: &Factory<'_>,
     counters: &mut Counters,
     exhaust_placements: bool,
+    tree_memory: &SearchMemoryBudget,
 ) -> Result<f64> {
+    let placement_retry_ready = nodes[node]
+        .placement_pages
+        .as_ref()
+        .and_then(|pages| pages.retry_after_live)
+        .is_some_and(|at_stop| tree_memory.live_bytes() < at_stop);
+    if placement_retry_ready && nodes[node].actions.as_ref().is_some_and(Vec::is_empty) {
+        nodes[node].actions = None;
+        nodes[node].value = None;
+    }
     if nodes[node].actions.is_some() {
         return Ok(nodes[node]
             .value
             .unwrap_or_else(|| state_value(&nodes[node].session, factory.domain.placement)));
     }
-    let batch = factory.action_batch(&nodes[node].session, counters, exhaust_placements)?;
-    nodes[node].no_macro_diagnostic = batch.no_macro_diagnostic;
-    let actions = batch.actions;
-    nodes[node].placement_pages = Some(batch.placement_pages);
+    let before = (
+        counters.request_stops_total,
+        counters.route_deadline,
+        counters.route_work_limit,
+        counters.route_frontier_exhausted,
+        counters.route_no_compatible_endpoints,
+        counters.network_unknown,
+        counters.pending_route_networks,
+        counters.route_resource_limit,
+        counters.route_search_limit,
+        counters.route_work_budget,
+        counters.route_candidate_limit,
+        counters.repair_unknown,
+    );
+    let previous_pages = nodes[node].placement_pages.take();
+    let (mut actions, placement_pages, placement_stop) = factory.placement_actions(
+        &nodes[node].session,
+        exhaust_placements,
+        Some(tree_memory),
+        previous_pages,
+    )?;
+    counters.expansions += 1;
+    if let Some(stop) = placement_stop {
+        capture_tree_memory_stop(
+            counters,
+            nodes[node].session.revision(),
+            tree_memory,
+            stop.clone(),
+        );
+        nodes[node].no_macro_diagnostic = Some(tree_memory_diagnostic(
+            &stop,
+            nodes[node].session.revision(),
+        ));
+        nodes[node].placement_pages = Some(placement_pages);
+        let value = state_value(&nodes[node].session, factory.domain.placement);
+        nodes[node].value = Some(value);
+        nodes[node].actions = Some(Vec::new());
+        return Ok(value);
+    }
+    counters.placement_samples += actions.len();
+    counters.generated_macro_samples += actions.len();
+    let mut lower = LowerPager::new(
+        Arc::clone(&nodes[node].session),
+        factory,
+        counters,
+        tree_memory,
+        nodes[node].memory.bytes(),
+    )?;
+    actions.extend(lower.first_actions(factory, counters)?);
+    while actions.is_empty() && lower.pending() > 0 && !lower.all_pending_blocked_on_memory() {
+        actions.extend(lower.next_actions(factory, counters)?);
+    }
+    // Only close a zero-action wait when no other tree branch can run an
+    // owner or expose a distinct edge that might free shared memory.
+    let other_release_path =
+        nodes.iter().enumerate().any(|(other, peer)| {
+            other != node
+                && (peer.lower.as_ref().is_some_and(|pager| {
+                    pager.pending() > 0 && !pager.all_pending_blocked_on_memory()
+                }) || peer.actions.as_ref().is_some_and(|edges| {
+                    edges
+                        .iter()
+                        .any(|edge| edge.blocked_value.is_none() && edge.child != Some(node))
+                }))
+        });
+    let terminal_memory_wait =
+        actions.is_empty() && lower.all_pending_blocked_on_memory() && !other_release_path;
+    if terminal_memory_wait {
+        if let Some(stop) = lower.pending_memory_stop() {
+            capture_tree_memory_stop(counters, nodes[node].session.revision(), tree_memory, stop);
+        }
+    }
+    nodes[node].lower_loaded_pages = 1;
+    nodes[node].lower = if terminal_memory_wait {
+        lower.release();
+        None
+    } else {
+        Some(lower)
+    };
+    nodes[node].placement_pages = Some(placement_pages);
+    nodes[node].no_macro_diagnostic = actions
+        .is_empty()
+        .then(|| no_macro_reason(counters, before, nodes[node].session.revision()));
     if actions.is_empty() {
         let value = state_value(&nodes[node].session, factory.domain.placement);
         nodes[node].value = Some(value);
         nodes[node].actions = Some(vec![]);
         return Ok(value);
     }
-    let children = actions
-        .iter()
-        .map(|action| {
-            action.apply(
-                &nodes[node].session,
-                factory.candidate,
-                factory.repair_max_removed,
-            )
-        })
-        .collect::<Result<Vec<_>>>()?;
-    let scores = factory.score_actions(&nodes[node].session, &actions, &children)?;
+    let rows = match apply_scoring_children(&nodes[node].session, &actions, factory, tree_memory)? {
+        ScoredChildren::Ready(rows) => rows,
+        ScoredChildren::MemoryStop(stop) => {
+            capture_tree_memory_stop(
+                counters,
+                nodes[node].session.revision(),
+                tree_memory,
+                stop.clone(),
+            );
+            nodes[node].no_macro_diagnostic = Some(tree_memory_diagnostic(
+                &stop,
+                nodes[node].session.revision(),
+            ));
+            let value = state_value(&nodes[node].session, factory.domain.placement);
+            nodes[node].pending_actions = actions;
+            nodes[node].pending_retry_live = Some(tree_memory.live_bytes());
+            nodes[node].value = Some(value);
+            nodes[node].actions = Some(Vec::new());
+            return Ok(value);
+        }
+    };
+    let ScoredActionRows {
+        features,
+        entity_indices,
+        anchor_scores,
+        exact_value,
+        _memory: _row_memory_guard,
+    } = rows;
+    let scores = factory.score_action_rows(
+        &nodes[node].session,
+        &features,
+        &entity_indices,
+        &anchor_scores,
+    )?;
     // Expansion already paid for and natively applied every exposed macro.
     // Preserve that exact one-step evidence. The current outer checkpoint was
     // trained on fully placed routing states, so its completion head is not a
     // valid value estimate while any facility or terminal remains unplaced.
-    let exact_value = children
-        .iter()
-        .map(|session| state_value(session, factory.domain.placement))
-        .fold(
-            state_value(&nodes[node].session, factory.domain.placement),
-            f64::max,
-        );
-    let observation = nodes[node].session.observe();
-    let all_entities_placed = observation.poses.iter().all(Option::is_some)
-        && observation.terminal_poses.iter().all(Option::is_some);
+    let all_entities_placed = !nodes[node].session.has_unplaced_entities();
     let value = if all_entities_placed {
         scores.model_value.max(exact_value)
     } else {
         exact_value
     };
+    let edge_bytes = actions.iter().fold(0usize, |total, action| {
+        total
+            // LowerPager keeps the transferred witness reservation for the
+            // node lifetime; placements have no pager owner.
+            .saturating_add(if matches!(action, MacroAction::Command(_)) {
+                action_bytes(action)
+            } else {
+                0
+            })
+            .saturating_add(std::mem::size_of::<Edge>())
+            .saturating_add(256)
+    });
+    if let Err(stop) = nodes[node]
+        .memory
+        .resize(nodes[node].memory.bytes().saturating_add(edge_bytes))
+    {
+        capture_tree_memory_stop(
+            counters,
+            nodes[node].session.revision(),
+            tree_memory,
+            stop.clone(),
+        );
+        nodes[node].no_macro_diagnostic = Some(tree_memory_diagnostic(
+            &stop,
+            nodes[node].session.revision(),
+        ));
+        nodes[node].pending_actions = actions;
+        nodes[node].pending_retry_live = Some(tree_memory.live_bytes());
+        nodes[node].value = Some(value);
+        nodes[node].actions = Some(Vec::new());
+        return Ok(value);
+    }
     let mut edges = actions
         .into_iter()
+        .zip(features)
+        .zip(entity_indices)
+        .zip(anchor_scores)
         .zip(scores.priors)
         .zip(scores.anchor_priors)
-        .map(|((action, prior), anchor_prior)| Edge {
-            action,
-            prior,
-            anchor_prior,
-            visits: 0,
-            value_sum: 0.0,
-            child: None,
-        })
-        .collect::<Vec<_>>();
+        .map(
+            |(((((action, features), entity_index), anchor_score), prior), anchor_prior)| {
+                Ok(Edge {
+                    identity: physical_action_identity(&action)?,
+                    action,
+                    features,
+                    entity_index,
+                    anchor_score,
+                    prior,
+                    anchor_prior,
+                    visits: 0,
+                    value_sum: 0.0,
+                    child: None,
+                    blocked_value: None,
+                })
+            },
+        )
+        .collect::<Result<Vec<_>>>()?;
     edges.sort_by(|left, right| right.prior.total_cmp(&left.prior));
     nodes[node].actions = Some(edges);
+    if let Some(pages) = &mut nodes[node].placement_pages {
+        pages.page_memory = None;
+    }
     nodes[node].value = Some(value);
     Ok(value)
 }
@@ -3750,64 +5317,259 @@ fn maybe_widen_placements(
     node: usize,
     factory: &Factory<'_>,
     counters: &mut Counters,
+    tree_memory: &SearchMemoryBudget,
 ) -> Result<()> {
+    if !nodes[node].pending_actions.is_empty() || !nodes[node].pending_updates.is_empty() {
+        return Ok(());
+    }
     let desired_pages = (f64::from(nodes[node].visits.max(1)).sqrt().floor() as usize).max(1);
-    let Some(mut pages) = nodes[node].placement_pages else {
+    let Some(pages) = nodes[node].placement_pages.as_ref() else {
         return Ok(());
     };
     if desired_pages <= pages.loaded_pages || pages.exhausted.into_iter().all(|exhausted| exhausted)
     {
         return Ok(());
     }
+    let mut pages = nodes[node]
+        .placement_pages
+        .take()
+        .expect("placement pages were present");
     let session = nodes[node].session.clone();
-    let additional = factory.next_placement_page(&session, &mut pages, counters)?;
+    let additional_result =
+        factory.next_placement_page(&session, &mut pages, counters, tree_memory);
+    let page_stop = pages.memory_stop.clone();
     nodes[node].placement_pages = Some(pages);
-    if additional.is_empty() {
+    let additional = additional_result?;
+    if let Some(stop) = page_stop {
+        nodes[node].no_macro_diagnostic = Some(tree_memory_diagnostic(&stop, session.revision()));
         return Ok(());
     }
-    let existing = nodes[node].actions.as_ref().expect("expanded node");
-    let mut actions = existing
+    let result = append_node_actions(
+        nodes,
+        node,
+        factory,
+        counters,
+        tree_memory,
+        additional,
+        Vec::new(),
+    );
+    if result.is_ok() && nodes[node].pending_actions.is_empty() {
+        if let Some(pages) = &mut nodes[node].placement_pages {
+            pages.page_memory = None;
+        }
+    }
+    result
+}
+
+fn maybe_widen_lower(
+    nodes: &mut [Node],
+    node: usize,
+    factory: &Factory<'_>,
+    counters: &mut Counters,
+    tree_memory: &SearchMemoryBudget,
+) -> Result<()> {
+    if !nodes[node].pending_actions.is_empty() || !nodes[node].pending_updates.is_empty() {
+        return Ok(());
+    }
+    let desired_pages = (f64::from(nodes[node].visits.max(1)).sqrt().floor() as usize).max(1);
+    let memory_retry_ready = nodes[node].lower.as_ref().is_some_and(|lower| {
+        lower.hash_memory_retry_ready()
+            || lower.publication_memory_retry_ready()
+            || lower.scope_memory_retry_ready()
+    });
+    if desired_pages <= nodes[node].lower_loaded_pages && !memory_retry_ready {
+        return Ok(());
+    }
+    let Some(lower) = nodes[node].lower.as_mut() else {
+        return Ok(());
+    };
+    if lower.pending() == 0 {
+        return Ok(());
+    }
+    let additional = lower.next_actions(factory, counters)?;
+    let updates = lower.take_updated_routes();
+    if !memory_retry_ready
+        && !lower.hash_memory_pending()
+        && !lower.publication_memory_retry_ready()
+        && !lower.scope_memory_pending()
+    {
+        nodes[node].lower_loaded_pages += 1;
+    }
+    append_node_actions(
+        nodes,
+        node,
+        factory,
+        counters,
+        tree_memory,
+        additional,
+        updates,
+    )
+}
+
+fn append_node_actions(
+    nodes: &mut [Node],
+    node: usize,
+    factory: &Factory<'_>,
+    counters: &mut Counters,
+    tree_memory: &SearchMemoryBudget,
+    additional: Vec<MacroAction>,
+    updates: Vec<RouteUpdate>,
+) -> Result<()> {
+    nodes[node].pending_actions.extend(additional);
+    nodes[node].pending_updates.extend(updates);
+    if nodes[node].pending_actions.is_empty() && nodes[node].pending_updates.is_empty() {
+        return Ok(());
+    }
+    if nodes[node]
+        .pending_retry_live
+        .is_some_and(|at_stop| tree_memory.live_bytes() >= at_stop)
+    {
+        return Ok(());
+    }
+    let new_ids = nodes[node]
+        .pending_actions
         .iter()
-        .map(|edge| edge.action.clone())
-        .collect::<Vec<_>>();
-    actions.extend(additional.iter().cloned());
-    let children = actions
-        .iter()
-        .map(|action| action.apply(&session, factory.candidate, factory.repair_max_removed))
+        .map(physical_action_identity)
         .collect::<Result<Vec<_>>>()?;
-    let scores = factory.score_actions(&session, &actions, &children)?;
-    let existing_count = existing.len();
+    let existing = nodes[node].actions.as_ref().expect("expanded node");
+    let mut ids = HashSet::new();
+    ids.try_reserve(existing.len().saturating_add(new_ids.len()))?;
+    ids.extend(existing.iter().map(|edge| edge.identity.as_slice()));
+    for id in &new_ids {
+        ensure!(
+            ids.insert(id.as_slice()),
+            "aic-learning.hierarchical-root-identity: appended physical action ID duplicates an exposed witness"
+        );
+    }
+    let session = Arc::clone(&nodes[node].session);
+    let additional = &nodes[node].pending_actions;
+    let rows = match apply_scoring_children(&session, &additional, factory, tree_memory)? {
+        ScoredChildren::Ready(rows) => rows,
+        ScoredChildren::MemoryStop(stop) => {
+            capture_tree_memory_stop(counters, session.revision(), tree_memory, stop.clone());
+            nodes[node].no_macro_diagnostic =
+                Some(tree_memory_diagnostic(&stop, session.revision()));
+            nodes[node].pending_retry_live = Some(tree_memory.live_bytes());
+            return Ok(());
+        }
+    };
+    let ScoredActionRows {
+        features: new_features,
+        entity_indices: new_entity_indices,
+        anchor_scores: new_anchor_scores,
+        exact_value,
+        _memory: _row_memory_guard,
+    } = rows;
+    let existing_count = nodes[node].actions.as_ref().expect("expanded node").len();
+    let mut features = Vec::with_capacity(existing_count + additional.len());
+    let mut entity_indices = Vec::with_capacity(existing_count + additional.len());
+    let mut anchor_scores = Vec::with_capacity(existing_count + additional.len());
+    for edge in nodes[node].actions.as_ref().expect("expanded node") {
+        features.push(edge.features);
+        entity_indices.push(edge.entity_index);
+        anchor_scores.push(edge.anchor_score);
+    }
+    for update in &nodes[node].pending_updates {
+        let index = nodes[node]
+            .actions
+            .as_ref()
+            .expect("expanded node")
+            .iter()
+            .position(|edge| matches!(&edge.action, MacroAction::Route(candidate) if candidate.connection == update.connection && candidate.id == update.id))
+            .ok_or_else(|| anyhow::anyhow!("updated route witness was not published"))?;
+        let MacroAction::Route(candidate) =
+            &nodes[node].actions.as_ref().expect("expanded node")[index].action
+        else {
+            unreachable!("matching route update")
+        };
+        features[index][13..16].fill(0.0);
+        mark_route_provenance_values(
+            &mut features[index],
+            &candidate.provenance,
+            &update.additional_provenance,
+        );
+    }
+    features.extend(&new_features);
+    entity_indices.extend(&new_entity_indices);
+    anchor_scores.extend(&new_anchor_scores);
+    let scores = factory.score_action_rows(&session, &features, &entity_indices, &anchor_scores)?;
+    let edge_bytes = additional.iter().fold(0usize, |total, action| {
+        total
+            .saturating_add(if matches!(action, MacroAction::Command(_)) {
+                action_bytes(action)
+            } else {
+                0
+            })
+            .saturating_add(std::mem::size_of::<Edge>())
+            .saturating_add(256)
+    });
+    if let Err(stop) = nodes[node]
+        .memory
+        .resize(nodes[node].memory.bytes().saturating_add(edge_bytes))
+    {
+        capture_tree_memory_stop(counters, session.revision(), tree_memory, stop.clone());
+        nodes[node].no_macro_diagnostic = Some(tree_memory_diagnostic(&stop, session.revision()));
+        nodes[node].pending_retry_live = Some(tree_memory.live_bytes());
+        return Ok(());
+    }
+    let additional = std::mem::take(&mut nodes[node].pending_actions);
+    let updates = std::mem::take(&mut nodes[node].pending_updates);
+    nodes[node].pending_retry_live = None;
+    nodes[node].no_macro_diagnostic = None;
     let edges = nodes[node].actions.as_mut().expect("expanded node");
-    for ((edge, prior), anchor_prior) in edges
+    for update in updates {
+        let edge = edges
+            .iter_mut()
+            .find(|edge| matches!(&edge.action, MacroAction::Route(candidate) if candidate.connection == update.connection && candidate.id == update.id))
+            .expect("pending update was validated before scoring");
+        let MacroAction::Route(candidate) = &mut edge.action else {
+            unreachable!("matching route update")
+        };
+        candidate.additional_provenance = update.additional_provenance;
+    }
+    for (index, ((edge, prior), anchor_prior)) in edges
         .iter_mut()
         .zip(&scores.priors)
         .zip(&scores.anchor_priors)
+        .enumerate()
     {
+        edge.features = features[index];
         edge.prior = *prior;
         edge.anchor_prior = *anchor_prior;
     }
     edges.extend(
         additional
             .into_iter()
+            .zip(new_ids)
+            .zip(new_features)
+            .zip(new_entity_indices)
+            .zip(new_anchor_scores)
             .zip(scores.priors.into_iter().skip(existing_count))
             .zip(scores.anchor_priors.into_iter().skip(existing_count))
-            .map(|((action, prior), anchor_prior)| Edge {
-                action,
-                prior,
-                anchor_prior,
-                visits: 0,
-                value_sum: 0.0,
-                child: None,
-            }),
+            .map(
+                |(
+                    (((((action, identity), features), entity_index), anchor_score), prior),
+                    anchor_prior,
+                )| {
+                    Ok(Edge {
+                        identity,
+                        action,
+                        features,
+                        entity_index,
+                        anchor_score,
+                        prior,
+                        anchor_prior,
+                        visits: 0,
+                        value_sum: 0.0,
+                        child: None,
+                        blocked_value: None,
+                    })
+                },
+            )
+            .collect::<Result<Vec<_>>>()?,
     );
     edges.sort_by(|left, right| right.prior.total_cmp(&left.prior));
-    let exact_value = children
-        .iter()
-        .map(|child| state_value(child, factory.domain.placement))
-        .fold(state_value(&session, factory.domain.placement), f64::max);
-    let observation = session.observe();
-    let all_entities_placed = observation.poses.iter().all(Option::is_some)
-        && observation.terminal_poses.iter().all(Option::is_some);
+    let all_entities_placed = !session.has_unplaced_entities();
     let widened_value = if all_entities_placed {
         scores.model_value.max(exact_value)
     } else {
@@ -3831,7 +5593,7 @@ fn prefix_session(case: &Case, panel: &Panel, catalogs: Arc<Catalogs>) -> Result
         );
     }
     ensure!(
-        session.observe().active.is_none(),
+        !session.has_active_route(),
         "aic-learning.hierarchical-prefix: case {} left an active route",
         case.id
     );
@@ -3839,25 +5601,7 @@ fn prefix_session(case: &Case, panel: &Panel, catalogs: Arc<Catalogs>) -> Result
 }
 
 fn construction_progress(session: &Session) -> f64 {
-    let observation = session.observe();
-    let complete = observation
-        .poses
-        .iter()
-        .filter(|pose| pose.is_some())
-        .count()
-        + observation
-            .terminal_poses
-            .iter()
-            .filter(|pose| pose.is_some())
-            .count()
-        + observation
-            .routes
-            .iter()
-            .filter(|route| route.is_some())
-            .count();
-    let total =
-        observation.poses.len() + observation.terminal_poses.len() + observation.routes.len();
-    complete as f64 / total.max(1) as f64
+    session.construction_progress()
 }
 
 fn lexicographic_quality_penalty(
@@ -3913,23 +5657,27 @@ fn finish_result(
     started: Instant,
 ) -> SearchResult {
     let elapsed_seconds = started.elapsed().as_secs_f64();
-    let observation = session.observe();
+    let (completed_connections, total_connections) = session.connection_progress_counts();
+    let fully_validated = session.metrics().is_some();
     let metrics = session.metrics();
     SearchResult {
         algorithm: algorithm.into(),
-        status: if observation.fully_validated {
+        status: if fully_validated {
             "complete"
         } else {
             "incomplete"
         }
         .into(),
-        fully_validated: observation.fully_validated,
+        fully_validated,
         termination,
-        no_macro_diagnostic: (termination == SearchTermination::NoMacroActions)
-            .then_some(no_macro_diagnostic)
-            .flatten(),
-        completed_connections: observation.completed,
-        total_connections: observation.total,
+        no_macro_diagnostic: matches!(
+            termination,
+            SearchTermination::NoMacroActions | SearchTermination::ResourceStopped
+        )
+        .then_some(no_macro_diagnostic)
+        .flatten(),
+        completed_connections,
+        total_connections,
         footprint_area: metrics.map(|metrics| metrics.area),
         transport_cells: metrics.map(|metrics| metrics.transport_cells),
         turns: metrics.map(|metrics| metrics.turns),
@@ -3948,11 +5696,9 @@ fn finish_result(
 }
 
 fn state_sha256(session: &Session) -> Result<String> {
-    let bytes = serde_json::to_vec(&(session.problem(), session.observe()))?;
-    Ok(Sha256::digest(bytes)
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect())
+    session
+        .hierarchical_state_sha256()
+        .map_err(anyhow::Error::new)
 }
 
 fn aggregate_throughput<'a>(results: impl Iterator<Item = &'a SearchResult>) -> f64 {
@@ -3973,6 +5719,7 @@ fn validate_config(config: &Config) -> Result<()> {
     ensure!(
         config.schema == CONFIG_SCHEMA
             && config.bounds == config.candidate.bounds
+            && config.max_live_search_bytes > 0
             && config.repair_max_removed <= 32768
             && !config.extension_lengths.is_empty()
             && config
@@ -4060,7 +5807,7 @@ fn semantic_sha256(value: &impl Serialize) -> Result<String> {
 }
 
 fn publish_json<T: Serialize>(output: &Path, value: T) -> Result<Published<T>> {
-    let (sha256, encoded_bytes) = publish_json_identity(output, &value)?;
+    let (sha256, encoded_bytes) = publish_json_identity(output, &value, None)?;
     Ok(Published {
         value,
         sha256,
@@ -4068,7 +5815,20 @@ fn publish_json<T: Serialize>(output: &Path, value: T) -> Result<Published<T>> {
     })
 }
 
-fn publish_json_identity(output: &Path, value: &impl Serialize) -> Result<(String, u64)> {
+fn publish_panel_json(output: &Path, panel: Panel) -> Result<Published<Panel>> {
+    let (sha256, encoded_bytes) = publish_json_identity(output, &panel, Some(MAX_PANEL_BYTES))?;
+    Ok(Published {
+        value: panel,
+        sha256,
+        encoded_bytes,
+    })
+}
+
+fn publish_json_identity(
+    output: &Path,
+    value: &impl Serialize,
+    byte_limit: Option<u64>,
+) -> Result<(String, u64)> {
     if let Some(parent) = output
         .parent()
         .filter(|parent| !parent.as_os_str().is_empty())
@@ -4089,6 +5849,17 @@ fn publish_json_identity(output: &Path, value: &impl Serialize) -> Result<(Strin
     }
     writer.flush()?;
     let digested = writer.into_inner().map_err(|error| error.into_error())?;
+    if let Some(limit) = byte_limit.filter(|limit| digested.bytes > *limit) {
+        let bytes = digested.bytes;
+        drop(digested);
+        let _ = fs::remove_file(&temporary);
+        anyhow::bail!(
+            "aic-learning.hierarchical-panel-resource: {} has {} bytes; limit is {} bytes",
+            output.display(),
+            bytes,
+            limit
+        );
+    }
     digested.inner.sync_all()?;
     let identity = digested.finish();
     fs::rename(temporary, output)?;
@@ -4096,30 +5867,188 @@ fn publish_json_identity(output: &Path, value: &impl Serialize) -> Result<(Strin
 }
 
 pub(crate) fn load_published_panel(path: &Path) -> Result<Published<Panel>> {
-    let metadata = fs::metadata(path).with_context(|| format!("stat {}", path.display()))?;
+    load_published_panel_with_limit(path, MAX_PANEL_BYTES)
+}
+
+fn load_published_panel_with_limit(path: &Path, limit: u64) -> Result<Published<Panel>> {
+    let file = fs::File::open(path).with_context(|| format!("open {}", path.display()))?;
+    let metadata = file
+        .metadata()
+        .with_context(|| format!("stat {}", path.display()))?;
     ensure!(
-        metadata.len() <= MAX_INPUT_BYTES,
-        "aic-learning.hierarchical-input: {} exceeds {} bytes",
+        metadata.len() <= limit,
+        "aic-learning.hierarchical-panel-resource: {} has {} bytes; limit is {} bytes",
         path.display(),
-        MAX_INPUT_BYTES
+        metadata.len(),
+        limit
     );
-    load_published_json(path)
+    load_published_json_reader(path, BufReader::new(file.take(limit + 1)), Some(limit))
 }
 
 pub(crate) fn load_published_report(path: &Path) -> Result<Published<Report>> {
-    load_published_json(path)
+    let published: Published<Report> =
+        load_published_json(path).map_err(|error: anyhow::Error| {
+            if error
+                .chain()
+                .any(|cause| cause.downcast_ref::<serde_json::Error>().is_some())
+            {
+                error.context(format!(
+                "aic-learning.hierarchical-report-schema: {} cannot decode tagged v12 root records",
+                path.display()
+            ))
+            } else {
+                error
+            }
+        })?;
+    ensure!(
+        published.value.schema == REPORT_SCHEMA,
+        "aic-learning.hierarchical-report-schema: {} uses unsupported schema {} (expected {})",
+        path.display(),
+        published.value.schema,
+        REPORT_SCHEMA
+    );
+    for case in &published.value.cases {
+        for record in &case.mcts.root_records {
+            validate_root_record_lineage(record).with_context(|| {
+                format!(
+                    "aic-learning.hierarchical-root-lineage: {} case {} revision {}",
+                    path.display(),
+                    case.id,
+                    record.state_revision
+                )
+            })?;
+        }
+    }
+    Ok(published)
+}
+
+pub(crate) fn retire_replay_data(path: &Path) -> Result<()> {
+    root_catalog::publication::retire_replay_data(path)
+}
+
+pub(crate) fn validate_root_record_lineage(record: &RootRecord) -> Result<()> {
+    match &record.target {
+        RootRecordTarget::PuctDense(dense) => validate_dense_root_lineage(dense, false),
+        RootRecordTarget::GumbelCatalog { descriptor } => {
+            root_catalog::publication::validate_descriptor_lineage(
+                descriptor,
+                &record.state_sha256,
+                record.state_revision,
+            )
+        }
+        #[cfg(test)]
+        RootRecordTarget::GumbelDenseOracle(dense) => validate_dense_root_lineage(dense, true),
+    }
+}
+
+fn validate_dense_root_lineage(dense: &DenseRootRecord, gumbel_oracle: bool) -> Result<()> {
+    let selected = dense
+        .actions
+        .get(dense.selected_action)
+        .ok_or_else(|| anyhow::anyhow!("selected action is outside the recorded root"))?;
+    ensure!(
+        dense.selected_physical_id.as_deref()
+            == Some(physical_action_identity(&selected.action)?.as_slice()),
+        "selected physical action ID differs from its witness"
+    );
+    let mut ids = HashSet::new();
+    ids.try_reserve(dense.actions.len())?;
+    let mut eligible = HashSet::new();
+    eligible.try_reserve(dense.actions.len())?;
+    for action in &dense.actions {
+        let id = physical_action_identity(&action.action)?;
+        ensure!(
+            ids.insert(id.clone()),
+            "duplicate physical action ID in root"
+        );
+        if gumbel_oracle {
+            let is_eligible = action
+                .gumbel_eligible
+                .ok_or_else(|| anyhow::anyhow!("Gumbel action lacks initial eligibility"))?;
+            let target = action
+                .policy_target
+                .ok_or_else(|| anyhow::anyhow!("Gumbel action lacks frozen policy target"))?;
+            ensure!(
+                target.is_finite() && target >= 0.0,
+                "invalid frozen policy target"
+            );
+            if is_eligible {
+                eligible.insert(id);
+            } else {
+                ensure!(target == 0.0, "late Gumbel action has nonzero target");
+            }
+        }
+    }
+    if gumbel_oracle {
+        let cap = dense
+            .gumbel_shortlist_cap
+            .ok_or_else(|| anyhow::anyhow!("Gumbel dense oracle lacks shortlist limit"))?;
+        ensure!(
+            dense.initial_eligible_actions == Some(eligible.len())
+                && eligible.contains(dense.selected_physical_id.as_ref().unwrap())
+                && !dense.gumbel_shortlist.is_empty()
+                && dense.gumbel_shortlist.len() <= cap,
+            "Gumbel initial eligibility or shortlist differs from record"
+        );
+        let mut ranks = HashSet::new();
+        let mut shortlist_ids = HashSet::new();
+        for entry in &dense.gumbel_shortlist {
+            ensure!(
+                eligible.contains(&entry.physical_id)
+                    && ranks.insert(entry.initial_rank)
+                    && entry.initial_rank < eligible.len()
+                    && shortlist_ids.insert(&entry.physical_id)
+                    && f64::from_bits(entry.gumbel_bits).is_finite(),
+                "Gumbel shortlist contains ambiguous ID, rank or noise"
+            );
+        }
+        ensure!(
+            shortlist_ids.contains(dense.selected_physical_id.as_ref().unwrap()),
+            "selected Gumbel action is absent from shortlist"
+        );
+    } else {
+        ensure!(
+            dense.gumbel_shortlist.is_empty()
+                && dense.gumbel_shortlist_cap.is_none()
+                && dense.initial_eligible_actions.is_none()
+                && dense.actions.iter().all(|action| {
+                    action.gumbel_eligible.is_none() && action.policy_target.is_none()
+                }),
+            "PUCT root contains Gumbel-only lineage"
+        );
+    }
+    Ok(())
 }
 
 fn load_published_json<T: for<'de> Deserialize<'de>>(path: &Path) -> Result<Published<T>> {
     let file = fs::File::open(path).with_context(|| format!("open {}", path.display()))?;
-    let mut reader = DigestReader::new(BufReader::new(file));
-    let mut deserializer = serde_json::Deserializer::from_reader(&mut reader);
-    let value =
-        T::deserialize(&mut deserializer).with_context(|| format!("parse {}", path.display()))?;
-    deserializer
-        .end()
-        .with_context(|| format!("finish parsing {}", path.display()))?;
+    load_published_json_reader(path, BufReader::new(file), None)
+}
+
+fn load_published_json_reader<T: for<'de> Deserialize<'de>, R: Read>(
+    path: &Path,
+    source: R,
+    byte_limit: Option<u64>,
+) -> Result<Published<T>> {
+    let mut reader = DigestReader::new(source);
+    let parsed = {
+        let mut deserializer = serde_json::Deserializer::from_reader(&mut reader);
+        T::deserialize(&mut deserializer).and_then(|value| {
+            deserializer.end()?;
+            Ok(value)
+        })
+    };
     let (sha256, encoded_bytes) = reader.finish();
+    if let Some(limit) = byte_limit {
+        ensure!(
+            encoded_bytes <= limit,
+            "aic-learning.hierarchical-panel-resource: {} has at least {} bytes; limit is {} bytes",
+            path.display(),
+            encoded_bytes,
+            limit
+        );
+    }
+    let value = parsed.with_context(|| format!("parse {}", path.display()))?;
     Ok(Published {
         value,
         sha256,
@@ -4203,6 +6132,443 @@ mod tests {
     use aic_layout::geometry::Point;
 
     #[test]
+    #[ignore = "local root-action layout probe"]
+    fn plan00_root_layout_probe() {
+        eprintln!(
+            "plan00 sizes macro_action={} edge={} root_action_record={} root_record={} feature_row={} identity_vec={}",
+            std::mem::size_of::<MacroAction>(),
+            std::mem::size_of::<Edge>(),
+            std::mem::size_of::<RootActionRecord>(),
+            std::mem::size_of::<RootRecord>(),
+            std::mem::size_of::<[f32; ACTION_FEATURES]>(),
+            std::mem::size_of::<Vec<u8>>()
+        );
+    }
+
+    #[test]
+    #[ignore = "set AIC_ROOT_INTEGRATED_PANEL for a bounded local root cost probe"]
+    fn plan00_integrated_root_cost_probe() -> Result<()> {
+        use std::{fs, io::Write, time::Instant};
+
+        let _guard = crate::TORCH_TEST.lock().unwrap();
+        let panel_path = std::env::var("AIC_ROOT_INTEGRATED_PANEL")?;
+        let panel: serde_json::Value = serde_json::from_slice(&fs::read(panel_path)?)?;
+        let case = &panel["cases"][0];
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let loaded = aic_layout_gen::io::load_catalogs(&root.join("data/game/normalized"))?;
+        let mut session = Session::new(
+            serde_json::from_value(case["problem"].clone())?,
+            Arc::new(loaded.catalogs),
+            serde_json::from_value(panel["limits"].clone())?,
+        )?;
+        let prefix = std::env::var("AIC_ROOT_INTEGRATED_PREFIX")
+            .ok()
+            .and_then(|value| value.parse::<usize>().ok())
+            .unwrap_or(0);
+        for command in case["prefix"].as_array().unwrap().iter().take(prefix) {
+            let step = session.step(serde_json::from_value(command.clone())?);
+            ensure!(step.accepted && step.diagnostic.is_none(), "{step:?}");
+        }
+        let candidate: CandidateConfig = serde_json::from_value(panel["candidate"].clone())?;
+        let domain_config = DomainConfig {
+            placement: candidate.bounds,
+            extension_lengths: vec![1, 2, 4],
+        };
+        let domain = session.learning_placement_domain(&domain_config)?;
+        let input = session.macro_learning_input(&domain_config)?;
+        let model_config = crate::schema::OuterModelConfig {
+            schema: crate::schema::OuterModelConfig::SCHEMA.into(),
+            encoder: crate::schema::ConstructiveModelConfig {
+                schema: crate::schema::ConstructiveModelConfig::SCHEMA.into(),
+                width: 32,
+                message_rounds: 1,
+            },
+            width: 32,
+        };
+        let (order, state) = OuterModel::initial_state(&model_config, 51)?;
+        let model = OuterModel::load(&model_config, &order, &state, Device::Cpu)?;
+        let output = root.join("artifacts/plan00-integrated-root-scores.bin");
+        let mut writer = std::io::BufWriter::new(fs::File::create(&output)?);
+        let page_size = 256usize;
+        let batch_size = 65_536usize;
+        let max_pages = std::env::var("AIC_ROOT_INTEGRATED_MAX_PAGES")
+            .ok()
+            .and_then(|value| value.parse::<usize>().ok())
+            .unwrap_or(usize::MAX);
+        let mut rows = Vec::with_capacity(batch_size);
+        let mut references = Vec::with_capacity(batch_size);
+        let mut anchors = Vec::with_capacity(batch_size);
+        let mut count = 0usize;
+        let mut pages = 0usize;
+        let mut child_seconds = 0.0;
+        let mut batch_seconds = 0.0;
+        let mut forward_seconds = 0.0;
+        let started = Instant::now();
+        let mut flush = |rows: &mut Vec<[f32; ACTION_FEATURES]>,
+                         references: &mut Vec<i64>,
+                         anchors: &mut Vec<f64>|
+         -> Result<()> {
+            if rows.is_empty() {
+                return Ok(());
+            }
+            let now = Instant::now();
+            let batch =
+                OuterBatch::from_rows(&[input.as_ref()], &[rows], &[references], Device::Cpu)?;
+            batch_seconds += now.elapsed().as_secs_f64();
+            let now = Instant::now();
+            let prediction = tch::no_grad(|| model.forward(&batch))?;
+            let logits = Vec::<f32>::try_from(prediction.logits.to_device(Device::Cpu))?;
+            forward_seconds += now.elapsed().as_secs_f64();
+            for (logit, anchor) in logits.into_iter().zip(anchors.iter().copied()) {
+                writer.write_all(&logit.to_le_bytes())?;
+                writer.write_all(&anchor.to_le_bytes())?;
+            }
+            rows.clear();
+            references.clear();
+            anchors.clear();
+            Ok(())
+        };
+        for kind in [CommandKind::Place, CommandKind::PlaceTerminal] {
+            let mut offset = 0usize;
+            loop {
+                let page = domain.command_page(kind, offset, page_size)?;
+                for factored in &page.commands {
+                    let action = MacroAction::Command(factored.command.command.clone());
+                    let now = Instant::now();
+                    let child = action.apply(&session, &candidate, 0)?;
+                    rows.push(action.features(&session, &child, candidate.bounds));
+                    references.push(action.entity_index(session.problem())?);
+                    anchors.push(action.prior_score(&session, &child, candidate.bounds));
+                    child_seconds += now.elapsed().as_secs_f64();
+                    count += 1;
+                    if rows.len() == batch_size {
+                        flush(&mut rows, &mut references, &mut anchors)?;
+                    }
+                }
+                offset = page.next_offset;
+                pages += 1;
+                if page.exhausted || pages >= max_pages {
+                    break;
+                }
+            }
+            if pages >= max_pages {
+                break;
+            }
+        }
+        flush(&mut rows, &mut references, &mut anchors)?;
+        drop(flush);
+        writer.flush()?;
+        drop(writer);
+        let bytes = fs::metadata(&output)?.len();
+        ensure!(
+            bytes == count as u64 * 12,
+            "score probe file length differs"
+        );
+        fs::remove_file(output)?;
+        eprintln!(
+            "plan00 integrated count={count} pages={pages} seconds={:.3} child_seconds={child_seconds:.3} batch_seconds={batch_seconds:.3} forward_seconds={forward_seconds:.3} score_bytes={bytes}",
+            started.elapsed().as_secs_f64()
+        );
+        Ok(())
+    }
+
+    #[test]
+    #[ignore = "set AIC_ROOT_INTEGRATED_PANEL for local analytic placement parity"]
+    fn plan00_analytic_placement_parity_probe() -> Result<()> {
+        use std::{fs, time::Instant};
+
+        let panel_path = std::env::var("AIC_ROOT_INTEGRATED_PANEL")?;
+        let panel: serde_json::Value = serde_json::from_slice(&fs::read(panel_path)?)?;
+        let case = &panel["cases"][0];
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let loaded = aic_layout_gen::io::load_catalogs(&root.join("data/game/normalized"))?;
+        let mut session = Session::new(
+            serde_json::from_value(case["problem"].clone())?,
+            Arc::new(loaded.catalogs),
+            serde_json::from_value(panel["limits"].clone())?,
+        )?;
+        let prefix = std::env::var("AIC_ROOT_INTEGRATED_PREFIX")
+            .ok()
+            .and_then(|value| value.parse::<usize>().ok())
+            .unwrap_or(0);
+        for command in case["prefix"].as_array().unwrap().iter().take(prefix) {
+            let step = session.step(serde_json::from_value(command.clone())?);
+            ensure!(step.accepted && step.diagnostic.is_none(), "{step:?}");
+        }
+        let candidate: CandidateConfig = serde_json::from_value(panel["candidate"].clone())?;
+        let domain_config = DomainConfig {
+            placement: candidate.bounds,
+            extension_lengths: vec![1, 2, 4],
+        };
+        let domain = session.learning_placement_domain(&domain_config)?;
+        let problem = session.problem();
+        let total = problem.blocks.len() + problem.terminals.len() + problem.connections.len();
+        let completed = problem
+            .blocks
+            .iter()
+            .filter(|block| session.placed_entity_position(&block.id).is_some())
+            .count()
+            + problem
+                .terminals
+                .iter()
+                .filter(|terminal| session.placed_entity_position(&terminal.id).is_some())
+                .count()
+            + session.connection_progress_counts().0;
+        let before_progress = construction_progress(&session);
+        let after_progress = (completed + 1) as f64 / total.max(1) as f64;
+        let bounds = candidate.bounds;
+        let span = bounds.width().max(bounds.height()).max(1) as f64;
+        let scale = span as f32;
+        let center_x = (bounds.min_x + bounds.max_x) as f64 * 0.5;
+        let center_y = (bounds.min_y + bounds.max_y) as f64 * 0.5;
+        let fixed_distance = problem
+            .connections
+            .iter()
+            .filter_map(|connection| {
+                session
+                    .placed_entity_position(&connection.source)
+                    .zip(session.placed_entity_position(&connection.target))
+                    .map(|(source, target)| source.distance(target) as f64 / span)
+            })
+            .sum::<f64>();
+        let fixed_terms = problem
+            .connections
+            .iter()
+            .map(|connection| {
+                session
+                    .placed_entity_position(&connection.source)
+                    .zip(session.placed_entity_position(&connection.target))
+                    .map(|(source, target)| source.distance(target) as f64 / span)
+            })
+            .collect::<Vec<_>>();
+        let mut incident_by_entity =
+            std::collections::HashMap::<String, Vec<(usize, Option<Point>, bool)>>::new();
+        for (index, connection) in problem.connections.iter().enumerate() {
+            if connection.source == connection.target {
+                incident_by_entity
+                    .entry(connection.source.clone())
+                    .or_default()
+                    .push((index, None, true));
+            } else {
+                incident_by_entity
+                    .entry(connection.source.clone())
+                    .or_default()
+                    .push((
+                        index,
+                        session.placed_entity_position(&connection.target),
+                        false,
+                    ));
+                incident_by_entity
+                    .entry(connection.target.clone())
+                    .or_default()
+                    .push((
+                        index,
+                        session.placed_entity_position(&connection.source),
+                        false,
+                    ));
+            }
+        }
+        let scorer_budget = SearchMemoryBudget::new(64 * 1024 * 1024);
+        let production_scorer =
+            match PlacementActionScorer::prepare(&session, candidate.bounds, &scorer_budget)? {
+                PreparedPlacement::Ready(scorer) => scorer,
+                PreparedPlacement::MemoryStop(stop) => {
+                    anyhow::bail!("production placement scorer stopped: {stop:?}")
+                }
+            };
+        let production_page = production_scorer.begin_page(&session)?;
+        let offsets = [0, 1_000, 1_000_000, 5_000_000];
+        let mut checked = 0usize;
+        let mut max_anchor_error = 0.0f64;
+        let analytic_started = Instant::now();
+        let mut analytic_seconds = 0.0;
+        let mut ordered_seconds = 0.0;
+        let mut prepared_seconds = 0.0;
+        let mut child_seconds = 0.0;
+        for offset in offsets {
+            let page = domain.command_page(CommandKind::Place, offset, 256)?;
+            for factored in &page.commands {
+                let command = &factored.command.command;
+                let (entity, position, rotation, kind) = match command {
+                    Command::Place {
+                        block,
+                        position,
+                        rotation,
+                    } => (block.as_str(), *position, Some(*rotation), 0),
+                    Command::PlaceTerminal { terminal, position } => {
+                        (terminal.as_str(), *position, None, 1)
+                    }
+                    _ => unreachable!("placement page returned another command"),
+                };
+                let now = Instant::now();
+                let mut row = [0.0f32; ACTION_FEATURES];
+                row[kind] = 1.0;
+                row[3] = before_progress as f32;
+                row[4] = after_progress as f32;
+                row[5] = row[4] - row[3];
+                row[6] = position.x as f32 / scale;
+                row[7] = position.y as f32 / scale;
+                if let Some(rotation) = rotation {
+                    row[8] = (rotation as f32).to_radians().sin();
+                    row[9] = (rotation as f32).to_radians().cos();
+                }
+                let incident_distance = problem
+                    .connections
+                    .iter()
+                    .filter(|connection| connection.source == entity || connection.target == entity)
+                    .filter_map(|connection| {
+                        let source = if connection.source == entity {
+                            Some(position)
+                        } else {
+                            session.placed_entity_position(&connection.source)
+                        };
+                        let target = if connection.target == entity {
+                            Some(position)
+                        } else {
+                            session.placed_entity_position(&connection.target)
+                        };
+                        source
+                            .zip(target)
+                            .map(|(source, target)| source.distance(target) as f64 / span)
+                    })
+                    .sum::<f64>();
+                let center_distance = ((position.x as f64 - center_x).abs()
+                    + (position.y as f64 - center_y).abs())
+                    / span;
+                let anchor = (after_progress - before_progress) * 8.0
+                    + (-center_distance * 0.08 - (fixed_distance + incident_distance) * 0.12);
+                analytic_seconds += now.elapsed().as_secs_f64();
+
+                let now = Instant::now();
+                let ordered_distance = problem
+                    .connections
+                    .iter()
+                    .filter_map(|connection| {
+                        let source = if connection.source == entity {
+                            Some(position)
+                        } else {
+                            session.placed_entity_position(&connection.source)
+                        };
+                        let target = if connection.target == entity {
+                            Some(position)
+                        } else {
+                            session.placed_entity_position(&connection.target)
+                        };
+                        source
+                            .zip(target)
+                            .map(|(source, target)| source.distance(target) as f64 / span)
+                    })
+                    .sum::<f64>();
+                let ordered_anchor = (after_progress - before_progress) * 8.0
+                    + (-center_distance * 0.08 - ordered_distance * 0.12);
+                ordered_seconds += now.elapsed().as_secs_f64();
+
+                let now = Instant::now();
+                let incidents = incident_by_entity
+                    .get(entity)
+                    .map(Vec::as_slice)
+                    .unwrap_or(&[]);
+                let mut incident_index = 0usize;
+                let prepared_distance = fixed_terms
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(index, fixed)| {
+                        if incidents.get(incident_index).map(|incident| incident.0) != Some(index) {
+                            return *fixed;
+                        }
+                        let (_, peer, self_connection) = incidents[incident_index];
+                        incident_index += 1;
+                        if self_connection {
+                            Some(0.0)
+                        } else {
+                            peer.map(|peer| position.distance(peer) as f64 / span)
+                        }
+                    })
+                    .sum::<f64>();
+                let prepared_anchor = (after_progress - before_progress) * 8.0
+                    + (-center_distance * 0.08 - prepared_distance * 0.12);
+                prepared_seconds += now.elapsed().as_secs_f64();
+
+                let action = MacroAction::Command(command.clone());
+                let now = Instant::now();
+                let child = action.apply(&session, &candidate, 0)?;
+                let actual_row = action.features(&session, &child, bounds);
+                let actual_anchor = action.prior_score(&session, &child, bounds);
+                child_seconds += now.elapsed().as_secs_f64();
+                let production = match production_page.score(command, &scorer_budget)? {
+                    ScoredPlacement::Ready(score) => score,
+                    ScoredPlacement::MemoryStop(stop) => {
+                        anyhow::bail!("production placement scorer stopped: {stop:?}")
+                    }
+                };
+                ensure!(
+                    production.features == actual_row,
+                    "production feature mismatch"
+                );
+                ensure!(production.entity_index == action.entity_index(problem)?);
+                ensure!(production.anchor_score.to_bits() == actual_anchor.to_bits());
+                ensure!(production.child_value == state_value(&child, bounds));
+                ensure!(
+                    ordered_anchor.to_bits() == actual_anchor.to_bits(),
+                    "ordered analytic anchor differs at offset {offset}: {ordered_anchor} versus {actual_anchor}"
+                );
+                ensure!(
+                    prepared_anchor.to_bits() == actual_anchor.to_bits(),
+                    "prepared analytic anchor differs at offset {offset}: {prepared_anchor} versus {actual_anchor}"
+                );
+                ensure!(
+                    child.metrics().is_none(),
+                    "sample includes completion transition"
+                );
+                ensure!(
+                    row == actual_row,
+                    "analytic feature mismatch at offset {offset}"
+                );
+                ensure!(
+                    after_progress == state_value(&child, bounds),
+                    "analytic child value mismatch at offset {offset}"
+                );
+                max_anchor_error = max_anchor_error.max((anchor - actual_anchor).abs());
+                checked += 1;
+            }
+        }
+        ensure!(max_anchor_error <= 1e-12, "anchor error {max_anchor_error}");
+        eprintln!(
+            "plan00 analytic parity checked={checked} anchor_max_error={max_anchor_error:.3e} analytic_seconds={analytic_seconds:.6} ordered_seconds={ordered_seconds:.6} prepared_seconds={prepared_seconds:.6} child_seconds={child_seconds:.6} elapsed={:.6}",
+            analytic_started.elapsed().as_secs_f64()
+        );
+        if std::env::var("AIC_ROOT_ANALYTIC_ALL").as_deref() == Ok("1") {
+            let started = Instant::now();
+            let mut offset = 0usize;
+            let mut count = 0usize;
+            let mut checksum = 0.0f64;
+            loop {
+                let page = domain.command_page(CommandKind::Place, offset, 256)?;
+                for factored in &page.commands {
+                    let score =
+                        match production_page.score(&factored.command.command, &scorer_budget)? {
+                            ScoredPlacement::Ready(score) => score,
+                            ScoredPlacement::MemoryStop(stop) => {
+                                anyhow::bail!("production placement scorer stopped: {stop:?}")
+                            }
+                        };
+                    checksum += score.anchor_score;
+                    count += 1;
+                }
+                offset = page.next_offset;
+                if page.exhausted {
+                    break;
+                }
+            }
+            eprintln!(
+                "plan01 production analytic full count={count} seconds={:.3} checksum={checksum:.9}",
+                started.elapsed().as_secs_f64()
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn network_clone_page_shrinks_to_fit_live_memory() {
         let mut caps = aic_pilot_native::constructive::routing_candidates::AllowanceCaps::default();
         caps.peak_live_bytes = 15;
@@ -4212,6 +6578,254 @@ mod tests {
         assert_eq!((page_count, bytes), (1, 10));
         allowance.release_peak(bytes);
         assert_eq!(allowance.usage().peak_live_bytes, 10);
+    }
+
+    #[test]
+    fn placement_domain_refusal_preserves_source_and_retries_after_release() -> Result<()> {
+        let panel: Panel = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-search/panel.json"
+        ))?;
+        let case = &panel.cases[0];
+        let session = Session::new(
+            case.problem.clone(),
+            crate::constructive::test_support::catalogs(),
+            panel.limits,
+        )?;
+        let config = DomainConfig {
+            placement: Bounds {
+                min_x: 0,
+                min_y: 0,
+                max_x: 20,
+                max_y: 20,
+            },
+            extension_lengths: vec![1, 2, 4],
+        };
+        let peak = session.learning_placement_domain_peak_bytes(&config)?;
+        let budget = SearchMemoryBudget::new(peak + 1024);
+        let pressure = TreeReservation::new(&budget, 1025).expect("pressure fits");
+        let mut pages = PlacementPages {
+            offsets: [3, 5],
+            exhausted: [false; 2],
+            loaded_pages: 1,
+            revision: session.revision(),
+            bounds: config.placement,
+            domain: None,
+            domain_memory: None,
+            page_memory: None,
+            memory_stop: None,
+            retry_after_live: None,
+        };
+        let stop = pages.ensure_domain(&session, &config, Some(&budget))?;
+        assert!(matches!(stop, Some(stop) if stop.reason == "aggregate-memory-limit"));
+        assert!(pages.domain.is_none());
+        assert_eq!(pages.offsets, [3, 5]);
+        assert_eq!(budget.live_bytes(), 1025);
+        assert!(
+            pages
+                .ensure_domain(&session, &config, Some(&budget))?
+                .is_some()
+        );
+        drop(pressure);
+        assert!(
+            pages
+                .ensure_domain(&session, &config, Some(&budget))?
+                .is_none()
+        );
+        let domain = pages.domain.as_ref().expect("admitted domain");
+        assert_eq!(budget.live_bytes(), domain.retained_bytes());
+        assert_eq!(pages.offsets, [3, 5]);
+        let domain = Arc::clone(domain);
+        let before = (pages.offsets, pages.exhausted);
+        let failed = load_placement_pair(&mut pages, |kind, offset| {
+            if kind == CommandKind::PlaceTerminal {
+                Err(anyhow::anyhow!("injected second-family failure"))
+            } else {
+                domain
+                    .command_page(kind, offset, 4)
+                    .map_err(anyhow::Error::new)
+            }
+        });
+        assert!(failed.is_err());
+        assert_eq!((pages.offsets, pages.exhausted), before);
+        let retried = load_placement_pair(&mut pages, |kind, offset| {
+            domain
+                .command_page(kind, offset, 4)
+                .map_err(anyhow::Error::new)
+        })?;
+        let mut reference = PlacementPages {
+            offsets: before.0,
+            exhausted: before.1,
+            loaded_pages: 1,
+            revision: session.revision(),
+            bounds: config.placement,
+            domain: None,
+            domain_memory: None,
+            page_memory: None,
+            memory_stop: None,
+            retry_after_live: None,
+        };
+        let uninterrupted = load_placement_pair(&mut reference, |kind, offset| {
+            domain
+                .command_page(kind, offset, 4)
+                .map_err(anyhow::Error::new)
+        })?;
+        assert_eq!(
+            (pages.offsets, pages.exhausted),
+            (reference.offsets, reference.exhausted)
+        );
+        assert_eq!(
+            retried
+                .iter()
+                .map(physical_action_identity)
+                .collect::<Result<Vec<_>>>()?,
+            uninterrupted
+                .iter()
+                .map(physical_action_identity)
+                .collect::<Result<Vec<_>>>()?
+        );
+        drop(domain);
+        drop(pages);
+        assert_eq!(budget.live_bytes(), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn placement_page_staging_refusal_keeps_both_offsets() -> Result<()> {
+        let _guard = crate::TORCH_TEST.lock().unwrap();
+        let panel: Panel = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-search/panel.json"
+        ))?;
+        let session = Session::new(
+            panel.cases[0].problem.clone(),
+            crate::constructive::test_support::catalogs(),
+            panel.limits,
+        )?;
+        let search: Config = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-curriculum/search.json"
+        ))?;
+        let domain_config = DomainConfig {
+            placement: search.bounds,
+            extension_lengths: search.extension_lengths.clone(),
+        };
+        let model_config = crate::schema::RouteGuidanceModelConfig {
+            schema: crate::schema::RouteGuidanceModelConfig::SCHEMA.into(),
+            encoder: crate::schema::ConstructiveModelConfig {
+                schema: crate::schema::ConstructiveModelConfig::SCHEMA.into(),
+                width: 16,
+                message_rounds: 1,
+            },
+            raster_width: 8,
+            heads: 2,
+            maximum_edge_cost: 32,
+        };
+        let (order, state) = GuidanceModel::initial_state(&model_config, 17)?;
+        let model = GuidanceModel::load(&model_config, &order, &state, Device::Cpu)?;
+        let factory = Factory::new(
+            &model,
+            "test",
+            Device::Cpu,
+            domain_config.clone(),
+            &search.candidate,
+            0,
+            64,
+            1,
+            0.0,
+            false,
+            None,
+        )?;
+        let domain_peak = session.learning_placement_domain_peak_bytes(&domain_config)?;
+        let page_peak = placement_page_peak_bytes(&session, 64);
+        let retained = session
+            .learning_placement_domain(&domain_config)?
+            .retained_bytes();
+        assert!(page_peak > domain_peak - retained);
+        let first_budget = SearchMemoryBudget::new(domain_peak + page_peak);
+        let first_pressure =
+            TreeReservation::new(&first_budget, page_peak).expect("domain still fits");
+        let (first_actions, first_pages, first_stop) =
+            factory.placement_actions(&session, false, Some(&first_budget), None)?;
+        assert!(first_actions.is_empty());
+        assert!(first_stop.is_some());
+        assert!(first_pages.domain.is_some());
+        assert_eq!(first_pages.offsets, [0; 2]);
+        drop(first_pressure);
+        let (first_actions, first_pages, first_stop) =
+            factory.placement_actions(&session, false, Some(&first_budget), Some(first_pages))?;
+        assert!(first_stop.is_none());
+        assert!(!first_actions.is_empty());
+        assert!(first_pages.page_memory.is_some());
+        let scoring_budget = SearchMemoryBudget::new(64 * 1024 * 1024);
+        let scored =
+            match apply_scoring_children(&session, &first_actions, &factory, &scoring_budget)? {
+                ScoredChildren::Ready(rows) => rows,
+                ScoredChildren::MemoryStop(stop) => {
+                    anyhow::bail!("integration scoring stopped: {stop:?}")
+                }
+            };
+        let mut expected_value = state_value(&session, search.bounds);
+        for (index, action) in first_actions.iter().enumerate() {
+            let child = factory.apply_action(action, &session)?;
+            assert_eq!(
+                scored.features[index],
+                action.features(&session, &child, search.bounds)
+            );
+            assert_eq!(
+                scored.entity_indices[index],
+                action.entity_index(session.problem())?
+            );
+            assert_eq!(
+                scored.anchor_scores[index].to_bits(),
+                action
+                    .prior_score(&session, &child, search.bounds)
+                    .to_bits()
+            );
+            expected_value = expected_value.max(state_value(&child, search.bounds));
+        }
+        assert_eq!(scored.exact_value, expected_value);
+        drop(scored);
+        assert_eq!(scoring_budget.live_bytes(), 0);
+        drop(first_actions);
+        drop(first_pages);
+        assert_eq!(first_budget.live_bytes(), 0);
+        let budget = SearchMemoryBudget::new(domain_peak + page_peak + 1024);
+        let mut pages = PlacementPages {
+            offsets: [0; 2],
+            exhausted: [false; 2],
+            loaded_pages: 0,
+            revision: session.revision(),
+            bounds: domain_config.placement,
+            domain: None,
+            domain_memory: None,
+            page_memory: None,
+            memory_stop: None,
+            retry_after_live: None,
+        };
+        assert!(
+            pages
+                .ensure_domain(&session, &domain_config, Some(&budget))?
+                .is_none()
+        );
+        let pressure_bytes = budget.limit_bytes() - budget.live_bytes() - page_peak + 1;
+        let pressure = TreeReservation::new(&budget, pressure_bytes).expect("pressure fits");
+        let mut counters = Counters::default();
+        assert!(
+            factory
+                .next_placement_page(&session, &mut pages, &mut counters, &budget)?
+                .is_empty()
+        );
+        assert_eq!(pages.offsets, [0; 2]);
+        assert_eq!(pages.loaded_pages, 0);
+        assert_eq!(counters.request_stops_total, 1);
+        assert!(pages.page_memory.is_none());
+        drop(pressure);
+        let actions = factory.next_placement_page(&session, &mut pages, &mut counters, &budget)?;
+        assert!(!actions.is_empty());
+        assert!(pages.offsets[0] > 0);
+        assert!(pages.page_memory.is_some());
+        drop(actions);
+        drop(pages);
+        assert_eq!(budget.live_bytes(), 0);
+        Ok(())
     }
 
     #[test]
@@ -4313,7 +6927,7 @@ mod tests {
             &mut allowance,
         )?;
         allowance.release_peak(reserved_bytes);
-        let next = draft
+        let mut next = draft
             .route_candidates(
                 &Request {
                     state_revision: draft.revision(),
@@ -4323,8 +6937,12 @@ mod tests {
             )?
             .candidates
             .remove(0);
+        let before_next = draft.clone();
         draft.apply_route_candidate(&next)?;
-        let restored = draft
+        next.physical_cost = before_next
+            .physical_cost_between(&draft, std::slice::from_ref(&next.connection))
+            .map_err(anyhow::Error::new)?;
+        let mut restored = draft
             .route_candidates(
                 &Request {
                     state_revision: draft.revision(),
@@ -4334,6 +6952,11 @@ mod tests {
             )?
             .candidates
             .remove(0);
+        let before_restored = draft.clone();
+        draft.apply_route_candidate(&restored)?;
+        restored.physical_cost = before_restored
+            .physical_cost_between(&draft, std::slice::from_ref(&restored.connection))
+            .map_err(anyhow::Error::new)?;
         let expanded = next.expanded + restored.expanded;
         let action = MacroAction::Repair {
             request: request.clone(),
@@ -4344,6 +6967,10 @@ mod tests {
                 removed: vec!["first".into()],
                 replacements: vec![next, restored],
                 expanded,
+                physical_cost: session
+                    .physical_cost_between(&draft, &["first".into(), "second".into()])
+                    .map_err(anyhow::Error::new)?,
+                charged_work: Default::default(),
             },
         };
         let child = action.apply(&session, &config, 1)?;
@@ -4364,7 +6991,20 @@ mod tests {
             action.summary(session.revision()).removed_connections,
             vec!["first"]
         );
-        assert_eq!(action.features(&session, &child, config.bounds)[2], 2.0);
+        let features = action.features(&session, &child, config.bounds);
+        assert_eq!(features[2], 2.0);
+        let MacroAction::Repair { candidate, .. } = &action else {
+            unreachable!("repair action fixture")
+        };
+        assert_eq!(
+            features[30],
+            candidate.physical_cost.route_steps_delta as f32
+                / config.bounds.width().max(config.bounds.height()) as f32
+        );
+        assert_eq!(
+            features[33],
+            candidate.physical_cost.component_count_delta as f32
+        );
         Ok(())
     }
 
@@ -4466,6 +7106,171 @@ mod tests {
         }));
         assert_eq!(repairs[0].0.allowed_removals, vec!["first"]);
         assert_eq!(repairs[0].1.removed, vec!["first"]);
+        let tree_memory =
+            aic_pilot_native::constructive::routing_candidates::SearchMemoryBudget::new(
+                1024 * 1024 * 1024,
+            );
+        let mut page_allowance = RequestAllowance::with_memory_budget(
+            candidate.request_allowance.clone(),
+            Some(tree_memory.clone()),
+        );
+        let mut repair_pager = repair_pager::RepairPager::new(
+            Arc::new(session.clone()),
+            vec!["second".into()],
+            &factory,
+            &mut page_allowance,
+        )?
+        .expect("one committed route permits repair");
+        let mut page_counters = Counters::default();
+        let mut saw_page_yield = false;
+        for _ in 0..200 {
+            let page = repair_pager.next_page(
+                &factory,
+                &mut page_counters,
+                &mut page_allowance,
+                1,
+                1_000,
+                100_000,
+                Instant::now() + std::time::Duration::from_secs(5),
+            )?;
+            saw_page_yield |= matches!(page.status, repair_pager::RepairPageStatus::Pending);
+            if !repair_pager.candidates().is_empty() {
+                break;
+            }
+            if let repair_pager::RepairPageStatus::Unknown(stop) = page.status {
+                return Err(anyhow::anyhow!(
+                    "repair page stopped before a candidate: {stop:?}"
+                ));
+            }
+        }
+        assert!(
+            saw_page_yield,
+            "repair did not retain a route page boundary"
+        );
+        assert!(!repair_pager.candidates().is_empty());
+        session.repaired_candidate(repair_pager.request(), &repair_pager.candidates()[0])?;
+        repair_pager.release(&mut page_allowance);
+        assert_eq!(tree_memory.live_bytes(), 0);
+        let mut wider_candidate = candidate.clone();
+        wider_candidate.max_candidates = 6;
+        let wider_factory = Factory::new(
+            &model,
+            "test",
+            Device::Cpu,
+            domain.clone(),
+            &wider_candidate,
+            1,
+            4,
+            1,
+            0.0,
+            false,
+            None,
+        )?;
+        let mut lower_counters = Counters::default();
+        let mut lower = LowerPager::new(
+            Arc::new(session.clone()),
+            &wider_factory,
+            &mut lower_counters,
+            &tree_memory,
+            0,
+        )?;
+        let hash_workspace = session.hierarchical_state_hash_workspace_bytes();
+        let pressure = lower_pager::TreeReservation::new(
+            &tree_memory,
+            1024 * 1024 * 1024 - hash_workspace + 1,
+        )
+        .expect("pre-hash pressure fits the aggregate budget");
+        assert!(
+            lower
+                .first_actions(&wider_factory, &mut lower_counters)?
+                .is_empty()
+        );
+        assert!(lower.hash_memory_pending());
+        drop(pressure);
+        let first_actions = lower.first_actions(&wider_factory, &mut lower_counters)?;
+        assert!(
+            first_actions
+                .iter()
+                .any(|action| matches!(action, MacroAction::Repair { .. }))
+        );
+        lower.release();
+        assert_eq!(tree_memory.live_bytes(), 0);
+        let mut one_expansion = wider_candidate.clone();
+        one_expansion.request_allowance.expansions = 1;
+        let one_expansion_factory = Factory::new(
+            &model,
+            "test",
+            Device::Cpu,
+            domain.clone(),
+            &one_expansion,
+            1,
+            4,
+            1,
+            0.0,
+            false,
+            None,
+        )?;
+        let mut zero_half_counters = Counters::default();
+        let mut zero_half = LowerPager::new(
+            Arc::new(session.clone()),
+            &one_expansion_factory,
+            &mut zero_half_counters,
+            &tree_memory,
+            0,
+        )?;
+        assert!(
+            zero_half
+                .first_actions(&wider_factory, &mut zero_half_counters)
+                .is_err(),
+            "a pager must reject a different factory before doing work"
+        );
+        assert!(
+            zero_half
+                .first_actions(&one_expansion_factory, &mut zero_half_counters)?
+                .is_empty()
+        );
+        assert!(
+            zero_half.pending() > 0,
+            "zero temporary half must retain the task"
+        );
+        assert_eq!(zero_half_counters.request_stops_total, 0);
+        zero_half.release();
+        assert_eq!(tree_memory.live_bytes(), 0);
+        let integrated = Config {
+            schema: CONFIG_SCHEMA.into(),
+            bounds,
+            extension_lengths: vec![1, 2, 4],
+            candidate: wider_candidate.clone(),
+            max_live_search_bytes: 1024 * 1024 * 1024,
+            repair_max_removed: 1,
+            cpu_threads: 1,
+            placement_page: 4,
+            beam_width: 1,
+            run_beam: false,
+            simulations_per_move: 2,
+            horizon: 1,
+            max_moves: 1,
+            exploration: 1.0,
+            root_selection: RootSelection::Puct,
+            anchor_prior_mass: 0.0,
+            compiled_inference: false,
+        };
+        let search = mcts_search(session.clone(), &wider_factory, &integrated, "repair-page")?;
+        assert!(
+            search.root_records[0]
+                .dense()
+                .unwrap()
+                .actions
+                .iter()
+                .any(|record| { matches!(record.action, MacroAction::Repair { .. }) })
+        );
+        let mut tiny_memory = integrated.clone();
+        tiny_memory.max_live_search_bytes = 1;
+        let stopped = mcts_search(session.clone(), &wider_factory, &tiny_memory, "memory-stop")?;
+        assert_eq!(stopped.termination, SearchTermination::ResourceStopped);
+        let diagnostic = stopped.no_macro_diagnostic.expect("typed memory stop");
+        assert_eq!(diagnostic.code, "hierarchical.aggregate-memory-limit");
+        assert!(diagnostic.message.contains("attempted"));
         let commit_start = std::time::Instant::now();
         let child = batch
             .actions
@@ -4733,6 +7538,105 @@ mod tests {
             Some(WorkKind::Variants)
         );
         assert!(allowance.usage().peak_live_bytes > 0);
+        let tree_memory =
+            aic_pilot_native::constructive::routing_candidates::SearchMemoryBudget::new(
+                1024 * 1024 * 1024,
+            );
+        let mut page_allowance = RequestAllowance::with_memory_budget(
+            candidate.request_allowance.clone(),
+            Some(tree_memory.clone()),
+        );
+        let mut network_pager = network_pager::NetworkPager::new(
+            &session,
+            &state_sha256(&session)?,
+            vec!["output-a".into(), "output-b".into()],
+            &mut page_allowance,
+        )?;
+        let mut page_counters = Counters::default();
+        let mut saw_yield = false;
+        let mut saw_variant_stop = false;
+        for page_number in 0..100 {
+            let page = network_pager.next_page(
+                &session,
+                &factory,
+                &mut page_counters,
+                &mut page_allowance,
+                1,
+                0,
+                if page_number == 0 { 100 } else { 10_000 },
+                10_000,
+                Instant::now() + std::time::Duration::from_secs(5),
+            )?;
+            assert!(page.candidate_ids.len() <= 1);
+            assert!(page.expanded <= if page_number == 0 { 100 } else { 10_000 });
+            assert!(page.scans <= 10_000);
+            saw_yield |= matches!(page.status, network_pager::NetworkPageStatus::Pending);
+            if let network_pager::NetworkPageStatus::Unknown(stop) = page.status {
+                saw_variant_stop = stop.category == Some(WorkKind::Variants);
+                break;
+            }
+        }
+        assert!(
+            saw_yield,
+            "network member route did not retain a page boundary"
+        );
+        assert!(
+            saw_variant_stop,
+            "completed first variant did not retain its typed stop"
+        );
+        assert_eq!(network_pager.candidates().len(), 1);
+        assert_eq!(
+            network_pager.candidates()[0].routes[0].connection,
+            "output-a"
+        );
+        network_pager.release(&session, &mut page_allowance);
+        assert_eq!(tree_memory.live_bytes(), 0);
+        let mut held_allowance = RequestAllowance::new(candidate.request_allowance.clone());
+        let mut held_pager = network_pager::NetworkPager::new(
+            &session,
+            &state_sha256(&session)?,
+            vec!["output-a".into(), "output-b".into()],
+            &mut held_allowance,
+        )?;
+        let held_page = held_pager.next_page(
+            &session,
+            &factory,
+            &mut Counters::default(),
+            &mut held_allowance,
+            1,
+            1,
+            100,
+            10_000,
+            Instant::now() + std::time::Duration::from_secs(5),
+        )?;
+        assert!(matches!(
+            held_page.status,
+            network_pager::NetworkPageStatus::Pending
+        ));
+        assert_eq!(
+            held_allowance.usage().categories.get(&WorkKind::Variants),
+            None
+        );
+        let released_page = held_pager.next_page(
+            &session,
+            &factory,
+            &mut Counters::default(),
+            &mut held_allowance,
+            1,
+            0,
+            100,
+            10_000,
+            Instant::now() + std::time::Duration::from_secs(5),
+        )?;
+        assert!(matches!(
+            released_page.status,
+            network_pager::NetworkPageStatus::Pending
+        ));
+        assert_eq!(
+            held_allowance.usage().categories.get(&WorkKind::Variants),
+            Some(&1)
+        );
+        held_pager.release(&session, &mut held_allowance);
         let mut anchor_candidate = candidate.clone();
         anchor_candidate.request_allowance.inference_elements = 1;
         anchor_candidate.request_allowance.max_variants = 2;
@@ -4803,8 +7707,18 @@ mod tests {
             &mut tight_counters,
             &mut tight_allowance,
         )?;
+        let without_work = |mut candidates: Vec<NetworkCandidate>| {
+            for candidate in &mut candidates {
+                candidate.charged_work = AllowanceUsage::default();
+                for route in &mut candidate.routes {
+                    route.charged_work = AllowanceUsage::default();
+                }
+            }
+            candidates
+        };
         assert_eq!(
-            tight, full,
+            without_work(tight),
+            without_work(full),
             "smaller pages must preserve completed variants"
         );
         assert!(tight_counters.guidance_batches > full_counters.guidance_batches);
@@ -4932,8 +7846,8 @@ mod tests {
             Some("output-b")
         );
         let diagnostic = batch.no_macro_diagnostic.expect("no macro reason");
-        assert_eq!(diagnostic.code, "hierarchical.no-compatible-endpoints");
-        assert_eq!(diagnostic.entity, "output-b");
+        assert!(incompatible_counters.request_stops_total > 0);
+        assert_eq!(diagnostic.code, "hierarchical.request-work-limit");
         Ok(())
     }
 
@@ -4955,6 +7869,64 @@ mod tests {
         assert_eq!(recovered.value, value);
         assert_eq!(recovered.sha256, published.sha256);
         assert_eq!(recovered.encoded_bytes, published.encoded_bytes);
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn panel_publication_and_loading_share_a_bounded_byte_identity() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let fixture = root.join("docs/benchmarks/hierarchical-search/panel.json");
+        let panel: Panel = serde_json::from_slice(&fs::read(fixture).unwrap()).unwrap();
+        let encoded = serde_json::to_vec_pretty(&panel).unwrap();
+        let limit = encoded.len() as u64;
+        let path = std::env::temp_dir().join(format!(
+            "aic-hierarchical-panel-size-{}.json",
+            std::process::id()
+        ));
+        let refused = path.with_file_name(format!(
+            "aic-hierarchical-panel-refused-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        let _ = fs::remove_file(&refused);
+
+        let (sha256, bytes) = publish_json_identity(&path, &panel, Some(limit)).unwrap();
+        let loaded = load_published_panel_with_limit(&path, limit).unwrap();
+        assert_eq!(bytes, limit);
+        assert_eq!(loaded.encoded_bytes, limit);
+        assert_eq!(loaded.sha256, sha256);
+        assert_eq!(loaded.value.cases.len(), panel.cases.len());
+
+        let failure = publish_json_identity(&refused, &panel, Some(limit - 1)).unwrap_err();
+        assert!(failure.to_string().contains("hierarchical-panel-resource"));
+        assert!(failure.to_string().contains(&limit.to_string()));
+        assert!(failure.to_string().contains(&(limit - 1).to_string()));
+        assert!(!refused.exists());
+        assert!(
+            !refused
+                .with_file_name(format!(
+                    ".aic-hierarchical-panel-refused-{}.json.tmp",
+                    std::process::id()
+                ))
+                .exists()
+        );
+
+        // The descriptor was admitted at exactly the limit. Simulate a file
+        // growing before deserialization reads it, without a timing race.
+        let file = fs::File::open(&path).unwrap();
+        assert_eq!(file.metadata().unwrap().len(), limit);
+        let mut append = fs::OpenOptions::new().append(true).open(&path).unwrap();
+        append.write_all(b" ").unwrap();
+        let failure = load_published_json_reader::<Panel, _>(
+            &path,
+            BufReader::new(file.take(limit + 1)),
+            Some(limit),
+        )
+        .err()
+        .expect("oversized panel must be rejected");
+        assert!(failure.to_string().contains("hierarchical-panel-resource"));
+        assert!(failure.to_string().contains(&(limit + 1).to_string()));
+        assert!(load_published_panel_with_limit(&path, limit).is_err());
         fs::remove_file(path).unwrap();
     }
 
@@ -4984,13 +7956,19 @@ mod tests {
     }
 
     fn edge(prior: f64, anchor_prior: f64) -> Edge {
+        let action = MacroAction::Command(Command::Connect);
         Edge {
-            action: MacroAction::Command(Command::Connect),
+            identity: physical_action_identity(&action).unwrap(),
+            action,
+            features: [0.0; ACTION_FEATURES],
+            entity_index: 0,
+            anchor_score: 0.0,
             prior,
             anchor_prior,
             visits: 0,
             value_sum: 0.0,
             child: None,
+            blocked_value: None,
         }
     }
 
@@ -5018,18 +7996,38 @@ mod tests {
         assert_ne!(first, deterministic_gumbels(7, "case-b", "state-a", 8));
         assert!(first.iter().all(|value| value.is_finite()));
 
-        let command_edge = |command| Edge {
-            action: MacroAction::Command(command),
-            prior: 0.5,
-            anchor_prior: 0.5,
-            visits: 0,
-            value_sum: 0.0,
-            child: None,
+        let command_edge = |command| {
+            let action = MacroAction::Command(command);
+            Edge {
+                identity: physical_action_identity(&action).unwrap(),
+                action,
+                features: [0.0; ACTION_FEATURES],
+                entity_index: 0,
+                anchor_score: 0.0,
+                prior: 0.5,
+                anchor_prior: 0.5,
+                visits: 0,
+                value_sum: 0.0,
+                child: None,
+                blocked_value: None,
+            }
         };
         let forward = [
             command_edge(Command::Connect),
             command_edge(Command::AbortRoute),
         ];
+        let frozen = RootChoice {
+            identity: forward[0].identity.clone(),
+            gumbel: 1.25,
+            initial_rank: 0,
+        };
+        let mut sorted = [
+            command_edge(Command::Connect),
+            command_edge(Command::AbortRoute),
+        ];
+        sorted.swap(0, 1);
+        assert_eq!(resolve_root_choice(&sorted, &frozen), 1);
+        assert_eq!(frozen.gumbel, 1.25);
         let reverse = [
             command_edge(Command::AbortRoute),
             command_edge(Command::Connect),
@@ -5056,6 +8054,9 @@ mod tests {
             predicted_success: Some(0.25),
             guidance_uncertainty: Some(0.1),
             provenance: Provenance::Anchor,
+            additional_provenance: Vec::new(),
+            physical_cost: Default::default(),
+            charged_work: Default::default(),
         };
         let mut crossing_route = route.clone();
         crossing_route.commands.insert(
@@ -5093,6 +8094,7 @@ mod tests {
             physical_action_identity(&MacroAction::Route(route.clone())).unwrap(),
             physical_action_identity(&MacroAction::Route(same_physical_route)).unwrap()
         );
+        let late_action = MacroAction::Route(route.clone());
         let mut different_route = route.clone();
         different_route.commands.push(Command::AbortRoute);
         assert_ne!(
@@ -5101,9 +8103,927 @@ mod tests {
         );
 
         let actions = vec![edge(0.8, 0.5), edge(0.2, 0.5)];
-        let policy = improved_policy(&actions, &[0.0, 5.0], 0.5);
+        let policy = improved_policy(&actions, &[0.0, 5.0], 0.5, None);
         assert!((policy.iter().sum::<f64>() - 1.0).abs() < 1e-12);
         assert!(policy[1] > policy[0]);
+
+        let initial = [
+            command_edge(Command::Connect),
+            command_edge(Command::AbortRoute),
+        ];
+        let eligible = initial
+            .iter()
+            .map(|edge| edge.identity.clone())
+            .collect::<HashSet<_>>();
+        let late = late_action;
+        let late_edge = Edge {
+            identity: physical_action_identity(&late).unwrap(),
+            action: late,
+            features: [0.0; ACTION_FEATURES],
+            entity_index: 0,
+            anchor_score: 0.0,
+            prior: 0.8,
+            anchor_prior: 0.8,
+            visits: 0,
+            value_sum: 0.0,
+            child: None,
+            blocked_value: None,
+        };
+        let reordered = [
+            late_edge,
+            command_edge(Command::AbortRoute),
+            command_edge(Command::Connect),
+        ];
+        let masked = improved_policy(&reordered, &[10.0, 1.0, 0.0], 0.5, Some(&eligible));
+        assert_eq!(masked[0], 0.0);
+        assert!((masked.iter().sum::<f64>() - 1.0).abs() < 1e-12);
+        assert!(masked[1] > masked[2]);
+    }
+
+    #[test]
+    fn gumbel_eligible_q_transform_ignores_late_root_edges() {
+        let make = |command, visits, value_sum| {
+            let action = MacroAction::Command(command);
+            Edge {
+                identity: physical_action_identity(&action).unwrap(),
+                action,
+                features: [0.0; ACTION_FEATURES],
+                entity_index: 0,
+                anchor_score: 0.0,
+                prior: 0.5,
+                anchor_prior: 0.5,
+                visits,
+                value_sum,
+                child: None,
+                blocked_value: None,
+            }
+        };
+        let initial = [
+            make(Command::Connect, 4, 2.0),
+            make(Command::AbortRoute, 0, 0.0),
+        ];
+        let eligible = initial
+            .iter()
+            .map(|edge| edge.identity.clone())
+            .collect::<HashSet<_>>();
+        let baseline = completed_q_transform(&initial, 0.25, 0.5, 1.0, Some(&eligible));
+        let late = [
+            make(
+                Command::Place {
+                    block: "late".into(),
+                    position: Point { x: 0, y: 0 },
+                    rotation: 0,
+                },
+                1000,
+                -1000.0,
+            ),
+            make(Command::AbortRoute, 0, 0.0),
+            make(Command::Connect, 4, 2.0),
+        ];
+        let after = completed_q_transform(&late, 0.25, 0.5, 1.0, Some(&eligible));
+        assert_eq!(after[1], baseline[1]);
+        assert_eq!(after[2], baseline[0]);
+    }
+
+    #[test]
+    fn gumbel_target_keeps_initial_eligible_priors_after_widening() {
+        let mut second = edge(0.2, 0.3);
+        second.action = MacroAction::Command(Command::AbortRoute);
+        second.identity = physical_action_identity(&second.action).unwrap();
+        let mut initial = [edge(0.8, 0.7), second];
+        initial[0].prior = 0.8;
+        initial[0].anchor_prior = 0.7;
+        initial[1].prior = 0.2;
+        initial[1].anchor_prior = 0.3;
+        let eligible = initial
+            .iter()
+            .map(|edge| edge.identity.clone())
+            .collect::<HashSet<_>>();
+        let priors = initial
+            .iter()
+            .map(|edge| (edge.identity.clone(), root_policy_prior(edge, 0.25)))
+            .collect::<BTreeMap<_, _>>();
+        let before = improved_policy_with_priors(
+            &initial,
+            &[0.0, 0.0],
+            0.25,
+            Some(&eligible),
+            Some(&priors),
+        );
+        initial[0].prior = 0.1;
+        initial[0].anchor_prior = 0.1;
+        initial[1].prior = 0.9;
+        initial[1].anchor_prior = 0.9;
+        let after = improved_policy_with_priors(
+            &initial,
+            &[0.0, 0.0],
+            0.25,
+            Some(&eligible),
+            Some(&priors),
+        );
+        assert_eq!(before, after);
+        assert!(after[0] > after[1]);
+    }
+
+    #[test]
+    fn versioned_root_report_admits_identity_and_rejects_ambiguity() -> Result<()> {
+        let action = |command, eligible, target| RootActionRecord {
+            action: MacroAction::Command(command),
+            prior: 0.5,
+            anchor_prior: 0.5,
+            visits: 1,
+            q: 0.25,
+            gumbel_eligible: Some(eligible),
+            policy_target: Some(target),
+        };
+        let actions = vec![
+            action(Command::Connect, true, 1.0),
+            action(Command::AbortRoute, true, 0.0),
+            action(
+                Command::Place {
+                    block: "late".into(),
+                    position: Point { x: 0, y: 0 },
+                    rotation: 0,
+                },
+                false,
+                0.0,
+            ),
+        ];
+        let selected_id = physical_action_identity(&actions[0].action)?;
+        let record = RootRecord {
+            state_sha256: "state".into(),
+            state_revision: 0,
+            target: RootRecordTarget::GumbelDenseOracle(DenseRootRecord {
+                actions,
+                selected_action: 0,
+                selected_physical_id: Some(selected_id.clone()),
+                gumbel_shortlist: vec![RootShortlistEvidence {
+                    physical_id: selected_id,
+                    initial_rank: 0,
+                    gumbel_bits: 1.25f64.to_bits(),
+                }],
+                gumbel_shortlist_cap: Some(2),
+                initial_eligible_actions: Some(2),
+            }),
+            pending_lower_tasks: 1,
+            loaded_lower_pages: 1,
+            later_completed_connections: 0,
+            later_total_connections: 1,
+            later_footprint_area: 0,
+            later_transport_cells: 0,
+            later_turns: 0,
+            later_fully_validated: false,
+            later_termination: SearchTermination::MoveBudgetExhausted,
+        };
+        let make_report = |record: RootRecord, schema: &str| Report {
+            schema: schema.into(),
+            status: "ok".into(),
+            partition: "test".into(),
+            device: "cpu".into(),
+            search_config_sha256: String::new(),
+            panel_sha256: String::new(),
+            catalog_sha256: String::new(),
+            lower_config_sha256: String::new(),
+            lower_parameter_order_sha256: String::new(),
+            lower_checkpoint_sha256: String::new(),
+            outer_config_sha256: String::new(),
+            outer_parameter_order_sha256: String::new(),
+            outer_checkpoint_sha256: String::new(),
+            root_records_retained: true,
+            cases: vec![CaseReport {
+                id: "identity".into(),
+                prefix_commands: 0,
+                beam: None,
+                mcts: SearchResult {
+                    algorithm: "mcts".into(),
+                    status: "ok".into(),
+                    fully_validated: false,
+                    termination: SearchTermination::MoveBudgetExhausted,
+                    no_macro_diagnostic: None,
+                    completed_connections: 0,
+                    total_connections: 1,
+                    footprint_area: None,
+                    transport_cells: None,
+                    turns: None,
+                    moves: 1,
+                    simulations: 1,
+                    elapsed_seconds: 0.0,
+                    samples_per_minute: 0.0,
+                    counters: Counters::default(),
+                    trace: Vec::new(),
+                    root_records: vec![record],
+                },
+            }],
+        };
+        let path = std::env::temp_dir().join(format!(
+            "aic-gumbel-root-admission-{}.json",
+            std::process::id()
+        ));
+        let check = |report: Report| -> Result<Result<Published<Report>>> {
+            publish_json(&path, report)?;
+            let loaded = load_published_report(&path);
+            fs::remove_file(&path)?;
+            Ok(loaded)
+        };
+        let loaded = check(make_report(record.clone(), REPORT_SCHEMA))??;
+        assert_eq!(
+            loaded.value.cases[0].mcts.root_records[0]
+                .dense()
+                .unwrap()
+                .actions
+                .len(),
+            3
+        );
+        assert!(
+            check(make_report(
+                record.clone(),
+                "aic-hierarchical-search-report-v10"
+            ))?
+            .err()
+            .expect("old schema must be rejected")
+            .to_string()
+            .contains("hierarchical-report-schema")
+        );
+        let mut untagged = serde_json::to_value(make_report(
+            record.clone(),
+            "aic-hierarchical-search-report-v11",
+        ))?;
+        let root = untagged["cases"][0]["mcts"]["root_records"][0]
+            .as_object_mut()
+            .expect("serialized root is an object");
+        let target = root.remove("target").expect("tagged target");
+        for (key, value) in target["data"].as_object().expect("dense target data") {
+            root.insert(key.clone(), value.clone());
+        }
+        publish_json(&path, untagged)?;
+        let untagged_error = load_published_report(&path)
+            .err()
+            .expect("old untagged report must be rejected");
+        fs::remove_file(&path)?;
+        assert!(
+            untagged_error
+                .to_string()
+                .contains("hierarchical-report-schema")
+        );
+        let mut duplicate = record.clone();
+        let dense = duplicate.dense_mut().unwrap();
+        dense.actions[2].action = dense.actions[1].action.clone();
+        assert!(check(make_report(duplicate, REPORT_SCHEMA))?.is_err());
+        let mut puct = record;
+        let dense = puct.dense_mut().unwrap();
+        dense.gumbel_shortlist.clear();
+        dense.gumbel_shortlist_cap = None;
+        dense.initial_eligible_actions = None;
+        for action in &mut dense.actions {
+            action.gumbel_eligible = None;
+            action.policy_target = None;
+        }
+        puct.target = RootRecordTarget::PuctDense(puct.dense().unwrap().clone());
+        check(make_report(puct, REPORT_SCHEMA))??;
+        Ok(())
+    }
+
+    #[test]
+    fn appended_route_update_keeps_the_exposed_physical_owner() -> Result<()> {
+        let _torch_guard = crate::TORCH_TEST.lock().unwrap();
+        let panel: Value = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-route-guidance/training-panel.json"
+        ))?;
+        let route_config: Value = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-route-guidance/config.json"
+        ))?;
+        let case = &panel["cases"][0];
+        let mut session = Session::new(
+            serde_json::from_value(case["problem"].clone())?,
+            crate::constructive::test_support::catalogs(),
+            serde_json::from_value(panel["limits"].clone())?,
+        )?;
+        for command in case["prefix"].as_array().expect("route prefix") {
+            assert!(
+                session
+                    .step(serde_json::from_value(command.clone())?)
+                    .accepted
+            );
+        }
+        let candidate_config: CandidateConfig = serde_json::from_value(panel["candidate"].clone())?;
+        let request = Request {
+            state_revision: session.revision(),
+            connection: case["request"].as_str().expect("route request").into(),
+        };
+        let candidates = session
+            .route_candidates(&request, &candidate_config)?
+            .candidates;
+        assert!(candidates.len() >= 2);
+        let mut first = candidates[0].clone();
+        first.provenance = Provenance::Anchor;
+        let mut later = candidates[1].clone();
+        later.provenance = Provenance::Guided {
+            model_version: "checkpoint".into(),
+            head: "head-1".into(),
+        };
+        let model_config = serde_json::from_value(route_config["model"].clone())?;
+        let (order, state) = GuidanceModel::initial_state(&model_config, 17)?;
+        let model = GuidanceModel::load(&model_config, &order, &state, Device::Cpu)?;
+        let factory = Factory::new(
+            &model,
+            "checkpoint",
+            Device::Cpu,
+            serde_json::from_value(route_config["learning_domain"].clone())?,
+            &candidate_config,
+            0,
+            4,
+            1,
+            0.0,
+            false,
+            None,
+        )?;
+        let budget = SearchMemoryBudget::new(1024 * 1024 * 1024);
+        let mut nodes = vec![Node {
+            session: Arc::new(session),
+            memory: TreeReservation::new(&budget, 0)
+                .map_err(|stop| anyhow::anyhow!("node reservation: {stop:?}"))?,
+            visits: 0,
+            value: None,
+            actions: Some(Vec::new()),
+            placement_pages: None,
+            lower: None,
+            lower_loaded_pages: 0,
+            pending_actions: Vec::new(),
+            pending_updates: Vec::new(),
+            pending_retry_live: None,
+            no_macro_diagnostic: None,
+        }];
+        let mut counters = Counters::default();
+        append_node_actions(
+            &mut nodes,
+            0,
+            &factory,
+            &mut counters,
+            &budget,
+            vec![MacroAction::Route(first.clone())],
+            Vec::new(),
+        )?;
+        let original_id = physical_action_identity(&MacroAction::Route(first.clone()))?;
+        let mut config: Config = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-curriculum/search.json"
+        ))?;
+        config.candidate = candidate_config.clone();
+        config.simulations_per_move = 2;
+        config.horizon = 1;
+        let controls = GumbelControls {
+            candidates: 2,
+            anchor_candidates: 0,
+            anchor_policy_mass: 0.0,
+            seed: 7,
+            value_scale: 0.1,
+            max_visit_init: 50.0,
+            gumbel_assignment: GumbelAssignment::ActionIdentity,
+        };
+        let state_identity = state_sha256(&nodes[0].session)?;
+        let frozen = freeze_gumbel_root(&nodes[0], controls, "route", &state_identity)?
+            .expect("initial route root");
+        assert_eq!(frozen.shortlist.len(), 1);
+        assert_eq!(frozen.shortlist[0].physical_id, original_id);
+        let original_prior = nodes[0].actions.as_ref().unwrap()[0].prior;
+        nodes[0].actions.as_mut().unwrap()[0].visits = 3;
+        nodes[0].actions.as_mut().unwrap()[0].value_sum = 1.5;
+        let update = RouteUpdate {
+            connection: first.connection.clone(),
+            id: first.id,
+            additional_provenance: vec![Provenance::Guided {
+                model_version: "checkpoint".into(),
+                head: "head-0".into(),
+            }],
+            _memory: TreeReservation::new(&budget, 0)
+                .map_err(|stop| anyhow::anyhow!("update reservation: {stop:?}"))?,
+        };
+        append_node_actions(
+            &mut nodes,
+            0,
+            &factory,
+            &mut counters,
+            &budget,
+            vec![MacroAction::Route(later.clone())],
+            vec![update],
+        )?;
+        let edges = nodes[0].actions.as_ref().unwrap();
+        assert_eq!(edges.len(), 2);
+        let original = edges
+            .iter()
+            .find(|edge| edge.identity == original_id)
+            .unwrap();
+        assert_eq!(original.visits, 3);
+        assert_eq!(original.value_sum, 1.5);
+        assert_eq!(original.features[13..15], [1.0, 1.0]);
+        assert!(original.prior > 0.0 && original.prior < original_prior);
+        let MacroAction::Route(updated) = &original.action else {
+            unreachable!("original route witness")
+        };
+        assert_eq!(updated.additional_provenance.len(), 1);
+        assert_eq!(physical_action_identity(&original.action)?, original_id);
+        assert!(edges.iter().any(|edge| {
+            edge.identity == physical_action_identity(&MacroAction::Route(later.clone())).unwrap()
+        }));
+        assert_eq!(
+            resolve_root_choice(
+                edges,
+                &RootChoice {
+                    identity: original_id.clone(),
+                    gumbel: 0.25,
+                    initial_rank: 0,
+                }
+            ),
+            edges.iter().position(|edge| edge.visits == 3).unwrap()
+        );
+        let later_id = physical_action_identity(&MacroAction::Route(later))?;
+        let decision = finish_gumbel_root(
+            &mut nodes,
+            0,
+            &factory,
+            &config,
+            &mut counters,
+            &budget,
+            controls,
+            frozen,
+        )?;
+        assert_eq!(decision.eligible_ids.as_ref().unwrap().len(), 1);
+        assert_eq!(decision.shortlist[0].physical_id, original_id);
+        assert_eq!(
+            nodes[0].actions.as_ref().unwrap()[decision.selected.unwrap()].identity,
+            original_id
+        );
+        let late_index = nodes[0]
+            .actions
+            .as_ref()
+            .unwrap()
+            .iter()
+            .position(|edge| edge.identity == later_id)
+            .unwrap();
+        assert_eq!(decision.policy_targets.as_ref().unwrap()[late_index], 0.0);
+        let reroot = gumbel_sequential_halving(
+            &mut nodes,
+            0,
+            &factory,
+            &config,
+            &mut counters,
+            &budget,
+            controls,
+            "reroot",
+            &state_identity,
+        )?;
+        assert!(reroot.eligible_ids.as_ref().unwrap().contains(&later_id));
+        assert!(
+            reroot
+                .shortlist
+                .iter()
+                .any(|entry| entry.physical_id == later_id)
+        );
+        let duplicate = append_node_actions(
+            &mut nodes,
+            0,
+            &factory,
+            &mut counters,
+            &budget,
+            vec![MacroAction::Route(first)],
+            Vec::new(),
+        )
+        .err()
+        .expect("duplicate physical witness must be refused before scoring");
+        assert!(duplicate.to_string().contains("hierarchical-root-identity"));
+        Ok(())
+    }
+
+    #[test]
+    fn appended_network_witness_keeps_the_exposed_physical_owner() -> Result<()> {
+        let _torch_guard = crate::TORCH_TEST.lock().unwrap();
+        let panel: Panel = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-network/panel.json"
+        ))?;
+        let case = &panel.cases[0];
+        let mut session = Session::new(
+            case.problem.clone(),
+            crate::constructive::test_support::catalogs(),
+            panel.limits.clone(),
+        )?;
+        for command in &case.prefix {
+            assert!(session.step(command.clone()).accepted);
+        }
+        let model_config = crate::schema::RouteGuidanceModelConfig {
+            schema: crate::schema::RouteGuidanceModelConfig::SCHEMA.into(),
+            encoder: crate::schema::ConstructiveModelConfig {
+                schema: crate::schema::ConstructiveModelConfig::SCHEMA.into(),
+                width: 16,
+                message_rounds: 1,
+            },
+            raster_width: 8,
+            heads: 2,
+            maximum_edge_cost: 32,
+        };
+        let (order, state) = GuidanceModel::initial_state(&model_config, 17)?;
+        let model = GuidanceModel::load(&model_config, &order, &state, Device::Cpu)?;
+        let bounds = Bounds {
+            min_x: 0,
+            min_y: 0,
+            max_x: 20,
+            max_y: 20,
+        };
+        let mut candidate_config = CandidateConfig {
+            bounds,
+            max_candidates: 4,
+            max_searches: 48,
+            work_per_search: 20_000,
+            max_expanded: 400_000,
+            overlap_penalty: 8,
+            max_crossings_per_route: 0,
+            request_allowance: Default::default(),
+        };
+        candidate_config.request_allowance.max_variants = 4;
+        let factory = Factory::new(
+            &model,
+            "checkpoint",
+            Device::Cpu,
+            DomainConfig {
+                placement: bounds,
+                extension_lengths: vec![1, 2, 4],
+            },
+            &candidate_config,
+            0,
+            4,
+            1,
+            0.0,
+            false,
+            None,
+        )?;
+        let mut counters = Counters::default();
+        let mut allowance = RequestAllowance::new(candidate_config.request_allowance.clone());
+        let networks = factory.network_actions(
+            &session,
+            &["output-a".into(), "output-b".into()],
+            &mut counters,
+            &mut allowance,
+        )?;
+        assert!(networks.len() >= 2, "fixture needs two physical networks");
+        let first = MacroAction::Network(networks[0].clone());
+        let late = MacroAction::Network(networks[1].clone());
+        assert_ne!(
+            physical_action_identity(&first)?,
+            physical_action_identity(&late)?
+        );
+        let budget = SearchMemoryBudget::new(1024 * 1024 * 1024);
+        let mut nodes = [Node {
+            session: Arc::new(session),
+            memory: TreeReservation::new(&budget, 0)
+                .map_err(|stop| anyhow::anyhow!("node reservation: {stop:?}"))?,
+            visits: 0,
+            value: None,
+            actions: Some(Vec::new()),
+            placement_pages: None,
+            lower: None,
+            lower_loaded_pages: 0,
+            pending_actions: Vec::new(),
+            pending_updates: Vec::new(),
+            pending_retry_live: None,
+            no_macro_diagnostic: None,
+        }];
+        append_node_actions(
+            &mut nodes,
+            0,
+            &factory,
+            &mut counters,
+            &budget,
+            vec![first.clone()],
+            Vec::new(),
+        )?;
+        let first_id = physical_action_identity(&first)?;
+        nodes[0].actions.as_mut().unwrap()[0].visits = 3;
+        nodes[0].actions.as_mut().unwrap()[0].value_sum = 1.5;
+        append_node_actions(
+            &mut nodes,
+            0,
+            &factory,
+            &mut counters,
+            &budget,
+            vec![late.clone()],
+            Vec::new(),
+        )?;
+        let edges = nodes[0].actions.as_ref().unwrap();
+        assert_eq!(edges.len(), 2);
+        let retained = edges.iter().find(|edge| edge.identity == first_id).unwrap();
+        assert_eq!(retained.visits, 3);
+        assert_eq!(retained.value_sum, 1.5);
+        assert_eq!(physical_action_identity(&retained.action)?, first_id);
+        assert!(
+            edges
+                .iter()
+                .any(|edge| edge.identity == physical_action_identity(&late).unwrap())
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn appended_repair_witness_keeps_the_exposed_physical_owner() -> Result<()> {
+        let _torch_guard = crate::TORCH_TEST.lock().unwrap();
+        let fixture: Value = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-repair/fixture.json"
+        ))?;
+        let mut session = Session::new(
+            serde_json::from_value(fixture["problem"].clone())?,
+            crate::constructive::test_support::catalogs(),
+            serde_json::from_value(fixture["limits"].clone())?,
+        )?;
+        for command in fixture["prefix"].as_array().expect("repair prefix") {
+            assert!(
+                session
+                    .step(serde_json::from_value(command.clone())?)
+                    .accepted
+            );
+        }
+        let candidate_config: CandidateConfig =
+            serde_json::from_value(fixture["candidate"].clone())?;
+        let model_config = crate::schema::RouteGuidanceModelConfig {
+            schema: crate::schema::RouteGuidanceModelConfig::SCHEMA.into(),
+            encoder: crate::schema::ConstructiveModelConfig {
+                schema: crate::schema::ConstructiveModelConfig::SCHEMA.into(),
+                width: 16,
+                message_rounds: 1,
+            },
+            raster_width: 8,
+            heads: 2,
+            maximum_edge_cost: 32,
+        };
+        let (order, state) = GuidanceModel::initial_state(&model_config, 17)?;
+        let model = GuidanceModel::load(&model_config, &order, &state, Device::Cpu)?;
+        let factory = Factory::new(
+            &model,
+            "checkpoint",
+            Device::Cpu,
+            DomainConfig {
+                placement: candidate_config.bounds,
+                extension_lengths: vec![1, 2, 4],
+            },
+            &candidate_config,
+            1,
+            4,
+            1,
+            0.0,
+            false,
+            None,
+        )?;
+        let mut counters = Counters::default();
+        let repairs = factory
+            .action_batch(&session, &mut counters, false)?
+            .actions
+            .into_iter()
+            .filter(|action| matches!(action, MacroAction::Repair { .. }))
+            .collect::<Vec<_>>();
+        assert!(repairs.len() >= 2, "fixture needs two repair witnesses");
+        let first = repairs[0].clone();
+        let late = repairs[1].clone();
+        assert_ne!(
+            physical_action_identity(&first)?,
+            physical_action_identity(&late)?
+        );
+        let budget = SearchMemoryBudget::new(1024 * 1024 * 1024);
+        let mut nodes = [Node {
+            session: Arc::new(session),
+            memory: TreeReservation::new(&budget, 0)
+                .map_err(|stop| anyhow::anyhow!("node reservation: {stop:?}"))?,
+            visits: 0,
+            value: None,
+            actions: Some(Vec::new()),
+            placement_pages: None,
+            lower: None,
+            lower_loaded_pages: 0,
+            pending_actions: Vec::new(),
+            pending_updates: Vec::new(),
+            pending_retry_live: None,
+            no_macro_diagnostic: None,
+        }];
+        append_node_actions(
+            &mut nodes,
+            0,
+            &factory,
+            &mut counters,
+            &budget,
+            vec![first.clone()],
+            Vec::new(),
+        )?;
+        let first_id = physical_action_identity(&first)?;
+        nodes[0].actions.as_mut().unwrap()[0].visits = 3;
+        nodes[0].actions.as_mut().unwrap()[0].value_sum = 1.5;
+        append_node_actions(
+            &mut nodes,
+            0,
+            &factory,
+            &mut counters,
+            &budget,
+            vec![late.clone()],
+            Vec::new(),
+        )?;
+        let edges = nodes[0].actions.as_ref().unwrap();
+        assert_eq!(edges.len(), 2);
+        let retained = edges.iter().find(|edge| edge.identity == first_id).unwrap();
+        assert_eq!(retained.visits, 3);
+        assert_eq!(retained.value_sum, 1.5);
+        assert_eq!(physical_action_identity(&retained.action)?, first_id);
+        assert!(
+            edges
+                .iter()
+                .any(|edge| edge.identity == physical_action_identity(&late).unwrap())
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn gumbel_root_records_late_route_from_live_lower_pages() -> Result<()> {
+        let _torch_guard = crate::TORCH_TEST.lock().unwrap();
+        let panel: Value = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-route-guidance/training-panel.json"
+        ))?;
+        let route_config: Value = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-route-guidance/config.json"
+        ))?;
+        let mut config: Config = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-curriculum/search.json"
+        ))?;
+        config.candidate = serde_json::from_value(panel["candidate"].clone())?;
+        config.simulations_per_move = 16;
+        config.max_moves = 1;
+        config.horizon = 1;
+        config.compiled_inference = false;
+        config.cpu_threads = 1;
+        config.max_live_search_bytes = 1024 * 1024 * 1024;
+        config.root_selection = RootSelection::GumbelSequentialHalving {
+            candidates: 2,
+            anchor_candidates: 0,
+            anchor_policy_mass: 0.0,
+            seed: 7,
+            value_scale: 0.1,
+            max_visit_init: 50.0,
+            gumbel_assignment: GumbelAssignment::ActionIdentity,
+        };
+        validate_config(&config)?;
+        let model_config = serde_json::from_value(route_config["model"].clone())?;
+        let (order, state) = GuidanceModel::initial_state(&model_config, 17)?;
+        let model = GuidanceModel::load(&model_config, &order, &state, Device::Cpu)?;
+        let factory = Factory::new(
+            &model,
+            "checkpoint",
+            Device::Cpu,
+            serde_json::from_value(route_config["learning_domain"].clone())?,
+            &config.candidate,
+            0,
+            4,
+            1,
+            0.0,
+            false,
+            None,
+        )?;
+        let case = &panel["cases"][0];
+        let mut session = Session::new(
+            serde_json::from_value(case["problem"].clone())?,
+            crate::constructive::test_support::catalogs(),
+            serde_json::from_value(panel["limits"].clone())?,
+        )?;
+        for command in case["prefix"].as_array().expect("route prefix") {
+            assert!(
+                session
+                    .step(serde_json::from_value(command.clone())?)
+                    .accepted
+            );
+        }
+        let result = mcts_search(session, &factory, &config, "late-route")?;
+        assert_eq!(result.root_records.len(), 1);
+        let record = &result.root_records[0];
+        validate_root_record_lineage(record)?;
+        let dense = record.dense().expect("dense oracle");
+        let eligible = dense
+            .actions
+            .iter()
+            .filter(|action| action.gumbel_eligible == Some(true))
+            .count();
+        let late_routes = dense
+            .actions
+            .iter()
+            .filter(|action| {
+                action.gumbel_eligible == Some(false)
+                    && matches!(action.action, MacroAction::Route(_))
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(dense.initial_eligible_actions, Some(eligible));
+        assert!(
+            !late_routes.is_empty(),
+            "live lower page never widened root"
+        );
+        assert!(
+            late_routes
+                .iter()
+                .all(|action| action.policy_target == Some(0.0))
+        );
+        assert!(
+            dense
+                .actions
+                .iter()
+                .map(|action| action.policy_target.unwrap())
+                .sum::<f64>()
+                > 0.999
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn gumbel_root_records_late_repair_from_live_lower_pages() -> Result<()> {
+        let _torch_guard = crate::TORCH_TEST.lock().unwrap();
+        let model_config = crate::schema::RouteGuidanceModelConfig {
+            schema: crate::schema::RouteGuidanceModelConfig::SCHEMA.into(),
+            encoder: crate::schema::ConstructiveModelConfig {
+                schema: crate::schema::ConstructiveModelConfig::SCHEMA.into(),
+                width: 16,
+                message_rounds: 1,
+            },
+            raster_width: 8,
+            heads: 2,
+            maximum_edge_cost: 32,
+        };
+        let (order, state) = GuidanceModel::initial_state(&model_config, 17)?;
+        let model = GuidanceModel::load(&model_config, &order, &state, Device::Cpu)?;
+        let run = |session: Session, candidate: CandidateConfig| -> Result<()> {
+            let mut config: Config = serde_json::from_str(include_str!(
+                "../../../docs/benchmarks/hierarchical-curriculum/search.json"
+            ))?;
+            config.bounds = candidate.bounds;
+            config.candidate = candidate;
+            config.repair_max_removed = 1;
+            config.simulations_per_move = 16;
+            config.max_moves = 1;
+            config.horizon = 1;
+            config.compiled_inference = false;
+            config.cpu_threads = 1;
+            config.max_live_search_bytes = 1024 * 1024 * 1024;
+            config.root_selection = RootSelection::GumbelSequentialHalving {
+                candidates: 2,
+                anchor_candidates: 0,
+                anchor_policy_mass: 0.0,
+                seed: 7,
+                value_scale: 0.1,
+                max_visit_init: 50.0,
+                gumbel_assignment: GumbelAssignment::ActionIdentity,
+            };
+            validate_config(&config)?;
+            let factory = Factory::new(
+                &model,
+                "checkpoint",
+                Device::Cpu,
+                DomainConfig {
+                    placement: config.bounds,
+                    extension_lengths: vec![1, 2, 4],
+                },
+                &config.candidate,
+                1,
+                4,
+                1,
+                0.0,
+                false,
+                None,
+            )?;
+            let result = mcts_search(session, &factory, &config, "repair")?;
+            assert_eq!(result.root_records.len(), 1, "repair root missing");
+            let record = &result.root_records[0];
+            validate_root_record_lineage(record)?;
+            let late = record
+                .dense()
+                .expect("dense oracle")
+                .actions
+                .iter()
+                .filter(|action| {
+                    action.gumbel_eligible == Some(false)
+                        && matches!(action.action, MacroAction::Repair { .. })
+                })
+                .collect::<Vec<_>>();
+            assert!(!late.is_empty(), "repair lower page never widened root");
+            assert!(late.iter().all(|action| action.policy_target == Some(0.0)));
+            Ok(())
+        };
+        let fixture: Value = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-repair/fixture.json"
+        ))?;
+        let mut repair_session = Session::new(
+            serde_json::from_value(fixture["problem"].clone())?,
+            crate::constructive::test_support::catalogs(),
+            serde_json::from_value(fixture["limits"].clone())?,
+        )?;
+        for command in fixture["prefix"].as_array().expect("repair prefix") {
+            assert!(
+                repair_session
+                    .step(serde_json::from_value(command.clone())?)
+                    .accepted
+            );
+        }
+        run(
+            repair_session,
+            serde_json::from_value(fixture["candidate"].clone())?,
+        )?;
+        Ok(())
     }
 
     #[test]
@@ -5158,6 +9078,7 @@ mod tests {
             bounds,
             extension_lengths: vec![1, 2, 4],
             candidate: candidate.clone(),
+            max_live_search_bytes: default_max_live_search_bytes(),
             repair_max_removed: 0,
             cpu_threads: 1,
             placement_page: 4,

@@ -5,9 +5,11 @@ use super::{
     randomize,
     rng::Rng,
 };
-use crate::input::{Catalogs, hash, read};
+use crate::input::{Catalogs, hash, hash_file, read, read_generated_bytes};
+use aic_data::facilities::FacilityPortEdge;
 use aic_data::layouts::{
-    ConstructiveProductionRequest, FactoryEditRequest, WitnessProbeInput, construct_production,
+    ConstructiveProductionCompactResult, ConstructiveProductionRequest, FactoryEditRequest,
+    WitnessProbeInput, construct_production_compact,
 };
 use aic_data::recipes::{
     Rate, RecipeSourcePlanRequest, build_contextual_facility_instance_wiring,
@@ -26,6 +28,26 @@ use std::{
 };
 
 type Result<T> = std::result::Result<T, String>;
+const DEFAULT_PER_CONNECTION_ROUTE_SEARCHES: u64 = 64;
+
+fn default_per_connection_route_searches() -> u64 {
+    DEFAULT_PER_CONNECTION_ROUTE_SEARCHES
+}
+fn is_default_per_connection_route_searches(value: &u64) -> bool {
+    *value == DEFAULT_PER_CONNECTION_ROUTE_SEARCHES
+}
+fn default_downstream_closed_growth() -> bool {
+    true
+}
+fn is_true(value: &bool) -> bool {
+    *value
+}
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+fn is_zero(value: &usize) -> bool {
+    *value == 0
+}
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Product {
@@ -41,7 +63,23 @@ pub struct Construction {
     pub max_steps: usize,
     pub max_placement_attempts: usize,
     pub max_route_searches: u64,
+    #[serde(
+        default = "default_per_connection_route_searches",
+        skip_serializing_if = "is_default_per_connection_route_searches"
+    )]
+    pub per_connection_route_searches: u64,
     pub analysis_workers: usize,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub nearby_candidates: usize,
+    #[serde(
+        default = "default_downstream_closed_growth",
+        skip_serializing_if = "is_true"
+    )]
+    pub downstream_closed_growth: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub flow_direction: Option<FacilityPortEdge>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub connection_first_placement: bool,
 }
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -169,6 +207,56 @@ fn error(stage: &str, entity: impl std::fmt::Display, message: impl std::fmt::Di
         "entity":entity.to_string(),"message":message.to_string()})
     .to_string()
 }
+pub(super) fn construction_failure_summary(report: &ConstructiveProductionCompactResult) -> Value {
+    let closed = report.final_node.as_ref();
+    let mut reasons = report.rejected_reasons.iter().collect::<Vec<_>>();
+    reasons.sort_by(|(ak, av), (bk, bv)| bv.cmp(av).then_with(|| ak.cmp(bk)));
+    let top_reasons = reasons.into_iter().take(8).collect::<BTreeMap<_, _>>();
+    let stop_counts = report
+        .rejected_reasons
+        .iter()
+        .filter(|(key, _)| {
+            key.starts_with("production-connection-")
+                || key == &"production-step-route-budget-exhausted"
+                || key.starts_with("production-external-")
+        })
+        .collect::<BTreeMap<_, _>>();
+    json!({
+        "status": report.status,
+        "success": report.success,
+        "complete": report.complete,
+        "required_facilities": report.required_facilities,
+        "completed_growth_steps": report.accepted_growth_steps,
+        "accepted_closed_facilities": closed.map_or(0, |node| node.member_instances.len()),
+        "accepted_closed_internal_connections": closed.map_or(0, |node| node.internal_requirements.len()),
+        "failed_step_index": report.accepted_steps,
+        "failed_placement_attempts": report.failed_placement_attempts,
+        "failed_statistics": report.failed_statistics,
+        "elapsed_ms": report.elapsed_ms,
+        "max_steps": report.request.max_steps,
+        "max_placement_attempts": report.request.max_placement_attempts,
+        "max_route_searches": report.request.max_route_searches,
+        "per_connection_route_limit": report.per_connection_route_limit,
+        "routing_workspace_cell_limit": report.routing_workspace_cell_limit,
+        "search_stop_counts": stop_counts,
+        "top_rejected_reasons": top_reasons,
+        "diagnostics": report.diagnostics,
+    })
+}
+
+fn work_error_kind(error: &str) -> &'static str {
+    let message = serde_json::from_str::<Value>(error)
+        .ok()
+        .and_then(|value| value["message"].as_str().map(str::to_owned));
+    if message
+        .as_deref()
+        .is_some_and(|message| message.starts_with("native-work.elapsed-budget:"))
+    {
+        "elapsed-budget"
+    } else {
+        "work-or-caller-interruption"
+    }
+}
 fn write(path: &Path, value: &impl Serialize) -> Result<()> {
     let mut file = std::io::BufWriter::new(
         fs::File::create(path).map_err(|e| error("write", path.display(), e))?,
@@ -244,7 +332,13 @@ impl Source {
             || c.construction.max_steps == 0
             || c.construction.max_placement_attempts == 0
             || c.construction.max_route_searches == 0
+            || c.construction.per_connection_route_searches == 0
             || c.construction.analysis_workers == 0
+            || c.construction.analysis_workers > 16
+            || c.construction.nearby_candidates > 8
+            || (c.construction.connection_first_placement
+                && (c.construction.flow_direction.is_none()
+                    || c.construction.nearby_candidates != 0))
             || c.setup_kinds.is_empty()
             || c.setup_kinds.iter().any(|k| {
                 !matches!(
@@ -314,21 +408,10 @@ impl Source {
         let completed = directory.join("manifest.json");
         if completed.exists() {
             let manifest: Value = read(directory, Path::new("manifest.json"))?;
-            if fs::metadata(directory.join("input.json"))
-                .map_err(|e| error("read", directory.display(), e))?
-                .len()
-                > 16 * 1024 * 1024
-            {
-                return Err(error(
-                    "input-size",
-                    directory.display(),
-                    "actual input exceeds 16 MiB",
-                ));
-            }
-            let bytes = fs::read(directory.join("input.json"))
-                .map_err(|e| error("read", directory.display(), e))?;
-            if bytes.len() > 16 * 1024 * 1024
-                || manifest["schema"] != "aic-generated-slot-v2"
+            let input = directory.join("input.json");
+            let bytes =
+                read_generated_bytes(&input).map_err(|e| error("input", input.display(), e))?;
+            if manifest["schema"] != "aic-generated-slot-v2"
                 || manifest["slot"] != slot
                 || manifest["source"] != self.identity
                 || manifest["input_sha256"] != hash(&bytes)
@@ -426,7 +509,8 @@ impl Source {
                 &serde_json::to_value(&wiring).map_err(|e| error("wiring", slot, e))?,
             )?;
             if request.instances.len() > self.config.max_facilities {
-                attempts.push(json!({"seed":seed,"stage":"instance-bound"}));
+                attempts.push(json!({"seed":seed,"stage":"instance-bound",
+                    "instances":request.instances.len(),"limit":self.config.max_facilities}));
                 continue;
             }
             let construction = ConstructiveProductionRequest {
@@ -435,17 +519,20 @@ impl Source {
                 max_steps: self.config.construction.max_steps,
                 max_placement_attempts: self.config.construction.max_placement_attempts,
                 max_route_searches: self.config.construction.max_route_searches,
+                per_connection_route_searches: self
+                    .config
+                    .construction
+                    .per_connection_route_searches,
                 analysis_workers: self.config.construction.analysis_workers,
-                nearby_candidates: 0,
-                downstream_closed_growth: true,
-                flow_direction: None,
-                connection_first_placement: false,
+                nearby_candidates: self.config.construction.nearby_candidates,
+                downstream_closed_growth: self.config.construction.downstream_closed_growth,
+                flow_direction: self.config.construction.flow_direction,
+                connection_first_placement: self.config.construction.connection_first_placement,
             };
             let data = &self.catalogs.data;
-            let mut report = match self.compute(
-                self.config.construction.elapsed_ms.min(remaining()),
-                || {
-                    construct_production(
+            let mut report =
+                match self.compute(self.config.construction.elapsed_ms.min(remaining()), || {
+                    construct_production_compact(
                         &wiring,
                         &data.facilities,
                         &data.items,
@@ -453,18 +540,35 @@ impl Source {
                         &data.components,
                         &construction,
                     )
-                },
-            ) {
-                Ok(value) if value.success && value.complete => value,
-                result => {
-                    (self.guard)()?;
-                    // Keep concise failure evidence, not all speculative layout snapshots.
-                    let outcome = result.map(|value| json!({"status":value.status,
-                        "success":value.success,"complete":value.complete,"diagnostics":value.diagnostics}));
-                    attempts.push(json!({"seed":seed,"stage":"construction","outcome":outcome}));
-                    continue;
-                }
-            };
+                }) {
+                    Ok(value) if value.success && value.complete => value,
+                    Ok(value) => {
+                        attempts.push(
+                            json!({"seed":seed,"product":product.id,"duration_ms":duration_ms,
+                        "source":self.identity,"stage":"construction",
+                        "outcome":construction_failure_summary(&value)}),
+                        );
+                        (self.guard)()?;
+                        continue;
+                    }
+                    Err(work_error) => {
+                        attempts.push(
+                            json!({"seed":seed,"product":product.id,"duration_ms":duration_ms,
+                        "source":self.identity,"stage":"construction","outcome":{
+                            "status":"interrupted","kind":work_error_kind(&work_error),
+                            "error":work_error}}),
+                        );
+                        if let Err(cancel) = (self.guard)() {
+                            write(
+                                &directory.join("failure.json"),
+                                &json!({"slot":slot,"source":self.identity,"attempts":attempts,
+                                "seconds":started.elapsed().as_secs_f64()}),
+                            )?;
+                            return Err(cancel);
+                        }
+                        continue;
+                    }
+                };
             let node = report.final_node.take().ok_or_else(|| {
                 error(
                     "constructor-witness",
@@ -472,7 +576,7 @@ impl Source {
                     "complete constructor omitted its final node",
                 )
             })?;
-            drop(report); // Release construction history before randomized setup.
+            drop(report);
             let original = WitnessProbeInput {
                 schema_version: 1,
                 placements: node.placements,
@@ -533,22 +637,11 @@ impl Source {
             };
             let input = directory.join("input.json");
             write(&input, &value)?;
-            if fs::metadata(&input)
-                .map_err(|e| error("read", input.display(), e))?
-                .len()
-                > 16 * 1024 * 1024
-            {
-                return Err(error(
-                    "input-size",
-                    input.display(),
-                    "generated input exceeds 16 MiB",
-                ));
-            }
-            let bytes = fs::read(&input).map_err(|e| error("read", input.display(), e))?;
+            let input_sha256 = hash_file(&input).map_err(|e| error("input", input.display(), e))?;
             let pending = directory.join("manifest.pending");
             write(
                 &pending,
-                &json!({"schema":"aic-generated-slot-v2","slot":slot,"source":self.identity,"input_sha256":hash(&bytes)}),
+                &json!({"schema":"aic-generated-slot-v2","slot":slot,"source":self.identity,"input_sha256":input_sha256}),
             )?;
             fs::File::open(&input)
                 .and_then(|f| f.sync_all())

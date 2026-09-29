@@ -289,6 +289,7 @@ fn route_external(
             .filter(|boundary| boundary.requirement != edge.id && !boundary.attachments.is_empty())
             .map(key)
             .collect::<BTreeSet<_>>();
+        let mut stop = network::ConnectionSearchStop::default();
         let Some(next) = network::connect_external(
             &node,
             edge,
@@ -298,6 +299,7 @@ fn route_external(
             &catalogs.components,
             stats,
             route_limit,
+            &mut stop,
             &mut |candidate| {
                 network::validate(
                     candidate,

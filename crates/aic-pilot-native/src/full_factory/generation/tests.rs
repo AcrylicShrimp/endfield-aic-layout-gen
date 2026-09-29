@@ -4,6 +4,390 @@ use crate::full_factory::types::{Bounds, Point};
 use indexmap::{IndexMap, IndexSet};
 
 #[test]
+fn external_route_stop_reaches_source_failure_counts() {
+    use aic_data::recipes::{
+        FACILITY_INSTANCE_WIRING_SCHEMA_VERSION, FacilityInstanceWiringEdge,
+        FacilityInstanceWiringNode, FacilityInstanceWiringReport, Rate,
+    };
+
+    let (_, catalogs, _) = fixture();
+    let item = "item-activity-xiranite-bottle";
+    let rate = Rate {
+        numerator: 1,
+        denominator: 1,
+    };
+    let wiring = FacilityInstanceWiringReport {
+        schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
+        success: true,
+        nodes: vec![
+            FacilityInstanceWiringNode::Facility {
+                id: "a".into(),
+                recipe: "fixture-output".into(),
+                facility: "filling-powder-mc-1-mode-normal".into(),
+                index: 0,
+                runs_per_second: rate,
+                work_seconds_per_second: rate,
+                unused_capacity: Rate::zero(),
+            },
+            FacilityInstanceWiringNode::Target {
+                id: "sale".into(),
+                item: item.into(),
+            },
+        ],
+        edges: vec![FacilityInstanceWiringEdge::original(
+            "a",
+            "sale",
+            "recipe-flow",
+            item,
+            rate,
+        )],
+        diagnostics: Vec::new(),
+    };
+    for (step_limit, connection_limit, code) in [
+        (1, 1, "production-external-step-route-budget-exhausted"),
+        (
+            64,
+            1,
+            "production-external-connection-route-budget-exhausted",
+        ),
+    ] {
+        let request = aic_data::layouts::ConstructiveProductionRequest {
+            schema_version: aic_data::layouts::CONSTRUCTIVE_PRODUCTION_SCHEMA_VERSION,
+            target_instance: "a".into(),
+            max_steps: 64,
+            max_placement_attempts: 128,
+            max_route_searches: step_limit,
+            per_connection_route_searches: connection_limit,
+            analysis_workers: 1,
+            nearby_candidates: 0,
+            downstream_closed_growth: false,
+            flow_direction: None,
+            connection_first_placement: false,
+        };
+        let result = aic_data::layouts::construct_production_compact(
+            &wiring,
+            &catalogs.facilities,
+            &catalogs.items,
+            &catalogs.transports,
+            &catalogs.components,
+            &request,
+        );
+        assert!(!result.complete);
+        assert!(
+            result
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == code)
+        );
+        let summary = source::construction_failure_summary(&result);
+        assert_eq!(summary["search_stop_counts"][code], 1);
+        assert_eq!(summary["top_rejected_reasons"][code], 1);
+        assert_eq!(summary["failed_statistics"]["astar_searches"], 1);
+    }
+}
+
+#[test]
+#[ignore = "set AIC_SOURCE_CONFIG, AIC_SOURCE_SLOT and AIC_SOURCE_OUTPUT"]
+fn measure_source_generated_input_band() {
+    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let output = root.join(std::env::var("AIC_SOURCE_OUTPUT").unwrap());
+    let config_path = std::path::PathBuf::from(std::env::var("AIC_SOURCE_CONFIG").unwrap());
+    let slot: u64 = std::env::var("AIC_SOURCE_SLOT").unwrap().parse().unwrap();
+    let config: Value = crate::input::read(
+        &root,
+        std::path::Path::new("tools/native-training/training.json"),
+    )
+    .unwrap();
+    let paths = serde_json::from_value(config["catalogs"].clone()).unwrap();
+    let catalogs = crate::input::load_catalogs(&root, &paths).unwrap();
+    let generation: source::Config = crate::input::read(&root, &config_path).unwrap();
+    let seed = generation
+        .seed_base
+        .checked_add(slot.checked_mul(generation.max_attempts as u64).unwrap())
+        .unwrap();
+    let mut rng = rng::Rng::new(seed);
+    let product = &generation.products[rng.index(generation.products.len())];
+    let product_id = product.id.clone();
+    let [low, high] = product.duration_ms;
+    let count = (high - low) / generation.duration_step_ms + 1;
+    let duration = low + rng.index(count as usize) as u64 * generation.duration_step_ms;
+    let mut plan: Value = crate::input::read(&root, &product.source).unwrap();
+    plan["target"]["quantity"] = json!(1);
+    plan["target"]["duration_ms"] = json!(duration);
+    let typed: aic_data::recipes::RecipeSourcePlanRequest = serde_json::from_value(plan).unwrap();
+    let throughput = catalogs
+        .data
+        .recipes
+        .calculate_contextual_throughput(&typed);
+    let facilities = aic_data::recipes::calculate_contextual_facility_requirements(&throughput);
+    let wiring =
+        aic_data::recipes::build_contextual_facility_instance_wiring(&throughput, &facilities);
+    let wiring_value = serde_json::to_value(&wiring).unwrap();
+    let instances = wiring_value["nodes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|node| node["kind"] == "facility")
+        .count();
+    let source =
+        source::Source::load(&root, catalogs.clone(), generation, Default::default()).unwrap();
+    println!(
+        "source_wiring={}",
+        json!({"product":product_id,"seed":seed,"slot":slot,"duration_ms":duration,
+        "instances":instances,"success":wiring.success,"source":source.identity})
+    );
+    assert!(wiring.success, "preflight source wiring must succeed");
+    if let Ok(expected) = std::env::var("AIC_SOURCE_EXPECT_FACILITIES") {
+        assert_eq!(instances, expected.parse::<usize>().unwrap());
+    }
+    let compact_constructor = std::env::var_os("AIC_SOURCE_COMPACT_CONSTRUCTOR_ONLY").is_some();
+    let measure_payload = std::env::var_os("AIC_SOURCE_CONSTRUCTOR_PAYLOAD_ONLY").is_some();
+    if compact_constructor || std::env::var_os("AIC_SOURCE_CONSTRUCTOR_ONLY").is_some() {
+        let targets = wiring_value["nodes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|node| node["kind"] == "target")
+            .filter_map(|node| node["id"].as_str())
+            .collect::<std::collections::BTreeSet<_>>();
+        let target = wiring
+            .edges
+            .iter()
+            .find(|edge| targets.contains(edge.target.as_str()))
+            .unwrap()
+            .source
+            .clone();
+        let c = &source.config.construction;
+        let request = aic_data::layouts::ConstructiveProductionRequest {
+            schema_version: aic_data::layouts::CONSTRUCTIVE_PRODUCTION_SCHEMA_VERSION,
+            target_instance: target,
+            max_steps: c.max_steps,
+            max_placement_attempts: c.max_placement_attempts,
+            max_route_searches: c.max_route_searches,
+            per_connection_route_searches: c.per_connection_route_searches,
+            analysis_workers: c.analysis_workers,
+            nearby_candidates: c.nearby_candidates,
+            downstream_closed_growth: c.downstream_closed_growth,
+            flow_direction: c.flow_direction,
+            connection_first_placement: c.connection_first_placement,
+        };
+        let started = std::time::Instant::now();
+        if compact_constructor {
+            let result = aic_data::layouts::construct_production_compact(
+                &wiring,
+                &catalogs.data.facilities,
+                &catalogs.data.items,
+                &catalogs.data.transports,
+                &catalogs.data.components,
+                &request,
+            );
+            let elapsed_s = started.elapsed().as_secs_f64();
+            let final_sha256 = result
+                .final_node
+                .as_ref()
+                .map(|node| crate::input::hash(&serde_json::to_vec(node).unwrap()));
+            let payload_bytes = measure_payload.then(|| {
+                serde_json::to_vec(&json!({
+                    "success": result.success,
+                    "complete": result.complete,
+                    "status": &result.status,
+                    "required_facilities": result.required_facilities,
+                    "accepted_growth_steps": result.accepted_growth_steps,
+                    "accepted_steps": result.accepted_steps,
+                    "final_node": &result.final_node,
+                    "failed_placement_attempts": result.failed_placement_attempts,
+                    "failed_statistics": &result.failed_statistics,
+                    "rejected_reasons": &result.rejected_reasons,
+                    "diagnostics": &result.diagnostics,
+                    "elapsed_ms": result.elapsed_ms,
+                    "request": &result.request,
+                    "per_connection_route_limit": result.per_connection_route_limit,
+                    "routing_workspace_cell_limit": result.routing_workspace_cell_limit,
+                }))
+                .unwrap()
+                .len()
+            });
+            println!(
+                "source_constructor_profile={}",
+                json!({"product":product_id,"seed":seed,"slot":slot,
+                    "mode":"compact","complete":result.complete,"status":result.status,
+                    "facilities":result.final_node.as_ref().map(|node|node.placements.len()),
+                    "accepted_steps":result.accepted_steps,"final_sha256":final_sha256,
+                    "elapsed_s":elapsed_s,"payload_bytes":payload_bytes})
+            );
+            assert!(
+                result.complete,
+                "{:?} {:?}",
+                result.diagnostics, result.rejected_reasons
+            );
+            return;
+        }
+        let report = aic_data::layouts::construct_production(
+            &wiring,
+            &catalogs.data.facilities,
+            &catalogs.data.items,
+            &catalogs.data.transports,
+            &catalogs.data.components,
+            &request,
+        );
+        let elapsed_s = started.elapsed().as_secs_f64();
+        let final_sha256 = report
+            .final_node
+            .as_ref()
+            .map(|node| crate::input::hash(&serde_json::to_vec(node).unwrap()));
+        let payload_bytes = measure_payload.then(|| serde_json::to_vec(&report).unwrap().len());
+        let history_node_bytes = measure_payload.then(|| {
+            report
+                .steps
+                .iter()
+                .map(|step| serde_json::to_vec(&step.node).unwrap().len())
+                .sum::<usize>()
+        });
+        println!(
+            "source_constructor_profile={}",
+            json!({"product":product_id,"seed":seed,"slot":slot,
+                "mode":"full","complete":report.complete,"status":report.status,
+                "facilities":report.final_node.as_ref().map(|node|node.placements.len()),
+                "accepted_steps":report.steps.len(),"final_sha256":final_sha256,
+                "astar":report.steps.iter().map(|step|step.statistics.astar_searches).sum::<u64>()
+                    + report.failed_statistics.astar_searches,
+                "placements":report.steps.iter().map(|step|step.placement_attempts).sum::<usize>()
+                    + report.failed_placement_attempts,
+                "elapsed_s":elapsed_s,"payload_bytes":payload_bytes,
+                "history_node_bytes":history_node_bytes})
+        );
+        assert!(
+            report.complete,
+            "{:?} {:?}",
+            report.diagnostics, report.rejected_reasons
+        );
+        return;
+    }
+    if std::env::var_os("AIC_SOURCE_WIRING_ONLY").is_some() {
+        return;
+    }
+    let started = std::time::Instant::now();
+    let actual = match source.generate(slot, &output) {
+        Ok(value) => value,
+        Err(failure) => {
+            let input = output.join("input.json");
+            let diagnostic: Value = serde_json::from_str(&failure).unwrap_or(Value::Null);
+            let size_refusal = diagnostic["code"] == "aic-generation.input"
+                && diagnostic["message"]
+                    .as_str()
+                    .is_some_and(|message| message.contains("-byte input limit"))
+                && std::fs::metadata(&input).is_ok_and(|metadata| {
+                    metadata.len() > crate::input::MAX_GENERATED_INPUT_BYTES as u64
+                });
+            if !size_refusal || !input.exists() || output.join("manifest.json").exists() {
+                panic!(
+                    "source generation failed after {:.3}s: {failure}",
+                    started.elapsed().as_secs_f64()
+                );
+            }
+            let file = std::fs::File::open(&input).unwrap();
+            let value: source::Generated = serde_json::from_reader(file).unwrap();
+            aic_data::layouts::FactoryEditSession::new(
+                value.request.clone(),
+                value.original.clone(),
+                catalogs.data.clone(),
+                aic_data::layouts::FactoryEditBudget {
+                    proposals: 1,
+                    elapsed_ms: 600_000,
+                },
+            )
+            .unwrap();
+            println!(
+                "source_upper_handoff={}",
+                json!({"status":"input-size-refusal","source":source.identity,
+                    "slot":slot,"seed":seed,"product":product_id,
+                    "facilities":value.original.placements.len(),
+                    "input_bytes":std::fs::metadata(input).unwrap().len(),
+                    "elapsed_s":started.elapsed().as_secs_f64()})
+            );
+            return;
+        }
+    };
+    let cached = source.generate(slot, &output).unwrap();
+    assert_eq!(
+        serde_json::to_value(&cached).unwrap(),
+        serde_json::to_value(&actual).unwrap()
+    );
+    let input = output.join("input.json");
+    let native: source::Generated =
+        crate::input::read(&output, std::path::Path::new("input.json")).unwrap();
+    assert_eq!(
+        serde_json::to_value(&native).unwrap(),
+        serde_json::to_value(&actual).unwrap()
+    );
+    let networks = actual.original.transport_networks.len();
+    let cells = actual
+        .original
+        .transport_networks
+        .iter()
+        .map(|n| n.cells.len())
+        .sum::<usize>();
+    println!(
+        "source_upper_handoff={}",
+        json!({"status":"committed","product":product_id,"seed":seed,"slot":slot,"duration_ms":duration,
+        "facilities":actual.original.placements.len(),"networks":networks,"cells":cells,
+        "input_bytes":std::fs::metadata(input).unwrap().len(),
+        "elapsed_s":started.elapsed().as_secs_f64()})
+    );
+}
+
+#[test]
+fn stopped_source_construction_retains_compact_attempt_evidence() {
+    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let training: Value = crate::input::read(
+        &root,
+        std::path::Path::new("tools/native-training/training.json"),
+    )
+    .unwrap();
+    let paths = serde_json::from_value(training["catalogs"].clone()).unwrap();
+    let catalogs = crate::input::load_catalogs(&root, &paths).unwrap();
+    let mut config = training["generation"].clone();
+    let copper = training["generation"]["products"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|product| product["id"] == "copper-liquid")
+        .unwrap();
+    config["products"] = json!([copper]);
+    config["products"][0]["duration_ms"] = json!([20000, 20000]);
+    config["max_attempts"] = json!(1);
+    config["episode_setup_ms"] = json!(60000);
+    config["construction"]["elapsed_ms"] = json!(10000);
+    config["construction"]["max_steps"] = json!(1);
+    config["construction"]["max_placement_attempts"] = json!(1);
+    config["construction"]["max_route_searches"] = json!(1);
+    let source = source::Source::load(
+        &root,
+        catalogs,
+        serde_json::from_value(config).unwrap(),
+        Default::default(),
+    )
+    .unwrap();
+    let directory = std::env::temp_dir().join(format!(
+        "aic-construction-stop-summary-{}",
+        std::process::id()
+    ));
+    let outcome = source.generate(0, &directory);
+    assert!(outcome.err().unwrap().contains("aic-generation.exhausted"));
+    let failure: Value =
+        crate::input::read(&directory, std::path::Path::new("failure.json")).unwrap();
+    let attempt = &failure["attempts"][0];
+    assert_eq!(attempt["stage"], "construction");
+    assert_eq!(attempt["product"], "copper-liquid");
+    assert_eq!(attempt["source"], source.identity);
+    assert_eq!(attempt["outcome"]["per_connection_route_limit"], 64);
+    assert!(attempt["outcome"]["failed_statistics"].is_object());
+    assert!(attempt["outcome"]["accepted_closed_facilities"].is_number());
+    assert!(!directory.join("manifest.json").exists());
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
 fn route_work_stop_keeps_incomplete_region_evidence() {
     let (w, catalogs, _) = fixture();
     let decomposition = chains::extract(&w, &IndexSet::new()).unwrap();
@@ -891,6 +1275,8 @@ fn cached_actual_slot_checks_source_identity_hash_and_reserved_geometry() {
         )
         .unwrap();
     let source = make(Default::default());
+    let serialized = serde_json::to_value(&source.config).unwrap();
+    assert_eq!(serialized, configuration["generation"]);
     let directory =
         std::env::temp_dir().join(format!("aic-generated-slot-test-{}", std::process::id()));
     fs::create_dir(&directory).unwrap();
@@ -898,6 +1284,60 @@ fn cached_actual_slot_checks_source_identity_hash_and_reserved_geometry() {
     fs::write(directory.join("input.json"), &bytes).unwrap();
     fs::write(directory.join("manifest.json"),serde_json::to_vec(&json!({"schema":"aic-generated-slot-v2","slot":3,"source":source.identity,"input_sha256":crate::input::hash(&bytes)})).unwrap()).unwrap();
     assert!(source.generate(3, &directory).is_ok());
+    let mut explicit = configuration["generation"].clone();
+    explicit["construction"]["per_connection_route_searches"] = json!(64);
+    explicit["construction"]["nearby_candidates"] = json!(0);
+    explicit["construction"]["downstream_closed_growth"] = json!(true);
+    explicit["construction"]["flow_direction"] = Value::Null;
+    explicit["construction"]["connection_first_placement"] = json!(false);
+    let equivalent = Source::load(
+        &root,
+        catalogs.clone(),
+        serde_json::from_value(explicit.clone()).unwrap(),
+        Default::default(),
+    )
+    .unwrap();
+    assert_eq!(equivalent.identity, source.identity);
+    assert_eq!(
+        serde_json::to_value(equivalent.generate(3, &directory).unwrap().original).unwrap(),
+        serde_json::to_value(&input.original).unwrap()
+    );
+    explicit["construction"]["per_connection_route_searches"] = json!(128);
+    let wider = Source::load(
+        &root,
+        catalogs.clone(),
+        serde_json::from_value(explicit.clone()).unwrap(),
+        Default::default(),
+    )
+    .unwrap();
+    assert_ne!(wider.identity, source.identity);
+    assert!(
+        wider
+            .generate(3, &directory)
+            .err()
+            .unwrap()
+            .contains("slot-binding")
+    );
+    explicit["construction"]["per_connection_route_searches"] = json!(64);
+    explicit["construction"]["downstream_closed_growth"] = json!(false);
+    let changed_policy = Source::load(
+        &root,
+        catalogs.clone(),
+        serde_json::from_value(explicit.clone()).unwrap(),
+        Default::default(),
+    )
+    .unwrap();
+    assert_ne!(changed_policy.identity, source.identity);
+    explicit["construction"]["per_connection_route_searches"] = json!(0);
+    assert!(
+        Source::load(
+            &root,
+            catalogs.clone(),
+            serde_json::from_value(explicit).unwrap(),
+            Default::default(),
+        )
+        .is_err()
+    );
     assert!(
         source
             .generate(4, &directory)
@@ -1067,20 +1507,45 @@ fn direct_generation_commits_actual_input_and_guard_failure_never_commits() {
     let calls = Arc::new(AtomicUsize::new(0));
     let count = calls.clone();
     let cancelled = make().with_guard(Arc::new(move || {
-        if count.fetch_add(1, Ordering::Relaxed) >= 4 {
+        if count.fetch_add(1, Ordering::Relaxed) >= 6 {
             Err("test-generation-cancelled".into())
         } else {
             Ok(())
         }
     }));
-    assert!(
+    assert_eq!(
         cancelled
             .generate(1, &directory.join("cancelled"))
             .err()
+            .unwrap(),
+        "test-generation-cancelled"
+    );
+    assert!(!directory.join("cancelled/manifest.json").exists());
+    let failure: Value = crate::input::read(
+        &directory.join("cancelled"),
+        std::path::Path::new("failure.json"),
+    )
+    .unwrap();
+    let construction = failure["attempts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|attempt| attempt["stage"] == "construction")
+        .expect("the guard must interrupt construction after a selected draw");
+    assert_eq!(construction["outcome"]["status"], "interrupted");
+    assert_eq!(
+        construction["outcome"]["kind"],
+        "work-or-caller-interruption"
+    );
+    assert_eq!(construction["source"], cancelled.identity);
+    assert!(construction["seed"].is_number());
+    assert!(construction["duration_ms"].is_number());
+    assert!(
+        construction["outcome"]["error"]
+            .as_str()
             .unwrap()
             .contains("test-generation-cancelled")
     );
-    assert!(!directory.join("cancelled/manifest.json").exists());
     assert!(
         make()
             .generate(1, &directory.join("cancelled"))

@@ -11,14 +11,14 @@ use anyhow::{Context, Result, anyhow, ensure};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    constructive::{InputBatch, Model as Encoder},
+    constructive::{Encoded as GraphEncoded, InputBatch, Model as Encoder},
     input::{Tensors, tensor},
     schema::OuterModelConfig,
 };
 
-pub const ACTION_FEATURES: usize = 30;
+pub const ACTION_FEATURES: usize = 49;
 pub const VALUE_HEADS: usize = 8;
-pub const CHECKPOINT_SCHEMA: &str = "aic-hierarchical-outer-checkpoint-v4";
+pub const CHECKPOINT_SCHEMA: &str = "aic-hierarchical-outer-checkpoint-v5";
 pub const COMPLETION_HEAD: i64 = 0;
 pub const AREA_HEAD: i64 = 4;
 pub const TRANSPORT_HEAD: i64 = 5;
@@ -76,6 +76,32 @@ pub struct Prediction {
     pub values: Tensor,
 }
 
+/// Reused graph encoding and value head for one or more bounded action pages.
+pub(crate) struct EncodedOuterState {
+    graph: GraphEncoded,
+    pub(crate) values: Tensor,
+    graphs: i64,
+}
+
+/// One graph encoding and detached policy leaves for a streamed root update.
+/// Page backward calls fill head gradients and the detached leaves; the caller
+/// combines `encoder_surrogate` with its batch value loss exactly once.
+pub(crate) struct StreamedPolicyRoot<'m> {
+    model: &'m Model,
+    encoded: EncodedOuterState,
+    context_leaf: Tensor,
+    entity_leaf: Tensor,
+    device: Device,
+}
+
+/// O(1) first-pass state for the exact current-model policy denominator.
+pub(crate) struct StreamedPolicyStatistics {
+    maximum: Option<Tensor>,
+    denominator: Tensor,
+    target_mass: Tensor,
+    target_shifted_sum: Tensor,
+}
+
 pub struct Model {
     pub config: OuterModelConfig,
     pub encoder: Encoder,
@@ -90,6 +116,7 @@ pub struct CompiledModel<'a> {
     eager: &'a Model,
     frozen: Model,
     module: Mutex<Option<CModule>>,
+    page_module: Mutex<Option<CModule>>,
 }
 
 impl Batch {
@@ -275,10 +302,28 @@ impl Model {
         )
     }
 
-    fn forward_unchecked(&self, batch: &Batch) -> Prediction {
-        let encoded = self.encoder.encode_unchecked(&batch.graph);
-        let action_context = encoded.context().index_select(0, &batch.action_graph);
-        let action_entity = encoded.entities().index_select(0, &batch.action_entity);
+    pub(crate) fn encode_unchecked(&self, graph: &InputBatch) -> EncodedOuterState {
+        let encoded = self.encoder.encode_unchecked(graph);
+        let values = self
+            .linear("value.2", &self.linear("value.0", encoded.context()).tanh())
+            .sigmoid();
+        EncodedOuterState {
+            graph: encoded,
+            values,
+            graphs: graph.graphs(),
+        }
+    }
+
+    fn score_from_encoded_tensors(
+        &self,
+        context: &Tensor,
+        entities: &Tensor,
+        action_features: &Tensor,
+        action_entity: &Tensor,
+        action_graph: &Tensor,
+    ) -> Tensor {
+        let action_context = context.index_select(0, action_graph);
+        let action_entity = entities.index_select(0, action_entity);
         let hidden = self
             .linear(
                 "policy.0",
@@ -286,21 +331,85 @@ impl Model {
                     &[
                         action_context,
                         action_entity,
-                        batch.action_features.shallow_clone(),
+                        action_features.shallow_clone(),
                     ],
                     -1,
                 ),
             )
             .tanh();
-        let logits = self.linear("policy.2", &hidden).squeeze_dim(-1);
-        let logp = segmented_log_softmax(&logits, &batch.action_graph, batch.graph.graphs());
-        let values = self
-            .linear("value.2", &self.linear("value.0", encoded.context()).tanh())
-            .sigmoid();
+        self.linear("policy.2", &hidden).squeeze_dim(-1)
+    }
+
+    fn score_tensor_unchecked(
+        &self,
+        encoded: &EncodedOuterState,
+        action_features: &Tensor,
+        action_entity: &Tensor,
+        action_graph: &Tensor,
+    ) -> Tensor {
+        self.score_from_encoded_tensors(
+            encoded.graph.context(),
+            encoded.graph.entities(),
+            action_features,
+            action_entity,
+            action_graph,
+        )
+    }
+
+    fn one_root_page_tensors(
+        encoded: &EncodedOuterState,
+        rows: &[[f32; ACTION_FEATURES]],
+        entities: &[i64],
+        device: Device,
+    ) -> Result<(Tensor, Tensor, Tensor)> {
+        let entity_count = encoded.graph.entities().size()[0];
+        ensure!(
+            encoded.graphs == 1
+                && !rows.is_empty()
+                && rows.len() == entities.len()
+                && entities
+                    .iter()
+                    .all(|entity| *entity >= 0 && *entity < entity_count),
+            "aic-learning.outer-score-page: invalid one-root action references"
+        );
+        let features = Tensor::from_slice(&rows.iter().flatten().copied().collect::<Vec<_>>())
+            .view([-1, ACTION_FEATURES as i64])
+            .to_device(device);
+        let entity = Tensor::from_slice(entities).to_device(device);
+        let graph = Tensor::zeros([rows.len() as i64], (Kind::Int64, device));
+        Ok((features, entity, graph))
+    }
+
+    pub(crate) fn score_one_root_page(
+        &self,
+        encoded: &EncodedOuterState,
+        rows: &[[f32; ACTION_FEATURES]],
+        entities: &[i64],
+        device: Device,
+    ) -> Result<Tensor> {
+        let (features, entity, graph) =
+            Self::one_root_page_tensors(encoded, rows, entities, device)?;
+        let logits = self.score_tensor_unchecked(encoded, &features, &entity, &graph);
+        ensure!(
+            bool::try_from(logits.isfinite().all())?,
+            "aic-learning.outer-score-page: nonfinite logits"
+        );
+        Ok(logits)
+    }
+
+    fn forward_unchecked(&self, batch: &Batch) -> Prediction {
+        let encoded = self.encode_unchecked(&batch.graph);
+        let logits = self.score_tensor_unchecked(
+            &encoded,
+            &batch.action_features,
+            &batch.action_entity,
+            &batch.action_graph,
+        );
+        let logp = segmented_log_softmax(&logits, &batch.action_graph, encoded.graphs);
         Prediction {
             logits,
             logp,
-            values,
+            values: encoded.values,
         }
     }
 
@@ -339,6 +448,148 @@ impl Model {
             )
         }));
         values
+    }
+}
+
+impl<'m> StreamedPolicyRoot<'m> {
+    pub(crate) fn new(model: &'m Model, input: &Input, device: Device) -> Result<Self> {
+        let graph = InputBatch::from_inputs(&[input], device)?;
+        let encoded = model.encode_unchecked(&graph);
+        ensure!(
+            bool::try_from(encoded.values.isfinite().all())?,
+            "aic-learning.outer-streamed-value: nonfinite root value"
+        );
+        let context_leaf = encoded.graph.context().detach().set_requires_grad(true);
+        let entity_leaf = encoded.graph.entities().detach().set_requires_grad(true);
+        Ok(Self {
+            model,
+            encoded,
+            context_leaf,
+            entity_leaf,
+            device,
+        })
+    }
+
+    pub(crate) fn values(&self) -> &Tensor {
+        &self.encoded.values
+    }
+
+    fn page_logits(&self, rows: &[[f32; ACTION_FEATURES]], entities: &[i64]) -> Result<Tensor> {
+        let (features, entity, graph) =
+            Model::one_root_page_tensors(&self.encoded, rows, entities, self.device)?;
+        Ok(self.model.score_from_encoded_tensors(
+            &self.context_leaf,
+            &self.entity_leaf,
+            &features,
+            &entity,
+            &graph,
+        ))
+    }
+
+    pub(crate) fn frozen_logits(
+        &self,
+        rows: &[[f32; ACTION_FEATURES]],
+        entities: &[i64],
+    ) -> Result<Tensor> {
+        tch::no_grad(|| self.page_logits(rows, entities))
+    }
+
+    /// Accumulate policy-head and detached encoder-output gradients for a page.
+    /// The normalizer and target mass come from a complete no-gradient pass.
+    pub(crate) fn backward_page(
+        &self,
+        rows: &[[f32; ACTION_FEATURES]],
+        entities: &[i64],
+        targets: &[f32],
+        statistics: &StreamedPolicyStatistics,
+        batch_states: usize,
+    ) -> Result<()> {
+        ensure!(
+            batch_states > 0 && rows.len() == targets.len(),
+            "aic-learning.outer-streamed-page: target length or batch size differs"
+        );
+        let maximum = statistics.maximum.as_ref().ok_or_else(|| {
+            anyhow!("aic-learning.outer-streamed-page: missing full root normalizer")
+        })?;
+        let logits = self.page_logits(rows, entities)?;
+        let target = Tensor::from_slice(targets)
+            .to_device(self.device)
+            .to_kind(Kind::Double);
+        let coefficient = tch::no_grad(|| {
+            ((logits.detach() - maximum).exp().to_kind(Kind::Double)
+                * (&statistics.target_mass / &statistics.denominator)
+                - target)
+                .to_kind(Kind::Float)
+        });
+        ((logits * coefficient).sum(Kind::Float) / batch_states as f64).backward();
+        Ok(())
+    }
+
+    pub(crate) fn encoder_surrogate(&self) -> Result<Tensor> {
+        let context_grad = self.context_leaf.grad();
+        let entity_grad = self.entity_leaf.grad();
+        ensure!(
+            context_grad.defined() && entity_grad.defined(),
+            "aic-learning.outer-streamed-encoder: policy page gradients are missing"
+        );
+        Ok(
+            (self.encoded.graph.context() * context_grad.detach()).sum(Kind::Float)
+                + (self.encoded.graph.entities() * entity_grad.detach()).sum(Kind::Float),
+        )
+    }
+}
+
+impl StreamedPolicyStatistics {
+    pub(crate) fn new(device: Device) -> Self {
+        Self {
+            maximum: None,
+            denominator: Tensor::zeros([], (Kind::Double, device)),
+            target_mass: Tensor::zeros([], (Kind::Double, device)),
+            target_shifted_sum: Tensor::zeros([], (Kind::Double, device)),
+        }
+    }
+
+    pub(crate) fn observe(&mut self, logits: &Tensor, targets: &[f32]) -> Result<()> {
+        ensure!(
+            logits.size() == [targets.len() as i64],
+            "aic-learning.outer-streamed-statistics: page target length differs"
+        );
+        let target = Tensor::from_slice(targets)
+            .to_device(logits.device())
+            .to_kind(Kind::Double);
+        tch::no_grad(|| {
+            let page_maximum = logits.max();
+            let previous = self.maximum.take();
+            let maximum = previous.as_ref().map_or_else(
+                || page_maximum.shallow_clone(),
+                |old| old.maximum(&page_maximum),
+            );
+            if let Some(old) = previous {
+                let shift = (old - &maximum).to_kind(Kind::Double);
+                self.denominator = &self.denominator * shift.exp();
+                self.target_shifted_sum = &self.target_shifted_sum + &self.target_mass * shift;
+            }
+            let shifted = logits - &maximum;
+            self.denominator =
+                &self.denominator + shifted.exp().to_kind(Kind::Double).sum(Kind::Double);
+            self.target_mass = &self.target_mass + target.sum(Kind::Double);
+            self.target_shifted_sum = &self.target_shifted_sum
+                + (&target * shifted.to_kind(Kind::Double)).sum(Kind::Double);
+            self.maximum = Some(maximum);
+        });
+        Ok(())
+    }
+
+    pub(crate) fn true_cross_entropy(&self) -> Result<Tensor> {
+        self.maximum
+            .as_ref()
+            .ok_or_else(|| anyhow!("aic-learning.outer-streamed-statistics: empty root policy"))?;
+        let loss = &self.target_mass * self.denominator.log() - &self.target_shifted_sum;
+        ensure!(
+            bool::try_from(loss.isfinite().all())?,
+            "aic-learning.outer-streamed-statistics: nonfinite root policy loss"
+        );
+        Ok(loss)
     }
 }
 
@@ -402,6 +653,10 @@ pub fn value_loss(prediction: &Tensor, targets: &[ValueTarget], device: Device) 
 }
 
 impl<'a> CompiledModel<'a> {
+    pub(crate) fn config(&self) -> &OuterModelConfig {
+        &self.eager.config
+    }
+
     pub fn new(eager: &'a Model) -> Self {
         // The profiling executor in the retained LibTorch build specializes an
         // empty spatial-token input to the wrong dtype on its second call.
@@ -426,6 +681,7 @@ impl<'a> CompiledModel<'a> {
                 weights,
             },
             module: Mutex::new(None),
+            page_module: Mutex::new(None),
         }
     }
 
@@ -486,6 +742,74 @@ impl<'a> CompiledModel<'a> {
             values,
         })
     }
+
+    pub(crate) fn encode_one_root(&self, graph: &InputBatch) -> Result<EncodedOuterState> {
+        ensure!(
+            graph.graphs() == 1,
+            "aic-learning.outer-score-page: expected one root graph"
+        );
+        let encoded = tch::no_grad(|| self.frozen.encode_unchecked(graph));
+        ensure!(
+            bool::try_from(encoded.values.isfinite().all())?,
+            "aic-learning.outer-score-page: nonfinite root value"
+        );
+        Ok(encoded)
+    }
+
+    pub(crate) fn score_one_root_page(
+        &self,
+        encoded: &EncodedOuterState,
+        rows: &[[f32; ACTION_FEATURES]],
+        entities: &[i64],
+        device: Device,
+    ) -> Result<Tensor> {
+        let (features, entity, graph) =
+            Model::one_root_page_tensors(encoded, rows, entities, device)?;
+        let inputs = [
+            encoded.graph.context().shallow_clone(),
+            encoded.graph.entities().shallow_clone(),
+            features,
+            entity,
+            graph,
+        ];
+        let mut guard = self
+            .page_module
+            .lock()
+            .map_err(|_| anyhow!("aic-learning.outer-compiled-page-lock: poisoned trace cache"))?;
+        if guard.is_none() {
+            let frozen = &self.frozen;
+            let mut trace = |values: &[Tensor]| {
+                vec![frozen.score_from_encoded_tensors(
+                    &values[0], &values[1], &values[2], &values[3], &values[4],
+                )]
+            };
+            let module = tch::no_grad(|| {
+                CModule::create_by_tracing("AicOuterPageHead", "forward", &inputs, &mut trace)
+            })?;
+            let expected = tch::no_grad(|| {
+                frozen.score_from_encoded_tensors(
+                    &inputs[0], &inputs[1], &inputs[2], &inputs[3], &inputs[4],
+                )
+            });
+            let actual = module.forward_ts(&inputs)?;
+            ensure!(
+                actual.size() == expected.size() && actual.allclose(&expected, 1e-5, 1e-5, false),
+                "aic-learning.outer-compiled-page-parity: traced page head differs from eager"
+            );
+            *guard = Some(module);
+        }
+        let logits = tch::no_grad(|| {
+            guard
+                .as_ref()
+                .expect("compiled page head initialized")
+                .forward_ts(&inputs)
+        })?;
+        ensure!(
+            logits.size() == [rows.len() as i64] && bool::try_from(logits.isfinite().all())?,
+            "aic-learning.outer-compiled-page: invalid logits"
+        );
+        Ok(logits)
+    }
 }
 
 fn pack_prediction(prediction: &Prediction) -> Tensor {
@@ -533,6 +857,7 @@ mod tests {
     use aic_pilot_native::constructive::learning::{
         ENTITY_FEATURES, FOCUS_FEATURES, GLOBAL_FEATURES, RELATION_FEATURES, SPATIAL_FEATURES,
     };
+    use std::time::Instant;
 
     fn input() -> Input {
         Input {
@@ -547,6 +872,104 @@ mod tests {
             focus_features: [0.; FOCUS_FEATURES],
             focus_entity: -1,
         }
+    }
+
+    #[test]
+    #[ignore = "local root-action scale probe"]
+    fn plan00_outer_action_scoring_probe() -> Result<()> {
+        let _guard = crate::TORCH_TEST.lock().unwrap();
+        let rows = std::env::var("AIC_ROOT_SCORE_ROWS")
+            .ok()
+            .and_then(|value| value.parse::<usize>().ok())
+            .unwrap_or(4096);
+        let config = OuterModelConfig {
+            schema: OuterModelConfig::SCHEMA.into(),
+            encoder: crate::schema::ConstructiveModelConfig {
+                schema: crate::schema::ConstructiveModelConfig::SCHEMA.into(),
+                width: 32,
+                message_rounds: 1,
+            },
+            width: 32,
+        };
+        let (order, state) = Model::initial_state(&config, 51)?;
+        let model = Model::load(&config, &order, &state, Device::Cpu)?;
+        let graph = if let Ok(panel_path) = std::env::var("AIC_ROOT_SCORE_PANEL") {
+            use aic_pilot_native::constructive::{Command, Limits, Session};
+            let panel: serde_json::Value = serde_json::from_slice(&std::fs::read(panel_path)?)?;
+            let case = &panel["cases"][0];
+            let catalog_root =
+                std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/game/normalized");
+            let loaded = aic_layout_gen::io::load_catalogs(&catalog_root)?;
+            let mut source = Session::new(
+                serde_json::from_value(case["problem"].clone())?,
+                std::sync::Arc::new(loaded.catalogs),
+                serde_json::from_value::<Limits>(panel["limits"].clone())?,
+            )?;
+            let prefix = std::env::var("AIC_ROOT_SCORE_PREFIX")
+                .ok()
+                .and_then(|value| value.parse::<usize>().ok())
+                .unwrap_or(0);
+            for command in case["prefix"].as_array().unwrap().iter().take(prefix) {
+                let step = source.step(serde_json::from_value::<Command>(command.clone())?);
+                assert!(step.accepted && step.diagnostic.is_none(), "{step:?}");
+            }
+            let candidate: aic_pilot_native::constructive::routing_candidates::Config =
+                serde_json::from_value(panel["candidate"].clone())?;
+            source.macro_learning_input(&aic_pilot_native::constructive::learning::Config {
+                placement: candidate.bounds,
+                extension_lengths: vec![1, 2, 4],
+            })?
+        } else {
+            std::sync::Arc::new(input())
+        };
+        let features = vec![[0.5; ACTION_FEATURES]; rows];
+        let references = vec![0; rows];
+        let started = Instant::now();
+        let batch = Batch::from_rows(&[&graph], &[&features], &[&references], Device::Cpu)?;
+        let batch_seconds = started.elapsed().as_secs_f64();
+        let started = Instant::now();
+        let prediction = tch::no_grad(|| model.forward(&batch))?;
+        let forward_seconds = started.elapsed().as_secs_f64();
+        assert_eq!(prediction.logp.size(), [rows as i64]);
+        eprintln!(
+            "plan00 score rows={rows} entities={} spatial={} batch_seconds={batch_seconds:.6} forward_seconds={forward_seconds:.6}",
+            graph.entity_features.len(),
+            graph.spatial_features.len(),
+        );
+        if std::env::var("AIC_ROOT_SCORE_COMPARE_COMPILED").as_deref() == Ok("1") {
+            let compiled = CompiledModel::new(&model);
+            let _warm = tch::no_grad(|| compiled.forward(&batch))?;
+            let started = Instant::now();
+            let dense_compiled = tch::no_grad(|| compiled.forward(&batch))?;
+            let dense_seconds = started.elapsed().as_secs_f64();
+            let graph_batch = InputBatch::from_inputs(&[&graph], Device::Cpu)?;
+            let started = Instant::now();
+            let encoded = compiled.encode_one_root(&graph_batch)?;
+            let encode_seconds = started.elapsed().as_secs_f64();
+            let _warm =
+                compiled.score_one_root_page(&encoded, &features, &references, Device::Cpu)?;
+            let started = Instant::now();
+            let page_logits =
+                compiled.score_one_root_page(&encoded, &features, &references, Device::Cpu)?;
+            let page_seconds = started.elapsed().as_secs_f64();
+            let page_logp = page_logits.log_softmax(0, Kind::Float);
+            assert!(bool::try_from(page_logp.allclose(
+                &dense_compiled.logp,
+                1e-5,
+                1e-5,
+                false
+            ))?);
+            assert!(bool::try_from(encoded.values.allclose(
+                &dense_compiled.values,
+                1e-6,
+                1e-6,
+                false
+            ))?);
+            eprintln!(
+                "plan02 compiled compare rows={rows} dense_seconds={dense_seconds:.6} one_encode_seconds={encode_seconds:.6} reused_page_seconds={page_seconds:.6}"
+            );
+        }
+        Ok(())
     }
 
     #[test]
@@ -590,6 +1013,322 @@ mod tests {
             assert!((f64::try_from(mass)? - 1.0).abs() < 1e-5);
         }
         assert_eq!(prediction.values.size(), [2, VALUE_HEADS as i64]);
+        Ok(())
+    }
+
+    #[test]
+    fn encoded_action_pages_match_dense_logits_and_value() -> Result<()> {
+        let _guard = crate::TORCH_TEST.lock().unwrap();
+        let config = OuterModelConfig {
+            schema: OuterModelConfig::SCHEMA.into(),
+            encoder: crate::schema::ConstructiveModelConfig {
+                schema: crate::schema::ConstructiveModelConfig::SCHEMA.into(),
+                width: 16,
+                message_rounds: 1,
+            },
+            width: 16,
+        };
+        let (order, state) = Model::initial_state(&config, 71)?;
+        let model = Model::load(&config, &order, &state, Device::Cpu)?;
+        let source = input();
+        let rows = [
+            [0.0; ACTION_FEATURES],
+            [0.5; ACTION_FEATURES],
+            [1.0; ACTION_FEATURES],
+        ];
+        let entities = [0, 1, 0];
+        let dense = Batch::from_rows(&[&source], &[&rows], &[&entities], Device::Cpu)?;
+        let dense = tch::no_grad(|| model.forward(&dense))?;
+        let graph = InputBatch::from_inputs(&[&source], Device::Cpu)?;
+        let encoded = tch::no_grad(|| model.encode_unchecked(&graph));
+        let left = tch::no_grad(|| {
+            model.score_one_root_page(&encoded, &rows[..1], &entities[..1], Device::Cpu)
+        })?;
+        let right = tch::no_grad(|| {
+            model.score_one_root_page(&encoded, &rows[1..], &entities[1..], Device::Cpu)
+        })?;
+        let joined = Tensor::cat(&[left, right], 0);
+        assert!(bool::try_from(joined.allclose(
+            &dense.logits,
+            1e-6,
+            1e-6,
+            false
+        ))?);
+        assert!(bool::try_from(encoded.values.allclose(
+            &dense.values,
+            0.0,
+            0.0,
+            false
+        ))?);
+        let compiled = CompiledModel::new(&model);
+        let compiled_state = compiled.encode_one_root(&graph)?;
+        let left = compiled.score_one_root_page(
+            &compiled_state,
+            &rows[..1],
+            &entities[..1],
+            Device::Cpu,
+        )?;
+        let right = compiled.score_one_root_page(
+            &compiled_state,
+            &rows[1..],
+            &entities[1..],
+            Device::Cpu,
+        )?;
+        let joined = Tensor::cat(&[left, right], 0);
+        assert!(bool::try_from(joined.allclose(
+            &dense.logits,
+            1e-6,
+            1e-6,
+            false
+        ))?);
+        assert!(bool::try_from(compiled_state.values.allclose(
+            &dense.values,
+            0.0,
+            0.0,
+            false
+        ))?);
+        Ok(())
+    }
+
+    fn streamed_gradient_case(policy_bias: f64) -> Result<()> {
+        let device = Device::Cpu;
+        let config = OuterModelConfig {
+            schema: OuterModelConfig::SCHEMA.into(),
+            encoder: crate::schema::ConstructiveModelConfig {
+                schema: crate::schema::ConstructiveModelConfig::SCHEMA.into(),
+                width: 16,
+                message_rounds: 1,
+            },
+            width: 16,
+        };
+        let (order, state) = Model::initial_state(&config, 71)?;
+        let dense_model = Model::load(&config, &order, &state, device)?;
+        let streamed_model = Model::load(&config, &order, &state, device)?;
+        for model in [&dense_model, &streamed_model] {
+            let mut bias = model.weights["policy.2.bias"].shallow_clone();
+            let _ = tch::no_grad(|| bias.fill_(policy_bias));
+        }
+        let source = input();
+        let mut rows = [[0.0f32; ACTION_FEATURES]; 5];
+        for (index, row) in rows.iter_mut().enumerate() {
+            row[index] = 0.2 + index as f32 * 0.1;
+            row[12] = (index as f32 - 2.0) * 0.3;
+        }
+        let entities = [0, 1, 0, 1, 0];
+        // A zero-target late action stays in the denominator. The sum is
+        // deliberately 0.7, so assuming unit target mass changes gradients.
+        let targets = [0.1f32, 0.15, 0.0, 0.2, 0.25];
+        let values = ValueTarget {
+            completion: 0.5,
+            additional_fraction: 0.25,
+            next_progress: 0.75,
+            blocked_fraction: 0.3,
+            area: Some(0.2),
+            transport: Some(0.4),
+            turns: Some(0.6),
+        };
+        let dense_batch = Batch::from_rows(&[&source], &[&rows], &[&entities], device)?;
+        let prediction = dense_model.forward(&dense_batch)?;
+        let dense_policy =
+            -(Tensor::from_slice(&targets).to_device(device) * prediction.logp).sum(Kind::Float);
+        let dense_loss = dense_policy + value_loss(&prediction.values, &[values], device)?;
+        let dense_scalar = f64::try_from(&dense_loss)?;
+        dense_loss.backward();
+
+        let streamed = StreamedPolicyRoot::new(&streamed_model, &source, device)?;
+        let mut statistics = StreamedPolicyStatistics::new(device);
+        for (start, end) in [(0, 2), (2, 4), (4, 5)] {
+            let logits = streamed.frozen_logits(&rows[start..end], &entities[start..end])?;
+            statistics.observe(&logits, &targets[start..end])?;
+        }
+        let streamed_value = value_loss(streamed.values(), &[values], device)?;
+        let streamed_scalar = f64::try_from(statistics.true_cross_entropy()? + &streamed_value)?;
+        for (start, end) in [(0, 2), (2, 4), (4, 5)] {
+            streamed.backward_page(
+                &rows[start..end],
+                &entities[start..end],
+                &targets[start..end],
+                &statistics,
+                1,
+            )?;
+        }
+        (streamed.encoder_surrogate()? + streamed_value).backward();
+        assert!(
+            (streamed_scalar - dense_scalar).abs() <= 2e-6,
+            "bias {policy_bias} dense {dense_scalar} streamed {streamed_scalar}"
+        );
+        for ((dense_name, dense_value), (streamed_name, streamed_value)) in dense_model
+            .parameters
+            .iter()
+            .zip(&streamed_model.parameters)
+        {
+            assert_eq!(dense_name, streamed_name);
+            let dense_grad = dense_value.grad();
+            let streamed_grad = streamed_value.grad();
+            assert_eq!(
+                dense_grad.defined(),
+                streamed_grad.defined(),
+                "gradient presence differs for {dense_name}"
+            );
+            if !dense_grad.defined() {
+                continue;
+            }
+            assert!(
+                bool::try_from(dense_grad.allclose(&streamed_grad, 1e-4, 2e-5, false))?,
+                "parameter gradient differs: {dense_name}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn streamed_policy_matches_dense_loss_and_every_parameter_gradient() -> Result<()> {
+        let _guard = crate::TORCH_TEST.lock().unwrap();
+        streamed_gradient_case(0.0)?;
+        streamed_gradient_case(1e8)
+    }
+
+    #[test]
+    fn two_streamed_roots_preserve_batch_policy_and_value_scaling() -> Result<()> {
+        let _guard = crate::TORCH_TEST.lock().unwrap();
+        let device = Device::Cpu;
+        let config = OuterModelConfig {
+            schema: OuterModelConfig::SCHEMA.into(),
+            encoder: crate::schema::ConstructiveModelConfig {
+                schema: crate::schema::ConstructiveModelConfig::SCHEMA.into(),
+                width: 16,
+                message_rounds: 1,
+            },
+            width: 16,
+        };
+        let (order, state) = Model::initial_state(&config, 29)?;
+        let dense_model = Model::load(&config, &order, &state, device)?;
+        let streamed_model = Model::load(&config, &order, &state, device)?;
+        let first = input();
+        let mut second = input();
+        second.global_features[0] = 0.6;
+        second.entity_features[0][0] = 0.35;
+        let first_rows = [[0.1; ACTION_FEATURES], [0.4; ACTION_FEATURES]];
+        let second_rows = [
+            [0.2; ACTION_FEATURES],
+            [0.5; ACTION_FEATURES],
+            [0.8; ACTION_FEATURES],
+        ];
+        let first_entities = [0, 1];
+        let second_entities = [1, 0, 1];
+        let first_targets = [0.3f32, 0.7];
+        let second_targets = [0.1f32, 0.2, 0.4];
+        let targets = [
+            ValueTarget {
+                completion: 0.0,
+                additional_fraction: 0.25,
+                next_progress: 0.0,
+                blocked_fraction: 0.8,
+                area: None,
+                transport: None,
+                turns: None,
+            },
+            ValueTarget {
+                completion: 1.0,
+                additional_fraction: 0.75,
+                next_progress: 1.0,
+                blocked_fraction: 0.1,
+                area: Some(0.3),
+                transport: Some(0.2),
+                turns: Some(0.4),
+            },
+        ];
+        let dense_batch = Batch::from_rows(
+            &[&first, &second],
+            &[&first_rows, &second_rows],
+            &[&first_entities, &second_entities],
+            device,
+        )?;
+        let prediction = dense_model.forward(&dense_batch)?;
+        let first_policy = -(Tensor::from_slice(&first_targets)
+            * prediction.logp.narrow(0, 0, first_rows.len() as i64))
+        .sum(Kind::Float);
+        let second_policy = -(Tensor::from_slice(&second_targets)
+            * prediction
+                .logp
+                .narrow(0, first_rows.len() as i64, second_rows.len() as i64))
+        .sum(Kind::Float);
+        let dense_loss = (first_policy + second_policy) / 2.0
+            + value_loss(&prediction.values, &targets, device)?;
+        let dense_scalar = f64::try_from(&dense_loss)?;
+        dense_loss.backward();
+
+        let first_root = StreamedPolicyRoot::new(&streamed_model, &first, device)?;
+        let second_root = StreamedPolicyRoot::new(&streamed_model, &second, device)?;
+        let mut first_stats = StreamedPolicyStatistics::new(device);
+        let mut second_stats = StreamedPolicyStatistics::new(device);
+        for index in 0..first_rows.len() {
+            let logits = first_root.frozen_logits(
+                &first_rows[index..index + 1],
+                &first_entities[index..index + 1],
+            )?;
+            first_stats.observe(&logits, &first_targets[index..index + 1])?;
+        }
+        for index in 0..second_rows.len() {
+            let logits = second_root.frozen_logits(
+                &second_rows[index..index + 1],
+                &second_entities[index..index + 1],
+            )?;
+            second_stats.observe(&logits, &second_targets[index..index + 1])?;
+        }
+        let streamed_values = Tensor::cat(
+            &[
+                first_root.values().shallow_clone(),
+                second_root.values().shallow_clone(),
+            ],
+            0,
+        );
+        let streamed_value_loss = value_loss(&streamed_values, &targets, device)?;
+        let streamed_scalar = f64::try_from(
+            (first_stats.true_cross_entropy()? + second_stats.true_cross_entropy()?) / 2.0
+                + &streamed_value_loss,
+        )?;
+        for index in 0..first_rows.len() {
+            first_root.backward_page(
+                &first_rows[index..index + 1],
+                &first_entities[index..index + 1],
+                &first_targets[index..index + 1],
+                &first_stats,
+                2,
+            )?;
+        }
+        for index in 0..second_rows.len() {
+            second_root.backward_page(
+                &second_rows[index..index + 1],
+                &second_entities[index..index + 1],
+                &second_targets[index..index + 1],
+                &second_stats,
+                2,
+            )?;
+        }
+        (first_root.encoder_surrogate()? + second_root.encoder_surrogate()? + streamed_value_loss)
+            .backward();
+        assert!((streamed_scalar - dense_scalar).abs() <= 2e-6);
+        for ((dense_name, dense_value), (streamed_name, streamed_value)) in dense_model
+            .parameters
+            .iter()
+            .zip(&streamed_model.parameters)
+        {
+            assert_eq!(dense_name, streamed_name);
+            let dense_grad = dense_value.grad();
+            let streamed_grad = streamed_value.grad();
+            assert_eq!(
+                dense_grad.defined(),
+                streamed_grad.defined(),
+                "{dense_name}"
+            );
+            if dense_grad.defined() {
+                assert!(
+                    bool::try_from(dense_grad.allclose(&streamed_grad, 1e-4, 2e-5, false))?,
+                    "batch gradient differs: {dense_name}"
+                );
+            }
+        }
         Ok(())
     }
 }

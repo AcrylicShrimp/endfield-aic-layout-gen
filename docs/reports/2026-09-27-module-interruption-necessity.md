@@ -1,0 +1,30 @@
+# Interruption and resource mechanism necessity audit
+
+## Question and method
+
+Check whether each module in Plans `2026-09-27.00`–`.13` needs retained progress or a resource admission mechanism for a concrete supported workload or contract. Read the plans, relevant implementation, and the existing first-turn, request-work, and shared-memory contracts. This is a design and implementation-scope audit, not a claim that the modules are complete or that the final training distribution is ready. Independent read-only reviewer `/root/review_resume_resource_necessity` returned PASS for the plan packet. No server was used.
+
+## Module decisions
+
+| Plan | Retained progress or limit rationale | Decision for internal work |
+| --- | --- | --- |
+| `.00` completed layout and validation | Layout copies, port projection, catalog enumeration, and independent validation grow with accepted layout size and can cross a first-turn page. | Retain these data-dependent traversals. Keep ordinary validation on the same rule path; no repeated audit. |
+| `.01` native replay | A source fork, long route command, and completing validation can stop while the caller still owns the original source. | Retain one replay owner. Require physical-input evidence for each inner cursor; keep bounded command helpers direct. The final-validation atomic-time and one-shot-caller cost gates remain open. |
+| `.02` repair finish | Trusted internal draft results can carry the first completed validation and consumed obligations. | Remove repeated full draft and terminal audits. Only the known legacy or external boundary needs its first independent validation. |
+| `.03` repair draft | A source fork and survivor route/cell/port/component rebuild have data-dependent work and must not expose a half-rebuilt draft. | Retain the draft owner and rebuild cursors. Count progress during required traversals. Copy removed IDs directly if the remaining first-turn credit admits the measured upper size; add an inner index only if needed. |
+| `.04` prepared route search | Frontier/probe/successor work and path ownership can span search pages. | Retain search state and a found path through publication handoff. Keep small legal-transition lookups direct and cached. |
+| `.05` node lower widening | Revisited nodes must retain the lower pager, prior candidates, and exact visit schedule. | Retain one node pager; no new resume protocol for action-ID lookup or scoring arithmetic. |
+| `.06` Gumbel action identity | Stable physical IDs and root eligibility are ordinary persistent algorithm state. | No interruption or resource-limit mechanism is required by this plan. |
+| `.07` physical cost | Changed-route cells and touched-site users can be data-dependent while the source and child must remain owned. | Retain only measured changed-route/site traversal. Prove the native changed-cell invariant offline and remove the whole component-owner scan instead of giving it a cursor. |
+| `.08` first-turn scheduler | Direct and repair tasks share fixed temporary work/time opportunities and must preserve a task after its turn stops. | Keep page windows at the task boundary; the original request caps remain the hard limits. No extra hard first-turn cap. |
+| `.09` shared run memory | Root, native candidate, tree, reports, and training examples coexist under one run cap. | Keep one shared live-memory counter for separately retained material objects and growth peaks. Cover bounded scratch within an owner reservation; do not create per-item guards. |
+| `.10` candidate publication | A found path or chosen member would otherwise be lost or replayed after a stop before final cost, sizing, and atomic commit. | Retain the top-level publication owner. Add inner cursors only for measured page-crossing or ownership needs; perform bounded lookup, arithmetic, and assembly directly. |
+| `.11` repair scope | Large allowed-route, endpoint, removal, conflict, and source-bound identity preparation precedes the first-turn quota snapshot. | Retain the scope owner and actual data-dependent traversals. Measure hash/sort before deciding whether they need inner cursors. |
+| `.12` repair attempt and guidance | Selected variant, failed-attempt history, one model result, and priced guide must survive a page and transfer to the route pager once. | Retain the attempt/guide owner and data-dependent live-cell pricing. Choose direct calls or inner cursors for historical price, combination/history loops and head/edge amendments only after measuring their first-turn need. |
+| `.13` network variant and guidance | Multiple variant forks and batched inference inputs/results must remain paired while a member pager is admitted. | Retain variant/member ownership. Use an inner input-finalization cursor only if its measured work actually crosses a page. |
+
+## Review gate for implementation
+
+For each retained inner cursor, record the actual first-turn work/time credit, physical-input size and measured operation cost, the state that must survive a stop, and why a direct admitted call is insufficient. For each material memory guard, identify the separately live object or allocation peak, including old/new overlap on growth. If that evidence is absent, simplify the inner operation while keeping its parent owner and correctness contract. Do this offline during implementation review; do not add a routine output or distribution audit. A resource cap may report typed unknown on genuine exhaustion, but a new small fixed cutoff cannot silently redefine the accepted factory domain.
+
+Plan `.01` still has a full-module BLOCK review for atomic final-validation admission and comparable integrated one-shot-caller cost. A 58-ms final validator call, which includes large-state cleanup, under an artificial 50-ms page does not alone demonstrate a default first-turn violation: the first window is half the request time remaining when it is assigned, at most 30 seconds under the default 60-second request deadline. Broad generated and placed factory coverage and default-cap suitability remain with the existing distribution and final-readiness plans; this audit does not mark experiments ready.

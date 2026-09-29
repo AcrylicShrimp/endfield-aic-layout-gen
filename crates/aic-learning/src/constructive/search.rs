@@ -241,7 +241,7 @@ impl<'a> Search<'a> {
         node: usize,
         observation: &Observation,
         maximum: usize,
-    ) -> Vec<FactoredCommand> {
+    ) -> Result<Vec<FactoredCommand>> {
         let pages = self.nodes[node]
             .pages
             .as_mut()
@@ -257,7 +257,7 @@ impl<'a> Search<'a> {
                     state.kind,
                     state.next_offset,
                     self.config.max_actions_per_widening,
-                );
+                )?;
                 state.next_offset = page.next_offset;
                 state.exhausted = page.exhausted;
                 state.pending.extend(page.commands);
@@ -270,7 +270,7 @@ impl<'a> Search<'a> {
                 empty_scans += 1;
             }
         }
-        gathered
+        Ok(gathered)
     }
 
     fn add_valid_actions(
@@ -290,7 +290,7 @@ impl<'a> Search<'a> {
         if maximum == 0 || self.counters.policy_evaluations >= self.config.max_policy_evaluations {
             return Ok(None);
         }
-        let commands = self.gather_valid_actions(node, observation, maximum);
+        let commands = self.gather_valid_actions(node, observation, maximum)?;
         if commands.is_empty() {
             return Ok(None);
         }
@@ -732,11 +732,9 @@ fn policy_baseline(
                 .pop()
                 .expect("one observation produces one choice");
             actor_scoring_batches += choice.factors.len();
-            actor_choices_scored += choice
-                .factors
-                .iter()
-                .map(|factor| observation.domain.choices(&factor.cursor).len())
-                .sum::<usize>();
+            for factor in &choice.factors {
+                actor_choices_scored += observation.domain.choices(&factor.cursor)?.len();
+            }
             let step = session.step_selected(choice.command);
             ensure!(
                 step.accepted,
@@ -1061,7 +1059,14 @@ mod tests {
             .domain
             .available_command_kinds()
             .into_iter()
-            .flat_map(|kind| observation.domain.command_page(kind, 0, 2).commands)
+            .map(|kind| {
+                observation
+                    .domain
+                    .command_page(kind, 0, 2)
+                    .unwrap()
+                    .commands
+            })
+            .flatten()
             .collect::<Vec<_>>();
         let scored =
             policy::score_factored_commands(&model, &observation, &commands, Device::Cpu).unwrap();

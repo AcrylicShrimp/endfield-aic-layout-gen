@@ -6,7 +6,7 @@ const NEARBY_TRIAL_LIMIT: usize = 32;
 fn pending_corridors(node: &ConstructiveNode, resolved: &BTreeSet<&str>) -> BTreeSet<(i64, i64)> {
     node.boundary_requirements
         .iter()
-        .filter(|b| !resolved.contains(b.requirement.as_str()))
+        .filter(|b| !resolved.contains(b.requirement.as_str()) && b.attachments.len() == 1)
         .flat_map(|b| b.attachments.iter())
         .filter_map(|a| match a {
             ConstructiveBoundaryAttachment::NewPort { port } => Some(port),
@@ -83,7 +83,7 @@ fn score(node: &ConstructiveNode) -> Option<[u64; 3]> {
 }
 
 /// Generate an input-size-bounded pose set, then retain only the best cheap shortlist.
-fn shortlist(
+pub(super) fn shortlist(
     target: &ConstructiveNode,
     fresh: &ConstructiveNode,
     anchor: &str,
@@ -260,7 +260,9 @@ impl Constructor<'_> {
                 break;
             }
         }
-        self.placement_decisions.push(decision);
+        if self.retain_history {
+            self.placement_decisions.push(decision);
+        }
         best
     }
 }

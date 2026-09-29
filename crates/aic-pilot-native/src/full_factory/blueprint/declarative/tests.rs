@@ -19,6 +19,120 @@ pub(super) fn session() -> Session {
     .unwrap()
 }
 
+#[test]
+#[ignore = "set AIC_PLAN24_WITNESS to an admitted measured witness"]
+fn measure_generated_input_and_checkpoint_bytes() {
+    let path = std::env::var("AIC_PLAN24_WITNESS").unwrap();
+    let bytes = std::fs::read(&path).unwrap();
+    let value: Value = serde_json::from_slice(&bytes).unwrap();
+    let (request, witness, input_bytes) = if value.get("original").is_some() {
+        let generated: crate::generation::source::Generated =
+            serde_json::from_value(value).unwrap();
+        (generated.request, generated.original, bytes.len())
+    } else {
+        let witness: Witness = serde_json::from_value(value).unwrap();
+        let request = fixture_request(&witness);
+        let generated = crate::generation::source::Generated {
+            request: request.clone(),
+            original: witness.clone(),
+            metadata: json!({}),
+            admission: None,
+        };
+        (
+            request,
+            witness,
+            serde_json::to_vec(&generated).unwrap().len(),
+        )
+    };
+    let (_, catalogs, _) = fixture();
+    let catalogs = Arc::new(crate::input::Catalogs::new(catalogs));
+    let networks = witness.transport_networks.len();
+    let cells = witness
+        .transport_networks
+        .iter()
+        .map(|network| network.cells.len())
+        .sum::<usize>();
+    let segments = witness
+        .transport_networks
+        .iter()
+        .map(|network| network.segments.len())
+        .sum::<usize>();
+    let terminals = witness
+        .transport_networks
+        .iter()
+        .map(|network| network.terminals.len())
+        .sum::<usize>();
+    println!(
+        "plan24_input={}",
+        json!({"path":path,"facilities":witness.placements.len(),"networks":networks,
+            "cells":cells,"segments":segments,"terminals":terminals,
+            "input_bytes":input_bytes})
+    );
+    let started = std::time::Instant::now();
+    let mut session = Session::new(
+        request,
+        witness.clone(),
+        catalogs.clone(),
+        Limits {
+            schema: SCHEMA.into(),
+            max_actions: 256,
+            elapsed_ms: 60_000,
+            route_expansions: 100_000,
+            max_total_route_expansions: 10_000_000,
+            search_padding: 4,
+        },
+    )
+    .unwrap();
+    let new_ms = started.elapsed().as_secs_f64() * 1000.0;
+    let checkpoint = session.checkpoint().to_string();
+    let checkpoint_bytes = checkpoint.len();
+    let started = std::time::Instant::now();
+    let restored = Session::from_checkpoint(&checkpoint, catalogs).unwrap();
+    let restore_ms = started.elapsed().as_secs_f64() * 1000.0;
+    assert_eq!(
+        restored.checkpoint()["input_sha256"],
+        session.checkpoint()["input_sha256"]
+    );
+    assert_eq!(restored.original.placements.len(), witness.placements.len());
+    let mut changed_checkpoint_bytes = None;
+    if std::env::var_os("AIC_PLAN24_STEP").is_some() {
+        let first = &witness.placements[0];
+        let action = place(
+            &session,
+            &first.instance,
+            i64::from(first.x) + 1,
+            i64::from(first.y),
+            i64::from(first.rotation),
+        );
+        let outcome = step(&mut session, action);
+        assert_ne!(outcome["status"], "rejected", "{outcome}");
+        let changed = session.checkpoint().to_string();
+        let resumed = Session::from_checkpoint(&changed, session.catalogs.clone()).unwrap();
+        assert_eq!(resumed.state, session.state);
+        assert_eq!(resumed.best_state, session.best_state);
+        assert_eq!(
+            serde_json::to_value(&resumed.work).unwrap(),
+            serde_json::to_value(&session.work).unwrap()
+        );
+        assert_eq!(resumed.attempts, session.attempts);
+        assert_eq!(resumed.revision, session.revision);
+        assert_eq!(
+            resumed.checkpoint()["source"],
+            session.checkpoint()["source"]
+        );
+        assert_ne!(resumed.state, resumed.best_state);
+        changed_checkpoint_bytes = Some(changed.len());
+    }
+    println!(
+        "plan24={}",
+        json!({"path":path,"facilities":witness.placements.len(),"networks":networks,
+            "cells":cells,"segments":segments,"terminals":terminals,
+            "input_bytes":input_bytes,"checkpoint_bytes":checkpoint_bytes,
+            "changed_checkpoint_bytes":changed_checkpoint_bytes,
+            "session_new_ms":new_ms,"restore_ms":restore_ms})
+    );
+}
+
 pub(super) fn place(s: &Session, instance: &str, x: i64, y: i64, rotation: i64) -> Value {
     let ports: Vec<_> = s
         .blueprint

@@ -29,6 +29,7 @@ aic-layout-gen = { workspace = true, optional = true }
 aic-recipe-layout-gen = { workspace = true, optional = true }
 aic-torch = { workspace = true, optional = true }
 anyhow.workspace = true
+fs4.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true

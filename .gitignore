@@ -1,4 +1,5 @@
 /target/
+crates/*/target/
 # Generated runs and retained local artifacts must not enter Git.
 /artifacts/
 **/*.rs.bk

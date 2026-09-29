@@ -1,17 +1,22 @@
 //! Versioned numerical state and conditional command domains for direct construction.
 
-use std::{collections::BTreeSet, sync::Arc};
+use std::sync::Arc;
 
 use aic_layout::{
     facilities::FacilityPortDirection,
     geometry::{Bounds, Point, layer},
-    physical::{Bridge, BridgeAxis},
+    physical::{Bridge, BridgeAxis, BridgeChannel},
     projection::rotate,
 };
 use serde::{Deserialize, Serialize};
 
 use super::routing_candidates::{AllowanceStop, RequestAllowance, RequestFailure, WorkKind};
 use super::{Command, Diagnostic, Direction, Session, error};
+
+mod pose_index;
+mod route_graph_cursor;
+use pose_index::PoseIndex;
+pub(crate) use route_graph_cursor::RouteGraphCursor;
 
 pub const SCHEMA: &str = "aic-constructive-learning-v3";
 pub const ENTITY_FEATURES: usize = 18;
@@ -121,7 +126,7 @@ pub struct Domain {
     revision: u64,
     scale: f32,
     placement: Bounds,
-    blocked: BTreeSet<Point>,
+    pose_index: Option<PoseIndex>,
     placements: Vec<PlacementDomain>,
     terminals: Vec<TerminalDomain>,
     terminal_positions: Vec<Point>,
@@ -208,15 +213,11 @@ impl Config {
             area.checked_mul(rotations)
         });
         let spatial_upper_bound = session
-            .bodies
-            .len()
-            .checked_add(
-                session
-                    .occupied
-                    .iter()
-                    .map(|cells| cells.len())
-                    .sum::<usize>(),
-            )
+            .occupied
+            .iter()
+            .try_fold(session.bodies.len(), |count, cells| {
+                count.checked_add(cells.len())
+            })
             .and_then(|count| count.checked_add(session.active_cells.len()))
             .and_then(|count| count.checked_add(session.terminal_poses.len()))
             .and_then(|count| count.checked_add(2));
@@ -228,9 +229,9 @@ impl Config {
             || self.placement.min_y < 0
             || width <= 0
             || height <= 0
-            || area.is_none_or(|area| area > 65_536)
-            || pose_upper_bound.is_none_or(|count| count > 1_000_000)
-            || spatial_upper_bound.is_none_or(|count| count > 1_000_000)
+            || area.is_none()
+            || pose_upper_bound.is_none()
+            || spatial_upper_bound.is_none()
             || self.extension_lengths.is_empty()
             || self.extension_lengths.len() > 256
             || !ordered
@@ -250,10 +251,93 @@ impl Config {
 }
 
 impl Session {
-    pub fn learning_observation(&self, config: &Config) -> Result<Observation, Diagnostic> {
+    pub fn learning_domain(&self, config: &Config) -> Result<Arc<Domain>, Diagnostic> {
         config.validate(self)?;
-        let domain = Arc::new(Domain::new(self, config));
-        if domain.choices(&Cursor::Command).is_empty() && !self.done() {
+        Ok(Arc::new(Domain::new(self, config)?))
+    }
+
+    /// A placement-only view preserves the Place and PlaceTerminal factor ranks
+    /// while avoiding unrelated route-port collections in a paged search.
+    pub fn learning_placement_domain(&self, config: &Config) -> Result<Arc<Domain>, Diagnostic> {
+        config.validate(self)?;
+        Ok(Arc::new(Domain::new_placement(self, config)?))
+    }
+
+    /// Close checked construction peak for the placement-only domain. The
+    /// caller reserves this before the occupancy prefix or shape rows exist.
+    pub fn learning_placement_domain_peak_bytes(
+        &self,
+        config: &Config,
+    ) -> Result<usize, Diagnostic> {
+        config.validate(self)?;
+        let add =
+            |left: usize, right: usize| left.checked_add(right).ok_or_else(learning_size_error);
+        let multiply =
+            |left: usize, right: usize| left.checked_mul(right).ok_or_else(learning_size_error);
+        let blocked_count = self
+            .occupied
+            .iter()
+            .try_fold(self.bodies.len(), |count, layer| add(count, layer.len()))?;
+        let blocked_count = add(blocked_count, self.terminal_poses.len())?;
+        let mut bytes = add(
+            std::mem::size_of::<Domain>() + 2 * std::mem::size_of::<usize>(),
+            multiply(blocked_count, std::mem::size_of::<Point>())?,
+        )?;
+        bytes = add(
+            bytes,
+            multiply(
+                self.problem.blocks.len(),
+                std::mem::size_of::<PlacementDomain>(),
+            )?,
+        )?;
+        let mut rotation_count = 0usize;
+        for (block, problem) in self.problem.blocks.iter().enumerate() {
+            if self.poses[block].is_some() {
+                continue;
+            }
+            let definition = self
+                .catalogs
+                .facilities
+                .facility(&problem.facility)
+                .expect("constructive problem admitted facilities");
+            rotation_count = add(rotation_count, definition.allowed_rotations.len())?;
+            bytes = add(bytes, problem.id.len())?;
+        }
+        bytes = add(bytes, multiply(rotation_count, std::mem::size_of::<i64>())?)?;
+        if rotation_count > 0 {
+            bytes = add(
+                bytes,
+                PoseIndex::construction_upper_bytes(config.placement, rotation_count)?,
+            )?;
+        }
+        let width = usize::try_from(config.placement.width()).map_err(|_| learning_size_error())?;
+        let height =
+            usize::try_from(config.placement.height()).map_err(|_| learning_size_error())?;
+        let perimeter = if width == 1 || height == 1 {
+            width.max(height)
+        } else {
+            add(multiply(width, 2)?, multiply(height - 2, 2)?)?
+        };
+        bytes = add(bytes, multiply(perimeter, std::mem::size_of::<Point>())?)?;
+        bytes = add(
+            bytes,
+            multiply(
+                self.problem.terminals.len(),
+                std::mem::size_of::<TerminalDomain>(),
+            )?,
+        )?;
+        for (terminal, problem) in self.problem.terminals.iter().enumerate() {
+            if self.terminal_poses[terminal].is_none() {
+                bytes = add(bytes, problem.id.len())?;
+            }
+        }
+        // `try_reserve_exact` may receive an allocator-rounded capacity.
+        add(add(bytes, bytes / 8)?, 4096)
+    }
+
+    pub fn learning_observation(&self, config: &Config) -> Result<Observation, Diagnostic> {
+        let domain = self.learning_domain(config)?;
+        if domain.choices(&Cursor::Command)?.is_empty() && !self.done() {
             return Err(error(
                 "empty-learning-domain",
                 "learning-domain",
@@ -261,7 +345,7 @@ impl Session {
             ));
         }
         Ok(Observation {
-            input: Arc::new(Input::new(self, config)),
+            input: Arc::new(Input::new(self, config)?),
             domain,
         })
     }
@@ -298,8 +382,8 @@ impl Session {
                 "route option target is missing, completed or differs from the active route",
             ));
         }
-        let domain = Arc::new(Domain::new_route(self, config, connection, allow_abort));
-        if domain.choices(&Cursor::Command).is_empty() {
+        let domain = Arc::new(Domain::new_route(self, config, connection, allow_abort)?);
+        if domain.choices(&Cursor::Command)?.is_empty() {
             return Err(error(
                 "empty-route-learning-domain",
                 &self.problem.connections[connection].id,
@@ -307,7 +391,7 @@ impl Session {
             ));
         }
         Ok(Observation {
-            input: Arc::new(Input::new(self, config)),
+            input: Arc::new(Input::new(self, config)?),
             domain,
         })
     }
@@ -331,15 +415,17 @@ impl Session {
                 "route guidance requires an unresolved connection in a stable state",
             ));
         }
-        Ok(Arc::new(Input::new_for_route(self, config, connection)))
+        Ok(Arc::new(Input::new_for_route(self, config, connection)?))
     }
 
+    /// Returns the retained byte charge with the input. The caller releases
+    /// that charge after the input is no longer live.
     pub fn route_guidance_learning_input_with_allowance(
         &self,
         config: &Config,
         connection: usize,
         allowance: &mut RequestAllowance,
-    ) -> Result<Arc<Input>, RequestFailure> {
+    ) -> Result<(Arc<Input>, usize), RequestFailure> {
         config.validate(self)?;
         if self.active.is_some()
             || connection >= self.problem.connections.len()
@@ -352,9 +438,9 @@ impl Session {
             )
             .into());
         }
-        Ok(Arc::new(Input::new_for_route_bounded(
-            self, config, connection, allowance,
-        )?))
+        let (input, reserved_bytes) =
+            Input::new_for_route_bounded(self, config, connection, allowance)?;
+        Ok((Arc::new(input), reserved_bytes))
     }
 
     /// Encodes a stable macro-search state without inheriting the most recent
@@ -368,16 +454,82 @@ impl Session {
                 "macro-search encoding requires a stable state",
             ));
         }
-        Ok(Arc::new(Input::new_for_macro(self, config)))
+        Ok(Arc::new(Input::new_for_macro(self, config)?))
     }
 }
 
 impl Domain {
+    /// Retained host bytes for the source-bound placement and command view.
+    pub fn retained_bytes(&self) -> usize {
+        fn vector_bytes<T>(items: &Vec<T>) -> usize {
+            items.capacity().saturating_mul(std::mem::size_of::<T>())
+        }
+        let mut bytes = std::mem::size_of::<Self>()
+            .saturating_add(2 * std::mem::size_of::<usize>())
+            .saturating_add(vector_bytes(&self.placements))
+            .saturating_add(vector_bytes(&self.terminals))
+            .saturating_add(vector_bytes(&self.terminal_positions))
+            .saturating_add(vector_bytes(&self.routes))
+            .saturating_add(vector_bytes(&self.extensions))
+            .saturating_add(self.pose_index.as_ref().map_or(0, PoseIndex::heap_bytes));
+        for placement in &self.placements {
+            bytes = bytes
+                .saturating_add(placement.id.capacity())
+                .saturating_add(vector_bytes(&placement.rotations));
+        }
+        for terminal in &self.terminals {
+            bytes = bytes.saturating_add(terminal.id.capacity());
+        }
+        for route in &self.routes {
+            bytes = bytes
+                .saturating_add(route.id.capacity())
+                .saturating_add(vector_bytes(&route.sources));
+            for source in &route.sources {
+                bytes = bytes
+                    .saturating_add(source.id.as_ref().map_or(0, String::capacity))
+                    .saturating_add(vector_bytes(&source.targets));
+                for target in &source.targets {
+                    bytes = bytes.saturating_add(target.as_ref().map_or(0, String::capacity));
+                }
+            }
+        }
+        for extension in &self.extensions {
+            bytes = bytes.saturating_add(vector_bytes(&extension.lengths));
+        }
+        bytes
+    }
+
+    pub fn source_revision(&self) -> u64 {
+        self.revision
+    }
+
+    pub fn placement_bounds(&self) -> Bounds {
+        self.placement
+    }
+
+    /// Count the complete native placement families without materializing pages.
+    /// This uses the same pose counts and terminal product as `command_page`.
+    pub fn placement_command_count(&self) -> Result<usize, Diagnostic> {
+        let blocks = checked_total(
+            self.placements
+                .iter()
+                .map(|placement| self.pose_count(placement)),
+        )?;
+        let terminals = self
+            .terminals
+            .len()
+            .checked_mul(self.terminal_positions.len())
+            .ok_or_else(learning_size_error)?;
+        blocks
+            .checked_add(terminals)
+            .ok_or_else(learning_size_error)
+    }
+
     pub fn revision(&self) -> u64 {
         self.revision
     }
 
-    pub fn choices(&self, cursor: &Cursor) -> Vec<Choice> {
+    pub fn choices(&self, cursor: &Cursor) -> Result<Vec<Choice>, Diagnostic> {
         match *cursor {
             Cursor::Command => self.command_choices(),
             Cursor::PlaceBlock => self
@@ -386,14 +538,14 @@ impl Domain {
                 .map(|placement| {
                     choice(6, placement.block as i64, 0., [placement.block as i64, -1])
                 })
-                .collect(),
+                .checked_collect(),
             Cursor::PlacePose { block } => self
                 .placements
                 .get(block)
                 .map(|domain| {
-                    self.placement_poses(domain)
-                        .into_iter()
-                        .map(|(point, rotation)| {
+                    (0..self.pose_count(domain))
+                        .map(|rank| {
+                            let (point, rotation) = self.pose_at(domain, rank);
                             let mut value = choice(7, rotation / 90, 0., [domain.block as i64, -1]);
                             value.features[17] = point.x as f32 / self.scale;
                             value.features[18] = point.y as f32 / self.scale;
@@ -401,14 +553,15 @@ impl Domain {
                             value.features[20] = (rotation as f32).to_radians().cos();
                             value
                         })
-                        .collect()
+                        .checked_collect()
                 })
-                .unwrap_or_default(),
+                .transpose()
+                .map(|choices| choices.unwrap_or_default()),
             Cursor::PlaceTerminal => self
                 .terminals
                 .iter()
                 .map(|terminal| choice(8, terminal.terminal as i64, 0., [terminal.entity, -1]))
-                .collect(),
+                .checked_collect(),
             Cursor::TerminalPosition { terminal } => self
                 .terminals
                 .get(terminal)
@@ -421,14 +574,15 @@ impl Domain {
                             value.features[18] = point.y as f32 / self.scale;
                             value
                         })
-                        .collect()
+                        .checked_collect()
                 })
-                .unwrap_or_default(),
+                .transpose()
+                .map(|choices| choices.unwrap_or_default()),
             Cursor::RouteConnection => self
                 .routes
                 .iter()
                 .map(|route| choice(10, route.connection as i64, 0., [route.entity, -1]))
-                .collect(),
+                .checked_collect(),
             Cursor::RouteSource { connection } => self
                 .routes
                 .get(connection)
@@ -440,9 +594,10 @@ impl Domain {
                         .map(|(index, _)| {
                             choice(11, index as i64, 0., [route.entity, route.endpoints[0]])
                         })
-                        .collect()
+                        .checked_collect()
                 })
-                .unwrap_or_default(),
+                .transpose()
+                .map(|choices| choices.unwrap_or_default()),
             Cursor::RouteTarget { connection, source } => self
                 .routes
                 .get(connection)
@@ -455,9 +610,10 @@ impl Domain {
                         .map(|(index, _)| {
                             choice(12, index as i64, 0., [route.entity, route.endpoints[1]])
                         })
-                        .collect()
+                        .checked_collect()
                 })
-                .unwrap_or_default(),
+                .transpose()
+                .map(|choices| choices.unwrap_or_default()),
             Cursor::ExtendDirection => self
                 .extensions
                 .iter()
@@ -470,7 +626,7 @@ impl Domain {
                         [self.focus_entity, -1],
                     )
                 })
-                .collect(),
+                .checked_collect(),
             Cursor::ExtendLength { direction } => self
                 .extensions
                 .get(direction)
@@ -486,9 +642,10 @@ impl Domain {
                                 [self.focus_entity, -1],
                             )
                         })
-                        .collect()
+                        .checked_collect()
                 })
-                .unwrap_or_default(),
+                .transpose()
+                .map(|choices| choices.unwrap_or_default()),
         }
     }
 
@@ -508,15 +665,13 @@ impl Domain {
     ) -> Result<Vec<Advance>, Diagnostic> {
         let command_kinds =
             matches!(cursor, Cursor::Command).then(|| self.available_command_kinds());
-        let placement_poses = if let Cursor::PlacePose { block } = *cursor {
-            Some(self.placement_poses(&self.placements[block]))
-        } else {
-            None
-        };
         let choice_count = match *cursor {
             Cursor::Command => command_kinds.as_ref().unwrap().len(),
             Cursor::PlaceBlock => self.placements.len(),
-            Cursor::PlacePose { .. } => placement_poses.as_ref().unwrap().len(),
+            Cursor::PlacePose { block } => self
+                .placements
+                .get(block)
+                .map_or(0, |domain| self.pose_count(domain)),
             Cursor::PlaceTerminal => self.terminals.len(),
             Cursor::TerminalPosition { .. } => self.terminal_positions.len(),
             Cursor::RouteConnection => self.routes.len(),
@@ -542,9 +697,12 @@ impl Domain {
                 "choice index is outside the current conditional domain",
             ));
         }
-        Ok(selected
-            .iter()
-            .map(|&selected| match *cursor {
+        let mut advances = Vec::new();
+        advances
+            .try_reserve_exact(selected.len())
+            .map_err(|_| learning_size_error())?;
+        for &selected in selected {
+            advances.push(match *cursor {
                 Cursor::Command => match command_kinds.as_ref().unwrap()[selected] {
                     CommandKind::Place => Advance::Continue(Cursor::PlaceBlock),
                     CommandKind::PlaceTerminal => Advance::Continue(Cursor::PlaceTerminal),
@@ -556,9 +714,9 @@ impl Domain {
                 Cursor::PlaceBlock => Advance::Continue(Cursor::PlacePose { block: selected }),
                 Cursor::PlacePose { block } => {
                     let domain = &self.placements[block];
-                    let (position, rotation) = placement_poses.as_ref().unwrap()[selected];
+                    let (position, rotation) = self.pose_at(domain, selected);
                     Advance::Command(self.selected(Command::Place {
-                        block: domain.id.clone(),
+                        block: checked_string(&domain.id)?,
                         position,
                         rotation,
                     }))
@@ -569,7 +727,7 @@ impl Domain {
                 Cursor::TerminalPosition { terminal } => {
                     let domain = &self.terminals[terminal];
                     Advance::Command(self.selected(Command::PlaceTerminal {
-                        terminal: domain.id.clone(),
+                        terminal: checked_string(&domain.id)?,
                         position: self.terminal_positions[selected],
                     }))
                 }
@@ -584,9 +742,9 @@ impl Domain {
                     let route = &self.routes[connection];
                     let source = &route.sources[source];
                     Advance::Command(self.selected(Command::BeginRoute {
-                        connection: route.id.clone(),
-                        source_port: source.id.clone(),
-                        target_port: source.targets[selected].clone(),
+                        connection: checked_string(&route.id)?,
+                        source_port: checked_optional_string(&source.id)?,
+                        target_port: checked_optional_string(&source.targets[selected])?,
                     }))
                 }
                 Cursor::ExtendDirection => Advance::Continue(Cursor::ExtendLength {
@@ -599,8 +757,9 @@ impl Domain {
                         length: extension.lengths[selected],
                     }))
                 }
-            })
-            .collect())
+            });
+        }
+        Ok(advances)
     }
 
     fn selected(&self, command: Command) -> SelectedCommand {
@@ -637,34 +796,43 @@ impl Domain {
     /// one command family. The factor trace uses the exact local indices that
     /// `choices` and `advance` expose, so a policy can score these commands
     /// without deciding whether they are eligible for search.
-    pub fn command_page(&self, kind: CommandKind, offset: usize, limit: usize) -> CommandPage {
+    pub fn command_page(
+        &self,
+        kind: CommandKind,
+        offset: usize,
+        limit: usize,
+    ) -> Result<CommandPage, Diagnostic> {
         let kinds = self.available_command_kinds();
         let Some(root_selected) = kinds.iter().position(|candidate| *candidate == kind) else {
-            return CommandPage {
+            return Ok(CommandPage {
                 commands: vec![],
                 next_offset: offset,
                 exhausted: true,
-            };
+            });
         };
         let root = SelectedFactor {
             cursor: Cursor::Command,
             selected: root_selected,
         };
         if kind == CommandKind::Place {
-            let poses = self
-                .placements
-                .iter()
-                .map(|placement| self.placement_poses(placement))
-                .collect::<Vec<_>>();
-            let lengths = poses.iter().map(Vec::len).collect::<Vec<_>>();
-            let total = lengths.iter().sum::<usize>();
-            let page = interleaved_page(&lengths, offset, limit);
-            let mut commands = Vec::with_capacity(page.len());
+            let mut lengths = Vec::new();
+            lengths
+                .try_reserve_exact(self.placements.len())
+                .map_err(|_| learning_size_error())?;
+            lengths.extend(
+                self.placements
+                    .iter()
+                    .map(|placement| self.pose_count(placement)),
+            );
+            let total = checked_total(lengths.iter().copied())?;
+            let page = interleaved_page(&lengths, offset, limit)?;
+            let mut commands = Vec::new();
+            reserve_commands(&mut commands, page.len())?;
             for (block, pose_rank) in page {
-                let pose = stratified_index(pose_rank, poses[block].len(), block);
-                let (position, rotation) = poses[block][pose];
+                let pose = stratified_index(pose_rank, lengths[block], block);
+                let (position, rotation) = self.pose_at(&self.placements[block], pose);
                 commands.push(FactoredCommand {
-                    factors: vec![
+                    factors: checked_factors([
                         root.clone(),
                         SelectedFactor {
                             cursor: Cursor::PlaceBlock,
@@ -674,43 +842,45 @@ impl Domain {
                             cursor: Cursor::PlacePose { block },
                             selected: pose,
                         },
-                    ],
+                    ])?,
                     command: self.selected(Command::Place {
-                        block: self.placements[block].id.clone(),
+                        block: checked_string(&self.placements[block].id)?,
                         position,
                         rotation,
                     }),
                 });
             }
             let next_offset = offset.saturating_add(commands.len()).min(total);
-            return CommandPage {
+            return Ok(CommandPage {
                 next_offset,
                 exhausted: next_offset == total,
                 commands,
-            };
+            });
         }
         let total = match kind {
             CommandKind::Place => unreachable!("place pages return above"),
             CommandKind::PlaceTerminal => self
                 .terminals
                 .len()
-                .saturating_mul(self.terminal_positions.len()),
-            CommandKind::BeginRoute => self
-                .routes
-                .iter()
-                .flat_map(|route| &route.sources)
-                .map(|source| source.targets.len())
-                .sum(),
-            CommandKind::Extend => self
-                .extensions
-                .iter()
-                .map(|extension| extension.lengths.len())
-                .sum(),
+                .checked_mul(self.terminal_positions.len())
+                .ok_or_else(learning_size_error)?,
+            CommandKind::BeginRoute => checked_total(
+                self.routes
+                    .iter()
+                    .flat_map(|route| &route.sources)
+                    .map(|source| source.targets.len()),
+            )?,
+            CommandKind::Extend => checked_total(
+                self.extensions
+                    .iter()
+                    .map(|extension| extension.lengths.len()),
+            )?,
             CommandKind::Connect | CommandKind::AbortRoute => 1,
         };
         let start = offset.min(total);
         let end = start.saturating_add(limit).min(total);
-        let mut commands = Vec::with_capacity(end - start);
+        let mut commands = Vec::new();
+        reserve_commands(&mut commands, end - start)?;
         match kind {
             CommandKind::Place => unreachable!("place pages return above"),
             CommandKind::PlaceTerminal => {
@@ -720,7 +890,7 @@ impl Domain {
                     let pose_rank = flat / self.terminals.len();
                     let position = stratified_index(pose_rank, positions, terminal);
                     commands.push(FactoredCommand {
-                        factors: vec![
+                        factors: checked_factors([
                             root.clone(),
                             SelectedFactor {
                                 cursor: Cursor::PlaceTerminal,
@@ -730,47 +900,43 @@ impl Domain {
                                 cursor: Cursor::TerminalPosition { terminal },
                                 selected: position,
                             },
-                        ],
+                        ])?,
                         command: self.selected(Command::PlaceTerminal {
-                            terminal: self.terminals[terminal].id.clone(),
+                            terminal: checked_string(&self.terminals[terminal].id)?,
                             position: self.terminal_positions[position],
                         }),
                     });
                 }
             }
             CommandKind::BeginRoute => {
-                let route_pairs = self
-                    .routes
-                    .iter()
-                    .map(|route| {
-                        route
-                            .sources
-                            .iter()
-                            .enumerate()
-                            .flat_map(|(source, ports)| {
-                                (0..ports.targets.len()).map(move |target| (source, target))
-                            })
-                            .collect::<Vec<_>>()
-                    })
-                    .collect::<Vec<_>>();
-                let maximum = route_pairs.iter().map(Vec::len).max().unwrap_or(0);
-                let ordered = (0..maximum)
-                    .flat_map(|pair| {
-                        route_pairs
-                            .iter()
-                            .enumerate()
-                            .filter_map(move |(connection, pairs)| {
-                                pairs
-                                    .get(pair)
-                                    .map(|&(source, target)| (connection, source, target))
-                            })
-                    })
-                    .collect::<Vec<_>>();
-                for &(connection, source, target) in &ordered[start..end] {
+                let mut lengths = Vec::new();
+                lengths
+                    .try_reserve_exact(self.routes.len())
+                    .map_err(|_| learning_size_error())?;
+                for route in &self.routes {
+                    lengths.push(checked_total(
+                        route.sources.iter().map(|ports| ports.targets.len()),
+                    )?);
+                }
+                for (connection, pair_rank) in interleaved_page(&lengths, start, end - start)? {
                     let route = &self.routes[connection];
+                    let mut remaining = pair_rank;
+                    let (source, target) = route
+                        .sources
+                        .iter()
+                        .enumerate()
+                        .find_map(|(source, ports)| {
+                            if remaining < ports.targets.len() {
+                                Some((source, remaining))
+                            } else {
+                                remaining -= ports.targets.len();
+                                None
+                            }
+                        })
+                        .expect("pair rank stays within route source bank");
                     let ports = &route.sources[source];
                     commands.push(FactoredCommand {
-                        factors: vec![
+                        factors: checked_factors([
                             root.clone(),
                             SelectedFactor {
                                 cursor: Cursor::RouteConnection,
@@ -784,35 +950,29 @@ impl Domain {
                                 cursor: Cursor::RouteTarget { connection, source },
                                 selected: target,
                             },
-                        ],
+                        ])?,
                         command: self.selected(Command::BeginRoute {
-                            connection: route.id.clone(),
-                            source_port: ports.id.clone(),
-                            target_port: ports.targets[target].clone(),
+                            connection: checked_string(&route.id)?,
+                            source_port: checked_optional_string(&ports.id)?,
+                            target_port: checked_optional_string(&ports.targets[target])?,
                         }),
                     });
                 }
             }
             CommandKind::Extend => {
-                let maximum = self
-                    .extensions
-                    .iter()
-                    .map(|extension| extension.lengths.len())
-                    .max()
-                    .unwrap_or(0);
-                let ordered = (0..maximum)
-                    .flat_map(|length| {
-                        self.extensions.iter().enumerate().filter_map(
-                            move |(direction, extension)| {
-                                (length < extension.lengths.len()).then_some((direction, length))
-                            },
-                        )
-                    })
-                    .collect::<Vec<_>>();
-                for &(direction, length) in &ordered[start..end] {
+                let mut lengths = Vec::new();
+                lengths
+                    .try_reserve_exact(self.extensions.len())
+                    .map_err(|_| learning_size_error())?;
+                lengths.extend(
+                    self.extensions
+                        .iter()
+                        .map(|extension| extension.lengths.len()),
+                );
+                for (direction, length) in interleaved_page(&lengths, start, end - start)? {
                     let extension = &self.extensions[direction];
                     commands.push(FactoredCommand {
-                        factors: vec![
+                        factors: checked_factors([
                             root.clone(),
                             SelectedFactor {
                                 cursor: Cursor::ExtendDirection,
@@ -822,7 +982,7 @@ impl Domain {
                                 cursor: Cursor::ExtendLength { direction },
                                 selected: length,
                             },
-                        ],
+                        ])?,
                         command: self.selected(Command::Extend {
                             direction: extension.direction,
                             length: extension.lengths[length],
@@ -833,7 +993,7 @@ impl Domain {
             CommandKind::Connect => {
                 if start == 0 && end == 1 {
                     commands.push(FactoredCommand {
-                        factors: vec![root],
+                        factors: checked_factors([root])?,
                         command: self.selected(Command::Connect),
                     });
                 }
@@ -841,37 +1001,59 @@ impl Domain {
             CommandKind::AbortRoute => {
                 if start == 0 && end == 1 {
                     commands.push(FactoredCommand {
-                        factors: vec![root],
+                        factors: checked_factors([root])?,
                         command: self.selected(Command::AbortRoute),
                     });
                 }
             }
         }
-        CommandPage {
+        Ok(CommandPage {
             commands,
             next_offset: end,
             exhausted: end >= total,
-        }
+        })
     }
 
-    fn command_choices(&self) -> Vec<Choice> {
+    fn command_choices(&self) -> Result<Vec<Choice>, Diagnostic> {
         self.available_command_kinds()
             .into_iter()
             .map(|kind| choice(kind as usize, 0, 0., [-1, -1]))
-            .collect()
+            .checked_collect()
     }
 
-    fn new(session: &Session, config: &Config) -> Self {
+    fn new(session: &Session, config: &Config) -> Result<Self, Diagnostic> {
+        Self::new_with_routes(session, config, true)
+    }
+
+    fn new_placement(session: &Session, config: &Config) -> Result<Self, Diagnostic> {
+        Self::new_with_routes(session, config, false)
+    }
+
+    fn new_with_routes(
+        session: &Session,
+        config: &Config,
+        include_routes: bool,
+    ) -> Result<Self, Diagnostic> {
         let scale = config
             .placement
             .width()
             .max(config.placement.height())
             .max(1) as f32;
-        let blocked = blocked_cells(session);
-        let placements = placement_domains(session, config.placement, &blocked);
-        let terminal_positions = terminal_positions(session, config.placement, &blocked);
-        let terminals = terminal_domains(session, !terminal_positions.is_empty());
-        let routes = route_domains(session);
+        let blocked = blocked_cells(session)?;
+        let mut placements = placement_domains(session)?;
+        let pose_index = (!placements.is_empty())
+            .then(|| PoseIndex::new(config.placement, &blocked, &placements))
+            .transpose()?;
+        if let Some(index) = &pose_index {
+            placements.retain(|placement| index.pose_count(placement) > 0);
+        }
+        let terminal_positions = terminal_positions(session, config.placement, &blocked)?;
+        let terminals = terminal_domains(session, !terminal_positions.is_empty())?;
+        let routes = if include_routes {
+            route_domains(session)?
+        } else {
+            Vec::new()
+        };
         let extensions = extension_domains(session, config);
         let connect = session
             .active
@@ -881,11 +1063,11 @@ impl Domain {
             (session.problem.blocks.len() + session.problem.terminals.len() + active.connection)
                 as i64
         });
-        Self {
+        Ok(Self {
             revision: session.revision,
             scale,
             placement: config.placement,
-            blocked,
+            pose_index,
             placements,
             terminals,
             terminal_positions,
@@ -894,21 +1076,67 @@ impl Domain {
             focus_entity,
             connect,
             abort: session.active.is_some(),
+        })
+    }
+
+    fn new_route(
+        session: &Session,
+        config: &Config,
+        connection: usize,
+        allow_abort: bool,
+    ) -> Result<Self, Diagnostic> {
+        let scale = config
+            .placement
+            .width()
+            .max(config.placement.height())
+            .max(1) as f32;
+        let mut routes = Vec::new();
+        if session.active.is_none() {
+            if let Some(route) = route_domain_for(session, connection)? {
+                routes
+                    .try_reserve_exact(1)
+                    .map_err(|_| learning_size_error())?;
+                routes.push(route);
+            }
         }
+        let extensions = extension_domains(session, config);
+        let connect = session
+            .active
+            .as_ref()
+            .is_some_and(|active| active.cells.last() == Some(&active.target));
+        let focus_entity = session.active.as_ref().map_or(-1, |active| {
+            (session.problem.blocks.len() + session.problem.terminals.len() + active.connection)
+                as i64
+        });
+        Ok(Self {
+            revision: session.revision,
+            scale,
+            placement: config.placement,
+            pose_index: None,
+            placements: Vec::new(),
+            terminals: Vec::new(),
+            terminal_positions: Vec::new(),
+            routes,
+            extensions,
+            focus_entity,
+            connect,
+            abort: session.active.is_some() && allow_abort,
+        })
     }
 
-    fn new_route(session: &Session, config: &Config, connection: usize, allow_abort: bool) -> Self {
-        let mut domain = Self::new(session, config);
-        domain.placements.clear();
-        domain.terminals.clear();
-        domain.terminal_positions.clear();
-        domain.routes.retain(|route| route.connection == connection);
-        domain.abort &= allow_abort;
-        domain
+    fn pose_count(&self, domain: &PlacementDomain) -> usize {
+        self.pose_index
+            .as_ref()
+            .expect("placement domain has its index")
+            .pose_count(domain)
     }
 
-    fn placement_poses(&self, domain: &PlacementDomain) -> Vec<(Point, i64)> {
-        placement_poses(self.placement, &self.blocked, domain, false)
+    fn pose_at(&self, domain: &PlacementDomain, rank: usize) -> (Point, i64) {
+        self.pose_index
+            .as_ref()
+            .expect("placement domain has its index")
+            .pose_at(domain, rank)
+            .expect("legal pose rank remains in indexed domain")
     }
 }
 
@@ -923,11 +1151,67 @@ fn choice(kind: usize, value: i64, scalar: f32, references: [i64; 2]) -> Choice 
     }
 }
 
-fn interleaved_page(lengths: &[usize], offset: usize, limit: usize) -> Vec<(usize, usize)> {
-    let mut seen = 0usize;
-    let mut page = Vec::with_capacity(limit);
+trait CheckedChoiceCollect: Iterator<Item = Choice> + Sized {
+    fn checked_collect(self) -> Result<Vec<Choice>, Diagnostic> {
+        let mut choices = Vec::new();
+        let (lower, upper) = self.size_hint();
+        choices
+            .try_reserve_exact(upper.unwrap_or(lower))
+            .map_err(|_| {
+                error(
+                    "learning-resource",
+                    "learning-domain",
+                    "conditional choice allocation failed",
+                )
+            })?;
+        for choice in self {
+            if choices.len() == choices.capacity() {
+                choices.try_reserve(1).map_err(|_| {
+                    error(
+                        "learning-resource",
+                        "learning-domain",
+                        "conditional choice allocation failed",
+                    )
+                })?;
+            }
+            choices.push(choice);
+        }
+        Ok(choices)
+    }
+}
+
+impl<T: Iterator<Item = Choice>> CheckedChoiceCollect for T {}
+
+fn interleaved_page(
+    lengths: &[usize],
+    offset: usize,
+    limit: usize,
+) -> Result<Vec<(usize, usize)>, Diagnostic> {
+    if limit == 0 {
+        return Ok(Vec::new());
+    }
     let maximum = lengths.iter().copied().max().unwrap_or(0);
-    'ranks: for rank in 0..maximum {
+    let covered =
+        |rank: usize| -> u128 { lengths.iter().map(|&length| length.min(rank) as u128).sum() };
+    if covered(maximum) <= offset as u128 {
+        return Ok(Vec::new());
+    }
+    let mut low = 0usize;
+    let mut high = maximum;
+    while low + 1 < high {
+        let middle = low + (high - low) / 2;
+        if covered(middle) <= offset as u128 {
+            low = middle;
+        } else {
+            high = middle;
+        }
+    }
+    let mut seen = covered(low) as usize;
+    let mut page = Vec::new();
+    let available = (covered(maximum) - offset as u128).min(limit as u128) as usize;
+    page.try_reserve_exact(available)
+        .map_err(|_| learning_size_error())?;
+    'ranks: for rank in low..maximum {
         for (entity, &length) in lengths.iter().enumerate() {
             if rank >= length {
                 continue;
@@ -941,7 +1225,79 @@ fn interleaved_page(lengths: &[usize], offset: usize, limit: usize) -> Vec<(usiz
             seen += 1;
         }
     }
-    page
+    Ok(page)
+}
+
+fn learning_size_error() -> Diagnostic {
+    error(
+        "learning-resource",
+        "learning-domain",
+        "command output size or allocation exceeds available resources",
+    )
+}
+
+fn checked_total(mut items: impl Iterator<Item = usize>) -> Result<usize, Diagnostic> {
+    items.try_fold(0usize, |total, item| {
+        total.checked_add(item).ok_or_else(learning_size_error)
+    })
+}
+
+fn reserve_commands(commands: &mut Vec<FactoredCommand>, count: usize) -> Result<(), Diagnostic> {
+    commands
+        .try_reserve_exact(count)
+        .map_err(|_| learning_size_error())
+}
+
+fn checked_factors<const N: usize>(
+    items: [SelectedFactor; N],
+) -> Result<Vec<SelectedFactor>, Diagnostic> {
+    let mut factors = Vec::new();
+    factors
+        .try_reserve_exact(N)
+        .map_err(|_| learning_size_error())?;
+    factors.extend(items);
+    Ok(factors)
+}
+
+fn checked_string(value: &str) -> Result<String, Diagnostic> {
+    let mut output = String::new();
+    output
+        .try_reserve_exact(value.len())
+        .map_err(|_| learning_size_error())?;
+    output.push_str(value);
+    Ok(output)
+}
+
+fn checked_optional_string(value: &Option<String>) -> Result<Option<String>, Diagnostic> {
+    value.as_deref().map(checked_string).transpose()
+}
+
+#[cfg(test)]
+#[test]
+fn interleaved_pages_keep_original_factor_order_at_large_offsets() {
+    for lengths in [vec![], vec![0, 0], vec![1, 5, 2, 0, 8], vec![97, 3, 41]] {
+        let expected = (0..lengths.iter().copied().max().unwrap_or(0))
+            .flat_map(|rank| {
+                lengths
+                    .iter()
+                    .enumerate()
+                    .filter_map(move |(entity, &length)| (rank < length).then_some((entity, rank)))
+            })
+            .collect::<Vec<_>>();
+        for offset in 0..=expected.len() + 1 {
+            for limit in [0, 1, 2, 7, expected.len() + 1] {
+                assert_eq!(
+                    interleaved_page(&lengths, offset, limit).unwrap(),
+                    expected
+                        .iter()
+                        .skip(offset)
+                        .take(limit)
+                        .copied()
+                        .collect::<Vec<_>>()
+                );
+            }
+        }
+    }
 }
 
 /// A deterministic full-cycle permutation used to make early pages cover a
@@ -970,141 +1326,192 @@ fn greatest_common_divisor(mut left: usize, mut right: usize) -> usize {
     left
 }
 
-fn blocked_cells(session: &Session) -> BTreeSet<Point> {
-    session
-        .bodies
-        .iter()
-        .copied()
-        .chain(
-            session
-                .occupied
-                .iter()
-                .flat_map(|occupied| occupied.keys().copied()),
-        )
-        .chain(
-            session
-                .terminal_poses
-                .iter()
-                .flatten()
-                .map(|pose| pose.position),
-        )
-        .collect()
+fn blocked_cells(session: &Session) -> Result<Vec<Point>, Diagnostic> {
+    blocked_cells_bounded(session, false).map_err(|failure| match failure {
+        RequestFailure::Invalid(diagnostic) => diagnostic,
+        _ => unreachable!("unbounded blocked-cell builder returns diagnostics"),
+    })
 }
 
-fn placement_domains(
-    session: &Session,
-    placement: Bounds,
-    blocked: &BTreeSet<Point>,
-) -> Vec<PlacementDomain> {
-    if session.active.is_some() {
-        return vec![];
-    }
-    session
-        .problem
-        .blocks
+fn blocked_cells_bounded(session: &Session, bounded: bool) -> Result<Vec<Point>, RequestFailure> {
+    let capacity = session
+        .occupied
         .iter()
-        .enumerate()
-        .filter(|(block, _)| session.poses[*block].is_none())
-        .map(|(block, problem)| {
+        .try_fold(session.bodies.len(), |count, layer| {
+            count.checked_add(layer.len())
+        })
+        .and_then(|count| count.checked_add(session.terminal_poses.len()))
+        .ok_or_else(|| {
+            RequestFailure::Invalid(error(
+                "learning-resource",
+                "learning-domain",
+                "blocked-cell count is not representable",
+            ))
+        })?;
+    let mut blocked = Vec::new();
+    blocked.try_reserve_exact(capacity).map_err(|_| {
+        if bounded {
+            host_allocation_stop(capacity.saturating_mul(std::mem::size_of::<Point>()))
+        } else {
+            RequestFailure::Invalid(error(
+                "learning-resource",
+                "learning-domain",
+                "blocked-cell allocation exceeds available memory",
+            ))
+        }
+    })?;
+    blocked.extend(session.bodies.iter().copied());
+    for layer in &session.occupied {
+        blocked.extend(layer.keys().copied());
+    }
+    blocked.extend(
+        session
+            .terminal_poses
+            .iter()
+            .flatten()
+            .map(|pose| pose.position),
+    );
+    blocked.sort_unstable();
+    blocked.dedup();
+    Ok(blocked)
+}
+
+fn placement_domains(session: &Session) -> Result<Vec<PlacementDomain>, Diagnostic> {
+    if session.active.is_some() {
+        return Ok(vec![]);
+    }
+    let mut domains = Vec::new();
+    domains
+        .try_reserve_exact(session.problem.blocks.len())
+        .map_err(|_| {
+            error(
+                "learning-resource",
+                "learning-domain",
+                "placement domain allocation failed",
+            )
+        })?;
+    for (block, problem) in session.problem.blocks.iter().enumerate() {
+        if session.poses[block].is_none() {
             let definition = session
                 .catalogs
                 .facilities
                 .facility(&problem.facility)
                 .expect("constructive problem admitted facilities");
-            PlacementDomain {
+            domains.push(PlacementDomain {
                 block,
-                id: problem.id.clone(),
+                id: checked_string(&problem.id)?,
                 width: definition.footprint.width,
                 height: definition.footprint.height,
-                rotations: definition.allowed_rotations.clone(),
-            }
-        })
-        .filter(|domain| !placement_poses(placement, blocked, domain, true).is_empty())
-        .collect()
-}
-
-fn placement_poses(
-    placement: Bounds,
-    blocked: &BTreeSet<Point>,
-    domain: &PlacementDomain,
-    first_only: bool,
-) -> Vec<(Point, i64)> {
-    let mut poses = Vec::new();
-    for &rotation in &domain.rotations {
-        let (width, height) = if rotation.rem_euclid(180) == 0 {
-            (domain.width, domain.height)
-        } else {
-            (domain.height, domain.width)
-        };
-        for y in placement.min_y..=placement.max_y {
-            for x in placement.min_x..=placement.max_x {
-                let end = x.checked_add(width - 1).zip(y.checked_add(height - 1));
-                if end.is_some_and(|(max_x, max_y)| {
-                    max_x <= placement.max_x
-                        && max_y <= placement.max_y
-                        && (y..=max_y).all(|cell_y| {
-                            (x..=max_x).all(|cell_x| {
-                                !blocked.contains(&Point {
-                                    x: cell_x,
-                                    y: cell_y,
-                                })
-                            })
-                        })
-                }) {
-                    poses.push((Point { x, y }, rotation));
-                    if first_only {
-                        return poses;
-                    }
-                }
-            }
+                rotations: {
+                    let mut rotations = Vec::new();
+                    rotations
+                        .try_reserve_exact(definition.allowed_rotations.len())
+                        .map_err(|_| learning_size_error())?;
+                    rotations.extend_from_slice(&definition.allowed_rotations);
+                    rotations
+                },
+            });
         }
     }
-    poses
+    Ok(domains)
 }
 
 fn terminal_positions(
     session: &Session,
     placement: Bounds,
-    blocked: &BTreeSet<Point>,
-) -> Vec<Point> {
+    blocked: &[Point],
+) -> Result<Vec<Point>, Diagnostic> {
     if session.active.is_some() {
-        return vec![];
+        return Ok(vec![]);
     }
     let mut positions = Vec::new();
+    let width = usize::try_from(placement.width()).map_err(|_| {
+        error(
+            "learning-resource",
+            "learning-domain",
+            "terminal boundary width overflows",
+        )
+    })?;
+    let height = usize::try_from(placement.height()).map_err(|_| {
+        error(
+            "learning-resource",
+            "learning-domain",
+            "terminal boundary height overflows",
+        )
+    })?;
+    let perimeter = if height == 1 {
+        width
+    } else if width == 1 {
+        height
+    } else {
+        width
+            .checked_mul(2)
+            .and_then(|count| count.checked_add((height - 2).checked_mul(2)?))
+            .ok_or_else(|| {
+                error(
+                    "learning-resource",
+                    "learning-domain",
+                    "terminal boundary count overflows",
+                )
+            })?
+    };
+    positions.try_reserve_exact(perimeter).map_err(|_| {
+        error(
+            "learning-resource",
+            "learning-domain",
+            "terminal boundary allocation failed",
+        )
+    })?;
     for y in placement.min_y..=placement.max_y {
-        for x in placement.min_x..=placement.max_x {
-            if x != placement.min_x
-                && x != placement.max_x
-                && y != placement.min_y
-                && y != placement.max_y
-            {
-                continue;
+        if y == placement.min_y || y == placement.max_y {
+            for x in placement.min_x..=placement.max_x {
+                let point = Point { x, y };
+                if blocked.binary_search(&point).is_err() {
+                    positions.push(point);
+                }
             }
-            let point = Point { x, y };
-            if !blocked.contains(&point) {
-                positions.push(point);
+        } else {
+            for x in [placement.min_x, placement.max_x] {
+                if x == placement.max_x && x == placement.min_x {
+                    continue;
+                }
+                let point = Point { x, y };
+                if blocked.binary_search(&point).is_err() {
+                    positions.push(point);
+                }
             }
         }
     }
-    positions
+    Ok(positions)
 }
 
-fn terminal_domains(session: &Session, have_positions: bool) -> Vec<TerminalDomain> {
+fn terminal_domains(
+    session: &Session,
+    have_positions: bool,
+) -> Result<Vec<TerminalDomain>, Diagnostic> {
     if !have_positions {
-        return vec![];
+        return Ok(vec![]);
     }
-    session
-        .problem
-        .terminals
-        .iter()
-        .enumerate()
-        .filter(|(terminal, _)| session.terminal_poses[*terminal].is_none())
-        .map(|(terminal, problem)| TerminalDomain {
-            terminal,
-            entity: (session.problem.blocks.len() + terminal) as i64,
-            id: problem.id.clone(),
-        })
-        .collect()
+    let mut domains = Vec::new();
+    domains
+        .try_reserve_exact(session.problem.terminals.len())
+        .map_err(|_| {
+            error(
+                "learning-resource",
+                "learning-domain",
+                "terminal domain allocation failed",
+            )
+        })?;
+    for (terminal, problem) in session.problem.terminals.iter().enumerate() {
+        if session.terminal_poses[terminal].is_none() {
+            domains.push(TerminalDomain {
+                terminal,
+                entity: (session.problem.blocks.len() + terminal) as i64,
+                id: checked_string(&problem.id)?,
+            });
+        }
+    }
+    Ok(domains)
 }
 
 fn endpoint_entity(session: &Session, endpoint: &str) -> i64 {
@@ -1120,85 +1527,128 @@ fn endpoint_ports(
     endpoint: &str,
     direction: FacilityPortDirection,
     connection: usize,
-) -> Vec<Option<String>> {
+) -> Result<Vec<Option<String>>, Diagnostic> {
     let obligation = &session.problem.connections[connection];
     if let Some(&block) = session.blocks.get(endpoint) {
-        return session
-            .projected_ports(block)
-            .into_iter()
-            .flatten()
-            .filter(|port| {
-                port.direction == direction
-                    && port.transport == obligation.transport
-                    && !session.bodies.contains(&port.connection)
-                    && session.shared_cell_available(port.connection, connection)
-                    && session
-                        .selected_port(
-                            block,
-                            &port.id,
-                            direction,
-                            obligation.transport,
-                            &obligation.commodity,
-                            obligation.rate,
-                            &obligation.id,
-                        )
-                        .is_ok()
-            })
-            .map(|port| Some(port.id))
-            .collect();
+        let projected = session.projected_ports(block)?;
+        let mut available = Vec::new();
+        available
+            .try_reserve_exact(projected.len())
+            .map_err(|_| learning_size_error())?;
+        for port in projected {
+            if port.direction != direction
+                || port.transport != obligation.transport
+                || session.bodies.contains(&port.connection)
+                || !session.shared_cell_available(port.connection, connection)
+            {
+                continue;
+            }
+            match session.selected_port(
+                block,
+                &port.id,
+                direction,
+                obligation.transport,
+                &obligation.commodity,
+                obligation.rate,
+                &obligation.id,
+            ) {
+                Ok(_) => available.push(Some(port.id)),
+                Err(diagnostic)
+                    if diagnostic.code.starts_with("constructive.route-request-")
+                        || diagnostic.code == "constructive.port-resource" =>
+                {
+                    return Err(diagnostic);
+                }
+                Err(_) => {}
+            }
+        }
+        return Ok(available);
     }
     let terminal = session.terminals[endpoint];
-    session.terminal_poses[terminal]
+    Ok(session.terminal_poses[terminal]
         .as_ref()
         .filter(|pose| session.shared_cell_available(pose.position, connection))
         .map(|_| vec![None])
-        .unwrap_or_default()
+        .unwrap_or_default())
 }
 
-fn route_domains(session: &Session) -> Vec<RouteDomain> {
+fn route_domains(session: &Session) -> Result<Vec<RouteDomain>, Diagnostic> {
     if session.active.is_some() {
-        return vec![];
+        return Ok(vec![]);
     }
-    session
-        .problem
-        .connections
-        .iter()
-        .enumerate()
-        .filter(|(connection, _)| session.routes[*connection].is_none())
-        .filter_map(|(connection, obligation)| {
-            let targets = endpoint_ports(
-                session,
-                &obligation.target,
-                FacilityPortDirection::Input,
-                connection,
-            );
-            let sources = endpoint_ports(
-                session,
-                &obligation.source,
-                FacilityPortDirection::Output,
-                connection,
-            )
-            .into_iter()
-            .map(|id| PortDomain {
+    let mut domains = Vec::new();
+    domains
+        .try_reserve_exact(session.problem.connections.len())
+        .map_err(|_| learning_size_error())?;
+    for connection in 0..session.problem.connections.len() {
+        if let Some(domain) = route_domain_for(session, connection)? {
+            domains.push(domain);
+        }
+    }
+    Ok(domains)
+}
+
+fn route_domain_for(
+    session: &Session,
+    connection: usize,
+) -> Result<Option<RouteDomain>, Diagnostic> {
+    if session.routes[connection].is_some() {
+        return Ok(None);
+    }
+    let obligation = &session.problem.connections[connection];
+    let placed = |endpoint: &str| {
+        if let Some(&block) = session.blocks.get(endpoint) {
+            session.poses[block].is_some()
+        } else {
+            session.terminal_poses[session.terminals[endpoint]].is_some()
+        }
+    };
+    if !placed(&obligation.source) || !placed(&obligation.target) {
+        return Ok(None);
+    }
+    let targets = endpoint_ports(
+        session,
+        &obligation.target,
+        FacilityPortDirection::Input,
+        connection,
+    )?;
+    let sources = endpoint_ports(
+        session,
+        &obligation.source,
+        FacilityPortDirection::Output,
+        connection,
+    )?;
+    let mut ports = Vec::new();
+    if !targets.is_empty() {
+        ports
+            .try_reserve_exact(sources.len())
+            .map_err(|_| learning_size_error())?;
+        for id in sources {
+            let mut copied_targets = Vec::new();
+            copied_targets
+                .try_reserve_exact(targets.len())
+                .map_err(|_| learning_size_error())?;
+            for target in &targets {
+                copied_targets.push(checked_optional_string(target)?);
+            }
+            ports.push(PortDomain {
                 id,
-                targets: targets.clone(),
-            })
-            .filter(|source| !source.targets.is_empty())
-            .collect::<Vec<_>>();
-            (!sources.is_empty()).then_some(RouteDomain {
-                connection,
-                entity: (session.problem.blocks.len()
-                    + session.problem.terminals.len()
-                    + connection) as i64,
-                endpoints: [
-                    endpoint_entity(session, &obligation.source),
-                    endpoint_entity(session, &obligation.target),
-                ],
-                id: obligation.id.clone(),
-                sources,
-            })
-        })
-        .collect()
+                targets: copied_targets,
+            });
+        }
+    }
+    let id = checked_string(&obligation.id)?;
+    Ok((!ports.is_empty()).then(|| RouteDomain {
+        connection,
+        entity: (session.problem.blocks.len() + session.problem.terminals.len() + connection)
+            as i64,
+        endpoints: [
+            endpoint_entity(session, &obligation.source),
+            endpoint_entity(session, &obligation.target),
+        ],
+        id,
+        sources: ports,
+    }))
 }
 
 fn extension_domains(session: &Session, config: &Config) -> Vec<ExtensionDomain> {
@@ -1253,38 +1703,23 @@ fn direction_index(direction: Direction) -> i64 {
 }
 
 impl Input {
-    fn new_for_macro(session: &Session, config: &Config) -> Self {
-        let mut input = Self::new(session, config);
+    fn new_for_macro(session: &Session, config: &Config) -> Result<Self, Diagnostic> {
+        let mut input = Self::new(session, config)?;
         for row in &mut input.entity_features {
             row[7] = 0.;
         }
         input.focus_features = [0.; FOCUS_FEATURES];
         input.focus_entity = -1;
-        input
+        Ok(input)
     }
 
-    fn new_for_route(session: &Session, config: &Config, connection: usize) -> Self {
-        let mut input = Self::new(session, config);
-        for row in &mut input.entity_features {
-            row[7] = 0.;
-        }
-        let entity = session.problem.blocks.len() + session.problem.terminals.len() + connection;
-        input.entity_features[entity][7] = 1.;
-        input.focus_features = [0.; FOCUS_FEATURES];
-        input.focus_features[2] = 1.;
-        input.focus_entity = entity as i64;
-        input
-    }
-
-    fn new_for_route_bounded(
+    fn new_for_route(
         session: &Session,
         config: &Config,
         connection: usize,
-        allowance: &mut RequestAllowance,
-    ) -> Result<Self, AllowanceStop> {
-        let mut input = Self::new_bounded(session, config, Some(allowance))?;
+    ) -> Result<Self, Diagnostic> {
+        let mut input = Self::new(session, config)?;
         for row in &mut input.entity_features {
-            allowance.charge(WorkKind::ValidationRecords, 1)?;
             row[7] = 0.;
         }
         let entity = session.problem.blocks.len() + session.problem.terminals.len() + connection;
@@ -1295,15 +1730,41 @@ impl Input {
         Ok(input)
     }
 
-    fn new(session: &Session, config: &Config) -> Self {
-        Self::new_bounded(session, config, None).expect("unbounded graph construction cannot stop")
+    fn new_for_route_bounded(
+        session: &Session,
+        config: &Config,
+        connection: usize,
+        allowance: &mut RequestAllowance,
+    ) -> Result<(Self, usize), RequestFailure> {
+        let (mut input, reserved_bytes) = Self::new_bounded(session, config, Some(allowance))?;
+        for row in &mut input.entity_features {
+            if let Err(stop) = allowance.charge(WorkKind::ValidationRecords, 1) {
+                allowance.release_peak(reserved_bytes);
+                return Err(stop.into());
+            }
+            row[7] = 0.;
+        }
+        let entity = session.problem.blocks.len() + session.problem.terminals.len() + connection;
+        input.entity_features[entity][7] = 1.;
+        input.focus_features = [0.; FOCUS_FEATURES];
+        input.focus_features[2] = 1.;
+        input.focus_entity = entity as i64;
+        Ok((input, reserved_bytes))
+    }
+
+    fn new(session: &Session, config: &Config) -> Result<Self, Diagnostic> {
+        match Self::new_bounded(session, config, None) {
+            Ok((input, _)) => Ok(input),
+            Err(RequestFailure::Invalid(diagnostic)) => Err(diagnostic),
+            Err(_) => unreachable!("unbounded graph construction has no allowance stop"),
+        }
     }
 
     fn new_bounded(
         session: &Session,
         config: &Config,
         mut allowance: Option<&mut RequestAllowance>,
-    ) -> Result<Self, AllowanceStop> {
+    ) -> Result<(Self, usize), RequestFailure> {
         let scale = config
             .placement
             .width()
@@ -1311,289 +1772,455 @@ impl Input {
             .max(1) as f32;
         let blocks = session.problem.blocks.len();
         let terminals = session.problem.terminals.len();
-        let connection_offset = blocks + terminals;
-        let mut entity_features =
-            Vec::with_capacity(connection_offset + session.problem.connections.len());
-        for (index, block) in session.problem.blocks.iter().enumerate() {
-            charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
-            let definition = session
-                .catalogs
-                .facilities
-                .facility(&block.facility)
-                .expect("constructive problem admitted facilities");
-            let mut row = [0.; ENTITY_FEATURES];
-            row[0] = 1.;
-            row[8] = definition.footprint.width as f32 / scale;
-            row[9] = definition.footprint.height as f32 / scale;
-            row[10] = definition.allowed_rotations.len() as f32;
-            if let Some(pose) = &session.poses[index] {
-                row[2] = 1.;
-                row[11] = pose.position.x as f32 / scale;
-                row[12] = pose.position.y as f32 / scale;
-                row[13] = (pose.rotation as f32).to_radians().sin();
-                row[14] = (pose.rotation as f32).to_radians().cos();
-            }
-            if matches!(session.focus, Some(super::Focus::Block { block, .. }) if block == index) {
-                row[7] = 1.;
-            }
-            entity_features.push(row);
-        }
-        for (index, terminal) in session.problem.terminals.iter().enumerate() {
-            charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
-            let mut row = [0.; ENTITY_FEATURES];
-            row[16
-                + matches!(
-                    terminal.direction,
-                    aic_layout::physical::TerminalDirection::Output
-                ) as usize] = 1.;
-            row[5 + layer(terminal.transport)] = 1.;
-            if let Some(pose) = &session.terminal_poses[index] {
-                row[2] = 1.;
-                row[11] = pose.position.x as f32 / scale;
-                row[12] = pose.position.y as f32 / scale;
-            }
-            if matches!(session.focus, Some(super::Focus::Terminal { terminal, .. }) if terminal == index)
-            {
-                row[7] = 1.;
-            }
-            entity_features.push(row);
-        }
-        let mut relation_index = Vec::with_capacity(session.problem.connections.len() * 2);
-        let mut relation_features = Vec::with_capacity(session.problem.connections.len() * 2);
-        for (index, connection) in session.problem.connections.iter().enumerate() {
-            charge_graph(&mut allowance, WorkKind::GraphRows, 3)?;
-            let entity = connection_offset + index;
-            let mut row = [0.; ENTITY_FEATURES];
-            row[1] = 1.;
-            row[3] = session.routes[index].is_some() as u8 as f32;
-            row[4] = session
-                .active
-                .as_ref()
-                .is_some_and(|route| route.connection == index) as u8 as f32;
-            row[5 + layer(connection.transport)] = 1.;
-            row[15] =
-                (connection.rate.numerator as f32 / connection.rate.denominator as f32).ln_1p();
-            if matches!(session.focus, Some(super::Focus::Route { connection, .. }) if connection == index)
-            {
-                row[7] = 1.;
-            }
-            entity_features.push(row);
-            let source = endpoint_entity(session, &connection.source);
-            let target = endpoint_entity(session, &connection.target);
-            relation_index.extend([[source, entity as i64], [entity as i64, target]]);
-            let mut source_row = [0.; RELATION_FEATURES];
-            source_row[0] = 1.;
-            source_row[2 + layer(connection.transport)] = 1.;
-            source_row[4] = row[15];
-            let mut target_row = source_row;
-            target_row[0] = 0.;
-            target_row[1] = 1.;
-            relation_features.extend([source_row, target_row]);
-        }
-        let mut spatial_features = Vec::new();
-        let mut spatial_owners = Vec::new();
+        let connections = session.problem.connections.len();
+        let size_error = || {
+            RequestFailure::Invalid(error(
+                "learning-resource",
+                "learning-input",
+                "graph input size is not representable",
+            ))
+        };
+        let connection_offset = blocks.checked_add(terminals).ok_or_else(size_error)?;
+        let entities = connection_offset
+            .checked_add(connections)
+            .ok_or_else(size_error)?;
+        let relations = connections.checked_mul(2).ok_or_else(size_error)?;
+        let mut spatial_count = 0usize;
         for (block, pose) in session.poses.iter().enumerate() {
-            let Some(pose) = pose else { continue };
-            let definition = session
-                .catalogs
-                .facilities
-                .facility(&session.problem.blocks[block].facility)
-                .expect("constructive problem admitted facilities");
-            let (width, height, _) = rotate(definition, pose.rotation, pose.position);
-            for y in pose.position.y..pose.position.y + height {
-                for x in pose.position.x..pose.position.x + width {
-                    charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
-                    push_spatial(
-                        &mut spatial_features,
-                        &mut spatial_owners,
-                        Point { x, y },
-                        scale,
-                        2,
-                        block as i64,
-                    );
+            if let Some(pose) = pose {
+                let definition = session
+                    .catalogs
+                    .facilities
+                    .facility(&session.problem.blocks[block].facility)
+                    .expect("constructive problem admitted facilities");
+                let (width, height, _) = rotate(definition, pose.rotation, pose.position);
+                let width = usize::try_from(width).map_err(|_| size_error())?;
+                let height = usize::try_from(height).map_err(|_| size_error())?;
+                spatial_count = spatial_count
+                    .checked_add(width.checked_mul(height).ok_or_else(size_error)?)
+                    .ok_or_else(size_error)?;
+            }
+        }
+        for route in session.routes.iter().flatten() {
+            spatial_count = spatial_count
+                .checked_add(route.cells.len())
+                .ok_or_else(size_error)?;
+        }
+        for bridge in session.bridges.values() {
+            for channel in &bridge.channels {
+                spatial_count = spatial_count
+                    .checked_add(channel.connections.len())
+                    .ok_or_else(size_error)?;
+            }
+        }
+        spatial_count = spatial_count
+            .checked_add(session.terminal_poses.iter().flatten().count())
+            .and_then(|count| {
+                session.active.as_ref().map_or(Some(count), |active| {
+                    count.checked_add(active.cells.len())?.checked_add(2)
+                })
+            })
+            .ok_or_else(size_error)?;
+        let counted_bytes =
+            |count: usize, element: usize| count.checked_mul(element).ok_or_else(size_error);
+        let occupied_sites = session
+            .occupied
+            .iter()
+            .try_fold(session.bodies.len(), |count, layer| {
+                count.checked_add(layer.len()).ok_or_else(size_error)
+            })?
+            .checked_add(terminals)
+            .ok_or_else(size_error)?;
+        let scratch_bytes = counted_bytes(occupied_sites, std::mem::size_of::<Point>())?;
+        let output_bytes = [
+            std::mem::size_of::<Input>(),
+            counted_bytes(entities, std::mem::size_of::<[f32; ENTITY_FEATURES]>())?,
+            counted_bytes(relations, std::mem::size_of::<[i64; 2]>())?,
+            counted_bytes(relations, std::mem::size_of::<[f32; RELATION_FEATURES]>())?,
+            counted_bytes(
+                spatial_count,
+                std::mem::size_of::<[f32; SPATIAL_FEATURES]>(),
+            )?,
+            counted_bytes(spatial_count, std::mem::size_of::<i64>())?,
+            session.bridge_copy_bytes(),
+        ]
+        .into_iter()
+        .try_fold(0usize, |sum, bytes| {
+            sum.checked_add(bytes).ok_or_else(size_error)
+        })?;
+        let reserved_bytes = output_bytes
+            .checked_add(scratch_bytes)
+            .ok_or_else(size_error)?;
+        if let Some(allowance) = allowance.as_deref_mut() {
+            allowance.reserve_peak(reserved_bytes)?;
+        }
+        let result = (|| -> Result<Self, RequestFailure> {
+            let mut entity_features = Vec::new();
+            reserve_graph(&mut entity_features, entities, allowance.is_some())?;
+            for (index, block) in session.problem.blocks.iter().enumerate() {
+                charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
+                let definition = session
+                    .catalogs
+                    .facilities
+                    .facility(&block.facility)
+                    .expect("constructive problem admitted facilities");
+                let mut row = [0.; ENTITY_FEATURES];
+                row[0] = 1.;
+                row[8] = definition.footprint.width as f32 / scale;
+                row[9] = definition.footprint.height as f32 / scale;
+                row[10] = definition.allowed_rotations.len() as f32;
+                if let Some(pose) = &session.poses[index] {
+                    row[2] = 1.;
+                    row[11] = pose.position.x as f32 / scale;
+                    row[12] = pose.position.y as f32 / scale;
+                    row[13] = (pose.rotation as f32).to_radians().sin();
+                    row[14] = (pose.rotation as f32).to_radians().cos();
+                }
+                if matches!(session.focus, Some(super::Focus::Block { block, .. }) if block == index)
+                {
+                    row[7] = 1.;
+                }
+                entity_features.push(row);
+            }
+            for (index, terminal) in session.problem.terminals.iter().enumerate() {
+                charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
+                let mut row = [0.; ENTITY_FEATURES];
+                row[16
+                    + matches!(
+                        terminal.direction,
+                        aic_layout::physical::TerminalDirection::Output
+                    ) as usize] = 1.;
+                row[5 + layer(terminal.transport)] = 1.;
+                if let Some(pose) = &session.terminal_poses[index] {
+                    row[2] = 1.;
+                    row[11] = pose.position.x as f32 / scale;
+                    row[12] = pose.position.y as f32 / scale;
+                }
+                if matches!(session.focus, Some(super::Focus::Terminal { terminal, .. }) if terminal == index)
+                {
+                    row[7] = 1.;
+                }
+                entity_features.push(row);
+            }
+            let mut relation_index = Vec::new();
+            reserve_graph(&mut relation_index, relations, allowance.is_some())?;
+            let mut relation_features = Vec::new();
+            reserve_graph(&mut relation_features, relations, allowance.is_some())?;
+            for (index, connection) in session.problem.connections.iter().enumerate() {
+                charge_graph(&mut allowance, WorkKind::GraphRows, 3)?;
+                let entity = connection_offset + index;
+                let mut row = [0.; ENTITY_FEATURES];
+                row[1] = 1.;
+                row[3] = session.routes[index].is_some() as u8 as f32;
+                row[4] = session
+                    .active
+                    .as_ref()
+                    .is_some_and(|route| route.connection == index) as u8
+                    as f32;
+                row[5 + layer(connection.transport)] = 1.;
+                row[15] =
+                    (connection.rate.numerator as f32 / connection.rate.denominator as f32).ln_1p();
+                if matches!(session.focus, Some(super::Focus::Route { connection, .. }) if connection == index)
+                {
+                    row[7] = 1.;
+                }
+                entity_features.push(row);
+                let source = endpoint_entity(session, &connection.source);
+                let target = endpoint_entity(session, &connection.target);
+                relation_index.extend([[source, entity as i64], [entity as i64, target]]);
+                let mut source_row = [0.; RELATION_FEATURES];
+                source_row[0] = 1.;
+                source_row[2 + layer(connection.transport)] = 1.;
+                source_row[4] = row[15];
+                let mut target_row = source_row;
+                target_row[0] = 0.;
+                target_row[1] = 1.;
+                relation_features.extend([source_row, target_row]);
+            }
+            let mut spatial_features = Vec::new();
+            reserve_graph(&mut spatial_features, spatial_count, allowance.is_some())?;
+            let mut spatial_owners = Vec::new();
+            reserve_graph(&mut spatial_owners, spatial_count, allowance.is_some())?;
+            for (block, pose) in session.poses.iter().enumerate() {
+                let Some(pose) = pose else { continue };
+                let definition = session
+                    .catalogs
+                    .facilities
+                    .facility(&session.problem.blocks[block].facility)
+                    .expect("constructive problem admitted facilities");
+                let (width, height, _) = rotate(definition, pose.rotation, pose.position);
+                for y in pose.position.y..pose.position.y + height {
+                    for x in pose.position.x..pose.position.x + width {
+                        charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
+                        push_spatial(
+                            &mut spatial_features,
+                            &mut spatial_owners,
+                            Point { x, y },
+                            scale,
+                            2,
+                            block as i64,
+                        );
+                    }
                 }
             }
-        }
-        for (connection, route) in session.routes.iter().enumerate() {
-            let Some(route) = route else { continue };
-            let kind = 3 + layer(session.problem.connections[connection].transport);
-            for &point in &route.cells {
-                charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
-                charge_graph(&mut allowance, WorkKind::RouteCells, 1)?;
-                push_spatial(
-                    &mut spatial_features,
-                    &mut spatial_owners,
-                    point,
-                    scale,
-                    kind,
-                    (connection_offset + connection) as i64,
-                );
-            }
-        }
-        let mut bridge_resources = session.bridges.values().cloned().collect::<Vec<_>>();
-        bridge_resources.sort_by(|left, right| left.id.cmp(&right.id));
-        for bridge in &bridge_resources {
-            charge_graph(
-                &mut allowance,
-                WorkKind::CatalogVisits,
-                session.catalogs.components.catalog().components.len(),
-            )?;
-            charge_graph(
-                &mut allowance,
-                WorkKind::ValidationRecords,
-                bridge
-                    .channels
-                    .iter()
-                    .map(|channel| channel.connections.len())
-                    .sum(),
-            )?;
-            let (component_code, loads) = session.bridge_component_features(bridge);
-            for (axis, channel) in bridge.channels.iter().enumerate() {
-                let kind = match channel.axis {
-                    BridgeAxis::Horizontal => 9,
-                    BridgeAxis::Vertical => 10,
-                };
-                for connection in &channel.connections {
+            for (connection, route) in session.routes.iter().enumerate() {
+                let Some(route) = route else { continue };
+                let kind = 3 + layer(session.problem.connections[connection].transport);
+                for &point in &route.cells {
                     charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
-                    let owner = session.connections[connection] + connection_offset;
+                    charge_graph(&mut allowance, WorkKind::RouteCells, 1)?;
                     push_spatial(
                         &mut spatial_features,
                         &mut spatial_owners,
-                        bridge.position,
+                        point,
                         scale,
                         kind,
-                        owner as i64,
+                        (connection_offset + connection) as i64,
                     );
-                    let row = spatial_features.last_mut().expect("bridge row was pushed");
-                    row[11] = component_code;
-                    row[12] = loads[axis];
-                    row[13] = bridge.rotation as f32 / 270.0;
                 }
             }
-        }
-        for (terminal, pose) in session.terminal_poses.iter().enumerate() {
-            let Some(pose) = pose else { continue };
-            charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
-            push_spatial(
-                &mut spatial_features,
-                &mut spatial_owners,
-                pose.position,
-                scale,
-                8,
-                (blocks + terminal) as i64,
-            );
-        }
-        if let Some(active) = &session.active {
-            for &point in &active.cells {
+            let mut bridge_resources = Vec::new();
+            reserve_graph(
+                &mut bridge_resources,
+                session.bridges.len(),
+                allowance.is_some(),
+            )?;
+            for bridge in session.bridges.values() {
+                bridge_resources.push(try_clone_bridge(bridge).map_err(|diagnostic| {
+                    if allowance.is_some() {
+                        host_allocation_stop(super::routing_candidates::bridge_copy_bytes(bridge))
+                    } else {
+                        RequestFailure::Invalid(diagnostic)
+                    }
+                })?);
+            }
+            bridge_resources.sort_by(|left, right| left.id.cmp(&right.id));
+            for bridge in &bridge_resources {
+                charge_graph(
+                    &mut allowance,
+                    WorkKind::CatalogVisits,
+                    session.catalogs.components.catalog().components.len(),
+                )?;
+                charge_graph(
+                    &mut allowance,
+                    WorkKind::ValidationRecords,
+                    bridge
+                        .channels
+                        .iter()
+                        .map(|channel| channel.connections.len())
+                        .sum(),
+                )?;
+                let (component_code, loads) = session.bridge_component_features(bridge);
+                for (axis, channel) in bridge.channels.iter().enumerate() {
+                    let kind = match channel.axis {
+                        BridgeAxis::Horizontal => 9,
+                        BridgeAxis::Vertical => 10,
+                    };
+                    for connection in &channel.connections {
+                        charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
+                        let owner = session.connections[connection] + connection_offset;
+                        push_spatial(
+                            &mut spatial_features,
+                            &mut spatial_owners,
+                            bridge.position,
+                            scale,
+                            kind,
+                            owner as i64,
+                        );
+                        let row = spatial_features.last_mut().expect("bridge row was pushed");
+                        row[11] = component_code;
+                        row[12] = loads[axis];
+                        row[13] = bridge.rotation as f32 / 270.0;
+                    }
+                }
+            }
+            for (terminal, pose) in session.terminal_poses.iter().enumerate() {
+                let Some(pose) = pose else { continue };
                 charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
-                charge_graph(&mut allowance, WorkKind::RouteCells, 1)?;
                 push_spatial(
                     &mut spatial_features,
                     &mut spatial_owners,
-                    point,
+                    pose.position,
                     scale,
-                    5,
+                    8,
+                    (blocks + terminal) as i64,
+                );
+            }
+            if let Some(active) = &session.active {
+                for &point in &active.cells {
+                    charge_graph(&mut allowance, WorkKind::GraphRows, 1)?;
+                    charge_graph(&mut allowance, WorkKind::RouteCells, 1)?;
+                    push_spatial(
+                        &mut spatial_features,
+                        &mut spatial_owners,
+                        point,
+                        scale,
+                        5,
+                        (connection_offset + active.connection) as i64,
+                    );
+                }
+                let endpoint = *active.cells.last().expect("active route contains source");
+                charge_graph(&mut allowance, WorkKind::GraphRows, 2)?;
+                push_spatial(
+                    &mut spatial_features,
+                    &mut spatial_owners,
+                    endpoint,
+                    scale,
+                    6,
+                    (connection_offset + active.connection) as i64,
+                );
+                push_spatial(
+                    &mut spatial_features,
+                    &mut spatial_owners,
+                    active.target,
+                    scale,
+                    7,
                     (connection_offset + active.connection) as i64,
                 );
             }
-            let endpoint = *active.cells.last().expect("active route contains source");
-            charge_graph(&mut allowance, WorkKind::GraphRows, 2)?;
-            push_spatial(
-                &mut spatial_features,
-                &mut spatial_owners,
-                endpoint,
-                scale,
-                6,
-                (connection_offset + active.connection) as i64,
-            );
-            push_spatial(
-                &mut spatial_features,
-                &mut spatial_owners,
-                active.target,
-                scale,
-                7,
-                (connection_offset + active.connection) as i64,
-            );
-        }
-        let mut focus_features = [0.; FOCUS_FEATURES];
-        let mut focus_entity = -1;
-        match &session.focus {
-            None => focus_features[0] = 1.,
-            Some(super::Focus::Block { block, position }) => {
-                focus_features[1] = 1.;
-                focus_features[4] = position.x as f32 / scale;
-                focus_features[5] = position.y as f32 / scale;
-                focus_entity = *block as i64;
+            let mut focus_features = [0.; FOCUS_FEATURES];
+            let mut focus_entity = -1;
+            match &session.focus {
+                None => focus_features[0] = 1.,
+                Some(super::Focus::Block { block, position }) => {
+                    focus_features[1] = 1.;
+                    focus_features[4] = position.x as f32 / scale;
+                    focus_features[5] = position.y as f32 / scale;
+                    focus_entity = *block as i64;
+                }
+                Some(super::Focus::Terminal { terminal, position }) => {
+                    focus_features[11] = 1.;
+                    focus_features[4] = position.x as f32 / scale;
+                    focus_features[5] = position.y as f32 / scale;
+                    focus_entity = (blocks + terminal) as i64;
+                }
+                Some(super::Focus::Route {
+                    connection,
+                    endpoint,
+                    target,
+                    active,
+                }) => {
+                    focus_features[2] = 1.;
+                    focus_features[3] = *active as u8 as f32;
+                    focus_features[4] = endpoint.x as f32 / scale;
+                    focus_features[5] = endpoint.y as f32 / scale;
+                    focus_features[6] = target.x as f32 / scale;
+                    focus_features[7] = target.y as f32 / scale;
+                    focus_features[8] = (target.x - endpoint.x) as f32 / scale;
+                    focus_features[9] = (target.y - endpoint.y) as f32 / scale;
+                    focus_features[10] = endpoint.distance(*target) as f32 / scale;
+                    focus_entity = (connection_offset + connection) as i64;
+                }
             }
-            Some(super::Focus::Terminal { terminal, position }) => {
-                focus_features[11] = 1.;
-                focus_features[4] = position.x as f32 / scale;
-                focus_features[5] = position.y as f32 / scale;
-                focus_entity = (blocks + terminal) as i64;
-            }
-            Some(super::Focus::Route {
-                connection,
-                endpoint,
-                target,
-                active,
-            }) => {
-                focus_features[2] = 1.;
-                focus_features[3] = *active as u8 as f32;
-                focus_features[4] = endpoint.x as f32 / scale;
-                focus_features[5] = endpoint.y as f32 / scale;
-                focus_features[6] = target.x as f32 / scale;
-                focus_features[7] = target.y as f32 / scale;
-                focus_features[8] = (target.x - endpoint.x) as f32 / scale;
-                focus_features[9] = (target.y - endpoint.y) as f32 / scale;
-                focus_features[10] = endpoint.distance(*target) as f32 / scale;
-                focus_entity = (connection_offset + connection) as i64;
-            }
-        }
-        let mut occupied = BTreeSet::new();
-        for &point in &session.bodies {
-            charge_graph(&mut allowance, WorkKind::ValidationRecords, 1)?;
-            occupied.insert(point);
-        }
-        for layer in &session.occupied {
-            for &point in layer.keys() {
+            let occupied = blocked_cells_bounded(session, allowance.is_some())?;
+            for _ in &session.bodies {
                 charge_graph(&mut allowance, WorkKind::ValidationRecords, 1)?;
-                occupied.insert(point);
             }
+            for layer in &session.occupied {
+                for _ in layer.keys() {
+                    charge_graph(&mut allowance, WorkKind::ValidationRecords, 1)?;
+                }
+            }
+            for _ in session.terminal_poses.iter().flatten() {
+                charge_graph(&mut allowance, WorkKind::ValidationRecords, 1)?;
+            }
+            let placed = session.poses.iter().filter(|pose| pose.is_some()).count()
+                + session
+                    .terminal_poses
+                    .iter()
+                    .filter(|pose| pose.is_some())
+                    .count();
+            let placeable = session.poses.len() + session.terminal_poses.len();
+            let global_features = [
+                session.turns as f32 / session.limits.max_turns as f32,
+                (session.limits.max_turns - session.turns) as f32 / session.limits.max_turns as f32,
+                session.completed() as f32 / session.routes.len() as f32,
+                placed as f32 / placeable as f32,
+                session.active.is_some() as u8 as f32,
+                occupied.len() as f32
+                    / (config.placement.width() * config.placement.height()) as f32,
+                config.placement.width() as f32 / scale,
+                config.placement.height() as f32 / scale,
+            ];
+            Ok(Self {
+                schema: SCHEMA,
+                entity_features,
+                relation_index,
+                relation_features,
+                spatial_features,
+                spatial_owners,
+                global_features,
+                focus_features,
+                focus_entity,
+                bridge_resources,
+            })
+        })();
+        if result.is_err() {
+            if let Some(allowance) = allowance.as_deref_mut() {
+                allowance.release_peak(reserved_bytes);
+            }
+        } else if let Some(allowance) = allowance.as_deref_mut() {
+            allowance.release_peak(scratch_bytes);
         }
-        for pose in session.terminal_poses.iter().flatten() {
-            charge_graph(&mut allowance, WorkKind::ValidationRecords, 1)?;
-            occupied.insert(pose.position);
+        result.map(|input| (input, if allowance.is_some() { output_bytes } else { 0 }))
+    }
+}
+
+fn reserve_graph<T>(
+    values: &mut Vec<T>,
+    count: usize,
+    bounded: bool,
+) -> Result<(), RequestFailure> {
+    values.try_reserve_exact(count).map_err(|_| {
+        if bounded {
+            host_allocation_stop(count.saturating_mul(std::mem::size_of::<T>()))
+        } else {
+            RequestFailure::Invalid(error(
+                "learning-resource",
+                "learning-input",
+                "graph input host allocation failed",
+            ))
         }
-        let placed = session.poses.iter().filter(|pose| pose.is_some()).count()
-            + session
-                .terminal_poses
-                .iter()
-                .filter(|pose| pose.is_some())
-                .count();
-        let placeable = session.poses.len() + session.terminal_poses.len();
-        let global_features = [
-            session.turns as f32 / session.limits.max_turns as f32,
-            (session.limits.max_turns - session.turns) as f32 / session.limits.max_turns as f32,
-            session.completed() as f32 / session.routes.len() as f32,
-            placed as f32 / placeable as f32,
-            session.active.is_some() as u8 as f32,
-            occupied.len() as f32 / (config.placement.width() * config.placement.height()) as f32,
-            config.placement.width() as f32 / scale,
-            config.placement.height() as f32 / scale,
-        ];
-        Ok(Self {
-            schema: SCHEMA,
-            entity_features,
-            relation_index,
-            relation_features,
-            spatial_features,
-            spatial_owners,
-            global_features,
-            focus_features,
-            focus_entity,
-            bridge_resources,
+    })
+}
+
+fn host_allocation_stop(bytes: usize) -> RequestFailure {
+    RequestFailure::Stopped(AllowanceStop {
+        reason: "host-allocation",
+        category: None,
+        limit: 0,
+        used: 0,
+        deadline_overshoot_ms: 0,
+        attempted_bytes: Some(bytes),
+        aggregate_peak_bytes: None,
+    })
+}
+
+fn try_clone_bridge(bridge: &Bridge) -> Result<Bridge, Diagnostic> {
+    fn copy_channel(channel: &BridgeChannel) -> Result<BridgeChannel, Diagnostic> {
+        let mut connections = Vec::new();
+        connections
+            .try_reserve_exact(channel.connections.len())
+            .map_err(|_| learning_size_error())?;
+        for connection in &channel.connections {
+            connections.push(checked_string(connection)?);
+        }
+        Ok(BridgeChannel {
+            axis: channel.axis,
+            commodity: checked_string(&channel.commodity)?,
+            connections,
         })
     }
+    Ok(Bridge {
+        id: checked_string(&bridge.id)?,
+        component: checked_string(&bridge.component)?,
+        position: bridge.position,
+        rotation: bridge.rotation,
+        channels: [
+            copy_channel(&bridge.channels[0])?,
+            copy_channel(&bridge.channels[1])?,
+        ],
+    })
 }
 
 fn charge_graph(

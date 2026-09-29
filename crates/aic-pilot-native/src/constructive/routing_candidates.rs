@@ -3,6 +3,10 @@
 use std::{
     collections::{BTreeMap, BTreeSet, HashSet},
     io::Write,
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
     time::{Duration, Instant},
 };
 
@@ -14,22 +18,32 @@ use aic_layout::{
     projection::{edge_index, project_port},
     validation::within_capacity,
 };
-use aic_routing::{
-    Carrier, Crossing, CrossingVisit, PathOptions, RouteJob, crossing_options_with_visit,
-    shortest_path,
-};
+use aic_routing::{Crossing, PathOptions, shortest_path};
 use indexmap::{IndexMap, IndexSet};
 use serde::{Deserialize, Serialize};
 
-use super::{Command, Diagnostic, Direction, ReplayMeter, ReplayWork, Session, Step, error};
-
-mod repair;
-pub use repair::{
-    REPAIR_CANDIDATE_SCHEMA, RepairCandidate, RepairDraft, RepairRequest, RepairScope,
-    publish_repair_candidate,
+use super::{
+    Command, Diagnostic, Direction, ReplayMeter, ReplayWork, Session, Step, error,
+    native_replay::{NativeReplayProgress, ReplayAdvance, SourceOwner},
 };
 
-pub const SCHEMA: &str = "aic-constructive-route-candidates-v4";
+mod guidance_preparation;
+mod physical_cost;
+mod repair;
+mod route_pager;
+mod route_preparation;
+pub use guidance_preparation::RouteGuidancePreparation;
+pub use physical_cost::{ComponentUse, PhysicalCost};
+pub use repair::{
+    PreparedRepair, REPAIR_CANDIDATE_SCHEMA, RepairCandidate, RepairDraft, RepairDraftState,
+    RepairPreparationSizes, RepairRequest, RepairScope, publish_repair_candidate,
+};
+pub use route_pager::{
+    FoundPathLease, RouteCandidatePage, RouteCandidatePager, RouteCandidatePreparation,
+    RoutePageStatus,
+};
+
+pub const SCHEMA: &str = "aic-constructive-route-candidates-v5";
 pub const GUIDANCE_SCHEMA: &str = "aic-constructive-route-guidance-v2";
 pub const GUIDANCE_GRID_CHANNELS: usize = 16;
 
@@ -125,6 +139,25 @@ pub enum WorkKind {
     Variants,
 }
 
+pub const CUMULATIVE_WORK_KINDS: [WorkKind; 16] = [
+    WorkKind::EndpointVisits,
+    WorkKind::RasterCells,
+    WorkKind::GraphRows,
+    WorkKind::RouteCells,
+    WorkKind::BlockedVisits,
+    WorkKind::CopiedBytes,
+    WorkKind::InferenceElements,
+    WorkKind::Expansions,
+    WorkKind::RoutingScans,
+    WorkKind::ReplayRouteCells,
+    WorkKind::ReplayUsers,
+    WorkKind::CatalogVisits,
+    WorkKind::ValidationRecords,
+    WorkKind::PublishedBytes,
+    WorkKind::Candidates,
+    WorkKind::Variants,
+];
+
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 pub struct AllowanceStop {
     pub reason: &'static str,
@@ -132,9 +165,13 @@ pub struct AllowanceStop {
     pub limit: usize,
     pub used: usize,
     pub deadline_overshoot_ms: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attempted_bytes: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub aggregate_peak_bytes: Option<usize>,
 }
 
-#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct AllowanceUsage {
     pub categories: BTreeMap<WorkKind, usize>,
     pub peak_live_bytes: usize,
@@ -145,9 +182,111 @@ pub struct RequestAllowance {
     caps: AllowanceCaps,
     used: BTreeMap<WorkKind, usize>,
     deadline: Instant,
+    paused_at: Option<Instant>,
     reserved_bytes: usize,
     peak_live_bytes: usize,
+    tree_memory: Option<SearchMemoryBudget>,
+    page_window: Option<PageWindow>,
     last_stop: std::cell::RefCell<Option<AllowanceStop>>,
+}
+
+struct PageWindow {
+    limits: BTreeMap<WorkKind, usize>,
+    total_duration: Duration,
+    remaining_duration: Duration,
+    active_since: Option<Instant>,
+}
+
+impl Drop for RequestAllowance {
+    fn drop(&mut self) {
+        if let Some(tree) = &self.tree_memory {
+            tree.release(self.reserved_bytes);
+        }
+    }
+}
+
+/// A single MCTS tree's live retained and temporary byte reservations. Each
+/// request still applies its own independent peak cap before reaching this
+/// aggregate cap. The counters are shared by clone, not reset per node.
+#[derive(Clone, Debug)]
+pub struct SearchMemoryBudget {
+    inner: Arc<SearchMemoryBudgetInner>,
+}
+
+#[derive(Debug)]
+struct SearchMemoryBudgetInner {
+    limit: usize,
+    live: AtomicUsize,
+    peak: AtomicUsize,
+}
+
+impl SearchMemoryBudget {
+    pub fn new(limit: usize) -> Self {
+        assert!(limit > 0, "aggregate search memory cap must be positive");
+        Self {
+            inner: Arc::new(SearchMemoryBudgetInner {
+                limit,
+                live: AtomicUsize::new(0),
+                peak: AtomicUsize::new(0),
+            }),
+        }
+    }
+
+    pub fn reserve(&self, bytes: usize) -> Result<(), AllowanceStop> {
+        let mut live = self.inner.live.load(Ordering::Relaxed);
+        loop {
+            let Some(next) = live.checked_add(bytes) else {
+                return Err(self.stop(live, bytes));
+            };
+            if next > self.inner.limit {
+                return Err(self.stop(live, bytes));
+            }
+            match self.inner.live.compare_exchange_weak(
+                live,
+                next,
+                Ordering::AcqRel,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => {
+                    self.inner.peak.fetch_max(next, Ordering::AcqRel);
+                    return Ok(());
+                }
+                Err(actual) => live = actual,
+            }
+        }
+    }
+
+    pub fn release(&self, bytes: usize) {
+        let old = self.inner.live.fetch_sub(bytes, Ordering::AcqRel);
+        assert!(
+            old >= bytes,
+            "aggregate memory release must match a reservation"
+        );
+    }
+
+    pub fn live_bytes(&self) -> usize {
+        self.inner.live.load(Ordering::Acquire)
+    }
+
+    pub fn peak_bytes(&self) -> usize {
+        self.inner.peak.load(Ordering::Acquire)
+    }
+
+    pub fn limit_bytes(&self) -> usize {
+        self.inner.limit
+    }
+
+    fn stop(&self, live: usize, attempted: usize) -> AllowanceStop {
+        AllowanceStop {
+            reason: "aggregate-memory-limit",
+            category: None,
+            limit: self.inner.limit,
+            used: live,
+            deadline_overshoot_ms: 0,
+            attempted_bytes: Some(attempted),
+            aggregate_peak_bytes: Some(self.peak_bytes()),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -205,13 +344,23 @@ impl RequestFailure {
 
 impl RequestAllowance {
     pub fn new(caps: AllowanceCaps) -> Self {
+        Self::with_memory_budget(caps, None)
+    }
+
+    pub fn with_memory_budget(
+        caps: AllowanceCaps,
+        tree_memory: Option<SearchMemoryBudget>,
+    ) -> Self {
         let deadline = Instant::now() + Duration::from_millis(caps.deadline_ms);
         Self {
             caps,
             used: BTreeMap::new(),
             deadline,
+            paused_at: None,
             reserved_bytes: 0,
             peak_live_bytes: 0,
+            tree_memory,
+            page_window: None,
             last_stop: std::cell::RefCell::new(None),
         }
     }
@@ -225,12 +374,167 @@ impl RequestAllowance {
             .saturating_sub(self.used.get(&kind).copied().unwrap_or(0))
     }
 
+    /// Work available to this page, including the request's hard remainder.
+    pub fn page_remaining(&self, kind: WorkKind) -> usize {
+        let hard = self.remaining(kind);
+        self.page_window
+            .as_ref()
+            .and_then(|window| window.limits.get(&kind))
+            .map_or(hard, |&limit| {
+                hard.min(limit.saturating_sub(self.used.get(&kind).copied().unwrap_or(0)))
+            })
+    }
+
+    /// Whether this request's own retained reservations leave room for one
+    /// more allocation after every competing request has released its bytes.
+    pub fn aggregate_reservation_can_fit_if_others_release(
+        &self,
+        bytes: usize,
+        pinned_external_bytes: usize,
+    ) -> bool {
+        self.tree_memory.as_ref().is_none_or(|tree| {
+            self.reserved_bytes
+                .checked_add(pinned_external_bytes)
+                .and_then(|floor| floor.checked_add(bytes))
+                .is_some_and(|floor| floor <= tree.limit_bytes())
+        })
+    }
+
+    pub(crate) fn stable_peak_cap(&self, pinned_external_bytes: usize) -> usize {
+        self.caps
+            .peak_live_bytes
+            .min(self.tree_memory.as_ref().map_or(usize::MAX, |tree| {
+                tree.limit_bytes().saturating_sub(pinned_external_bytes)
+            }))
+    }
+
+    pub(crate) fn reserved_bytes(&self) -> usize {
+        self.reserved_bytes
+    }
+
     pub fn deadline(&self) -> Instant {
         self.deadline
     }
 
+    /// A first-stage page gets a temporary charged-work window. Quotas follow
+    /// `CUMULATIVE_WORK_KINDS` order, so no cumulative category can be omitted.
+    /// This does not change the hard caps; clear it when the stage yields.
+    pub fn begin_page_window(
+        &mut self,
+        quotas: [usize; CUMULATIVE_WORK_KINDS.len()],
+        duration: Duration,
+    ) {
+        assert!(self.page_window.is_none(), "page window already active");
+        assert!(
+            self.paused_at.is_none(),
+            "resume before opening a page window"
+        );
+        let started = Instant::now();
+        let limits = CUMULATIVE_WORK_KINDS
+            .into_iter()
+            .zip(quotas)
+            .map(|(kind, quota)| {
+                (
+                    kind,
+                    self.used
+                        .get(&kind)
+                        .copied()
+                        .unwrap_or(0)
+                        .saturating_add(quota),
+                )
+            })
+            .collect();
+        self.page_window = Some(PageWindow {
+            limits,
+            total_duration: duration,
+            remaining_duration: duration,
+            active_since: Some(started),
+        });
+    }
+
+    /// Freeze only the temporary first-turn clock. The absolute work limits
+    /// remain attached to this window across other tasks' preparation.
+    pub fn suspend_page_window(&mut self) {
+        let window = self.page_window.as_mut().expect("page window is active");
+        let started = window.active_since.take().expect("page window is running");
+        window.remaining_duration = window
+            .remaining_duration
+            .saturating_sub(Instant::now().duration_since(started));
+    }
+
+    pub fn resume_page_window(&mut self) {
+        assert!(self.paused_at.is_none(), "resume allowance first");
+        let window = self.page_window.as_mut().expect("page window exists");
+        assert!(
+            window.active_since.is_none(),
+            "page window is already running"
+        );
+        window.active_since = Some(Instant::now());
+    }
+
+    pub fn page_window_remaining(&self) -> Option<Duration> {
+        self.page_window.as_ref().map(|window| {
+            window
+                .active_since
+                .map_or(window.remaining_duration, |started| {
+                    window
+                        .remaining_duration
+                        .saturating_sub(Instant::now().duration_since(started))
+                })
+        })
+    }
+
+    pub fn end_page_window(&mut self) {
+        self.page_window = None;
+    }
+
+    fn page_work_stop(&self, kind: WorkKind, used: usize) -> Option<AllowanceStop> {
+        let limit = *self.page_window.as_ref()?.limits.get(&kind)?;
+        (used > limit).then_some(AllowanceStop {
+            reason: "page-quantum",
+            category: Some(kind),
+            limit,
+            used,
+            deadline_overshoot_ms: 0,
+            attempted_bytes: None,
+            aggregate_peak_bytes: None,
+        })
+    }
+
+    /// A retained candidate pager charges only active page work to its request
+    /// deadline. The caller resumes before entering a native search kernel.
+    pub fn pause(&mut self) -> Result<(), AllowanceStop> {
+        assert!(
+            self.page_window
+                .as_ref()
+                .is_none_or(|window| window.active_since.is_none()),
+            "suspend the page window before pausing"
+        );
+        self.check_hard_deadline()?;
+        self.paused_at.get_or_insert_with(Instant::now);
+        Ok(())
+    }
+
+    pub fn resume(&mut self) {
+        if let Some(paused_at) = self.paused_at.take() {
+            self.deadline += Instant::now().duration_since(paused_at);
+        }
+    }
+
     pub fn last_stop(&self) -> Option<AllowanceStop> {
         self.last_stop.borrow().clone()
+    }
+
+    /// Clear a previously reported stop before a retained kernel is retried.
+    /// The caller has already recorded that earlier stop in its task report.
+    pub fn clear_last_stop(&self) {
+        *self.last_stop.borrow_mut() = None;
+    }
+
+    pub fn confirm_hard_stop(&self, stop: &AllowanceStop) {
+        if stop.reason != "page-quantum" {
+            *self.last_stop.borrow_mut() = Some(stop.clone());
+        }
     }
 
     fn note_stop(&self, stop: AllowanceStop) -> AllowanceStop {
@@ -238,8 +542,22 @@ impl RequestAllowance {
         stop
     }
 
-    pub fn check_deadline(&self) -> Result<(), AllowanceStop> {
-        if let Some(overrun) = Instant::now().checked_duration_since(self.deadline) {
+    fn assert_active(&self) {
+        assert!(self.paused_at.is_none(), "resume allowance before work");
+        assert!(
+            self.page_window
+                .as_ref()
+                .is_none_or(|window| window.active_since.is_some()),
+            "resume page window before work"
+        );
+    }
+
+    fn check_hard_deadline(&self) -> Result<(), AllowanceStop> {
+        if let Some(overrun) = self
+            .paused_at
+            .unwrap_or_else(Instant::now)
+            .checked_duration_since(self.deadline)
+        {
             return Err(self.note_stop(AllowanceStop {
                 reason: "deadline",
                 category: None,
@@ -249,7 +567,35 @@ impl RequestAllowance {
                     .deadline_ms
                     .saturating_add(overrun.as_millis() as u64) as usize,
                 deadline_overshoot_ms: overrun.as_millis() as u64,
+                attempted_bytes: None,
+                aggregate_peak_bytes: None,
             }));
+        }
+        Ok(())
+    }
+
+    pub fn check_deadline(&self) -> Result<(), AllowanceStop> {
+        self.assert_active();
+        self.check_hard_deadline()?;
+        if let Some(window) = &self.page_window {
+            if let Some(started) = window.active_since {
+                let elapsed_segment = Instant::now().duration_since(started);
+                if elapsed_segment >= window.remaining_duration {
+                    let used = window
+                        .total_duration
+                        .saturating_sub(window.remaining_duration)
+                        .saturating_add(elapsed_segment);
+                    return Err(AllowanceStop {
+                        reason: "page-quantum",
+                        category: None,
+                        limit: window.total_duration.as_millis() as usize,
+                        used: used.as_millis() as usize,
+                        deadline_overshoot_ms: 0,
+                        attempted_bytes: None,
+                        aggregate_peak_bytes: None,
+                    });
+                }
+            }
         }
         Ok(())
     }
@@ -266,7 +612,12 @@ impl RequestAllowance {
                 limit,
                 used: old,
                 deadline_overshoot_ms: 0,
+                attempted_bytes: None,
+                aggregate_peak_bytes: None,
             }));
+        }
+        if let Some(stop) = self.page_work_stop(kind, used) {
+            return Err(stop);
         }
         self.used.insert(kind, used);
         Ok(())
@@ -275,6 +626,7 @@ impl RequestAllowance {
     /// Account work a bounded kernel has already performed. Such kernels may
     /// report one final probe beyond a cap; retain that real use in diagnostics.
     pub fn record_completed(&mut self, kind: WorkKind, count: usize) -> Result<(), AllowanceStop> {
+        self.assert_active();
         let limit = self.limit(kind);
         let used = self
             .used
@@ -290,7 +642,12 @@ impl RequestAllowance {
                 limit,
                 used,
                 deadline_overshoot_ms: 0,
+                attempted_bytes: None,
+                aggregate_peak_bytes: None,
             }));
+        }
+        if let Some(stop) = self.page_work_stop(kind, used) {
+            return Err(stop);
         }
         self.check_deadline()
     }
@@ -298,6 +655,7 @@ impl RequestAllowance {
     /// Record a live high-water mark, such as A* frontier occupancy. Searches
     /// run sequentially, so their peaks do not add to one another.
     pub fn record_peak(&mut self, kind: WorkKind, count: usize) -> Result<(), AllowanceStop> {
+        self.assert_active();
         let limit = self.limit(kind);
         let used = self.used.get(&kind).copied().unwrap_or(0).max(count);
         self.used.insert(kind, used);
@@ -308,6 +666,8 @@ impl RequestAllowance {
                 limit,
                 used,
                 deadline_overshoot_ms: 0,
+                attempted_bytes: None,
+                aggregate_peak_bytes: None,
             }));
         }
         self.check_deadline()
@@ -320,6 +680,8 @@ impl RequestAllowance {
             limit: self.limit(kind),
             used: self.used.get(&kind).copied().unwrap_or(0),
             deadline_overshoot_ms: 0,
+            attempted_bytes: None,
+            aggregate_peak_bytes: None,
         })
     }
 
@@ -339,13 +701,26 @@ impl RequestAllowance {
                 limit,
                 used: self.used.get(&kind).copied().unwrap_or(0),
                 deadline_overshoot_ms: 0,
+                attempted_bytes: None,
+                aggregate_peak_bytes: None,
             }));
+        }
+        if let Some(stop) = self.page_work_stop(kind, used) {
+            return Err(stop);
         }
         Ok(())
     }
 
     pub fn reserve_peak(&mut self, bytes: usize) -> Result<(), AllowanceStop> {
         self.check_deadline()?;
+        self.reserve_peak_for_bounded_kernel(bytes)
+    }
+
+    /// A retained kernel checks both clocks before each bounded atomic step.
+    /// Reserving that step cannot turn an in-flight page yield into a hard
+    /// memory failure; the caller meters elapsed time after the step.
+    pub fn reserve_peak_for_bounded_kernel(&mut self, bytes: usize) -> Result<(), AllowanceStop> {
+        self.assert_active();
         let peak = self.reserved_bytes.saturating_add(bytes);
         if peak > self.caps.peak_live_bytes {
             return Err(self.note_stop(AllowanceStop {
@@ -354,7 +729,12 @@ impl RequestAllowance {
                 limit: self.caps.peak_live_bytes,
                 used: self.reserved_bytes,
                 deadline_overshoot_ms: 0,
+                attempted_bytes: Some(bytes),
+                aggregate_peak_bytes: None,
             }));
+        }
+        if let Some(tree) = &self.tree_memory {
+            tree.reserve(bytes).map_err(|stop| self.note_stop(stop))?;
         }
         self.reserved_bytes = peak;
         self.peak_live_bytes = self.peak_live_bytes.max(peak);
@@ -366,13 +746,18 @@ impl RequestAllowance {
             .reserved_bytes
             .checked_sub(bytes)
             .expect("request reservation release must match a prior reserve");
+        if let Some(tree) = &self.tree_memory {
+            tree.release(bytes);
+        }
     }
 
     pub fn usage(&self) -> AllowanceUsage {
         AllowanceUsage {
             categories: self.used.clone(),
             peak_live_bytes: self.peak_live_bytes,
-            deadline_overshoot_ms: Instant::now()
+            deadline_overshoot_ms: self
+                .paused_at
+                .unwrap_or_else(Instant::now)
                 .checked_duration_since(self.deadline)
                 .map_or(0, |duration| duration.as_millis() as u64),
         }
@@ -514,6 +899,11 @@ pub struct Candidate {
     pub predicted_success: Option<f32>,
     pub guidance_uncertainty: Option<f32>,
     pub provenance: Provenance,
+    /// Other search modes that independently found the same physical witness.
+    pub additional_provenance: Vec<Provenance>,
+    pub physical_cost: PhysicalCost,
+    /// Cumulative charged work for this logical request through this witness.
+    pub charged_work: AllowanceUsage,
 }
 
 /// One atomic same-commodity network witness. Its member routes were generated
@@ -530,6 +920,8 @@ pub struct NetworkCandidate {
     pub turns: i64,
     pub expanded: usize,
     pub shared_cells: usize,
+    pub physical_cost: PhysicalCost,
+    pub charged_work: AllowanceUsage,
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
@@ -574,6 +966,427 @@ struct Endpoint {
 struct EndpointPair {
     source: Endpoint,
     target: Endpoint,
+}
+
+type EndpointPairKey = (i64, Option<String>, Option<String>);
+
+fn retained_endpoint_pair_bytes(pairs: &Vec<EndpointPair>) -> usize {
+    pairs
+        .capacity()
+        .saturating_mul(std::mem::size_of::<EndpointPair>())
+        .saturating_add(
+            pairs
+                .iter()
+                .flat_map(|pair| [&pair.source, &pair.target])
+                .filter_map(|endpoint| endpoint.port.as_ref())
+                .map(String::len)
+                .sum::<usize>(),
+        )
+}
+
+pub(super) fn bridge_copy_bytes(bridge: &Bridge) -> usize {
+    std::mem::size_of::<Bridge>()
+        .saturating_add(bridge.id.len())
+        .saturating_add(bridge.component.len())
+        .saturating_add(
+            bridge
+                .channels
+                .iter()
+                .map(|channel| {
+                    channel
+                        .commodity
+                        .len()
+                        .saturating_add(channel.connections.iter().map(String::len).sum::<usize>())
+                        .saturating_add(
+                            channel
+                                .connections
+                                .len()
+                                .saturating_mul(std::mem::size_of::<String>()),
+                        )
+                })
+                .sum::<usize>(),
+        )
+}
+
+/// Owns one endpoint domain across temporary page stops.
+struct EndpointDomainCursor {
+    endpoint: String,
+    expected: FacilityPortDirection,
+    port_index: usize,
+    endpoints: Vec<Endpoint>,
+}
+
+impl EndpointDomainCursor {
+    fn advance(
+        &mut self,
+        session: &Session,
+        connection: usize,
+        allowance: &mut RequestAllowance,
+    ) -> Result<Vec<Endpoint>, RequestFailure> {
+        let obligation = &session.problem.connections[connection];
+        let Some(&block) = session.blocks.get(&self.endpoint) else {
+            allowance.charge(WorkKind::EndpointVisits, 1)?;
+            let (point, _) =
+                session.route_endpoint(&self.endpoint, None, self.expected, obligation)?;
+            return Ok(vec![Endpoint {
+                port: None,
+                point,
+                direction: None,
+            }]);
+        };
+        let pose = session.poses[block].as_ref().ok_or_else(|| {
+            error(
+                "unplaced-endpoint",
+                &self.endpoint,
+                "route endpoint facility is not placed",
+            )
+        })?;
+        let definition = session
+            .catalogs
+            .facilities
+            .facility(&session.problem.blocks[block].facility)
+            .expect("admitted facility definition");
+        while self.port_index < definition.ports.len() {
+            allowance.charge(WorkKind::EndpointVisits, 1)?;
+            let port_definition = &definition.ports[self.port_index];
+            let port = project_port(definition, port_definition, pose.rotation, pose.position);
+            let available = {
+                if port.direction != self.expected || port.transport != obligation.transport {
+                    false
+                } else {
+                    session
+                        .used_ports
+                        .get(&(block, port.id.clone()))
+                        .is_none_or(|used| {
+                            let Ok(total) = used.rate.checked_add(obligation.rate) else {
+                                return false;
+                            };
+                            let capacity =
+                                session.catalogs.transports.capacity(obligation.transport);
+                            used.commodity == obligation.commodity
+                                && used.transport == obligation.transport
+                                && used.direction == self.expected
+                                && within_capacity(total, capacity.quantity, capacity.duration_ms)
+                        })
+                }
+            };
+            if available {
+                self.endpoints.push(Endpoint {
+                    port: Some(port.id),
+                    point: port.connection,
+                    direction: Some(match self.expected {
+                        FacilityPortDirection::Output => edge_index(port.edge),
+                        FacilityPortDirection::Input => opposite(port.edge),
+                    }),
+                });
+            }
+            self.port_index += 1;
+        }
+        self.endpoints
+            .sort_by(|left, right| left.port.cmp(&right.port));
+        Ok(std::mem::take(&mut self.endpoints))
+    }
+}
+
+/// Owns endpoint domains and their Cartesian scan so a temporary page stop
+/// cannot charge a visit twice or discard an already ordered pair.
+struct EndpointPairCursor {
+    source_domain: Option<EndpointDomainCursor>,
+    target_domain: Option<EndpointDomainCursor>,
+    sources: Vec<Endpoint>,
+    targets: Vec<Endpoint>,
+    ordered: BTreeMap<(i64, Option<String>, Option<String>), EndpointPair>,
+    source_index: usize,
+    target_index: usize,
+    visit_charged: bool,
+}
+
+impl EndpointPairCursor {
+    fn new(session: &Session, connection: usize) -> Self {
+        let obligation = &session.problem.connections[connection];
+        let capacity = |endpoint: &str| {
+            session.blocks.get(endpoint).map_or(1, |&block| {
+                session
+                    .catalogs
+                    .facilities
+                    .facility(&session.problem.blocks[block].facility)
+                    .expect("admitted facility")
+                    .ports
+                    .len()
+            })
+        };
+        Self {
+            source_domain: Some(EndpointDomainCursor {
+                endpoint: obligation.source.clone(),
+                expected: FacilityPortDirection::Output,
+                port_index: 0,
+                endpoints: Vec::with_capacity(capacity(&obligation.source)),
+            }),
+            target_domain: Some(EndpointDomainCursor {
+                endpoint: obligation.target.clone(),
+                expected: FacilityPortDirection::Input,
+                port_index: 0,
+                endpoints: Vec::with_capacity(capacity(&obligation.target)),
+            }),
+            sources: Vec::new(),
+            targets: Vec::new(),
+            ordered: BTreeMap::new(),
+            source_index: 0,
+            target_index: 0,
+            visit_charged: false,
+        }
+    }
+
+    fn advance(
+        &mut self,
+        session: &Session,
+        connection: usize,
+        bounds: Bounds,
+        allowance: &mut RequestAllowance,
+    ) -> Result<Vec<EndpointPair>, RequestFailure> {
+        if let Some(domain) = self.source_domain.as_mut() {
+            self.sources = domain.advance(session, connection, allowance)?;
+            self.source_domain = None;
+        }
+        if let Some(domain) = self.target_domain.as_mut() {
+            self.targets = domain.advance(session, connection, allowance)?;
+            self.target_domain = None;
+        }
+        self.advance_pairs(bounds, allowance)
+            .map_err(RequestFailure::Stopped)
+    }
+
+    fn advance_pairs(
+        &mut self,
+        bounds: Bounds,
+        allowance: &mut RequestAllowance,
+    ) -> Result<Vec<EndpointPair>, AllowanceStop> {
+        if self.targets.is_empty() {
+            return Ok(Vec::new());
+        }
+        while self.source_index < self.sources.len() {
+            let source = &self.sources[self.source_index];
+            let target = &self.targets[self.target_index];
+            if !self.visit_charged {
+                allowance.charge(WorkKind::EndpointVisits, 1)?;
+                self.visit_charged = true;
+            }
+            if bounds.contains(source.point) && bounds.contains(target.point) {
+                allowance.charge(WorkKind::RoutingScans, 1)?;
+                self.ordered.insert(
+                    (
+                        source.point.distance(target.point),
+                        source.port.clone(),
+                        target.port.clone(),
+                    ),
+                    EndpointPair {
+                        source: source.clone(),
+                        target: target.clone(),
+                    },
+                );
+            }
+            self.visit_charged = false;
+            self.target_index += 1;
+            if self.target_index == self.targets.len() {
+                self.target_index = 0;
+                self.source_index += 1;
+            }
+        }
+        let mut pairs = Vec::with_capacity(self.ordered.len());
+        pairs.extend(std::mem::take(&mut self.ordered).into_values());
+        Ok(pairs)
+    }
+}
+
+#[cfg(test)]
+mod endpoint_pair_cursor_tests {
+    use super::*;
+
+    #[test]
+    fn long_port_ids_are_included_in_pair_peak_before_allocation() {
+        use aic_layout::facilities::{FacilityCatalog, ValidatedFacilityCatalog};
+        use std::{fs::File, path::Path};
+
+        let mut session = super::super::tests::session();
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/game/normalized");
+        let mut catalog: FacilityCatalog =
+            serde_json::from_reader(File::open(root.join("facilities.json")).unwrap()).unwrap();
+        let facility = catalog
+            .facilities
+            .iter_mut()
+            .find(|facility| facility.id == "grinder-1-mode-normal")
+            .unwrap();
+        let port = facility.ports.first_mut().unwrap();
+        let long_id = "p".repeat(16 * 1024);
+        port.id = long_id.clone();
+        Arc::get_mut(&mut session.catalogs).unwrap().facilities =
+            ValidatedFacilityCatalog::try_from_catalog(catalog).unwrap();
+        super::super::tests::place_pair(&mut session);
+
+        let reserved = session.endpoint_pair_reservation_bytes(0);
+        assert!(reserved > long_id.len() * 2);
+        let mut insufficient = AllowanceCaps::default();
+        insufficient.peak_live_bytes = reserved - 1;
+        assert!(
+            RequestAllowance::new(insufficient)
+                .reserve_peak(reserved)
+                .is_err()
+        );
+
+        let mut exact = AllowanceCaps::default();
+        exact.peak_live_bytes = reserved;
+        let mut allowance = RequestAllowance::new(exact);
+        allowance.reserve_peak(reserved).unwrap();
+        let pairs = session
+            .endpoint_pairs(
+                0,
+                Bounds {
+                    min_x: 0,
+                    min_y: 0,
+                    max_x: 15,
+                    max_y: 15,
+                },
+                &mut allowance,
+            )
+            .unwrap();
+        assert!(!pairs.is_empty());
+        assert!(pairs.iter().any(|pair| {
+            pair.source.port.as_deref() == Some(long_id.as_str())
+                || pair.target.port.as_deref() == Some(long_id.as_str())
+        }));
+        let retained = retained_endpoint_pair_bytes(&pairs);
+        drop(pairs);
+        allowance.release_peak(reserved);
+        assert_eq!(allowance.reserved_bytes, 0);
+
+        let config = super::super::tests::route_candidate_config();
+        let request = Request {
+            state_revision: session.revision(),
+            connection: "connection-0".into(),
+        };
+        let mut pager_allowance = RequestAllowance::new(config.request_allowance.clone());
+        let pager = RouteCandidatePager::new(
+            &session,
+            request,
+            config,
+            None,
+            vec![7],
+            &mut pager_allowance,
+        )
+        .unwrap();
+        assert!(pager_allowance.reserved_bytes >= retained);
+        pager.release(&mut pager_allowance);
+        assert_eq!(pager_allowance.reserved_bytes, 0);
+    }
+
+    #[test]
+    fn temporary_domain_yield_preserves_ports_and_endpoint_work() {
+        let mut session = super::super::tests::session();
+        super::super::tests::place_pair(&mut session);
+        let connection = 0;
+        let bounds = Bounds {
+            min_x: 0,
+            min_y: 0,
+            max_x: 15,
+            max_y: 15,
+        };
+        let mut uninterrupted = RequestAllowance::new(Default::default());
+        let expected = session
+            .endpoint_pairs(connection, bounds, &mut uninterrupted)
+            .unwrap();
+        assert!(!expected.is_empty());
+
+        let mut cursor = EndpointPairCursor::new(&session, connection);
+        let mut allowance = RequestAllowance::new(Default::default());
+        let mut quotas = [usize::MAX; CUMULATIVE_WORK_KINDS.len()];
+        let visit_slot = CUMULATIVE_WORK_KINDS
+            .iter()
+            .position(|&kind| kind == WorkKind::EndpointVisits)
+            .unwrap();
+        quotas[visit_slot] = 1;
+        allowance.begin_page_window(quotas, Duration::from_secs(1));
+        assert_eq!(allowance.page_remaining(WorkKind::EndpointVisits), 1);
+        let stop = cursor
+            .advance(&session, connection, bounds, &mut allowance)
+            .err()
+            .expect("the first page must stop inside a port domain");
+        assert!(matches!(stop, RequestFailure::Stopped(ref stop) if stop.reason == "page-quantum"));
+        assert_eq!(cursor.source_domain.as_ref().unwrap().port_index, 1);
+        assert_eq!(allowance.page_remaining(WorkKind::EndpointVisits), 0);
+        allowance.end_page_window();
+        assert!(allowance.page_remaining(WorkKind::EndpointVisits) > 0);
+        let actual = cursor
+            .advance(&session, connection, bounds, &mut allowance)
+            .unwrap();
+        let signature = |pairs: Vec<EndpointPair>| {
+            pairs
+                .into_iter()
+                .map(|pair| {
+                    (
+                        pair.source.port,
+                        pair.source.point,
+                        pair.target.port,
+                        pair.target.point,
+                    )
+                })
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(signature(actual), signature(expected));
+        assert_eq!(
+            allowance.usage().categories,
+            uninterrupted.usage().categories
+        );
+    }
+
+    #[test]
+    fn temporary_scan_yield_keeps_ordered_pair_and_prior_visit_charge() {
+        let mut cursor = EndpointPairCursor {
+            source_domain: None,
+            target_domain: None,
+            sources: vec![Endpoint {
+                port: Some("output".into()),
+                point: Point { x: 0, y: 0 },
+                direction: Some(0),
+            }],
+            targets: vec![Endpoint {
+                port: Some("input".into()),
+                point: Point { x: 1, y: 0 },
+                direction: Some(2),
+            }],
+            ordered: BTreeMap::new(),
+            source_index: 0,
+            target_index: 0,
+            visit_charged: false,
+        };
+        let bounds = Bounds {
+            min_x: 0,
+            min_y: 0,
+            max_x: 1,
+            max_y: 1,
+        };
+        let mut allowance = RequestAllowance::new(Default::default());
+        let mut quotas = [usize::MAX; CUMULATIVE_WORK_KINDS.len()];
+        let scan_slot = CUMULATIVE_WORK_KINDS
+            .iter()
+            .position(|&kind| kind == WorkKind::RoutingScans)
+            .unwrap();
+        quotas[scan_slot] = 0;
+        allowance.begin_page_window(quotas, Duration::from_secs(1));
+        let stop = match cursor.advance_pairs(bounds, &mut allowance) {
+            Err(stop) => stop,
+            Ok(_) => panic!("temporary scan window must yield"),
+        };
+        assert_eq!(stop.reason, "page-quantum");
+        assert_eq!(stop.category, Some(WorkKind::RoutingScans));
+        assert_eq!(allowance.usage().categories[&WorkKind::EndpointVisits], 1);
+        allowance.end_page_window();
+        let pairs = cursor.advance_pairs(bounds, &mut allowance).unwrap();
+        assert_eq!(pairs.len(), 1);
+        assert_eq!(pairs[0].source.port.as_deref(), Some("output"));
+        assert_eq!(pairs[0].target.port.as_deref(), Some("input"));
+        assert_eq!(allowance.usage().categories[&WorkKind::EndpointVisits], 1);
+        assert_eq!(allowance.usage().categories[&WorkKind::RoutingScans], 1);
+    }
 }
 
 impl Config {
@@ -633,13 +1446,33 @@ impl Config {
     }
 }
 
-impl Guidance {
-    fn validate_with_allowance(
-        &self,
+/// Retains validated guidance rows and the next directed cost across a page stop.
+struct GuidanceValidationCursor {
+    identity_checked: bool,
+    head_index: usize,
+    cost_index: usize,
+    current: Option<IndexMap<(Point, usize), u32>>,
+    maps: Vec<IndexMap<(Point, usize), u32>>,
+}
+
+impl GuidanceValidationCursor {
+    fn new() -> Self {
+        Self {
+            identity_checked: false,
+            head_index: 0,
+            cost_index: 0,
+            current: None,
+            maps: Vec::new(),
+        }
+    }
+
+    fn advance(
+        &mut self,
+        guidance: &Guidance,
         request: &Request,
         bounds: Bounds,
         allowance: &mut RequestAllowance,
-    ) -> Result<Vec<IndexMap<(Point, usize), u32>>, RequestFailure> {
+    ) -> Result<(), RequestFailure> {
         let area = usize::try_from(bounds.width())
             .ok()
             .and_then(|width| {
@@ -648,44 +1481,51 @@ impl Guidance {
                     .and_then(|height| width.checked_mul(height))
             })
             .unwrap_or(0);
-        if self.schema != GUIDANCE_SCHEMA
-            || self.state_revision != request.state_revision
-            || self.connection != request.connection
-            || self.model_version.is_empty()
-            || self.model_version.len() > 256
-            || !(1..=8).contains(&self.heads.len())
-        {
-            return Err(error(
-                "route-guidance-identity",
-                &request.connection,
-                "route guidance schema, state, connection, model version or head count is invalid",
-            )
-            .into());
-        }
-        let mut ids = BTreeSet::new();
-        let mut maps = Vec::with_capacity(self.heads.len());
-        for head in &self.heads {
-            allowance.check_deadline()?;
-            if head.id.is_empty()
-                || head.id.len() > 128
-                || !ids.insert(head.id.as_str())
-                || !head.predicted_success.is_finite()
-                || !(0.0..=1.0).contains(&head.predicted_success)
-                || !head.uncertainty.is_finite()
-                || !(0.0..=1.0).contains(&head.uncertainty)
-                || head.directed_costs.len() > area.saturating_mul(4)
+        if !self.identity_checked {
+            if guidance.schema != GUIDANCE_SCHEMA
+                || guidance.state_revision != request.state_revision
+                || guidance.connection != request.connection
+                || guidance.model_version.is_empty()
+                || guidance.model_version.len() > 256
+                || !(1..=8).contains(&guidance.heads.len())
             {
                 return Err(error(
-                    "route-guidance-head",
-                    &head.id,
-                    "route guidance head metadata or directed-cost count is invalid",
+                    "route-guidance-identity",
+                    &request.connection,
+                    "route guidance schema, state, connection, model version or head count is invalid",
                 )
                 .into());
             }
-            allowance.preflight(WorkKind::RoutingScans, head.directed_costs.len())?;
-            let mut map = IndexMap::with_capacity(head.directed_costs.len());
-            for cost in &head.directed_costs {
+            self.identity_checked = true;
+        }
+        while self.head_index < guidance.heads.len() {
+            let head = &guidance.heads[self.head_index];
+            if self.current.is_none() {
+                allowance.check_deadline()?;
+                if head.id.is_empty()
+                    || head.id.len() > 128
+                    || guidance.heads[..self.head_index]
+                        .iter()
+                        .any(|previous| previous.id == head.id)
+                    || !head.predicted_success.is_finite()
+                    || !(0.0..=1.0).contains(&head.predicted_success)
+                    || !head.uncertainty.is_finite()
+                    || !(0.0..=1.0).contains(&head.uncertainty)
+                    || head.directed_costs.len() > area.saturating_mul(4)
+                {
+                    return Err(error(
+                        "route-guidance-head",
+                        &head.id,
+                        "route guidance head metadata or directed-cost count is invalid",
+                    )
+                    .into());
+                }
+                self.current = Some(IndexMap::with_capacity(head.directed_costs.len()));
+            }
+            let map = self.current.as_mut().expect("validated guidance head map");
+            while self.cost_index < head.directed_costs.len() {
                 allowance.charge(WorkKind::RoutingScans, 1)?;
+                let cost = &head.directed_costs[self.cost_index];
                 if !bounds.contains(cost.point)
                     || cost.direction > 3
                     || cost.cost > 1_000_000
@@ -700,14 +1540,238 @@ impl Guidance {
                     )
                     .into());
                 }
+                self.cost_index += 1;
             }
-            maps.push(map);
+            self.maps
+                .push(self.current.take().expect("completed guidance head map"));
+            self.head_index += 1;
+            self.cost_index = 0;
         }
-        Ok(maps)
+        Ok(())
+    }
+
+    fn take_maps(self) -> Vec<IndexMap<(Point, usize), u32>> {
+        self.maps
+    }
+}
+
+impl Guidance {
+    fn validate_with_allowance(
+        &self,
+        request: &Request,
+        bounds: Bounds,
+        allowance: &mut RequestAllowance,
+    ) -> Result<Vec<IndexMap<(Point, usize), u32>>, RequestFailure> {
+        let mut cursor = GuidanceValidationCursor::new();
+        cursor.advance(self, request, bounds, allowance)?;
+        Ok(cursor.take_maps())
+    }
+}
+
+/// Owns the sorted blocked set and exact visit position across a soft stop.
+struct BlockedCellsCursor {
+    bodies: Vec<Point>,
+    occupied: Vec<Point>,
+    body_index: usize,
+    terminal_index: usize,
+    occupied_index: usize,
+    occupied_visit_charged: bool,
+    blocked: BTreeSet<(i64, i64)>,
+}
+
+impl BlockedCellsCursor {
+    fn new(session: &Session, connection: usize) -> Self {
+        let transport = session.problem.connections[connection].transport;
+        Self {
+            bodies: session.bodies.iter().copied().collect(),
+            occupied: session.occupied[layer(transport)].keys().copied().collect(),
+            body_index: 0,
+            terminal_index: 0,
+            occupied_index: 0,
+            occupied_visit_charged: false,
+            blocked: BTreeSet::new(),
+        }
+    }
+
+    fn advance(
+        &mut self,
+        session: &Session,
+        connection: usize,
+        bounds: Bounds,
+        allowance: &mut RequestAllowance,
+    ) -> Result<IndexSet<Point>, AllowanceStop> {
+        let obligation = &session.problem.connections[connection];
+        while self.body_index < self.bodies.len() {
+            allowance.charge(WorkKind::BlockedVisits, 1)?;
+            let point = self.bodies[self.body_index];
+            if bounds.contains(point) {
+                self.blocked.insert((point.y, point.x));
+            }
+            self.body_index += 1;
+        }
+        while self.terminal_index < session.terminal_poses.len() {
+            allowance.charge(WorkKind::BlockedVisits, 1)?;
+            let terminal = self.terminal_index;
+            let id = &session.problem.terminals[terminal].id;
+            if id != &obligation.source && id != &obligation.target {
+                if let Some(pose) = &session.terminal_poses[terminal] {
+                    if bounds.contains(pose.position) {
+                        self.blocked.insert((pose.position.y, pose.position.x));
+                    }
+                }
+            }
+            self.terminal_index += 1;
+        }
+        let occupied = &session.occupied[layer(obligation.transport)];
+        while self.occupied_index < self.occupied.len() {
+            let point = self.occupied[self.occupied_index];
+            let users = &occupied[&point];
+            if !self.occupied_visit_charged {
+                allowance.charge(WorkKind::BlockedVisits, 1)?;
+                self.occupied_visit_charged = true;
+            }
+            if bounds.contains(point) {
+                let blocked_here = if session.bridges.contains_key(&(obligation.transport, point)) {
+                    true
+                } else {
+                    allowance.charge(WorkKind::BlockedVisits, users.len())?;
+                    !session.shared_cell_available(point, connection)
+                };
+                if blocked_here {
+                    self.blocked.insert((point.y, point.x));
+                }
+            }
+            self.occupied_visit_charged = false;
+            self.occupied_index += 1;
+        }
+        Ok(std::mem::take(&mut self.blocked)
+            .into_iter()
+            .map(|(y, x)| Point { x, y })
+            .collect())
+    }
+}
+
+#[cfg(test)]
+mod guidance_validation_cursor_tests {
+    use super::*;
+
+    #[test]
+    fn temporary_scan_yield_keeps_validated_costs_and_charges_once() {
+        let request = Request {
+            state_revision: 7,
+            connection: "connection-0".into(),
+        };
+        let guidance = Guidance {
+            schema: GUIDANCE_SCHEMA.into(),
+            state_revision: request.state_revision,
+            connection: request.connection.clone(),
+            model_version: "test".into(),
+            heads: vec![GuidanceHead {
+                id: "head".into(),
+                predicted_success: 0.5,
+                uncertainty: 0.25,
+                directed_costs: (0..3)
+                    .map(|x| DirectedCost {
+                        point: Point { x, y: 1 },
+                        direction: 0,
+                        cost: 100 + x as u32,
+                    })
+                    .collect(),
+            }],
+        };
+        let bounds = Bounds {
+            min_x: 0,
+            min_y: 0,
+            max_x: 3,
+            max_y: 3,
+        };
+        let mut baseline_allowance = RequestAllowance::new(Default::default());
+        let expected = guidance
+            .validate_with_allowance(&request, bounds, &mut baseline_allowance)
+            .unwrap();
+
+        let mut cursor = GuidanceValidationCursor::new();
+        let mut allowance = RequestAllowance::new(Default::default());
+        let mut quotas = [usize::MAX; CUMULATIVE_WORK_KINDS.len()];
+        let scan_slot = CUMULATIVE_WORK_KINDS
+            .iter()
+            .position(|&kind| kind == WorkKind::RoutingScans)
+            .unwrap();
+        quotas[scan_slot] = 1;
+        allowance.begin_page_window(quotas, Duration::from_secs(1));
+        let stop = cursor
+            .advance(&guidance, &request, bounds, &mut allowance)
+            .unwrap_err();
+        assert!(matches!(stop, RequestFailure::Stopped(ref stop) if stop.reason == "page-quantum"));
+        assert_eq!(cursor.cost_index, 1);
+        assert_eq!(cursor.current.as_ref().unwrap().len(), 1);
+        allowance.end_page_window();
+        cursor
+            .advance(&guidance, &request, bounds, &mut allowance)
+            .unwrap();
+        assert_eq!(cursor.take_maps(), expected);
+        assert_eq!(
+            allowance.usage().categories,
+            baseline_allowance.usage().categories
+        );
+    }
+}
+
+#[cfg(test)]
+mod blocked_cells_cursor_tests {
+    use super::*;
+
+    #[test]
+    fn occupied_user_yield_charges_the_cell_once() {
+        let mut source = super::super::tests::session();
+        super::super::tests::place_pair(&mut source);
+        let bounds = super::super::tests::route_candidate_config().bounds;
+        let connection = 0;
+        let transport = source.problem.connections[connection].transport;
+        source.occupied[layer(transport)].insert(Point { x: 5, y: 5 }, vec![connection]);
+        let mut baseline_allowance = RequestAllowance::new(Default::default());
+        let expected = source
+            .route_blocked_cells_bounded(connection, bounds, &mut baseline_allowance)
+            .unwrap();
+
+        let mut allowance = RequestAllowance::new(Default::default());
+        let mut cursor = BlockedCellsCursor::new(&source, connection);
+        let mut quotas = [usize::MAX; CUMULATIVE_WORK_KINDS.len()];
+        let blocked_slot = CUMULATIVE_WORK_KINDS
+            .iter()
+            .position(|&kind| kind == WorkKind::BlockedVisits)
+            .unwrap();
+        quotas[blocked_slot] = source.bodies.len() + source.terminal_poses.len() + 1;
+        allowance.begin_page_window(quotas, Duration::from_secs(1));
+        let stop = cursor
+            .advance(&source, connection, bounds, &mut allowance)
+            .unwrap_err();
+        assert_eq!(stop.reason, "page-quantum");
+        assert_eq!(cursor.occupied_index, 0);
+        assert!(cursor.occupied_visit_charged);
+        allowance.end_page_window();
+        let actual = cursor
+            .advance(&source, connection, bounds, &mut allowance)
+            .unwrap();
+        assert_eq!(actual, expected);
+        assert_eq!(
+            allowance.usage().categories,
+            baseline_allowance.usage().categories
+        );
     }
 }
 
 impl Session {
+    /// Exact observable delta between this immutable source and a natively
+    /// replayed successor for the named changed obligations.
+    pub fn physical_cost_between(
+        &self,
+        after: &Session,
+        changed_connections: &[String],
+    ) -> Result<PhysicalCost, Diagnostic> {
+        physical_cost::physical_cost_between(self, after, changed_connections)
+    }
+
     /// Inspect only placement flags and stable identifiers before allocating
     /// endpoint domains or model inputs.
     pub fn route_request_readiness(&self, request: &Request) -> Result<RouteReadiness, Diagnostic> {
@@ -769,220 +1833,15 @@ impl Session {
         learning: &super::learning::Config,
         allowance: &mut RequestAllowance,
     ) -> Result<GuidanceInput, RequestFailure> {
-        candidate.validate()?;
-        allowance.check_deadline()?;
-        if learning.placement != candidate.bounds {
-            return Err(error(
-                "route-guidance-bounds",
-                &request.connection,
-                "candidate and learning bounds must match",
-            )
-            .into());
-        }
-        if request.state_revision != self.revision || self.active.is_some() {
-            return Err(error(
-                "route-guidance-state",
-                &request.connection,
-                "route guidance input requires the exact stable state revision",
-            )
-            .into());
-        }
-        let Some(&connection) = self.connections.get(&request.connection) else {
-            return Err(error(
-                "unknown-connection",
-                &request.connection,
-                "route guidance references an unknown logical connection",
-            )
-            .into());
-        };
-        if self.routes[connection].is_some() {
-            return Err(error(
-                "completed-connection",
-                &request.connection,
-                "route guidance references a completed logical connection",
-            )
-            .into());
-        }
-        if let RouteReadiness::PendingPlacement { endpoints } =
-            self.route_request_readiness(request)?
-        {
-            return Err(RequestFailure::PendingPlacement { endpoints });
-        }
-        let pair_bytes = self
-            .routes
-            .iter()
-            .enumerate()
-            .filter(|(_, route)| route.is_none())
-            .fold(0usize, |total, (index, _)| {
-                total.saturating_add(self.endpoint_pair_reservation_bytes(index))
-            });
-        allowance.reserve_peak(pair_bytes)?;
-        let prepared = (|| -> Result<GuidanceInput, RequestFailure> {
-            let selected_pairs = self.endpoint_pairs(connection, candidate.bounds, allowance)?;
-            if selected_pairs.is_empty() {
-                return Err(RequestFailure::NoCompatibleEndpoints {
-                    connection: request.connection.clone(),
-                });
+        let preparation =
+            RouteGuidancePreparation::new(self, request, candidate, learning, allowance)?;
+        match preparation.into_input(self, candidate, learning, allowance) {
+            Ok(input) => Ok(input),
+            Err((preparation, failure)) => {
+                preparation.release(allowance);
+                Err(failure)
             }
-            let mut remaining_pairs = Vec::new();
-            let mut pending_connections = Vec::new();
-            for other in 0..self.problem.connections.len() {
-                if other == connection || self.routes[other].is_some() {
-                    continue;
-                }
-                let request = Request {
-                    state_revision: self.revision,
-                    connection: self.problem.connections[other].id.clone(),
-                };
-                match self.route_request_readiness(&request)? {
-                    RouteReadiness::Ready => {
-                        let pairs = self.endpoint_pairs(other, candidate.bounds, allowance)?;
-                        if pairs.is_empty() {
-                            return Err(RequestFailure::NoCompatibleEndpoints {
-                                connection: request.connection,
-                            });
-                        }
-                        remaining_pairs.extend(pairs);
-                    }
-                    RouteReadiness::PendingPlacement { .. } => {
-                        pending_connections.push(request.connection);
-                    }
-                }
-            }
-            let width =
-                usize::try_from(candidate.bounds.width()).expect("validated positive width");
-            let height =
-                usize::try_from(candidate.bounds.height()).expect("validated positive height");
-            let area = width * height;
-            let raster_cells = area.saturating_mul(GUIDANCE_GRID_CHANNELS);
-            let (graph_rows, graph_route_cells, graph_bytes) = self.guidance_graph_bounds();
-            let bridge_copy_bytes = self.bridge_copy_bytes().saturating_mul(2);
-            allowance.preflight(WorkKind::RasterCells, raster_cells)?;
-            allowance.preflight(WorkKind::GraphRows, graph_rows)?;
-            allowance.preflight(WorkKind::RouteCells, graph_route_cells.saturating_mul(2))?;
-            allowance.preflight(WorkKind::CopiedBytes, bridge_copy_bytes)?;
-            let reserved_bytes = raster_cells
-                .saturating_mul(std::mem::size_of::<f32>())
-                .saturating_add(graph_bytes)
-                .saturating_add(bridge_copy_bytes);
-            allowance.reserve_peak(reserved_bytes)?;
-            let built = (|| -> Result<GuidanceInput, RequestFailure> {
-                allowance.charge(WorkKind::CopiedBytes, bridge_copy_bytes)?;
-                let mut grid = vec![0.0; GUIDANCE_GRID_CHANNELS * area];
-                let index = |point: Point| {
-                    usize::try_from(point.y - candidate.bounds.min_y).expect("point in bounds")
-                        * width
-                        + usize::try_from(point.x - candidate.bounds.min_x)
-                            .expect("point in bounds")
-                };
-                let mark = |grid: &mut [f32], channel: usize, point: Point, value: f32| {
-                    if candidate.bounds.contains(point) {
-                        let offset = channel * area + index(point);
-                        grid[offset] = grid[offset].max(value);
-                    }
-                };
-                for &point in &self.bodies {
-                    allowance.charge(WorkKind::BlockedVisits, 1)?;
-                    mark(&mut grid, 0, point, 1.0);
-                }
-                for pose in self.terminal_poses.iter().flatten() {
-                    allowance.charge(WorkKind::BlockedVisits, 1)?;
-                    mark(&mut grid, 1, pose.position, 1.0);
-                }
-                let transport_layer = layer(self.problem.connections[connection].transport);
-                for (&point, routes) in &self.occupied[transport_layer] {
-                    allowance.charge(WorkKind::RouteCells, routes.len())?;
-                    let channel = if self.shared_cell_available(point, connection) {
-                        2
-                    } else {
-                        3
-                    };
-                    mark(&mut grid, channel, point, 1.0);
-                    mark(&mut grid, 13, point, (routes.len() as f32 / 8.0).min(1.0));
-                }
-                for &point in self.occupied[1 - transport_layer].keys() {
-                    allowance.charge(WorkKind::RouteCells, 1)?;
-                    mark(&mut grid, 4, point, 1.0);
-                }
-                let mut bridge_resources = self.bridges.values().cloned().collect::<Vec<_>>();
-                bridge_resources.sort_by(|left, right| left.id.cmp(&right.id));
-                for bridge in &bridge_resources {
-                    allowance.charge(WorkKind::ValidationRecords, 1)?;
-                    let transport = self
-                        .catalogs
-                        .components
-                        .component(&bridge.component)
-                        .expect("installed bridge has a validated catalog component")
-                        .transport;
-                    if layer(transport) != transport_layer {
-                        continue;
-                    }
-                    for (axis, channel) in bridge.channels.iter().enumerate() {
-                        mark(
-                            &mut grid,
-                            14 + axis,
-                            bridge.position,
-                            (channel.connections.len() as f32 / 8.0).min(1.0),
-                        );
-                    }
-                }
-                for pair in selected_pairs {
-                    allowance.charge(WorkKind::EndpointVisits, 1)?;
-                    mark(&mut grid, 5, pair.source.point, 1.0);
-                    mark(&mut grid, 6, pair.target.point, 1.0);
-                }
-                let remaining =
-                    self.problem.connections.len() - self.routes.iter().flatten().count() - 1;
-                for pair in remaining_pairs {
-                    allowance.charge(WorkKind::EndpointVisits, 1)?;
-                    mark(&mut grid, 7, pair.source.point, 1.0);
-                    mark(&mut grid, 8, pair.target.point, 1.0);
-                }
-                for y in candidate.bounds.min_y..=candidate.bounds.max_y {
-                    for x in candidate.bounds.min_x..=candidate.bounds.max_x {
-                        allowance.charge(WorkKind::RasterCells, GUIDANCE_GRID_CHANNELS)?;
-                        let point = Point { x, y };
-                        if x == candidate.bounds.min_x
-                            || x == candidate.bounds.max_x
-                            || y == candidate.bounds.min_y
-                            || y == candidate.bounds.max_y
-                        {
-                            mark(&mut grid, 9, point, 1.0);
-                        }
-                        grid[(10 + transport_layer) * area + index(point)] = 1.0;
-                        let rate = &self.problem.connections[connection].rate;
-                        grid[12 * area + index(point)] =
-                            (rate.numerator as f32 / rate.denominator as f32).ln_1p();
-                        grid[13 * area + index(point)] = grid[13 * area + index(point)].max(
-                            (remaining as f32 / self.problem.connections.len() as f32).min(1.0),
-                        );
-                    }
-                }
-                allowance.check_deadline()?;
-                let graph = self.route_guidance_learning_input_with_allowance(
-                    learning, connection, allowance,
-                )?;
-                Ok(GuidanceInput {
-                    schema: GUIDANCE_SCHEMA,
-                    state_revision: request.state_revision,
-                    connection: request.connection.clone(),
-                    catalog_identity: self.catalogs.identity.clone(),
-                    bounds: candidate.bounds,
-                    channels: GUIDANCE_GRID_CHANNELS,
-                    bridge_resources,
-                    grid,
-                    graph,
-                    pending_connections,
-                    reserved_bytes,
-                })
-            })();
-            if built.is_err() {
-                allowance.release_peak(reserved_bytes);
-            }
-            built
-        })();
-        allowance.release_peak(pair_bytes);
-        prepared
+        }
     }
 
     pub fn route_candidates(
@@ -1092,11 +1951,14 @@ impl Session {
             ));
         }
         let pair_result = self.endpoint_pairs(connection, config.bounds, allowance);
-        allowance.release_peak(pair_phase_bytes);
         let pairs = match pair_result {
             Ok(pairs) => pairs,
-            Err(RequestFailure::Invalid(diagnostic)) => return Err(diagnostic),
+            Err(RequestFailure::Invalid(diagnostic)) => {
+                allowance.release_peak(pair_phase_bytes);
+                return Err(diagnostic);
+            }
             Err(RequestFailure::Stopped(stop)) => {
+                allowance.release_peak(pair_phase_bytes);
                 return Ok(stopped_report(
                     request,
                     config.max_crossings_per_route,
@@ -1106,6 +1968,7 @@ impl Session {
                 ));
             }
             Err(RequestFailure::PendingPlacement { endpoints }) => {
+                allowance.release_peak(pair_phase_bytes);
                 return Err(error(
                     "route-request-not-ready",
                     &request.connection,
@@ -1116,7 +1979,25 @@ impl Session {
                 unreachable!("endpoint enumeration returns an empty vector")
             }
         };
+        let pair_retained_bytes = retained_endpoint_pair_bytes(&pairs);
+        if pair_retained_bytes > pair_phase_bytes {
+            if let Err(stop) = allowance.reserve_peak(pair_retained_bytes - pair_phase_bytes) {
+                drop(pairs);
+                allowance.release_peak(pair_phase_bytes);
+                return Ok(stopped_report(
+                    request,
+                    config.max_crossings_per_route,
+                    0,
+                    allowance,
+                    stop,
+                ));
+            }
+        } else {
+            allowance.release_peak(pair_phase_bytes - pair_retained_bytes);
+        }
         if pairs.is_empty() {
+            drop(pairs);
+            allowance.release_peak(pair_retained_bytes);
             let mut report = empty_report(
                 request,
                 Termination::NoCompatibleEndpoints,
@@ -1144,10 +2025,13 @@ impl Session {
         let mut carrier_cells = 0usize;
         for route in self.routes.iter().flatten() {
             if let Err(stop) = allowance.charge(WorkKind::ValidationRecords, 1) {
+                let pair_count = pairs.len();
+                drop(pairs);
+                allowance.release_peak(pair_retained_bytes);
                 return Ok(stopped_report(
                     request,
                     config.max_crossings_per_route,
-                    pairs.len(),
+                    pair_count,
                     allowance,
                     stop,
                 ));
@@ -1172,14 +2056,17 @@ impl Session {
                 )
         };
         let mut persistent_bytes = guidance_map_bytes
-            .saturating_add(pairs.len().saturating_mul(512))
+            .saturating_add(pair_retained_bytes)
             .saturating_add(blocked_sites.saturating_mul(192))
             .saturating_add(crossing_bytes);
-        if let Err(stop) = allowance.reserve_peak(persistent_bytes) {
+        if let Err(stop) = allowance.reserve_peak(persistent_bytes - pair_retained_bytes) {
+            let pair_count = pairs.len();
+            drop(pairs);
+            allowance.release_peak(pair_retained_bytes);
             return Ok(stopped_report(
                 request,
                 config.max_crossings_per_route,
-                pairs.len(),
+                pair_count,
                 allowance,
                 stop,
             ));
@@ -1221,94 +2108,8 @@ impl Session {
                         ));
                     }
                 };
-            let crossings = if config.max_crossings_per_route == 0 {
-                Default::default()
-            } else {
-                let mut networks = IndexMap::<&str, usize>::new();
-                let carriers = self
-                    .routes
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(ci, route)| {
-                        let route = route.as_ref()?;
-                        let obligation = &self.problem.connections[ci];
-                        let network = match networks.get(obligation.commodity.as_str()) {
-                            Some(&network) => network,
-                            None => {
-                                let network = networks.len();
-                                networks.insert(&obligation.commodity, network);
-                                network
-                            }
-                        };
-                        Some(Carrier {
-                            id: ci,
-                            network,
-                            transport: obligation.transport,
-                            rate: obligation.rate,
-                            cells: &route.cells,
-                        })
-                    })
-                    .collect::<Vec<_>>();
-                let obligation = &self.problem.connections[connection];
-                let mut excluded = IndexSet::new();
-                for &point in &self.bodies {
-                    if let Err(stop) = allowance.charge(WorkKind::BlockedVisits, 1) {
-                        return Ok(stopped_report(
-                            request,
-                            config.max_crossings_per_route,
-                            pairs.len(),
-                            allowance,
-                            stop,
-                        ));
-                    }
-                    excluded.insert(point);
-                }
-                for &point in self.terminal_at.keys() {
-                    if let Err(stop) = allowance.charge(WorkKind::BlockedVisits, 1) {
-                        return Ok(stopped_report(
-                            request,
-                            config.max_crossings_per_route,
-                            pairs.len(),
-                            allowance,
-                            stop,
-                        ));
-                    }
-                    excluded.insert(point);
-                }
-                for &(transport, point) in self.junctions.keys().chain(self.bridges.keys()) {
-                    if let Err(stop) = allowance.charge(WorkKind::BlockedVisits, 1) {
-                        return Ok(stopped_report(
-                            request,
-                            config.max_crossings_per_route,
-                            pairs.len(),
-                            allowance,
-                            stop,
-                        ));
-                    }
-                    if transport == obligation.transport {
-                        excluded.insert(point);
-                    }
-                }
-                let mut crossings = match crossing_options_with_visit(
-                    &carriers,
-                    &RouteJob {
-                        id: connection,
-                        transport: obligation.transport,
-                        rate: obligation.rate,
-                    },
-                    &self.catalogs.components,
-                    &excluded,
-                    |visit| {
-                        allowance.charge(
-                            match visit {
-                                CrossingVisit::RouteCell => WorkKind::RouteCells,
-                                CrossingVisit::CatalogEntry => WorkKind::CatalogVisits,
-                                CrossingVisit::Candidate => WorkKind::RoutingScans,
-                            },
-                            1,
-                        )
-                    },
-                ) {
+            let crossings =
+                match route_preparation::route_crossings(self, connection, config, allowance) {
                     Ok(crossings) => crossings,
                     Err(stop) => {
                         return Ok(stopped_report(
@@ -1320,114 +2121,6 @@ impl Session {
                         ));
                     }
                 };
-                // An installed bridge is occupied, but a new route can join an
-                // existing directed channel when its exact residual capacity fits.
-                for (&(transport, position), bridge) in &self.bridges {
-                    if transport != obligation.transport || !config.bounds.contains(position) {
-                        continue;
-                    }
-                    let Some(definition) = self.catalogs.components.component(&bridge.component)
-                    else {
-                        continue;
-                    };
-                    let line = self.catalogs.transports.capacity(transport);
-                    for channel in &bridge.channels {
-                        if channel.commodity != obligation.commodity {
-                            continue;
-                        }
-                        let mut heading = None;
-                        let mut load = obligation.rate;
-                        let mut first_owner = None;
-                        let mut valid = true;
-                        for owner in &channel.connections {
-                            let Some(&ci) = self.connections.get(owner) else {
-                                valid = false;
-                                break;
-                            };
-                            let Some(route) = self.routes[ci].as_ref() else {
-                                valid = false;
-                                break;
-                            };
-                            let mut pi = None;
-                            for (index, &point) in route.cells.iter().enumerate() {
-                                if let Err(stop) = allowance.charge(WorkKind::RouteCells, 1) {
-                                    return Ok(stopped_report(
-                                        request,
-                                        config.max_crossings_per_route,
-                                        pairs.len(),
-                                        allowance,
-                                        stop,
-                                    ));
-                                }
-                                if point == position {
-                                    pi = Some(index);
-                                    break;
-                                }
-                            }
-                            let Some(pi) = pi else {
-                                valid = false;
-                                break;
-                            };
-                            if pi == 0 || pi + 1 == route.cells.len() {
-                                valid = false;
-                                break;
-                            }
-                            let Some(step_direction) =
-                                aic_layout::geometry::direction(route.cells[pi - 1], position)
-                            else {
-                                valid = false;
-                                break;
-                            };
-                            if aic_layout::geometry::direction(route.cells[pi], route.cells[pi + 1])
-                                != Some(step_direction)
-                                || heading.is_some_and(|old| old != step_direction)
-                            {
-                                valid = false;
-                                break;
-                            }
-                            let Ok(next_load) = load.checked_add(self.problem.connections[ci].rate)
-                            else {
-                                valid = false;
-                                break;
-                            };
-                            load = next_load;
-                            heading = Some(step_direction);
-                            first_owner.get_or_insert(ci);
-                        }
-                        let (Some(direction), Some(carrier_chain)) = (heading, first_owner) else {
-                            continue;
-                        };
-                        if !valid
-                            || !within_capacity(
-                                load,
-                                definition.capacity.quantity,
-                                definition.capacity.duration_ms,
-                            )
-                            || !within_capacity(load, line.quantity, line.duration_ms)
-                        {
-                            continue;
-                        }
-                        let Some(&carrier_network) = networks.get(channel.commodity.as_str())
-                        else {
-                            continue;
-                        };
-                        crossings.insert(
-                            (position, direction),
-                            Crossing {
-                                position,
-                                direction,
-                                component: bridge.component.clone(),
-                                rotation: bridge.rotation,
-                                transport,
-                                kind: LogisticsComponentKind::Bridge,
-                                carrier_chain,
-                                carrier_network,
-                            },
-                        );
-                    }
-                }
-                crossings
-            };
             let mut penalties = IndexMap::<Point, u32>::new();
             let mut semantic = BTreeSet::new();
             let mut candidates = Vec::new();
@@ -1700,16 +2393,22 @@ impl Session {
                         allowance,
                     );
                     let commands = keep_or_stop!('rounds, commands);
-                    if replay_candidates {
+                    let physical_cost = if replay_candidates {
                         match self.replay_route_witness_with_allowance(
                             request.state_revision,
                             &commands,
-                            &request.connection,
-                            cells.len(),
-                            found_crossings.len(),
                             allowance,
                         ) {
-                            Ok(_) => {}
+                            Ok((after, reserved_bytes)) => {
+                                let cost = physical_cost::physical_cost_between(
+                                    self,
+                                    &after,
+                                    std::slice::from_ref(&request.connection),
+                                );
+                                drop(after);
+                                allowance.release_peak(reserved_bytes);
+                                cost?
+                            }
                             Err(RequestFailure::Invalid(diagnostic)) => {
                                 rejections.push(Rejection {
                                     source_port,
@@ -1742,7 +2441,12 @@ impl Session {
                                 unreachable!("native replay does not prepare endpoints")
                             }
                         }
-                    }
+                    } else {
+                        // Internal member witnesses receive their exact net
+                        // delta when the owning network/repair draft applies
+                        // them to its partial native session.
+                        PhysicalCost::default()
+                    };
                     candidates.push(Candidate {
                         id: candidates.len(),
                         state_revision: request.state_revision,
@@ -1779,6 +2483,9 @@ impl Session {
                                 head: guidance_index.map(|index| guidance_heads[index].id.clone()),
                             }
                         },
+                        additional_provenance: Vec::new(),
+                        physical_cost,
+                        charged_work: allowance.usage(),
                     });
                     let candidate = candidates.last().expect("candidate just pushed");
                     let candidate_bytes = candidate
@@ -1877,6 +2584,7 @@ impl Session {
                 allowance_stop,
             })
         })();
+        drop(pairs);
         allowance.release_peak(persistent_bytes);
         result
     }
@@ -1886,10 +2594,32 @@ impl Session {
         &mut self,
         candidate: &Candidate,
     ) -> Result<Vec<Step>, Diagnostic> {
+        self.apply_route_candidate_checked(candidate, true)
+    }
+
+    fn apply_route_candidate_checked(
+        &mut self,
+        candidate: &Candidate,
+        verify_physical_cost: bool,
+    ) -> Result<Vec<Step>, Diagnostic> {
         let connection = self.validate_route_candidate_before_replay(candidate)?;
         let (fork, steps) =
             self.replay_route_witness(candidate.state_revision, &candidate.commands)?;
         self.validate_route_candidate_after_replay(candidate, connection, &fork)?;
+        if verify_physical_cost {
+            let actual = physical_cost::physical_cost_between(
+                self,
+                &fork,
+                std::slice::from_ref(&candidate.connection),
+            )?;
+            if actual != candidate.physical_cost {
+                return Err(error(
+                    "route-candidate-physical-cost",
+                    &candidate.connection,
+                    "candidate physical cost differs from exact native replay",
+                ));
+            }
+        }
         *self = fork;
         Ok(steps)
     }
@@ -2170,6 +2900,19 @@ impl Session {
                 "network candidate aggregate work or sharing metadata differs from its routes",
             ));
         }
+        let changed = candidate
+            .routes
+            .iter()
+            .map(|route| route.connection.clone())
+            .collect::<Vec<_>>();
+        let actual_cost = physical_cost::physical_cost_between(self, &fork, &changed)?;
+        if actual_cost != candidate.physical_cost {
+            return Err(error(
+                "network-candidate-physical-cost",
+                &candidate.commodity,
+                "network physical cost differs from exact native replay",
+            ));
+        }
         *self = fork;
         Ok(steps)
     }
@@ -2198,7 +2941,7 @@ impl Session {
         allowance: &mut RequestAllowance,
         copied_bytes: usize,
         peak_bytes: usize,
-        apply: impl FnOnce(&mut Session) -> Result<T, Diagnostic>,
+        apply: impl FnOnce(&Session, &mut Session) -> Result<T, Diagnostic>,
     ) -> Result<T, RequestFailure> {
         allowance.preflight(WorkKind::CopiedBytes, copied_bytes)?;
         allowance.reserve_peak(peak_bytes)?;
@@ -2215,7 +2958,7 @@ impl Session {
         let mut fork = self.clone();
         fork.replay_deadline = Some(allowance.deadline());
         fork.replay_meter = Some(meter.clone());
-        let result = apply(&mut fork);
+        let result = apply(self, &mut fork);
         let mut completed_stop = None;
         for (kind, used) in [
             WorkKind::ReplayRouteCells,
@@ -2258,6 +3001,27 @@ impl Session {
         candidate: &Candidate,
         allowance: &mut RequestAllowance,
     ) -> Result<Vec<Step>, RequestFailure> {
+        self.apply_route_candidate_with_cost_inner(candidate, allowance, true)
+            .map(|(steps, _)| steps)
+    }
+
+    /// Return the exact delta from the already-required atomic replay fork.
+    /// Network members can retain physical metadata without cloning the
+    /// partial factory a second time for every route.
+    pub fn apply_unpublished_route_candidate_with_cost_allowance(
+        &mut self,
+        candidate: &Candidate,
+        allowance: &mut RequestAllowance,
+    ) -> Result<(Vec<Step>, PhysicalCost), RequestFailure> {
+        self.apply_route_candidate_with_cost_inner(candidate, allowance, false)
+    }
+
+    fn apply_route_candidate_with_cost_inner(
+        &mut self,
+        candidate: &Candidate,
+        allowance: &mut RequestAllowance,
+        verify_physical_cost: bool,
+    ) -> Result<(Vec<Step>, PhysicalCost), RequestFailure> {
         let root_bytes = self.clone_reservation_bytes();
         let final_layout_copy =
             self.would_complete_after_route(&candidate.connection, allowance)?;
@@ -2275,8 +3039,21 @@ impl Session {
             });
         let peak = root_bytes
             .saturating_add(projected_bytes.saturating_mul(1 + usize::from(final_layout_copy)));
-        self.apply_with_request_allowance(allowance, copies, peak, |fork| {
-            fork.apply_route_candidate(candidate)
+        self.apply_with_request_allowance(allowance, copies, peak, |before, fork| {
+            let steps = fork.apply_route_candidate_checked(candidate, false)?;
+            let cost = physical_cost::physical_cost_between(
+                before,
+                fork,
+                std::slice::from_ref(&candidate.connection),
+            )?;
+            if verify_physical_cost && cost != candidate.physical_cost {
+                return Err(error(
+                    "route-candidate-physical-cost",
+                    &candidate.connection,
+                    "candidate physical cost differs from exact native replay",
+                ));
+            }
+            Ok((steps, cost))
         })
     }
 
@@ -2292,9 +3069,12 @@ impl Session {
         let final_bytes = projected_final_clone_bytes.max(root_bytes);
         let peak_bytes = root_bytes
             .saturating_add(final_bytes.saturating_mul(2 + usize::from(final_layout_copy)));
-        self.apply_with_request_allowance(allowance, projected_copied_bytes, peak_bytes, |fork| {
-            fork.apply_network_candidate(candidate)
-        })
+        self.apply_with_request_allowance(
+            allowance,
+            projected_copied_bytes,
+            peak_bytes,
+            |_, fork| fork.apply_network_candidate(candidate),
+        )
     }
 
     fn endpoint_pairs(
@@ -2303,63 +3083,67 @@ impl Session {
         bounds: Bounds,
         allowance: &mut RequestAllowance,
     ) -> Result<Vec<EndpointPair>, RequestFailure> {
-        let obligation = &self.problem.connections[connection];
-        let sources = self.route_candidate_endpoints(
-            &obligation.source,
-            FacilityPortDirection::Output,
-            connection,
-            allowance,
-        )?;
-        let targets = self.route_candidate_endpoints(
-            &obligation.target,
-            FacilityPortDirection::Input,
-            connection,
-            allowance,
-        )?;
-        let mut ordered = BTreeMap::new();
-        for source in &sources {
-            for target in &targets {
-                allowance.charge(WorkKind::EndpointVisits, 1)?;
-                if bounds.contains(source.point) && bounds.contains(target.point) {
-                    allowance.charge(WorkKind::RoutingScans, 1)?;
-                    ordered.insert(
-                        (
-                            source.point.distance(target.point),
-                            source.port.clone(),
-                            target.port.clone(),
-                        ),
-                        EndpointPair {
-                            source: source.clone(),
-                            target: target.clone(),
-                        },
-                    );
-                }
-            }
-        }
-        Ok(ordered.into_values().collect())
+        EndpointPairCursor::new(self, connection).advance(self, connection, bounds, allowance)
     }
 
     fn endpoint_pair_reservation_bytes(&self, connection: usize) -> usize {
         let obligation = &self.problem.connections[connection];
-        let count = |endpoint: &str| {
-            self.blocks.get(endpoint).map_or(1, |&block| {
-                self.catalogs
+        let domain = |endpoint: &str| {
+            self.blocks.get(endpoint).map_or((1, 0, 0), |&block| {
+                let ports = &self
+                    .catalogs
                     .facilities
                     .facility(&self.problem.blocks[block].facility)
                     .expect("admitted facility")
-                    .ports
-                    .len()
+                    .ports;
+                (
+                    ports.len(),
+                    ports.iter().map(|port| port.id.len()).sum::<usize>(),
+                    ports.iter().map(|port| port.id.len()).max().unwrap_or(0),
+                )
             })
         };
-        let sources = count(&obligation.source);
-        let targets = count(&obligation.target);
-        sources
+        let (sources, source_ids, source_max) = domain(&obligation.source);
+        let (targets, target_ids, target_max) = domain(&obligation.target);
+        let pairs = sources.saturating_mul(targets);
+        let paired_id_bytes = source_ids
+            .saturating_mul(targets)
+            .saturating_add(target_ids.saturating_mul(sources));
+
+        // A B-tree node can hold 11 key/value slots plus 12 child pointers in
+        // the supported Rust implementation. Budget one full node per possible
+        // entry, also covering a transient split node. This deliberately bounds
+        // the allocation while retaining incremental, ordered insertion.
+        let node_bytes = 128usize
+            .saturating_add(
+                11usize.saturating_mul(
+                    std::mem::size_of::<EndpointPairKey>()
+                        .saturating_add(std::mem::size_of::<EndpointPair>()),
+                ),
+            )
+            .saturating_add(12 * std::mem::size_of::<usize>());
+        let domains = sources
             .saturating_add(targets)
-            .saturating_mul(256)
-            .saturating_add(sources.saturating_mul(targets).saturating_mul(1024))
+            .saturating_mul(std::mem::size_of::<Endpoint>())
+            .saturating_add(source_ids)
+            .saturating_add(target_ids)
+            .saturating_add(obligation.source.len())
+            .saturating_add(obligation.target.len());
+        let ordered = pairs
+            .saturating_add(1)
+            .saturating_mul(node_bytes)
+            .saturating_add(paired_id_bytes.saturating_mul(2));
+        let final_pairs = pairs
+            .saturating_mul(std::mem::size_of::<EndpointPair>())
+            .saturating_add(paired_id_bytes);
+        let transient_port_ids = source_max.max(target_max).saturating_mul(2);
+        domains
+            .saturating_add(ordered)
+            .saturating_add(final_pairs)
+            .saturating_add(transient_port_ids)
     }
 
-    fn guidance_graph_bounds(&self) -> (usize, usize, usize) {
+    pub(super) fn guidance_graph_bounds(&self) -> (usize, usize, usize) {
         let entities = self
             .problem
             .blocks
@@ -2400,101 +3184,8 @@ impl Session {
         (rows, route_cells, bytes)
     }
 
-    fn bridge_copy_bytes(&self) -> usize {
-        self.bridges
-            .values()
-            .map(|bridge| {
-                std::mem::size_of::<Bridge>()
-                    .saturating_add(bridge.id.len())
-                    .saturating_add(bridge.component.len())
-                    .saturating_add(
-                        bridge
-                            .channels
-                            .iter()
-                            .map(|channel| {
-                                channel
-                                    .commodity
-                                    .len()
-                                    .saturating_add(
-                                        channel.connections.iter().map(String::len).sum::<usize>(),
-                                    )
-                                    .saturating_add(
-                                        channel
-                                            .connections
-                                            .len()
-                                            .saturating_mul(std::mem::size_of::<String>()),
-                                    )
-                            })
-                            .sum::<usize>(),
-                    )
-            })
-            .sum()
-    }
-
-    fn route_candidate_endpoints(
-        &self,
-        endpoint: &str,
-        expected: FacilityPortDirection,
-        connection: usize,
-        allowance: &mut RequestAllowance,
-    ) -> Result<Vec<Endpoint>, RequestFailure> {
-        let obligation = &self.problem.connections[connection];
-        let Some(&block) = self.blocks.get(endpoint) else {
-            allowance.charge(WorkKind::EndpointVisits, 1)?;
-            let (point, _) = self.route_endpoint(endpoint, None, expected, obligation)?;
-            return Ok(vec![Endpoint {
-                port: None,
-                point,
-                direction: None,
-            }]);
-        };
-        let pose = self.poses[block].as_ref().ok_or_else(|| {
-            error(
-                "unplaced-endpoint",
-                endpoint,
-                "route endpoint facility is not placed",
-            )
-        })?;
-        let definition = self
-            .catalogs
-            .facilities
-            .facility(&self.problem.blocks[block].facility)
-            .expect("admitted facility definition");
-        let mut endpoints = Vec::new();
-        for port_definition in &definition.ports {
-            allowance.charge(WorkKind::EndpointVisits, 1)?;
-            let port = project_port(definition, port_definition, pose.rotation, pose.position);
-            let available = {
-                if port.direction != expected || port.transport != obligation.transport {
-                    false
-                } else {
-                    self.used_ports
-                        .get(&(block, port.id.clone()))
-                        .is_none_or(|used| {
-                            let Ok(total) = used.rate.checked_add(obligation.rate) else {
-                                return false;
-                            };
-                            let capacity = self.catalogs.transports.capacity(obligation.transport);
-                            used.commodity == obligation.commodity
-                                && used.transport == obligation.transport
-                                && used.direction == expected
-                                && within_capacity(total, capacity.quantity, capacity.duration_ms)
-                        })
-                }
-            };
-            if available {
-                endpoints.push(Endpoint {
-                    port: Some(port.id),
-                    point: port.connection,
-                    direction: Some(match expected {
-                        FacilityPortDirection::Output => edge_index(port.edge),
-                        FacilityPortDirection::Input => opposite(port.edge),
-                    }),
-                });
-            }
-        }
-        endpoints.sort_by(|left, right| left.port.cmp(&right.port));
-        Ok(endpoints)
+    pub(super) fn bridge_copy_bytes(&self) -> usize {
+        self.bridges.values().map(bridge_copy_bytes).sum()
     }
 
     fn route_blocked_cells_bounded(
@@ -2503,42 +3194,7 @@ impl Session {
         bounds: Bounds,
         allowance: &mut RequestAllowance,
     ) -> Result<IndexSet<Point>, AllowanceStop> {
-        let obligation = &self.problem.connections[connection];
-        let occupied = &self.occupied[layer(obligation.transport)];
-        let mut blocked = std::collections::BTreeSet::new();
-        for &point in &self.bodies {
-            allowance.charge(WorkKind::BlockedVisits, 1)?;
-            if bounds.contains(point) {
-                blocked.insert((point.y, point.x));
-            }
-        }
-        for (terminal, pose) in self.terminal_poses.iter().enumerate() {
-            allowance.charge(WorkKind::BlockedVisits, 1)?;
-            let id = &self.problem.terminals[terminal].id;
-            if id != &obligation.source && id != &obligation.target {
-                if let Some(pose) = pose {
-                    if bounds.contains(pose.position) {
-                        blocked.insert((pose.position.y, pose.position.x));
-                    }
-                }
-            }
-        }
-        for (&point, users) in occupied {
-            allowance.charge(WorkKind::BlockedVisits, 1)?;
-            if !bounds.contains(point) {
-                continue;
-            }
-            let blocked_here = if self.bridges.contains_key(&(obligation.transport, point)) {
-                true
-            } else {
-                allowance.charge(WorkKind::BlockedVisits, users.len())?;
-                !self.shared_cell_available(point, connection)
-            };
-            if blocked_here {
-                blocked.insert((point.y, point.x));
-            }
-        }
-        Ok(blocked.into_iter().map(|(y, x)| Point { x, y }).collect())
+        BlockedCellsCursor::new(self, connection).advance(self, connection, bounds, allowance)
     }
 
     fn route_commands(
@@ -2634,11 +3290,8 @@ impl Session {
         &self,
         state_revision: u64,
         commands: &[Command],
-        connection: &str,
-        route_cells: usize,
-        route_crossings: usize,
         allowance: &mut RequestAllowance,
-    ) -> Result<(Session, Vec<Step>), RequestFailure> {
+    ) -> Result<(Session, usize), RequestFailure> {
         if self.revision != state_revision {
             return Err(error(
                 "stale-route-candidate",
@@ -2647,89 +3300,30 @@ impl Session {
             )
             .into());
         }
-        let final_layout_copy = self.would_complete_after_route(connection, allowance)?;
-        let root_bytes = self.clone_reservation_bytes();
-        let final_bytes = root_bytes
-            .saturating_add(route_cells.saturating_mul(4096))
-            .saturating_add(route_crossings.saturating_mul(4096))
-            .saturating_add(commands.len().saturating_mul(128))
-            .saturating_add(4096);
-        let copied = root_bytes.saturating_add(if final_layout_copy { final_bytes } else { 0 });
-        let peak = final_bytes.saturating_mul(1 + usize::from(final_layout_copy));
-        allowance.preflight(WorkKind::CopiedBytes, copied)?;
-        allowance.reserve_peak(peak)?;
-        if let Err(stop) = allowance.charge(WorkKind::CopiedBytes, copied) {
-            allowance.release_peak(peak);
-            return Err(RequestFailure::Stopped(stop));
-        }
-        let mut fork = self.clone();
-        fork.replay_deadline = Some(allowance.deadline());
-        fork.replay_meter = Some(std::sync::Arc::new(ReplayMeter::new([
-            allowance.remaining(WorkKind::ReplayRouteCells),
-            allowance.remaining(WorkKind::ReplayUsers),
-            allowance.remaining(WorkKind::CatalogVisits),
-            allowance.remaining(WorkKind::ValidationRecords),
-        ])));
-        let mut steps = Vec::with_capacity(commands.len());
-        let mut failure = None;
-        for command in commands {
-            let records = 1usize
-                .saturating_add(fork.poses.len().saturating_mul(3))
-                .saturating_add(fork.terminal_poses.len().saturating_mul(3))
-                .saturating_add(fork.routes.len().saturating_mul(3));
-            if let Err(stop) = allowance.charge(WorkKind::ValidationRecords, records) {
-                failure = Some(RequestFailure::Stopped(stop));
-                break;
+        let mut progress = NativeReplayProgress::new_borrowed(self, commands);
+        match progress.advance(allowance, 0) {
+            ReplayAdvance::Pending(stop) => {
+                progress.cancel(allowance);
+                Err(RequestFailure::Stopped(stop))
             }
-            let step = fork.step(command.clone());
-            if !step.accepted || step.diagnostic.is_some() {
-                failure = Some(RequestFailure::Invalid(step.diagnostic.unwrap_or_else(
-                    || {
-                        error(
-                            "route-candidate-replay",
-                            "route-candidate",
-                            "native replay rejected a route candidate",
-                        )
-                    },
-                )));
-                break;
+            ReplayAdvance::Complete(SourceOwner::Borrowed(_), Ok((child, outcomes, bytes)), _) => {
+                let outcome_bytes = outcomes.capacity()
+                    * std::mem::size_of::<super::native_replay::ReplayCommandOutcome>();
+                drop(outcomes);
+                allowance.release_peak(outcome_bytes);
+                Ok((child, bytes - outcome_bytes))
             }
-            steps.push(step);
-        }
-        let meter = fork.replay_meter.take().expect("replay meter installed");
-        let mut completed_stop = None;
-        for (kind, used) in [
-            WorkKind::ReplayRouteCells,
-            WorkKind::ReplayUsers,
-            WorkKind::CatalogVisits,
-            WorkKind::ValidationRecords,
-        ]
-        .into_iter()
-        .zip(meter.usage())
-        {
-            if let Err(stop) = allowance.record_completed(kind, used) {
-                completed_stop.get_or_insert(stop);
+            ReplayAdvance::Complete(
+                SourceOwner::Borrowed(_),
+                Err((failure, outcomes, bytes)),
+                _,
+            ) => {
+                drop(outcomes);
+                allowance.release_peak(bytes);
+                Err(failure)
             }
+            _ => unreachable!("borrowed replay must return borrowed source"),
         }
-        if let Some(kind) = meter.stopped() {
-            let kind = match kind {
-                ReplayWork::RouteCells => WorkKind::ReplayRouteCells,
-                ReplayWork::Users => WorkKind::ReplayUsers,
-                ReplayWork::Catalog => WorkKind::CatalogVisits,
-                ReplayWork::Validation => WorkKind::ValidationRecords,
-            };
-            failure = Some(RequestFailure::Stopped(allowance.exhausted_stop(kind)));
-        } else if let Some(stop) = completed_stop {
-            failure = Some(RequestFailure::Stopped(stop));
-        } else if let Err(stop) = allowance.check_deadline() {
-            failure = Some(RequestFailure::Stopped(stop));
-        }
-        allowance.release_peak(peak);
-        if let Some(failure) = failure {
-            return Err(failure);
-        }
-        fork.replay_deadline = None;
-        Ok((fork, steps))
     }
 }
 
@@ -2974,6 +3568,74 @@ pub fn network_shared_cells_with_allowance(
         shared += usize::from(*count > 1);
     }
     Ok(shared)
+}
+
+#[cfg(test)]
+mod allowance_memory_tests {
+    use super::{AllowanceCaps, Command, Direction, RequestAllowance, SearchMemoryBudget};
+
+    #[test]
+    fn one_shot_native_replay_keeps_source_and_releases_exact_child_reservation() {
+        let mut source = crate::constructive::tests::session();
+        crate::constructive::tests::place_pair(&mut source);
+        let original_revision = source.revision;
+        let mut allowance = RequestAllowance::new(AllowanceCaps::default());
+        let commands = [
+            Command::BeginRoute {
+                connection: "connection-0".into(),
+                source_port: Some("output-belt-1".into()),
+                target_port: Some("input-belt-1".into()),
+            },
+            Command::Extend {
+                direction: Direction::North,
+                length: 1,
+            },
+        ];
+        let (child, bytes) = source
+            .replay_route_witness_with_allowance(original_revision, &commands, &mut allowance)
+            .expect("valid native route prefix");
+        assert_eq!(source.revision, original_revision);
+        assert!(source.active.is_none());
+        assert!(child.active.is_some());
+        assert_eq!(allowance.reserved_bytes(), bytes);
+        drop(child);
+        allowance.release_peak(bytes);
+        assert_eq!(allowance.reserved_bytes(), 0);
+
+        let invalid = [Command::Extend {
+            direction: Direction::North,
+            length: 1,
+        }];
+        assert!(matches!(
+            source.replay_route_witness_with_allowance(original_revision, &invalid, &mut allowance),
+            Err(super::RequestFailure::Invalid(_))
+        ));
+        assert_eq!(allowance.reserved_bytes(), 0);
+    }
+
+    #[test]
+    fn aggregate_cap_counts_two_live_requests_and_recovers_after_release() {
+        let tree = SearchMemoryBudget::new(100);
+        let caps = AllowanceCaps {
+            peak_live_bytes: 100,
+            ..AllowanceCaps::default()
+        };
+        let mut first = RequestAllowance::with_memory_budget(caps.clone(), Some(tree.clone()));
+        let mut second = RequestAllowance::with_memory_budget(caps, Some(tree.clone()));
+        first.reserve_peak(60).unwrap();
+        second.reserve_peak(35).unwrap();
+        let stop = second.reserve_peak(10).unwrap_err();
+        assert_eq!(stop.reason, "aggregate-memory-limit");
+        assert_eq!(tree.live_bytes(), 95);
+        first.release_peak(60);
+        second.reserve_peak(10).unwrap();
+        assert_eq!(tree.peak_bytes(), 95);
+        second.release_peak(45);
+        assert_eq!(tree.live_bytes(), 0);
+        first.reserve_peak(20).unwrap();
+        drop(first);
+        assert_eq!(tree.live_bytes(), 0);
+    }
 }
 
 fn diversity(

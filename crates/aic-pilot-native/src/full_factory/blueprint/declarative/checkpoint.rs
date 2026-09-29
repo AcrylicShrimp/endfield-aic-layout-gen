@@ -92,7 +92,7 @@ impl Session {
 
     pub fn from_checkpoint(input: &str, catalogs: Arc<crate::input::Catalogs>) -> Result<Self> {
         let mut saved: Checkpoint =
-            crate::input::decode(input).map_err(|e| error("checkpoint-schema", e, "checkpoint"))?;
+            crate::input::decode_checkpoint(input).map_err(checkpoint_decode_diagnostic)?;
         let legacy = saved.schema == "declarative-edit-checkpoint-v2";
         let current = saved.schema == "declarative-edit-checkpoint-v4";
         if !legacy && !current && saved.schema != "declarative-edit-checkpoint-v3" {
@@ -353,6 +353,35 @@ impl Session {
         session.elapsed_before = Duration::from_nanos(saved.elapsed_ns);
         session.started = Instant::now();
         Ok(session)
+    }
+}
+
+fn checkpoint_decode_diagnostic(error_value: crate::input::CheckpointDecodeError) -> Diagnostic {
+    match error_value {
+        crate::input::CheckpointDecodeError::TooLarge { bytes, limit } => error(
+            "checkpoint-resource",
+            "Checkpoint JSON exceeds admitted byte limit",
+            json!({"bytes": bytes, "limit": limit}),
+        ),
+        crate::input::CheckpointDecodeError::Invalid(message) => {
+            error("checkpoint-schema", message, "checkpoint")
+        }
+    }
+}
+
+#[cfg(test)]
+mod decode_tests {
+    use super::*;
+
+    #[test]
+    fn oversize_checkpoint_is_a_resource_diagnostic() {
+        let diagnostic =
+            checkpoint_decode_diagnostic(crate::input::CheckpointDecodeError::TooLarge {
+                bytes: 17,
+                limit: 16,
+            });
+        assert_eq!(diagnostic.code, "declarative.checkpoint-resource");
+        assert_eq!(diagnostic.entity, json!({"bytes": 17, "limit": 16}));
     }
 }
 

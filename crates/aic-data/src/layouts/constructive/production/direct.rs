@@ -251,11 +251,13 @@ impl Constructor<'_> {
                     Err(d) => self.reject(d.code),
                 }
             }
-            decision.trials.push(ConstructiveDirectPlacementTrial {
-                translation,
-                endpoint_distance,
-                accepted: accepted.is_some(),
-            });
+            if self.retain_history {
+                decision.trials.push(ConstructiveDirectPlacementTrial {
+                    translation,
+                    endpoint_distance,
+                    accepted: accepted.is_some(),
+                });
+            }
             if accepted.is_some() {
                 decision.termination = "first-valid";
                 break;
@@ -268,7 +270,9 @@ impl Constructor<'_> {
                 "production-direct-placement-exhausted"
             });
         }
-        self.direct_placement_decisions.push(decision);
+        if self.retain_history {
+            self.direct_placement_decisions.push(decision);
+        }
         accepted
     }
 }

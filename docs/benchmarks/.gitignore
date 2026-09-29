@@ -54,6 +54,7 @@
 !/fixtures/heavy-layout.json
 !/fixtures/manifest.json
 !/fixtures/order-certificate.json
+!/full-factory-input-size/measure.py
 !/full-factory-pose-scale/baseline-measure.patch.txt
 !/full-factory-pose-scale/compare-actions.py
 !/full-factory-pose-scale/generate-stress.py

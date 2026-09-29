@@ -255,6 +255,237 @@ fn fixture(
 }
 
 #[test]
+fn connection_search_reports_budget_stop_separately_from_missing_candidates() {
+    let (_, report) = fixture(
+        false,
+        Rate {
+            numerator: 1,
+            denominator: 5,
+        },
+    );
+    let node = report.composite.unwrap();
+    let (_, _, transports, components) = catalogs();
+    let edge = FacilityInstanceWiringEdge {
+        id: "missing-edge".into(),
+        source: "a".into(),
+        target: "c".into(),
+        kind: "recipe-flow".into(),
+        item: "ore".into(),
+        rate: Rate {
+            numerator: 1,
+            denominator: 5,
+        },
+        projection: FacilityInstanceWiringProjection::Original,
+    };
+    for limit in [0, 64] {
+        let expected = if limit == 0 {
+            ConnectionSearchStop::RouteCallBudget
+        } else {
+            ConnectionSearchStop::CandidateExhaustion
+        };
+        let mut stop = ConnectionSearchStop::default();
+        let mut stats = ConstructiveCompositionStatistics::default();
+        let mut workspace = RouteWorkspace::new(32, 32);
+        assert!(
+            connect_first(
+                &node,
+                &edge,
+                &transports,
+                &components,
+                &mut workspace,
+                &mut stats,
+                limit,
+                &mut stop,
+                &mut |_| true,
+            )
+            .is_none()
+        );
+        assert_eq!(stop, expected);
+        let mut stop = ConnectionSearchStop::default();
+        assert!(
+            connect_external(
+                &node,
+                &edge,
+                32,
+                32,
+                &transports,
+                &components,
+                &mut stats,
+                limit,
+                &mut stop,
+                &mut |_| true,
+            )
+            .is_none()
+        );
+        assert_eq!(stop, expected);
+    }
+}
+
+#[test]
+fn connection_search_reports_a_positive_budget_after_real_route_calls() {
+    use super::super::composition::{merge_nodes, translate_node};
+
+    let (facilities, items, transports, components) = catalogs();
+    let rate = Rate {
+        numerator: 1,
+        denominator: 1,
+    };
+    let edge = FacilityInstanceWiringEdge {
+        id: "routed-edge".into(),
+        source: "a".into(),
+        target: "b".into(),
+        kind: "recipe-flow".into(),
+        item: "ore".into(),
+        rate,
+        projection: FacilityInstanceWiringProjection::Original,
+    };
+    let wiring = FacilityInstanceWiringReport {
+        schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
+        success: true,
+        nodes: ["a", "b"]
+            .into_iter()
+            .map(|id| FacilityInstanceWiringNode::Facility {
+                id: id.into(),
+                recipe: format!("recipe-{id}"),
+                facility: "network-fixture-machine".into(),
+                index: 0,
+                runs_per_second: rate,
+                work_seconds_per_second: rate,
+                unused_capacity: Rate::zero(),
+            })
+            .collect(),
+        edges: vec![edge.clone()],
+        diagnostics: vec![],
+    };
+    let source = construct_facility_node(&wiring, &facilities, &items, "a").unwrap();
+    let target = translate_node(
+        &construct_facility_node(&wiring, &facilities, &items, "b").unwrap(),
+        6,
+        0,
+    );
+    let internal = merge_nodes(&source, &target);
+    let mut stats = ConstructiveCompositionStatistics::default();
+    let mut stop = ConnectionSearchStop::default();
+    let mut workspace = RouteWorkspace::new(32, 32);
+    assert!(
+        connect_first(
+            &internal,
+            &edge,
+            &transports,
+            &components,
+            &mut workspace,
+            &mut stats,
+            1,
+            &mut stop,
+            &mut |_| false,
+        )
+        .is_none()
+    );
+    assert_eq!(stats.astar_searches, 1);
+    assert_eq!(stop, ConnectionSearchStop::CandidateExhaustion);
+
+    let mut stats = ConstructiveCompositionStatistics::default();
+    let mut stop = ConnectionSearchStop::default();
+    assert!(
+        connect_first(
+            &internal,
+            &edge,
+            &transports,
+            &components,
+            &mut workspace,
+            &mut stats,
+            64,
+            &mut stop,
+            &mut |_| false,
+        )
+        .is_none()
+    );
+    assert!(stats.astar_searches > 0);
+    assert!(stats.astar_searches < 64);
+    assert_eq!(stop, ConnectionSearchStop::CandidateExhaustion);
+    let exact_internal_calls = stats.astar_searches;
+    let mut stats = ConstructiveCompositionStatistics::default();
+    let mut stop = ConnectionSearchStop::default();
+    assert!(
+        connect_first(
+            &internal,
+            &edge,
+            &transports,
+            &components,
+            &mut workspace,
+            &mut stats,
+            exact_internal_calls,
+            &mut stop,
+            &mut |_| false,
+        )
+        .is_none()
+    );
+    assert_eq!(stats.astar_searches, exact_internal_calls);
+    assert_eq!(stop, ConnectionSearchStop::CandidateExhaustion);
+
+    let mut stats = ConstructiveCompositionStatistics::default();
+    let mut stop = ConnectionSearchStop::default();
+    assert!(
+        connect_external(
+            &source,
+            &edge,
+            32,
+            32,
+            &transports,
+            &components,
+            &mut stats,
+            64,
+            &mut stop,
+            &mut |_| false,
+        )
+        .is_none()
+    );
+    assert_eq!(stats.astar_searches, 64);
+    assert_eq!(stop, ConnectionSearchStop::RouteCallBudget);
+
+    let mut stats = ConstructiveCompositionStatistics::default();
+    let mut stop = ConnectionSearchStop::default();
+    assert!(
+        connect_external(
+            &source,
+            &edge,
+            32,
+            32,
+            &transports,
+            &components,
+            &mut stats,
+            1024,
+            &mut stop,
+            &mut |_| false,
+        )
+        .is_none()
+    );
+    assert!(stats.astar_searches > 64);
+    assert!(stats.astar_searches < 1024);
+    assert_eq!(stop, ConnectionSearchStop::CandidateExhaustion);
+    let exact_external_calls = stats.astar_searches;
+    let mut stats = ConstructiveCompositionStatistics::default();
+    let mut stop = ConnectionSearchStop::default();
+    assert!(
+        connect_external(
+            &source,
+            &edge,
+            32,
+            32,
+            &transports,
+            &components,
+            &mut stats,
+            exact_external_calls,
+            &mut stop,
+            &mut |_| false,
+        )
+        .is_none()
+    );
+    assert_eq!(stats.astar_searches, exact_external_calls);
+    assert_eq!(stop, ConnectionSearchStop::CandidateExhaustion);
+}
+
+#[test]
 fn fan_out_and_merge_share_one_port_with_catalog_components() {
     for merge in [false, true] {
         let (_, report) = fixture(
@@ -416,9 +647,18 @@ fn crossing_fixture(same_item: bool, rate: Rate, second_rate: Rate) -> Construct
         if i == 1 {
             n = merge_nodes(&merge_nodes(&n, &nodes[2]), &nodes[3]);
         }
-        n = connect_first(&n, edge, &t, &c, &mut workspace, &mut stats, 64, &mut |n| {
-            validate(n, &f, &t, &c).is_ok()
-        })
+        let mut stop = ConnectionSearchStop::default();
+        n = connect_first(
+            &n,
+            edge,
+            &t,
+            &c,
+            &mut workspace,
+            &mut stats,
+            64,
+            &mut stop,
+            &mut |n| validate(n, &f, &t, &c).is_ok(),
+        )
         .expect("perpendicular lines must cross with a real bridge");
     }
     n

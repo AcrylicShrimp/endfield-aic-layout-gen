@@ -14,7 +14,7 @@ use aic_pilot_native::constructive::Command;
 use aic_pilot_native::constructive::{
     Limits, Session,
     learning::{Config as DomainConfig, Input},
-    routing_candidates::{Candidate, GuidanceInput, Provenance},
+    routing_candidates::{Candidate, GuidanceInput, Provenance, SearchMemoryBudget},
 };
 use aic_torch::{
     Adam, AdamBackend, AdamState,
@@ -27,13 +27,19 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     hierarchical_search::{
-        Case, MacroAction, PANEL_SCHEMA, Panel, Published, REPORT_SCHEMA as SEARCH_REPORT_SCHEMA,
-        Report as CollectionReport, RootRecord, load_published_panel, load_published_report,
+        Case, DenseRootRecord, MacroAction, PANEL_SCHEMA, Panel, Published,
+        REPORT_SCHEMA as SEARCH_REPORT_SCHEMA, Report as CollectionReport, RootRecord,
+        RootRecordTarget, RootSelection, SearchTermination, catalog_effective_config_sha256,
+        catalog_limits_sha256, load_published_panel, load_published_report,
+        root_catalog::{
+            publication::CatalogBinding,
+            replay::{RootReplaySource, RootReplayStart, RootReplayStep, VerifiedRootLedger},
+        },
     },
     input::Tensors,
     outer_model::{
-        ACTION_FEATURES, Batch as OuterBatch, Model as OuterModel, ValueTarget,
-        normalized_layout_quality, value_loss,
+        ACTION_FEATURES, Batch as OuterBatch, Model as OuterModel, StreamedPolicyRoot,
+        StreamedPolicyStatistics, ValueTarget, normalized_layout_quality, value_loss,
     },
     outer_training::Config as OuterTrainingConfig,
     route_guidance::{
@@ -44,7 +50,7 @@ use crate::{
 };
 
 const CONFIG_SCHEMA: &str = "aic-hierarchical-generation-training-v1";
-pub(crate) const REPORT_SCHEMA: &str = "aic-hierarchical-generation-training-report-v3";
+pub(crate) const REPORT_SCHEMA: &str = "aic-hierarchical-generation-training-report-v4";
 const MAX_INPUT_BYTES: u64 = 64 * 1024 * 1024;
 
 fn default_checkpoint_interval_epochs() -> usize {
@@ -79,11 +85,34 @@ fn default_true() -> bool {
 
 struct OuterExample {
     input: Arc<Input>,
-    features: Vec<[f32; ACTION_FEATURES]>,
-    entity_references: Vec<i64>,
-    target: Vec<f32>,
+    policy: OuterPolicy,
     values: ValueTarget,
     successful_episode: bool,
+}
+
+enum OuterPolicy {
+    Dense {
+        features: Vec<[f32; ACTION_FEATURES]>,
+        entity_references: Vec<i64>,
+        target: Vec<f32>,
+    },
+    Catalog {
+        source: Arc<Session>,
+        ledger: VerifiedRootLedger,
+        domain: DomainConfig,
+        page_size: usize,
+        anchor_policy_mass: f64,
+        max_live_bytes: usize,
+    },
+}
+
+impl OuterPolicy {
+    fn action_count(&self) -> usize {
+        match self {
+            Self::Dense { features, .. } => features.len(),
+            Self::Catalog { ledger, .. } => ledger.descriptor().policy_action_count(),
+        }
+    }
 }
 
 struct ReplaySource {
@@ -151,6 +180,12 @@ impl ReplayWindow {
         let panel = load_published_panel(panel_path)?;
         let collection = load_published_report(collection_path)?;
         validate_inputs(&panel.value, &collection.value)?;
+        ensure!(
+            panel.sha256 == collection.value.panel_sha256,
+            "aic-learning.hierarchical-replay-lineage: {} differs from collection panel identity in {}",
+            panel_path.display(),
+            collection_path.display()
+        );
         let lower_config_bytes = bounded_read(&lower_training_output.join("config.json"))?;
         let lower_order_bytes = bounded_read(&lower_training_output.join("parameter-order.json"))?;
         let lower_config: LowerTrainingConfig = serde_json::from_slice(&lower_config_bytes)?;
@@ -198,6 +233,7 @@ impl ReplayWindow {
         let (outer, _) = collect_examples(
             panel.value,
             collection.value,
+            collection_path,
             &domain,
             &outer_config,
             &lower_config,
@@ -229,12 +265,25 @@ struct LowerExample {
     input: GuidanceInput,
     candidates: Vec<LowerCandidate>,
     target: Vec<f32>,
+    policy_supervised: bool,
     success: f32,
 }
 
 struct LowerGroup {
     session: Session,
-    candidates: Vec<(usize, Candidate, i64)>,
+    candidates: Vec<(LowerRootScore, Candidate, Vec<i64>)>,
+}
+
+#[derive(Clone, Copy)]
+struct LowerRootScore {
+    visits: u32,
+    q: f64,
+    prior: f64,
+}
+
+struct LowerRootWitness<'a> {
+    action: &'a MacroAction,
+    score: LowerRootScore,
 }
 
 #[derive(Debug, Serialize)]
@@ -311,8 +360,8 @@ struct RecoveryPointer {
     completed_epochs: usize,
 }
 
-const RECOVERY_BINDING_SCHEMA: &str = "aic-hierarchical-generation-recovery-binding-v1";
-const RECOVERY_STATE_SCHEMA: &str = "aic-hierarchical-generation-recovery-state-v1";
+const RECOVERY_BINDING_SCHEMA: &str = "aic-hierarchical-generation-recovery-binding-v2";
+const RECOVERY_STATE_SCHEMA: &str = "aic-hierarchical-generation-recovery-state-v2";
 
 pub fn run(
     config_path: &Path,
@@ -332,6 +381,7 @@ pub fn run(
         config_path,
         panel,
         collection,
+        collection_path,
         lower_training_output,
         outer_training_output,
         catalog_root,
@@ -347,6 +397,7 @@ pub(crate) fn run_published(
     config_path: &Path,
     panel: Published<Panel>,
     collection: Published<CollectionReport>,
+    collection_path: &Path,
     lower_training_output: &Path,
     outer_training_output: &Path,
     catalog_root: &Path,
@@ -455,6 +506,7 @@ pub(crate) fn run_published(
     let (outer_examples, lower_examples) = collect_examples(
         panel,
         collection,
+        collection_path,
         &domain,
         &outer_config,
         &lower_config,
@@ -583,15 +635,13 @@ pub(crate) fn run_published(
         );
         for examples in order.chunks(config.batch_states) {
             outer_optimizer.zero_grad()?;
-            let loss = outer_loss(&outer, examples, config.train_failed_policy, device)?;
-            let scalar = f64::try_from(&loss)?;
+            let scalar = outer_backward(&outer, examples, config.train_failed_policy, device)?;
             ensure!(
                 scalar.is_finite(),
                 "aic-learning.hierarchical-generation-outer-loss: nonfinite"
             );
             recovery.initial_outer_loss.get_or_insert(scalar);
             recovery.final_outer_loss = scalar;
-            loss.backward();
             recovery.maximum_gradient_norm = recovery
                 .maximum_gradient_norm
                 .max(outer_optimizer.clip_grad_norm(config.gradient_clip)?);
@@ -599,7 +649,7 @@ pub(crate) fn run_published(
             recovery.updates += 1;
             recovery.processed_samples += examples
                 .iter()
-                .map(|example| example.features.len())
+                .map(|example| example.policy.action_count())
                 .sum::<usize>();
         }
 
@@ -702,7 +752,7 @@ pub(crate) fn run_published(
         train_failed_policy: config.train_failed_policy,
         outer_action_samples: outer_examples
             .iter()
-            .map(|example| example.features.len())
+            .map(|example| example.policy.action_count())
             .sum(),
         lower_route_samples: lower_examples
             .iter()
@@ -758,6 +808,7 @@ pub(crate) fn run_published(
 fn collect_examples(
     panel: Panel,
     collection: CollectionReport,
+    collection_path: &Path,
     domain: &DomainConfig,
     outer_config: &OuterTrainingConfig,
     lower_config: &LowerTrainingConfig,
@@ -771,6 +822,16 @@ fn collect_examples(
         .into_iter()
         .map(|case| (case.id.clone(), case))
         .collect::<BTreeMap<_, _>>();
+    let limits_sha256 = catalog_limits_sha256(&limits)?;
+    let effective_config_sha256 = catalog_effective_config_sha256(
+        &outer_config.search,
+        &collection.lower_config_sha256,
+        &collection.lower_parameter_order_sha256,
+        &collection.lower_checkpoint_sha256,
+        &collection.outer_config_sha256,
+        &collection.outer_parameter_order_sha256,
+        &collection.outer_checkpoint_sha256,
+    )?;
     let source_lower_checkpoint_sha256 = collection.lower_checkpoint_sha256;
     let mut outer_examples = Vec::new();
     let mut lower_examples = Vec::new();
@@ -782,47 +843,71 @@ fn collect_examples(
         for record in collected.mcts.root_records {
             ensure!(
                 state_sha256(&session)? == record.state_sha256
-                    && session.observe().revision == record.state_revision,
+                    && session.revision() == record.state_revision,
                 "aic-learning.hierarchical-generation-replay: root state differs in {}",
                 case.id
             );
-            ensure!(
-                record.selected_action < record.actions.len() && !record.actions.is_empty(),
-                "aic-learning.hierarchical-generation-record: invalid selected action in {}",
-                case.id
-            );
-            let children = record
-                .actions
-                .iter()
-                .map(|action| {
-                    action.action.apply(
+            let (policy, selected_child) = match &record.target {
+                RootRecordTarget::PuctDense(dense) => dense_outer_policy(
+                    dense,
+                    &session,
+                    &outer_config.search,
+                    config.search_temperature,
+                )?,
+                #[cfg(test)]
+                RootRecordTarget::GumbelDenseOracle(dense) => dense_outer_policy(
+                    dense,
+                    &session,
+                    &outer_config.search,
+                    config.search_temperature,
+                )?,
+                RootRecordTarget::GumbelCatalog { descriptor } => {
+                    let expected = CatalogBinding {
+                        source_sha256: record.state_sha256.clone(),
+                        source_revision: record.state_revision,
+                        limits_sha256: limits_sha256.clone(),
+                        effective_config_sha256: effective_config_sha256.clone(),
+                        catalog_sha256: collection.catalog_sha256.clone(),
+                        outer_checkpoint_sha256: collection.outer_checkpoint_sha256.clone(),
+                    };
+                    let source = Arc::new(session.clone());
+                    let ledger = VerifiedRootLedger::open(
+                        collection_path,
+                        Arc::clone(descriptor),
+                        &expected,
+                        source.as_ref(),
+                    )?;
+                    let RootSelection::GumbelSequentialHalving {
+                        anchor_policy_mass, ..
+                    } = outer_config.search.root_selection
+                    else {
+                        anyhow::bail!(
+                            "aic-learning.hierarchical-generation-catalog: search selection differs from catalog record"
+                        )
+                    };
+                    let selected_child = descriptor.selected_action().apply(
                         &session,
                         &outer_config.search.candidate,
                         outer_config.search.repair_max_removed,
+                    )?;
+                    (
+                        OuterPolicy::Catalog {
+                            source,
+                            ledger,
+                            domain: domain.clone(),
+                            page_size: outer_config.search.placement_page,
+                            anchor_policy_mass,
+                            max_live_bytes: outer_config.search.max_live_search_bytes,
+                        },
+                        selected_child,
                     )
-                })
-                .collect::<Result<Vec<_>>>()?;
-            let features = record
-                .actions
-                .iter()
-                .zip(&children)
-                .map(|(action, child)| {
-                    action
-                        .action
-                        .features(&session, child, outer_config.search.bounds)
-                })
-                .collect::<Vec<_>>();
-            let entity_references = record
-                .actions
-                .iter()
-                .map(|action| action.action.entity_index(session.problem()))
-                .collect::<Result<Vec<_>>>()?;
-            let target = visit_target(&record, config.search_temperature);
-            let observation = session.observe();
+                }
+            };
+            let (completed_before, _) = session.connection_progress_counts();
             let completed = record.later_completed_connections;
             let total = record.later_total_connections.max(1);
-            let additional = completed.saturating_sub(observation.completed);
-            let remaining = total.saturating_sub(observation.completed).max(1);
+            let additional = completed.saturating_sub(completed_before);
+            let remaining = total.saturating_sub(completed_before).max(1);
             let area = outer_config.search.bounds.width() * outer_config.search.bounds.height();
             let quality = record.later_fully_validated.then(|| {
                 normalized_layout_quality(
@@ -846,9 +931,7 @@ fn collect_examples(
                 input: session
                     .macro_learning_input(domain)
                     .map_err(anyhow::Error::new)?,
-                features,
-                entity_references,
-                target,
+                policy,
                 values,
                 successful_episode: record.later_fully_validated,
             });
@@ -864,10 +947,46 @@ fn collect_examples(
                     &mut lower_examples,
                 )?;
             }
-            session = children[record.selected_action].clone();
+            session = selected_child;
         }
     }
     Ok((outer_examples, lower_examples))
+}
+
+fn dense_outer_policy(
+    dense: &DenseRootRecord,
+    session: &Session,
+    search: &crate::hierarchical_search::Config,
+    temperature: f64,
+) -> Result<(OuterPolicy, Session)> {
+    ensure!(
+        dense.selected_action < dense.actions.len() && !dense.actions.is_empty(),
+        "aic-learning.hierarchical-generation-record: invalid dense selected action"
+    );
+    let mut features = Vec::with_capacity(dense.actions.len());
+    let mut selected_child = None;
+    for (index, action) in dense.actions.iter().enumerate() {
+        let child = action
+            .action
+            .apply(session, &search.candidate, search.repair_max_removed)?;
+        features.push(action.action.features(session, &child, search.bounds));
+        if index == dense.selected_action {
+            selected_child = Some(child);
+        }
+    }
+    let entity_references = dense
+        .actions
+        .iter()
+        .map(|action| action.action.entity_index(session.problem()))
+        .collect::<Result<Vec<_>>>()?;
+    Ok((
+        OuterPolicy::Dense {
+            features,
+            entity_references,
+            target: visit_target(dense, temperature),
+        },
+        selected_child.expect("selected action validated above"),
+    ))
 }
 
 fn outer_epoch_examples<'a>(
@@ -913,13 +1032,51 @@ fn collect_lower_examples(
     temperature: f64,
     output: &mut Vec<LowerExample>,
 ) -> Result<()> {
+    let witnesses = match &record.target {
+        RootRecordTarget::PuctDense(dense) => dense
+            .actions
+            .iter()
+            .map(|action| LowerRootWitness {
+                action: &action.action,
+                score: LowerRootScore {
+                    visits: action.visits,
+                    q: action.q,
+                    prior: action.prior,
+                },
+            })
+            .collect::<Vec<_>>(),
+        #[cfg(test)]
+        RootRecordTarget::GumbelDenseOracle(dense) => dense
+            .actions
+            .iter()
+            .map(|action| LowerRootWitness {
+                action: &action.action,
+                score: LowerRootScore {
+                    visits: action.visits,
+                    q: action.q,
+                    prior: action.prior,
+                },
+            })
+            .collect::<Vec<_>>(),
+        RootRecordTarget::GumbelCatalog { descriptor } => descriptor
+            .lower_witnesses()
+            .map(|witness| LowerRootWitness {
+                action: witness.action,
+                score: LowerRootScore {
+                    visits: witness.visits,
+                    q: witness.q,
+                    prior: 0.0,
+                },
+            })
+            .collect::<Vec<_>>(),
+    };
     let mut groups = BTreeMap::<(String, String), LowerGroup>::new();
-    for (index, action) in record.actions.iter().enumerate() {
-        match &action.action {
+    for witness in witnesses {
+        match witness.action {
             MacroAction::Route(candidate) => {
                 add_lower_candidate(
                     session,
-                    index,
+                    witness.score,
                     candidate,
                     lower_config.model.heads,
                     source_lower_checkpoint_sha256,
@@ -931,7 +1088,7 @@ fn collect_lower_examples(
                 for route in &candidate.routes {
                     add_lower_candidate(
                         &intermediate,
-                        index,
+                        witness.score,
                         route,
                         lower_config.model.heads,
                         source_lower_checkpoint_sha256,
@@ -958,7 +1115,7 @@ fn collect_lower_examples(
                 for route in &candidate.replacements {
                     add_lower_candidate(
                         &intermediate,
-                        index,
+                        witness.score,
                         route,
                         lower_config.model.heads,
                         source_lower_checkpoint_sha256,
@@ -984,40 +1141,38 @@ fn collect_lower_examples(
         let q_max = group
             .candidates
             .iter()
-            .map(|(index, _, _)| record.actions[*index].q)
+            .map(|(score, _, _)| score.q)
             .fold(f64::NEG_INFINITY, f64::max);
         // Search values reserve [0, 1) for incomplete progress and [1, 2]
         // for validated completion plus layout quality. Keep the lower-model
         // regret target in its historical [0, 1] range.
         let q_scale = 2.0;
-        let candidates = group
+        let expanded = group
             .candidates
             .iter()
-            .map(|(index, candidate, head)| {
-                Ok(LowerCandidate {
-                    edge_offsets: edge_offsets(candidate, input.bounds),
-                    head: *head,
-                    q: ((q_max - record.actions[*index].q).max(0.0) / q_scale).min(1.0) as f32,
-                })
+            .flat_map(|(score, candidate, heads)| {
+                heads
+                    .iter()
+                    .map(move |head| (*score, candidate, *head, heads.len()))
             })
-            .collect::<Result<Vec<_>>>()?;
-        let weights = group
-            .candidates
+            .collect::<Vec<_>>();
+        let candidates = expanded
             .iter()
-            .map(|(index, _, _)| {
-                search_weight(
-                    record.actions[*index].visits,
-                    record.actions[*index].prior,
-                    temperature,
-                )
+            .map(|(score, candidate, head, _)| LowerCandidate {
+                edge_offsets: edge_offsets(candidate, input.bounds),
+                head: *head,
+                q: ((q_max - score.q).max(0.0) / q_scale).min(1.0) as f32,
+            })
+            .collect::<Vec<_>>();
+        let weights = expanded
+            .iter()
+            .map(|(score, _, _, head_count)| {
+                search_weight(score.visits, score.prior, temperature) / *head_count as f64
             })
             .collect::<Vec<_>>();
         let denominator = weights.iter().sum::<f64>();
-        if denominator == 0.0 && group.candidates.len() > 1 {
-            continue;
-        }
         let target = if denominator == 0.0 {
-            vec![1.0]
+            vec![0.0; candidates.len()]
         } else {
             weights
                 .into_iter()
@@ -1028,6 +1183,7 @@ fn collect_lower_examples(
             input,
             candidates,
             target,
+            policy_supervised: denominator > 0.0,
             success: record.later_fully_validated as u8 as f32,
         });
     }
@@ -1036,43 +1192,65 @@ fn collect_lower_examples(
 
 fn add_lower_candidate(
     session: &Session,
-    action: usize,
+    score: LowerRootScore,
     candidate: &Candidate,
     heads: usize,
     source_lower_checkpoint_sha256: &str,
     groups: &mut BTreeMap<(String, String), LowerGroup>,
 ) -> Result<()> {
-    let head = match &candidate.provenance {
-        Provenance::Guided {
-            model_version,
-            head,
-        }
-        | Provenance::Diversified {
-            model_version: Some(model_version),
-            head: Some(head),
-            ..
-        } => {
-            ensure!(
-                model_version == source_lower_checkpoint_sha256,
-                "aic-learning.hierarchical-generation-model-version: route provenance differs from collection checkpoint"
-            );
-            let head = head
-                .strip_prefix("head-")
-                .and_then(|head| head.parse::<usize>().ok())
-                .context("aic-learning.hierarchical-generation-head: malformed guidance head")?;
-            ensure!(
-                head < heads,
-                "aic-learning.hierarchical-generation-head: guidance head is outside the model"
-            );
-            head as i64
-        }
-        Provenance::Anchor
-        | Provenance::Diversified {
-            model_version: None,
-            ..
-        }
-        | Provenance::Diversified { head: None, .. } => return Ok(()),
-    };
+    let mut guided_heads = BTreeSet::new();
+    for provenance in
+        std::iter::once(&candidate.provenance).chain(candidate.additional_provenance.iter())
+    {
+        let (model_version, head) = match provenance {
+            Provenance::Guided {
+                model_version,
+                head,
+            }
+            | Provenance::Diversified {
+                model_version: Some(model_version),
+                head: Some(head),
+                ..
+            } => (model_version, head),
+            Provenance::Diversified {
+                model_version: Some(model_version),
+                head: None,
+            } => {
+                ensure!(
+                    model_version == source_lower_checkpoint_sha256,
+                    "aic-learning.hierarchical-generation-model-version: route provenance differs from collection checkpoint"
+                );
+                continue;
+            }
+            Provenance::Diversified {
+                model_version: None,
+                head: Some(_),
+            } => anyhow::bail!(
+                "aic-learning.hierarchical-generation-head: guidance head lacks model version"
+            ),
+            Provenance::Anchor
+            | Provenance::Diversified {
+                model_version: None,
+                head: None,
+            } => continue,
+        };
+        ensure!(
+            model_version == source_lower_checkpoint_sha256,
+            "aic-learning.hierarchical-generation-model-version: route provenance differs from collection checkpoint"
+        );
+        let head = head
+            .strip_prefix("head-")
+            .and_then(|head| head.parse::<usize>().ok())
+            .context("aic-learning.hierarchical-generation-head: malformed guidance head")?;
+        ensure!(
+            head < heads,
+            "aic-learning.hierarchical-generation-head: guidance head is outside the model"
+        );
+        guided_heads.insert(head as i64);
+    }
+    if guided_heads.is_empty() {
+        return Ok(());
+    }
     ensure!(
         candidate.state_revision == session.observe().revision,
         "aic-learning.hierarchical-generation-route-state: candidate belongs to a different intermediate state"
@@ -1085,7 +1263,7 @@ fn add_lower_candidate(
             candidates: Vec::new(),
         })
         .candidates
-        .push((action, candidate.clone(), head));
+        .push((score, candidate.clone(), guided_heads.into_iter().collect()));
     Ok(())
 }
 
@@ -1112,7 +1290,7 @@ fn direction(from: Point, to: Point) -> i64 {
     }
 }
 
-fn visit_target(record: &RootRecord, temperature: f64) -> Vec<f32> {
+fn visit_target(record: &DenseRootRecord, temperature: f64) -> Vec<f32> {
     if record
         .actions
         .iter()
@@ -1149,6 +1327,145 @@ fn search_weight(visits: u32, _prior: f64, temperature: f64) -> f64 {
     }
 }
 
+fn outer_backward(
+    model: &OuterModel,
+    examples: &[&OuterExample],
+    train_failed_policy: bool,
+    device: Device,
+) -> Result<f64> {
+    if examples
+        .iter()
+        .all(|example| matches!(example.policy, OuterPolicy::Dense { .. }))
+    {
+        let loss = outer_loss(model, examples, train_failed_policy, device)?;
+        let scalar = f64::try_from(&loss)?;
+        loss.backward();
+        return Ok(scalar);
+    }
+    let roots = examples
+        .iter()
+        .map(|example| StreamedPolicyRoot::new(model, example.input.as_ref(), device))
+        .collect::<Result<Vec<_>>>()?;
+    let values = Tensor::cat(
+        &roots
+            .iter()
+            .map(|root| root.values().shallow_clone())
+            .collect::<Vec<_>>(),
+        0,
+    );
+    let targets = examples
+        .iter()
+        .map(|example| example.values)
+        .collect::<Vec<_>>();
+    let value = value_loss(&values, &targets, device)?;
+    let value_scalar = f64::try_from(&value)?;
+    let mut policy_scalar = 0.0;
+    let mut encoder_terms = Vec::new();
+    for (root, example) in roots.iter().zip(examples) {
+        if !train_failed_policy && !example.successful_episode {
+            continue;
+        }
+        let mut statistics = StreamedPolicyStatistics::new(device);
+        match &example.policy {
+            OuterPolicy::Dense {
+                features,
+                entity_references,
+                target,
+            } => {
+                statistics.observe(&root.frozen_logits(features, entity_references)?, target)?;
+                root.backward_page(
+                    features,
+                    entity_references,
+                    target,
+                    &statistics,
+                    examples.len(),
+                )?;
+            }
+            OuterPolicy::Catalog {
+                source,
+                ledger,
+                domain,
+                page_size,
+                anchor_policy_mass,
+                max_live_bytes,
+            } => {
+                let budget = SearchMemoryBudget::new(*max_live_bytes);
+                let RootReplayStart::Ready(mut cursor) = RootReplaySource::from_verified(
+                    ledger,
+                    source.as_ref(),
+                    domain,
+                    *page_size,
+                    *anchor_policy_mass,
+                    &budget,
+                )
+                .map_err(|error| classify_catalog_replay_io(error, "open"))?
+                else {
+                    anyhow::bail!(
+                        "aic-learning.hierarchical-generation-resource-unknown: replay preparation exhausted memory"
+                    )
+                };
+                loop {
+                    match cursor
+                        .next_page(&budget)
+                        .map_err(|error| classify_catalog_replay_io(error, "normalizer"))?
+                    {
+                        RootReplayStep::Page(page) => statistics.observe(
+                            &root.frozen_logits(&page.features, &page.entity_indices)?,
+                            &page.targets,
+                        )?,
+                        RootReplayStep::Complete => break,
+                        RootReplayStep::MemoryStop(stop) => anyhow::bail!(
+                            "aic-learning.hierarchical-generation-resource-unknown: replay normalizer stopped: {stop:?}"
+                        ),
+                    }
+                }
+                cursor
+                    .rewind()
+                    .map_err(|error| classify_catalog_replay_io(error, "rewind"))?;
+                loop {
+                    match cursor
+                        .next_page(&budget)
+                        .map_err(|error| classify_catalog_replay_io(error, "gradient"))?
+                    {
+                        RootReplayStep::Page(page) => root.backward_page(
+                            &page.features,
+                            &page.entity_indices,
+                            &page.targets,
+                            &statistics,
+                            examples.len(),
+                        )?,
+                        RootReplayStep::Complete => break,
+                        RootReplayStep::MemoryStop(stop) => anyhow::bail!(
+                            "aic-learning.hierarchical-generation-resource-unknown: replay gradient stopped: {stop:?}"
+                        ),
+                    }
+                }
+            }
+        }
+        policy_scalar += f64::try_from(statistics.true_cross_entropy()?)? / examples.len() as f64;
+        encoder_terms.push(root.encoder_surrogate()?);
+    }
+    let mut loss = value;
+    for term in encoder_terms {
+        loss += term;
+    }
+    loss.backward();
+    Ok(value_scalar + policy_scalar)
+}
+
+fn classify_catalog_replay_io(error: anyhow::Error, stage: &str) -> anyhow::Error {
+    if error
+        .chain()
+        .any(|cause| cause.downcast_ref::<std::io::Error>().is_some())
+    {
+        anyhow::anyhow!(
+            "aic-learning.hierarchical-generation-resource-unknown: catalog replay {stage} I/O failed: {error:#}"
+        )
+    } else {
+        error
+    }
+}
+
 fn outer_loss(
     model: &OuterModel,
     examples: &[&OuterExample],
@@ -1159,20 +1476,37 @@ fn outer_loss(
         .iter()
         .map(|example| example.input.as_ref())
         .collect::<Vec<_>>();
-    let features = examples
+    let dense = examples
         .iter()
-        .map(|example| example.features.as_slice())
+        .map(|example| match &example.policy {
+            OuterPolicy::Dense {
+                features,
+                entity_references,
+                target,
+            } => Ok((
+                features.as_slice(),
+                entity_references.as_slice(),
+                target.as_slice(),
+            )),
+            OuterPolicy::Catalog { .. } => anyhow::bail!(
+                "aic-learning.hierarchical-generation-loss: catalog root requires streamed backward"
+            ),
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let features = dense
+        .iter()
+        .map(|(features, _, _)| *features)
         .collect::<Vec<_>>();
-    let entity_references = examples
+    let entity_references = dense
         .iter()
-        .map(|example| example.entity_references.as_slice())
+        .map(|(_, entities, _)| *entities)
         .collect::<Vec<_>>();
     let batch = OuterBatch::from_rows(&inputs, &features, &entity_references, device)?;
     let prediction = model.forward(&batch)?;
     let mut policies = Vec::with_capacity(examples.len());
     for (state, example) in examples.iter().enumerate() {
         let range = batch.action_range(state);
-        let target = Tensor::from_slice(&example.target).to_device(device);
+        let target = Tensor::from_slice(dense[state].2).to_device(device);
         if train_failed_policy || example.successful_episode {
             policies.push(
                 -(target
@@ -1241,11 +1575,18 @@ fn lower_prediction_loss(
                 energy
             })
             .collect::<Vec<_>>();
-        let logp = (-Tensor::stack(&energies, 0) / temperature).log_softmax(-1, Kind::Float);
-        policies
-            .push(-(Tensor::from_slice(&example.target).to_device(device) * logp).sum(Kind::Float));
+        if example.policy_supervised {
+            let logp = (-Tensor::stack(&energies, 0) / temperature).log_softmax(-1, Kind::Float);
+            policies.push(
+                -(Tensor::from_slice(&example.target).to_device(device) * logp).sum(Kind::Float),
+            );
+        }
     }
-    let policy = Tensor::stack(&policies, 0).mean(Kind::Float);
+    let policy = if policies.is_empty() {
+        Tensor::zeros([], (Kind::Float, device))
+    } else {
+        Tensor::stack(&policies, 0).mean(Kind::Float)
+    };
     let regression = Tensor::stack(&regression, 0).mean(Kind::Float);
     let target = Tensor::from_slice(
         &examples
@@ -1307,6 +1648,13 @@ fn validate_config(config: &Config) -> Result<()> {
 }
 
 fn validate_inputs(panel: &Panel, collection: &CollectionReport) -> Result<()> {
+    ensure!(
+        collection
+            .cases
+            .iter()
+            .all(|case| case.mcts.termination != SearchTermination::ResourceStopped),
+        "aic-learning.hierarchical-generation-resource-unknown: collection contains a resource-stopped case"
+    );
     let panel_ids = panel
         .cases
         .iter()
@@ -1343,7 +1691,23 @@ fn validate_collection_structure(
         collection.cases.iter().all(|case| {
             case.mcts.root_records.len() <= search.max_moves
                 && case.mcts.root_records.iter().all(|record| {
-                    !record.actions.is_empty() && record.selected_action < record.actions.len()
+                    match (&search.root_selection, &record.target) {
+                        (RootSelection::Puct, RootRecordTarget::PuctDense(dense)) => {
+                            !dense.actions.is_empty() && dense.selected_action < dense.actions.len()
+                        }
+                        (
+                            RootSelection::GumbelSequentialHalving { .. },
+                            RootRecordTarget::GumbelCatalog { descriptor },
+                        ) => descriptor.case_id() == case.id,
+                        #[cfg(test)]
+                        (
+                            RootSelection::GumbelSequentialHalving { .. },
+                            RootRecordTarget::GumbelDenseOracle(dense),
+                        ) => {
+                            !dense.actions.is_empty() && dense.selected_action < dense.actions.len()
+                        }
+                        _ => false,
+                    }
                 })
         }),
         "aic-learning.hierarchical-generation-collection: roots or actions exceed the search contract"
@@ -1583,10 +1947,9 @@ fn synchronize(device: Device) {
 }
 
 fn state_sha256(session: &Session) -> Result<String> {
-    Ok(bytes_sha256(&serde_json::to_vec(&(
-        session.problem(),
-        session.observe(),
-    ))?))
+    session
+        .hierarchical_state_sha256()
+        .map_err(anyhow::Error::new)
 }
 
 fn bounded_read(path: &Path) -> Result<Vec<u8>> {
@@ -1642,7 +2005,443 @@ fn semantic_sha256(value: &impl Serialize) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hierarchical_search::{RootActionRecord, SearchTermination};
+    use crate::hierarchical_search::{
+        RootActionRecord, SearchTermination, validate_root_record_lineage,
+    };
+
+    #[test]
+    fn lower_examples_keep_updated_heads_and_zero_visit_rows() -> Result<()> {
+        let _torch_guard = crate::TORCH_TEST.lock().unwrap();
+        let panel: Value = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-route-guidance/training-panel.json"
+        ))?;
+        let lower_config: LowerTrainingConfig = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-route-guidance/config.json"
+        ))?;
+        let case = &panel["cases"][0];
+        let mut session = Session::new(
+            serde_json::from_value(case["problem"].clone())?,
+            crate::constructive::test_support::catalogs(),
+            serde_json::from_value(panel["limits"].clone())?,
+        )?;
+        for command in case["prefix"].as_array().expect("route prefix") {
+            assert!(
+                session
+                    .step(serde_json::from_value(command.clone())?)
+                    .accepted
+            );
+        }
+        let candidate_config = serde_json::from_value(panel["candidate"].clone())?;
+        let request = aic_pilot_native::constructive::routing_candidates::Request {
+            state_revision: session.revision(),
+            connection: case["request"].as_str().expect("route request").into(),
+        };
+        let native = session.route_candidates(&request, &candidate_config)?;
+        assert!(
+            native.candidates.len() >= 2,
+            "fixture needs two route witnesses"
+        );
+        let mut first = native.candidates[0].clone();
+        first.provenance = Provenance::Anchor;
+        first.additional_provenance = vec![
+            Provenance::Guided {
+                model_version: "checkpoint".into(),
+                head: "head-0".into(),
+            },
+            Provenance::Guided {
+                model_version: "checkpoint".into(),
+                head: "head-1".into(),
+            },
+            Provenance::Guided {
+                model_version: "checkpoint".into(),
+                head: "head-1".into(),
+            },
+        ];
+        let mut second = native.candidates[1].clone();
+        second.provenance = Provenance::Guided {
+            model_version: "checkpoint".into(),
+            head: "head-2".into(),
+        };
+        let mut initially_exposed = first.clone();
+        initially_exposed.additional_provenance.clear();
+        let controlled = crate::hierarchical_search::controlled_gumbel_record(
+            session.clone(),
+            candidate_config.clone(),
+            vec![MacroAction::Route(initially_exposed.clone())],
+            vec![MacroAction::Route(second.clone())],
+            vec![(
+                initially_exposed.connection.clone(),
+                initially_exposed.id,
+                first.additional_provenance.clone(),
+            )],
+        )?;
+        let dense = controlled.dense().expect("dense oracle");
+        assert_eq!(dense.actions.len(), 2);
+        assert_eq!(dense.initial_eligible_actions, Some(1));
+        assert_eq!(dense.gumbel_shortlist.len(), 1);
+        assert_eq!(dense.gumbel_shortlist[0].initial_rank, 0);
+        assert!(f64::from_bits(dense.gumbel_shortlist[0].gumbel_bits).is_finite());
+        assert_eq!(dense.actions[dense.selected_action].visits, 2);
+        let late = dense
+            .actions
+            .iter()
+            .find(|action| action.gumbel_eligible == Some(false))
+            .expect("late route witness");
+        assert_eq!(late.policy_target, Some(0.0));
+        assert_eq!(late.visits, 0);
+        let selected = &dense.actions[dense.selected_action];
+        let MacroAction::Route(updated) = &selected.action else {
+            unreachable!("initial route witness")
+        };
+        assert_eq!(updated.provenance, Provenance::Anchor);
+        assert_eq!(updated.additional_provenance, first.additional_provenance);
+        let mut integrated_lower = Vec::new();
+        collect_lower_examples(
+            &session,
+            &controlled,
+            &lower_config.learning_domain,
+            &lower_config,
+            "checkpoint",
+            &candidate_config,
+            1.0,
+            &mut integrated_lower,
+        )?;
+        assert_eq!(integrated_lower.len(), 1);
+        assert_eq!(integrated_lower[0].candidates.len(), 3);
+        assert_eq!(integrated_lower[0].target, [0.5, 0.5, 0.0]);
+        let input = session.macro_learning_input(&lower_config.learning_domain)?;
+        let mut features = Vec::new();
+        let mut entity_references = Vec::new();
+        for action in &dense.actions {
+            let child = action.action.apply(&session, &candidate_config, 1)?;
+            features.push(
+                action
+                    .action
+                    .features(&session, &child, candidate_config.bounds),
+            );
+            entity_references.push(action.action.entity_index(session.problem())?);
+        }
+        let outer_batch = OuterBatch::from_rows(
+            &[input.as_ref()],
+            &[features.as_slice()],
+            &[entity_references.as_slice()],
+            Device::Cpu,
+        )?;
+        let action_range = outer_batch.action_range(0);
+        assert_eq!(action_range.end - action_range.start, 2);
+        let actions = [first, second]
+            .into_iter()
+            .map(|candidate| RootActionRecord {
+                action: MacroAction::Route(candidate),
+                prior: 0.5,
+                anchor_prior: 0.5,
+                visits: 0,
+                q: 0.25,
+                gumbel_eligible: Some(false),
+                policy_target: Some(0.0),
+            })
+            .collect();
+        let mut record = RootRecord {
+            state_sha256: state_sha256(&session)?,
+            state_revision: session.revision(),
+            target: RootRecordTarget::GumbelDenseOracle(DenseRootRecord {
+                actions,
+                selected_action: 0,
+                selected_physical_id: None,
+                gumbel_shortlist: Vec::new(),
+                gumbel_shortlist_cap: Some(1),
+                initial_eligible_actions: Some(0),
+            }),
+            pending_lower_tasks: 0,
+            loaded_lower_pages: 1,
+            later_completed_connections: 0,
+            later_total_connections: 1,
+            later_footprint_area: 0,
+            later_transport_cells: 0,
+            later_turns: 0,
+            later_fully_validated: false,
+            later_termination: SearchTermination::MoveBudgetExhausted,
+        };
+        let mut examples = Vec::new();
+        collect_lower_examples(
+            &session,
+            &record,
+            &lower_config.learning_domain,
+            &lower_config,
+            "checkpoint",
+            &candidate_config,
+            1.0,
+            &mut examples,
+        )?;
+        assert_eq!(examples.len(), 1);
+        assert_eq!(examples[0].candidates.len(), 3);
+        assert_eq!(
+            examples[0]
+                .candidates
+                .iter()
+                .map(|candidate| candidate.head)
+                .collect::<Vec<_>>(),
+            vec![0, 1, 2]
+        );
+        assert!(!examples[0].policy_supervised);
+        assert_eq!(examples[0].target, vec![0.0; 3]);
+        let (order, state) = LowerModel::initial_state(&lower_config.model, 17)?;
+        let model = LowerModel::load(&lower_config.model, &order, &state, Device::Cpu)?;
+        let baseline = lower_loss(&model, &[&examples[0]], 4.0, Device::Cpu)?.double_value(&[]);
+        examples[0].target = vec![1.0, 0.0, 0.0];
+        let with_ignored_target =
+            lower_loss(&model, &[&examples[0]], 4.0, Device::Cpu)?.double_value(&[]);
+        assert_eq!(baseline, with_ignored_target);
+
+        record.dense_mut().unwrap().actions[0].visits = 4;
+        record.dense_mut().unwrap().actions[1].visits = 2;
+        examples.clear();
+        collect_lower_examples(
+            &session,
+            &record,
+            &lower_config.learning_domain,
+            &lower_config,
+            "checkpoint",
+            &candidate_config,
+            1.0,
+            &mut examples,
+        )?;
+        assert!(examples[0].policy_supervised);
+        assert_eq!(examples[0].target, vec![1.0 / 3.0; 3]);
+        let MacroAction::Route(first) = &mut record.dense_mut().unwrap().actions[0].action else {
+            unreachable!("first route witness")
+        };
+        first.additional_provenance.push(Provenance::Diversified {
+            model_version: Some("wrong-checkpoint".into()),
+            head: None,
+        });
+        let error = collect_lower_examples(
+            &session,
+            &record,
+            &lower_config.learning_domain,
+            &lower_config,
+            "checkpoint",
+            &candidate_config,
+            1.0,
+            &mut Vec::new(),
+        )
+        .err()
+        .expect("headless diversified provenance must still check its model version");
+        assert!(
+            error
+                .to_string()
+                .contains("hierarchical-generation-model-version")
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn network_and_repair_witnesses_reach_lower_training() -> Result<()> {
+        let _torch_guard = crate::TORCH_TEST.lock().unwrap();
+        let lower_config: LowerTrainingConfig = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-route-guidance/config.json"
+        ))?;
+        let network_panel: Value = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-network/panel.json"
+        ))?;
+        let search_config: Value = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-curriculum/search.json"
+        ))?;
+        let network_case = &network_panel["cases"][0];
+        let mut network_session = Session::new(
+            serde_json::from_value(network_case["problem"].clone())?,
+            crate::constructive::test_support::catalogs(),
+            serde_json::from_value(network_panel["limits"].clone())?,
+        )?;
+        for command in network_case["prefix"].as_array().expect("network prefix") {
+            assert!(
+                network_session
+                    .step(serde_json::from_value(command.clone())?)
+                    .accepted
+            );
+        }
+        let mut network_config = serde_json::from_value::<
+            aic_pilot_native::constructive::routing_candidates::Config,
+        >(search_config["candidate"].clone())?;
+        network_config.request_allowance.max_variants = 4;
+        let (mut selected_network, mut network) =
+            crate::hierarchical_search::controlled_network_pair(&network_session, &network_config)?;
+        for (action, head) in [(&mut selected_network, "head-0"), (&mut network, "head-1")] {
+            let MacroAction::Network(candidate) = action else {
+                unreachable!("controlled network witness")
+            };
+            for route in &mut candidate.routes {
+                route.provenance = Provenance::Guided {
+                    model_version: "checkpoint".into(),
+                    head: head.into(),
+                };
+                route.additional_provenance.clear();
+            }
+        }
+        let repair_fixture: Value = serde_json::from_str(include_str!(
+            "../../../docs/benchmarks/hierarchical-repair/fixture.json"
+        ))?;
+        let mut repair_session = Session::new(
+            serde_json::from_value(repair_fixture["problem"].clone())?,
+            crate::constructive::test_support::catalogs(),
+            serde_json::from_value(repair_fixture["limits"].clone())?,
+        )?;
+        for command in repair_fixture["prefix"].as_array().expect("repair prefix") {
+            assert!(
+                repair_session
+                    .step(serde_json::from_value(command.clone())?)
+                    .accepted
+            );
+        }
+        let repair_config = serde_json::from_value(repair_fixture["candidate"].clone())?;
+        let repair_request = repair_session.repair_request(
+            &["second".into()],
+            &["first".into()],
+            1,
+            &repair_config,
+        )?;
+        let build_repair = |second_choice: usize| -> Result<MacroAction> {
+            let mut allowance =
+                aic_pilot_native::constructive::routing_candidates::RequestAllowance::new(
+                    repair_request.allowance_caps.clone(),
+                );
+            let (mut draft, reserved_bytes) = repair_session.prepare_repair_draft_with_allowance(
+                &repair_request,
+                &["first".into()],
+                &mut allowance,
+            )?;
+            allowance.release_peak(reserved_bytes);
+            let mut replacements = Vec::new();
+            for (index, connection) in ["second", "first"].into_iter().enumerate() {
+                let request = aic_pilot_native::constructive::routing_candidates::Request {
+                    state_revision: draft.revision(),
+                    connection: connection.into(),
+                };
+                let mut route = draft
+                    .route_candidates(&request, &repair_config)?
+                    .candidates
+                    .into_iter()
+                    .nth(if index == 0 { second_choice } else { 0 })
+                    .with_context(|| {
+                        format!("no repair route {connection} choice {second_choice}")
+                    })?;
+                route.provenance = Provenance::Guided {
+                    model_version: "checkpoint".into(),
+                    head: format!("head-{index}"),
+                };
+                let before = draft.clone();
+                draft.apply_route_candidate(&route)?;
+                route.physical_cost = before
+                    .physical_cost_between(&draft, std::slice::from_ref(&route.connection))?;
+                replacements.push(route);
+            }
+            Ok(MacroAction::Repair {
+                request: repair_request.clone(),
+                candidate: aic_pilot_native::constructive::routing_candidates::RepairCandidate {
+                    schema:
+                        aic_pilot_native::constructive::routing_candidates::REPAIR_CANDIDATE_SCHEMA
+                            .into(),
+                    state_revision: repair_request.state_revision,
+                    removed: vec!["first".into()],
+                    expanded: replacements.iter().map(|route| route.expanded).sum(),
+                    replacements,
+                    physical_cost: repair_session
+                        .physical_cost_between(&draft, &["first".into(), "second".into()])?,
+                    charged_work: Default::default(),
+                },
+            })
+        };
+        let mut selected_repair = build_repair(1)?;
+        if let MacroAction::Repair { candidate, .. } = &mut selected_repair {
+            for route in &mut candidate.replacements {
+                route.provenance = Provenance::Anchor;
+            }
+        }
+        let repair = build_repair(0)?;
+        for (is_network, session, selected, action, config) in [
+            (
+                true,
+                &network_session,
+                selected_network,
+                network,
+                &network_config,
+            ),
+            (
+                false,
+                &repair_session,
+                selected_repair,
+                repair,
+                &repair_config,
+            ),
+        ] {
+            let record = crate::hierarchical_search::controlled_gumbel_record(
+                session.clone(),
+                config.clone(),
+                vec![selected],
+                vec![action],
+                Vec::new(),
+            )?;
+            validate_root_record_lineage(&record)?;
+            let dense = record.dense().expect("dense oracle");
+            assert_eq!(
+                dense.actions[dense.selected_action].policy_target,
+                Some(1.0)
+            );
+            assert_eq!(visit_target(dense, 1.0).iter().sum::<f32>(), 1.0);
+            assert!(dense.actions.iter().any(|action| {
+                action.gumbel_eligible == Some(false) && action.policy_target == Some(0.0)
+            }));
+            for witness in &dense.actions {
+                witness.action.apply(session, config, 1)?;
+            }
+            let mut examples = Vec::new();
+            collect_lower_examples(
+                session,
+                &record,
+                &lower_config.learning_domain,
+                &lower_config,
+                "checkpoint",
+                config,
+                1.0,
+                &mut examples,
+            )?;
+            assert!(!examples.is_empty());
+            if is_network {
+                for (eligible, supervised) in [(true, true), (false, false)] {
+                    let mut isolated = record.clone();
+                    isolated
+                        .dense_mut()
+                        .unwrap()
+                        .actions
+                        .retain(|witness| witness.gumbel_eligible == Some(eligible));
+                    let mut contributions = Vec::new();
+                    collect_lower_examples(
+                        session,
+                        &isolated,
+                        &lower_config.learning_domain,
+                        &lower_config,
+                        "checkpoint",
+                        config,
+                        1.0,
+                        &mut contributions,
+                    )?;
+                    assert!(!contributions.is_empty());
+                    assert!(contributions.iter().all(|example| {
+                        example.policy_supervised == supervised
+                            && (supervised || example.target.iter().all(|target| *target == 0.0))
+                    }));
+                }
+            } else {
+                assert_eq!(examples.len(), 2);
+                assert!(examples.iter().all(|example| {
+                    example.candidates.len() == 1
+                        && !example.policy_supervised
+                        && example.target == [0.0]
+                }));
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn distilled_edge_directions_match_native_channel_order() {
@@ -1663,14 +2462,23 @@ mod tests {
                 anchor_prior: 0.5,
                 visits,
                 q: 0.0,
+                gumbel_eligible: Some(policy_target > 0.0),
                 policy_target: Some(policy_target),
             })
             .collect();
         let record = RootRecord {
             state_sha256: "state".into(),
             state_revision: 0,
-            actions,
-            selected_action: 1,
+            target: RootRecordTarget::GumbelDenseOracle(DenseRootRecord {
+                actions,
+                selected_action: 1,
+                selected_physical_id: None,
+                gumbel_shortlist: Vec::new(),
+                gumbel_shortlist_cap: Some(2),
+                initial_eligible_actions: Some(2),
+            }),
+            pending_lower_tasks: 0,
+            loaded_lower_pages: 1,
             later_completed_connections: 0,
             later_total_connections: 1,
             later_footprint_area: 0,
@@ -1679,7 +2487,7 @@ mod tests {
             later_fully_validated: false,
             later_termination: SearchTermination::MoveBudgetExhausted,
         };
-        assert_eq!(visit_target(&record, 0.25), vec![0.2, 0.8]);
+        assert_eq!(visit_target(record.dense().unwrap(), 0.25), vec![0.2, 0.8]);
     }
 
     #[test]

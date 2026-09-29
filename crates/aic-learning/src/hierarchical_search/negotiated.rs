@@ -73,7 +73,7 @@ pub(super) fn record_negotiation_report(counters: &mut Counters, report: &Negoti
     }
 }
 
-fn diagnostic_is_stop(diagnostic: &Diagnostic) -> bool {
+pub(super) fn diagnostic_is_stop(diagnostic: &Diagnostic) -> bool {
     matches!(
         diagnostic.code.as_str(),
         "constructive.repair-work-limit"
@@ -102,7 +102,7 @@ fn next_combination(indices: &mut [usize], domain: usize) -> bool {
     false
 }
 
-fn next_untried(
+pub(super) fn next_untried(
     order: &[String],
     size: usize,
     max_variant: usize,
@@ -128,7 +128,7 @@ fn next_untried(
     }
 }
 
-fn historical_price(
+pub(super) fn historical_price(
     session: &Session,
     ids: &[(String, u64)],
     history: &BTreeMap<(TransportKind, Point), u32>,
@@ -151,7 +151,7 @@ fn historical_price(
     Ok(priced.into_iter().map(|(_, id)| id).collect())
 }
 
-fn update_history(
+pub(super) fn update_history(
     removed: &[String],
     conflict_cells: &BTreeMap<String, Vec<(TransportKind, Point)>>,
     history: &mut BTreeMap<(TransportKind, Point), u32>,
@@ -177,7 +177,7 @@ fn update_history(
     Ok(())
 }
 
-fn publish_unique_repair(
+pub(super) fn publish_unique_repair(
     request: &RepairRequest,
     candidate: &RepairCandidate,
     semantic: &mut BTreeSet<(Vec<String>, NetworkWitnessKey)>,
@@ -271,7 +271,7 @@ impl Factory<'_> {
             allowance,
         ) {
             Ok(scope) => scope,
-            Err(failure) if failure.code == "constructive.repair-scope" => {
+            Err(failure) if failure.code == "constructive.repair-empty-scope" => {
                 return Ok(NegotiationReport {
                     request: None,
                     actions: Vec::new(),

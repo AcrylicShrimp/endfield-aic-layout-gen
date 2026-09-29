@@ -242,6 +242,13 @@ pub fn run(
             )?;
         }
     }
+    if resume {
+        retire_inactive_replay_data(
+            output,
+            state.completed_generations,
+            config.outer_success_replay_generations,
+        )?;
+    }
 
     while state.completed_generations < config.generations {
         let generation = state.completed_generations;
@@ -269,6 +276,11 @@ pub fn run(
             state.level = summary.next_level;
             state.recent_training_success = summary.recent_training_success_after;
             write_json_atomic(&state_path, &state)?;
+            retire_newly_inactive_replay_data(
+                output,
+                state.completed_generations,
+                config.outer_success_replay_generations,
+            )?;
             continue;
         }
 
@@ -330,6 +342,12 @@ pub fn run(
                 && training_report.value.cases.len() == config.training_cases,
             "aic-learning.hierarchical-curriculum-collection: invalid training report"
         );
+        ensure!(
+            training_report.value.panel_sha256 == training_panel.sha256,
+            "aic-learning.hierarchical-curriculum-collection-lineage: {} differs from {}",
+            collection_path.display(),
+            panel_path.display()
+        );
         let training_success = training_report
             .value
             .cases
@@ -367,6 +385,7 @@ pub fn run(
                 &current_generation_config,
                 training_panel,
                 training_report,
+                &collection_path,
                 &source_lower,
                 &source_outer,
                 catalog_root,
@@ -415,6 +434,14 @@ pub fn run(
             }),
             "aic-learning.hierarchical-curriculum-heldout: invalid evaluation report"
         );
+        if let Some(report) = &heldout_report {
+            ensure!(
+                report.value.panel_sha256 == heldout.sha256,
+                "aic-learning.hierarchical-curriculum-heldout-lineage: {} differs from {}",
+                heldout_path.display(),
+                heldout_panel_path.display()
+            );
+        }
 
         for success in &training_success {
             state.recent_training_success.push_back(*success);
@@ -500,6 +527,11 @@ pub fn run(
         state.level = next_level;
         write_json_atomic(&state_path, &state)?;
         write_report(output, &config, &state)?;
+        retire_newly_inactive_replay_data(
+            output,
+            state.completed_generations,
+            config.outer_success_replay_generations,
+        )?;
     }
 
     write_report(output, &config, &state)?;
@@ -592,6 +624,36 @@ fn restore_replay_source(
         catalog_root,
         generation_config,
     )
+}
+
+fn retire_newly_inactive_replay_data(
+    output: &Path,
+    completed: usize,
+    replay_capacity: usize,
+) -> Result<()> {
+    if let Some(generation) = completed.checked_sub(replay_capacity + 1) {
+        let collection_path = output
+            .join("generations")
+            .join(format!("{generation:06}"))
+            .join("collection.json");
+        hierarchical_search::retire_replay_data(&collection_path)?;
+    }
+    Ok(())
+}
+
+fn retire_inactive_replay_data(
+    output: &Path,
+    completed: usize,
+    replay_capacity: usize,
+) -> Result<()> {
+    for generation in 0..completed.saturating_sub(replay_capacity) {
+        let collection_path = output
+            .join("generations")
+            .join(format!("{generation:06}"))
+            .join("collection.json");
+        hierarchical_search::retire_replay_data(&collection_path)?;
+    }
+    Ok(())
 }
 
 fn problem_identities(panel: &Panel) -> Result<BTreeSet<String>> {

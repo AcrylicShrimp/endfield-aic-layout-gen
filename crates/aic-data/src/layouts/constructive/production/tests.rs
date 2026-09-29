@@ -78,11 +78,57 @@ fn request(seed: &str) -> ConstructiveProductionRequest {
         max_steps: 64,
         max_placement_attempts: 128,
         max_route_searches: 512,
+        per_connection_route_searches: 64,
         analysis_workers: 1,
         nearby_candidates: 0,
         downstream_closed_growth: false,
         flow_direction: None,
         connection_first_placement: false,
+    }
+}
+
+fn assert_compact_matches_full(
+    w: &FacilityInstanceWiringReport,
+    f: &ValidatedFacilityCatalog,
+    i: &ValidatedItemCatalog,
+    t: &ValidatedTransportCatalog,
+    c: &ValidatedLogisticsComponentCatalog,
+    req: &ConstructiveProductionRequest,
+    full: &ConstructiveProductionReport,
+) {
+    let compact = construct_production_compact(w, f, i, t, c, req);
+    assert_eq!(compact.status, full.status);
+    assert_eq!(compact.success, full.success);
+    assert_eq!(compact.complete, full.complete);
+    assert_eq!(compact.required_facilities, full.required_facilities);
+    assert_eq!(compact.accepted_steps, full.steps.len());
+    assert_eq!(
+        compact.accepted_growth_steps,
+        full.steps
+            .iter()
+            .filter(|step| step.stage == "internal-growth")
+            .count()
+    );
+    assert_eq!(compact.final_node, full.final_node);
+    assert_eq!(
+        compact.failed_placement_attempts,
+        full.failed_placement_attempts
+    );
+    assert_eq!(compact.failed_statistics, full.failed_statistics);
+    assert_eq!(compact.rejected_reasons, full.rejected_reasons);
+    assert_eq!(compact.diagnostics, full.diagnostics);
+    assert_eq!(compact.request, full.request);
+    assert_eq!(
+        compact.per_connection_route_limit,
+        full.per_connection_route_limit
+    );
+    assert_eq!(
+        compact.routing_workspace_cell_limit,
+        full.routing_workspace_cell_limit
+    );
+    for step in &full.steps {
+        network::validate(&step.node, f, t, c).unwrap();
+        audit::validate_coverage(&step.node, w, i).unwrap();
     }
 }
 
@@ -439,6 +485,7 @@ fn downstream_group_failure_never_commits_half_a_branch_or_private_seed_cycle() 
         req.downstream_closed_growth = true;
         req.max_route_searches = 1;
         let r = construct_production(&w, &f, &i, &t, &c, &req);
+        assert_compact_matches_full(&w, &f, &i, &t, &c, &req, &r);
         assert!(!r.complete);
         assert!(r.steps.is_empty());
         assert_eq!(r.final_node.is_some(), seed_is_closed);
@@ -775,6 +822,7 @@ fn commits_cycle_atomically_and_routes_all_induced_edges() {
     let (f, i, t, c) = catalogs();
     let w = wiring(&[("a", "b"), ("b", "c"), ("c", "a")]);
     let r = construct_production(&w, &f, &i, &t, &c, &request("c"));
+    assert_compact_matches_full(&w, &f, &i, &t, &c, &request("c"), &r);
     assert!(r.complete, "{:?} {:?}", r.diagnostics, r.rejected_reasons);
     assert_eq!(r.steps.len(), 1);
     assert_eq!(r.steps[0].added_instances.len(), 2);
@@ -795,6 +843,63 @@ fn operation_budget_preserves_seed_and_does_not_claim_completion() {
     assert_eq!(n.member_instances, vec!["c"]);
     assert!(n.transport_networks.is_empty());
     assert_eq!(r.failed_statistics.astar_searches, 1);
+}
+
+#[test]
+fn internal_multilane_budget_distinguishes_connection_and_step_limits() {
+    let (_, i, t, c) = catalogs();
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let facilities = ValidatedFacilityCatalog::try_from_catalog(
+        crate::facilities::load_facility_catalog(root.join("data/game/normalized/facilities.json"))
+            .unwrap(),
+    )
+    .unwrap();
+    let mut w = wiring(&[("a", "b")]);
+    for node in &mut w.nodes {
+        if let FacilityInstanceWiringNode::Facility { facility, .. } = node {
+            *facility = "filling-powder-mc-1-mode-normal".into();
+        }
+    }
+    w.edges[0].rate = Rate {
+        numerator: 1,
+        denominator: 1,
+    };
+
+    let mut req = request("b");
+    req.max_route_searches = 1;
+    req.per_connection_route_searches = 1;
+    let step_stopped = construct_production(&w, &facilities, &i, &t, &c, &req);
+    assert_eq!(step_stopped.status, "growth-exhausted");
+    assert_eq!(step_stopped.failed_statistics.astar_searches, 1);
+    assert!(
+        step_stopped
+            .rejected_reasons
+            .contains_key("production-step-route-budget-exhausted")
+    );
+    assert_eq!(
+        step_stopped.final_node.as_ref().unwrap().member_instances,
+        ["b"]
+    );
+
+    req.max_route_searches = 64;
+    let connection_stopped = construct_production(&w, &facilities, &i, &t, &c, &req);
+    assert_eq!(connection_stopped.status, "growth-exhausted");
+    assert!(
+        connection_stopped
+            .rejected_reasons
+            .contains_key("production-connection-route-budget-exhausted")
+    );
+    assert_eq!(
+        connection_stopped.final_node, step_stopped.final_node,
+        "a stopped connection cannot publish its partial lane"
+    );
+
+    req.per_connection_route_searches = 64;
+    let complete = construct_production(&w, &facilities, &i, &t, &c, &req);
+    assert!(complete.complete, "{:?}", complete.diagnostics);
+    let node = complete.final_node.as_ref().unwrap();
+    network::validate(node, &facilities, &t, &c).unwrap();
+    audit::validate_coverage(node, &w, &i).unwrap();
 }
 
 #[test]
@@ -879,10 +984,20 @@ fn rejects_duplicate_wiring_ids_and_zero_budgets() {
             .final_node
             .is_none()
     );
+    let legacy = serde_json::to_value(request("b")).unwrap();
+    assert!(legacy.get("per_connection_route_searches").is_none());
+    let mut explicit = legacy.clone();
+    explicit["per_connection_route_searches"] = serde_json::json!(64);
+    let explicit: ConstructiveProductionRequest = serde_json::from_value(explicit).unwrap();
+    assert_eq!(serde_json::to_value(explicit).unwrap(), legacy);
+    req.max_route_searches = 512;
+    req.per_connection_route_searches = 0;
+    let invalid = construct_production(&wiring(&[("a", "b")]), &f, &i, &t, &c, &req);
+    assert_eq!(invalid.status, "invalid-input");
 }
 
 #[test]
-fn separated_moss_fan_in_preserves_four_total_output_port_domains() {
+fn separated_moss_fan_in_keeps_sufficient_output_port_domains() {
     let (_, _, t, c) = catalogs();
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let f = ValidatedFacilityCatalog::try_from_catalog(
@@ -952,14 +1067,29 @@ fn separated_moss_fan_in_preserves_four_total_output_port_domains() {
         .iter()
         .flat_map(|n| &n.terminals)
         .filter(|t| t.direction == FacilityPortDirection::Output)
-        .count();
+        .filter_map(|t| match &t.endpoint {
+            TransportNetworkEndpoint::Facility { instance, port } => {
+                Some((instance.clone(), port.clone()))
+            }
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
     let remaining = n
         .boundary_requirements
         .iter()
         .flat_map(|b| &b.attachments)
-        .filter(|a| matches!(a, ConstructiveBoundaryAttachment::NewPort { .. }))
-        .count();
-    assert_eq!(used + remaining, 4);
+        .filter_map(|a| match a {
+            ConstructiveBoundaryAttachment::NewPort { port } => {
+                Some((port.instance.clone(), port.port.clone()))
+            }
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
+    assert!(used.union(&remaining).count() >= 4);
+    assert!(
+        analyze_constructive_port_demands(&n.boundary_requirements, &n.transport_networks, &t)
+            .success
+    );
     assert!(r.complete);
 }
 
@@ -1005,7 +1135,7 @@ fn grows_pipe_frontier_before_lexically_earlier_belt_frontier() {
 }
 
 #[test]
-fn splits_new_demand_across_partially_loaded_existing_ports() {
+fn reuses_partially_loaded_existing_port_before_claiming_another() {
     let (_, i, t, c) = catalogs();
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let f = ValidatedFacilityCatalog::try_from_catalog(
@@ -1039,10 +1169,10 @@ fn splits_new_demand_across_partially_loaded_existing_ports() {
         .iter()
         .filter(|e| e.requirement == "edge-2")
         .collect::<Vec<_>>();
-    assert_eq!(lanes.len(), 2);
+    assert_eq!(lanes.len(), 1);
     assert!(lanes.iter().all(|e| e.rate
         == Rate {
-            numerator: 1,
+            numerator: 2,
             denominator: 5
         }
         && e.source_kind == "existing-network"));
@@ -1077,6 +1207,7 @@ fn external_lane_budget_is_atomic_and_does_not_claim_success() {
     let mut req = request("a");
     req.max_route_searches = 1;
     let r = construct_production(&w, &f, &i, &t, &c, &req);
+    assert_compact_matches_full(&w, &f, &i, &t, &c, &req, &r);
     assert!(r.internal_complete);
     assert!(!r.complete);
     assert!(!r.success);
@@ -1086,6 +1217,19 @@ fn external_lane_budget_is_atomic_and_does_not_claim_success() {
     assert!(n.external_requirements.is_empty());
     assert_eq!(r.unresolved_external_requirements.len(), 1);
     network::validate(&n, &f, &t, &c).unwrap();
+    network::fail_next_child_admission_for_test();
+    let resource = construct_production(&w, &f, &i, &t, &c, &request("a"));
+    assert!(!resource.complete);
+    assert!(
+        resource
+            .diagnostics
+            .iter()
+            .any(|d| { d.code == "production-external-search-resource-exhausted" })
+    );
+    let retained = resource.final_node.unwrap();
+    assert!(retained.transport_networks.is_empty());
+    assert!(retained.external_requirements.is_empty());
+    assert_eq!(resource.unresolved_external_requirements.len(), 1);
     let full = construct_production(&w, &f, &i, &t, &c, &request("a"));
     assert!(full.complete, "{:?}", full.diagnostics);
     let n = full.final_node.unwrap();
@@ -1105,6 +1249,380 @@ fn external_lane_budget_is_atomic_and_does_not_claim_success() {
         construct_production(&w, &f, &i, &t, &c, &request("a")).status,
         "invalid-input"
     );
+}
+
+#[test]
+fn six_output_port_domain_routes_past_four_blocked_connections() {
+    let (_, i, t, c) = catalogs();
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut catalog =
+        crate::facilities::load_facility_catalog(root.join("data/game/normalized/facilities.json"))
+            .unwrap();
+    catalog.facilities.extend(
+        crate::facilities::load_facility_catalog(
+            root.join("data/examples/constructive-network.facilities.json"),
+        )
+        .unwrap()
+        .facilities,
+    );
+    let f = ValidatedFacilityCatalog::try_from_catalog(catalog).unwrap();
+    let mut w = wiring(&[("a", "sale")]);
+    w.nodes
+        .retain(|n| matches!(n, FacilityInstanceWiringNode::Facility { id, .. } if id == "a"));
+    if let FacilityInstanceWiringNode::Facility { facility, .. } = &mut w.nodes[0] {
+        *facility = "filling-powder-mc-1-mode-normal".into();
+    }
+    w.nodes.push(FacilityInstanceWiringNode::External {
+        id: "sale".into(),
+        item: "ore".into(),
+    });
+    for index in 0..4 {
+        let mut obstacle = w.nodes[0].clone();
+        if let FacilityInstanceWiringNode::Facility { id, facility, .. } = &mut obstacle {
+            *id = format!("obstacle-{index}");
+            *facility = "network-fixture-machine".into();
+        }
+        w.nodes.push(obstacle);
+    }
+    let req = request("a");
+    let ctor = Constructor {
+        retain_history: true,
+        fixed_rotations: BTreeMap::new(),
+        wiring: &w,
+        facilities: &f,
+        items: &i,
+        transports: &t,
+        components: &c,
+        request: &req,
+        reasons: BTreeMap::new(),
+        statistics: Default::default(),
+        attempts: 0,
+        last_obstruction: None,
+        screen_failure: None,
+        placement_decisions: Vec::new(),
+        direct_placement_decisions: Vec::new(),
+    };
+    let target = translate_node(&ctor.fresh("a").unwrap(), 10, 10);
+    let fresh_obstacle = construct_facility_node(&w, &f, &i, "obstacle-0").unwrap();
+    let many_poses = placement::shortlist(&target, &fresh_obstacle, "a", 0, 10, &f, &w, false);
+    let mut singleton_target = target.clone();
+    singleton_target.boundary_requirements[0].attachments =
+        vec![singleton_target.boundary_requirements[0].attachments[2].clone()];
+    let singleton_poses = placement::shortlist(
+        &singleton_target,
+        &fresh_obstacle,
+        "a",
+        0,
+        10,
+        &f,
+        &w,
+        false,
+    );
+    assert!(many_poses.contains(&(0, 12, 8)));
+    assert!(!singleton_poses.contains(&(0, 12, 8)));
+    let mut node = translate_node(&ctor.fresh("a").unwrap(), 10, 10);
+    assert_eq!(node.boundary_requirements[0].attachments.len(), 6);
+    for index in 0..4 {
+        let obstacle = translate_node(
+            &construct_facility_node(&w, &f, &i, &format!("obstacle-{index}")).unwrap(),
+            10 + index,
+            9,
+        );
+        node = merge_nodes(&node, &obstacle);
+    }
+    node.bounds = FacilityPlacementBounds {
+        width: 32,
+        height: 32,
+    };
+    assert!(placement::future_corridors_clear(&node, &w));
+    let mut singleton_node = node.clone();
+    singleton_node.boundary_requirements[0]
+        .attachments
+        .truncate(1);
+    assert!(!placement::future_corridors_clear(&singleton_node, &w));
+    let mut stats = ConstructiveCompositionStatistics::default();
+    let mut stop = network::ConnectionSearchStop::default();
+    let result = network::connect_external(
+        &node,
+        &w.edges[0],
+        32,
+        32,
+        &t,
+        &c,
+        &mut stats,
+        512,
+        &mut stop,
+        &mut |_| true,
+    )
+    .expect("an open output port should reach the external boundary");
+    let selected = result.transport_networks[0]
+        .terminals
+        .iter()
+        .find_map(|terminal| match &terminal.endpoint {
+            TransportNetworkEndpoint::Facility { instance, port } if instance == "a" => {
+                Some(port.as_str())
+            }
+            _ => None,
+        })
+        .unwrap();
+    assert!(matches!(selected, "output-belt-4" | "output-belt-5"));
+    assert_eq!(stats.astar_searches, 1);
+    network::validate(&result, &f, &t, &c).unwrap();
+}
+
+#[test]
+fn external_budget_reaches_open_port_after_trapped_first_port() {
+    let (_, i, t, c) = catalogs();
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut catalog =
+        crate::facilities::load_facility_catalog(root.join("data/game/normalized/facilities.json"))
+            .unwrap();
+    catalog.facilities.extend(
+        crate::facilities::load_facility_catalog(
+            root.join("data/examples/constructive-network.facilities.json"),
+        )
+        .unwrap()
+        .facilities,
+    );
+    let f = ValidatedFacilityCatalog::try_from_catalog(catalog).unwrap();
+    let mut w = wiring(&[("a", "sale")]);
+    w.nodes
+        .retain(|n| matches!(n, FacilityInstanceWiringNode::Facility { id, .. } if id == "a"));
+    if let FacilityInstanceWiringNode::Facility { facility, .. } = &mut w.nodes[0] {
+        *facility = "filling-powder-mc-1-mode-normal".into();
+    }
+    w.nodes.push(FacilityInstanceWiringNode::External {
+        id: "sale".into(),
+        item: "ore".into(),
+    });
+    for index in 0..5 {
+        let mut obstacle = w.nodes[0].clone();
+        if let FacilityInstanceWiringNode::Facility { id, facility, .. } = &mut obstacle {
+            *id = format!("obstacle-{index}");
+            *facility = "network-fixture-machine".into();
+        }
+        w.nodes.push(obstacle);
+    }
+    let mut node = translate_node(&construct_facility_node(&w, &f, &i, "a").unwrap(), 10, 10);
+    // Port 0's connection at (10, 9) is free but enclosed. Ports 1–3 are
+    // occupied, while ports 4–5 can still reach the outer boundary.
+    for (index, (x, y)) in [(9, 9), (10, 8), (11, 9), (12, 9), (13, 9)]
+        .into_iter()
+        .enumerate()
+    {
+        let obstacle = translate_node(
+            &construct_facility_node(&w, &f, &i, &format!("obstacle-{index}")).unwrap(),
+            x,
+            y,
+        );
+        node = merge_nodes(&node, &obstacle);
+    }
+    node.bounds = FacilityPlacementBounds {
+        width: 32,
+        height: 32,
+    };
+    let mut limited_stats = ConstructiveCompositionStatistics::default();
+    let mut limited_stop = network::ConnectionSearchStop::default();
+    let routed = network::connect_external(
+        &node,
+        &w.edges[0],
+        32,
+        32,
+        &t,
+        &c,
+        &mut limited_stats,
+        64,
+        &mut limited_stop,
+        &mut |_| true,
+    )
+    .expect("the default allowance must reach a later open port");
+    assert!(limited_stats.astar_searches <= 64);
+    assert_eq!(
+        limited_stop,
+        network::ConnectionSearchStop::CandidateExhaustion
+    );
+
+    let mut generous_stats = ConstructiveCompositionStatistics::default();
+    let mut generous_stop = network::ConnectionSearchStop::default();
+    let generous = network::connect_external(
+        &node,
+        &w.edges[0],
+        32,
+        32,
+        &t,
+        &c,
+        &mut generous_stats,
+        512,
+        &mut generous_stop,
+        &mut |_| true,
+    )
+    .expect("an open later port reaches the boundary");
+    let selected = routed.transport_networks[0]
+        .terminals
+        .iter()
+        .find_map(|terminal| match &terminal.endpoint {
+            TransportNetworkEndpoint::Facility { instance, port } if instance == "a" => {
+                Some(port.as_str())
+            }
+            _ => None,
+        })
+        .unwrap();
+    assert!(matches!(selected, "output-belt-4" | "output-belt-5"));
+    assert_eq!(generous, routed);
+    assert_eq!(generous_stats.astar_searches, limited_stats.astar_searches);
+    let mut exact_stats = ConstructiveCompositionStatistics::default();
+    let mut exact_stop = network::ConnectionSearchStop::default();
+    let exact = network::connect_external(
+        &node,
+        &w.edges[0],
+        32,
+        32,
+        &t,
+        &c,
+        &mut exact_stats,
+        limited_stats.astar_searches,
+        &mut exact_stop,
+        &mut |_| true,
+    );
+    assert_eq!(exact, Some(routed.clone()));
+    assert_eq!(exact_stats.astar_searches, limited_stats.astar_searches);
+    assert_eq!(
+        exact_stop,
+        network::ConnectionSearchStop::CandidateExhaustion
+    );
+    let mut rejected_once = false;
+    let mut retry_stats = ConstructiveCompositionStatistics::default();
+    let mut retry_stop = network::ConnectionSearchStop::default();
+    let retry = network::connect_external(
+        &node,
+        &w.edges[0],
+        32,
+        32,
+        &t,
+        &c,
+        &mut retry_stats,
+        64,
+        &mut retry_stop,
+        &mut |_| {
+            if rejected_once {
+                true
+            } else {
+                rejected_once = true;
+                false
+            }
+        },
+    )
+    .expect("search must continue after a completed candidate is rejected");
+    assert!(rejected_once);
+    assert!(retry_stats.astar_searches > exact_stats.astar_searches);
+    network::validate(&retry, &f, &t, &c).unwrap();
+    audit::validate_coverage(&retry, &w, &i).unwrap();
+    network::validate(&routed, &f, &t, &c).unwrap();
+    audit::validate_coverage(&routed, &w, &i).unwrap();
+}
+
+#[test]
+fn actual_constructor_seed_keeps_all_compatible_output_ports() {
+    let (_, i, t, c) = catalogs();
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let f = ValidatedFacilityCatalog::try_from_catalog(
+        crate::facilities::load_facility_catalog(root.join("data/game/normalized/facilities.json"))
+            .unwrap(),
+    )
+    .unwrap();
+    let mut w = wiring(&[("a", "sale")]);
+    w.nodes
+        .retain(|n| matches!(n, FacilityInstanceWiringNode::Facility { id, .. } if id == "a"));
+    if let FacilityInstanceWiringNode::Facility { facility, .. } = &mut w.nodes[0] {
+        *facility = "filling-powder-mc-1-mode-normal".into();
+    }
+    w.nodes.push(FacilityInstanceWiringNode::Target {
+        id: "sale".into(),
+        item: "ore".into(),
+    });
+    w.edges[0].rate = Rate {
+        numerator: 1,
+        denominator: 1,
+    };
+    let mut req = request("a");
+    req.max_route_searches = 1;
+    req.per_connection_route_searches = 1;
+    let report = construct_production(&w, &f, &i, &t, &c, &req);
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code == "production-external-step-route-budget-exhausted")
+    );
+    assert_eq!(
+        report
+            .rejected_reasons
+            .get("production-external-step-route-budget-exhausted"),
+        Some(&1)
+    );
+    let mut connection_limited = req.clone();
+    connection_limited.max_route_searches = 64;
+    let connection_report = construct_production(&w, &f, &i, &t, &c, &connection_limited);
+    assert!(connection_report.internal_complete);
+    assert!(!connection_report.complete);
+    assert_eq!(connection_report.failed_statistics.astar_searches, 1);
+    assert!(connection_report.diagnostics.iter().any(|diagnostic| {
+        diagnostic.code == "production-external-connection-route-budget-exhausted"
+            && diagnostic.entity.as_deref() == Some("edge-0")
+    }));
+    assert_eq!(
+        connection_report
+            .rejected_reasons
+            .get("production-external-connection-route-budget-exhausted"),
+        Some(&1)
+    );
+    assert_eq!(
+        serde_json::to_value(&connection_report.final_node).unwrap(),
+        serde_json::to_value(&report.final_node).unwrap()
+    );
+    assert!(report.internal_complete);
+    assert!(!report.complete);
+    let seed = report.final_node.unwrap();
+    assert_eq!(seed.boundary_requirements.len(), 1);
+    assert_eq!(seed.boundary_requirements[0].attachments.len(), 6);
+}
+
+#[test]
+fn competing_seed_requirements_cannot_overclaim_six_output_ports() {
+    let (_, i, t, c) = catalogs();
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let f = ValidatedFacilityCatalog::try_from_catalog(
+        crate::facilities::load_facility_catalog(root.join("data/game/normalized/facilities.json"))
+            .unwrap(),
+    )
+    .unwrap();
+    let mut w = wiring(&[("a", "sale1"), ("a", "sale2")]);
+    for node in &mut w.nodes {
+        match node {
+            FacilityInstanceWiringNode::Facility { id, facility, .. } if id == "a" => {
+                *facility = "filling-powder-mc-1-mode-normal".into();
+            }
+            FacilityInstanceWiringNode::Facility { id, .. } => {
+                *node = FacilityInstanceWiringNode::Target {
+                    id: id.clone(),
+                    item: "ore".into(),
+                };
+            }
+            _ => unreachable!(),
+        }
+    }
+    for edge in &mut w.edges {
+        edge.rate = Rate {
+            numerator: 2,
+            denominator: 1,
+        };
+    }
+    let report = construct_production(&w, &f, &i, &t, &c, &request("a"));
+    assert!(!report.complete);
+    assert!(report.diagnostics.iter().any(|d| {
+        d.code == "constructive-port-demand-capacity-insufficient"
+            && d.entity.as_deref() == Some("a")
+    }));
 }
 
 #[test]
@@ -1135,4 +1653,170 @@ fn native_construction_interrupts_inside_search_and_leaves_worker_reusable() {
     assert!(crate::work_control::current().is_none());
     let next = construct_production(&w, &f, &i, &t, &c, &r);
     assert!(next.internal_complete, "{:?}", next.diagnostics);
+}
+
+#[test]
+fn external_multilane_budget_reaches_later_complete_branch() {
+    let (_, i, t, c) = catalogs();
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut catalog =
+        crate::facilities::load_facility_catalog(root.join("data/game/normalized/facilities.json"))
+            .unwrap();
+    catalog.facilities.extend(
+        crate::facilities::load_facility_catalog(
+            root.join("data/examples/constructive-network.facilities.json"),
+        )
+        .unwrap()
+        .facilities,
+    );
+    let f = ValidatedFacilityCatalog::try_from_catalog(catalog).unwrap();
+    let mut w = wiring(&[("a", "sale")]);
+    w.nodes
+        .retain(|n| matches!(n, FacilityInstanceWiringNode::Facility { id, .. } if id == "a"));
+    if let FacilityInstanceWiringNode::Facility { facility, .. } = &mut w.nodes[0] {
+        *facility = "filling-powder-mc-1-mode-normal".into();
+    }
+    w.nodes.push(FacilityInstanceWiringNode::External {
+        id: "sale".into(),
+        item: "ore".into(),
+    });
+    // A belt carries 1/2 unit, so this external edge needs two complete lanes.
+    w.edges[0].rate = Rate {
+        numerator: 1,
+        denominator: 1,
+    };
+    let mut node = translate_node(&construct_facility_node(&w, &f, &i, "a").unwrap(), 16, 16);
+    let obstacles = [
+        (16, 11),
+        (15, 12),
+        (17, 12),
+        (14, 13),
+        (18, 13),
+        (20, 13),
+        (14, 14),
+        (19, 14),
+        (14, 15),
+        (15, 16),
+    ];
+    for (index, (x, y)) in obstacles.into_iter().enumerate() {
+        let mut fixture = w.nodes[0].clone();
+        if let FacilityInstanceWiringNode::Facility { id, facility, .. } = &mut fixture {
+            *id = format!("obstacle-{index}");
+            *facility = "network-fixture-machine".into();
+        }
+        w.nodes.push(fixture);
+        let obstacle = translate_node(
+            &construct_facility_node(&w, &f, &i, &format!("obstacle-{index}")).unwrap(),
+            x,
+            y,
+        );
+        node = merge_nodes(&node, &obstacle);
+    }
+    node.bounds = FacilityPlacementBounds {
+        width: 32,
+        height: 32,
+    };
+    assert_eq!(node.boundary_requirements[0].attachments.len(), 6);
+    let mut accept = |n: &ConstructiveNode| {
+        network::validate(n, &f, &t, &c).is_ok()
+            && audit::validate_coverage(n, &w, &i).is_ok()
+            && analyze_constructive_port_demands(
+                &n.boundary_requirements,
+                &n.transport_networks,
+                &t,
+            )
+            .success
+    };
+    let mut first_stats = ConstructiveCompositionStatistics::default();
+    let mut first_stop = network::ConnectionSearchStop::default();
+    assert!(
+        network::connect_external(
+            &node,
+            &w.edges[0],
+            32,
+            32,
+            &t,
+            &c,
+            &mut first_stats,
+            1,
+            &mut first_stop,
+            &mut accept,
+        )
+        .is_none()
+    );
+    assert_eq!(first_stats.astar_searches, 1);
+    assert_eq!(first_stats.astar_failures, 0);
+    assert_eq!(first_stop, network::ConnectionSearchStop::RouteCallBudget);
+    assert!(node.transport_networks.is_empty());
+    assert!(node.external_requirements.is_empty());
+
+    let mut short_stats = ConstructiveCompositionStatistics::default();
+    let mut short_stop = network::ConnectionSearchStop::default();
+    assert!(
+        network::connect_external(
+            &node,
+            &w.edges[0],
+            32,
+            32,
+            &t,
+            &c,
+            &mut short_stats,
+            11,
+            &mut short_stop,
+            &mut accept,
+        )
+        .is_none()
+    );
+    assert_eq!(short_stats.astar_searches, 11);
+    assert_eq!(short_stop, network::ConnectionSearchStop::RouteCallBudget);
+    let mut exact_stats = ConstructiveCompositionStatistics::default();
+    let mut exact_stop = network::ConnectionSearchStop::default();
+    let exact = network::connect_external(
+        &node,
+        &w.edges[0],
+        32,
+        32,
+        &t,
+        &c,
+        &mut exact_stats,
+        12,
+        &mut exact_stop,
+        &mut accept,
+    )
+    .expect("the final lane must publish on the last permitted A* call");
+    assert_eq!(exact_stats.astar_searches, 12);
+    assert_eq!(
+        exact_stop,
+        network::ConnectionSearchStop::CandidateExhaustion
+    );
+    let ports = exact.transport_networks[0]
+        .terminals
+        .iter()
+        .filter_map(|terminal| match &terminal.endpoint {
+            TransportNetworkEndpoint::Facility { instance, port } if instance == "a" => {
+                Some(port.as_str())
+            }
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(ports.len(), 2);
+    assert_eq!(ports[0], "output-belt-5");
+    network::validate(&exact, &f, &t, &c).unwrap();
+    audit::validate_coverage(&exact, &w, &i).unwrap();
+    let mut default_stats = ConstructiveCompositionStatistics::default();
+    let mut default_stop = network::ConnectionSearchStop::default();
+    let at_default = network::connect_external(
+        &node,
+        &w.edges[0],
+        32,
+        32,
+        &t,
+        &c,
+        &mut default_stats,
+        64,
+        &mut default_stop,
+        &mut accept,
+    );
+    assert_eq!(at_default, Some(exact));
+    assert_eq!(default_stats.astar_searches, 12);
 }
